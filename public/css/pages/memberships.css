@@ -2070,29 +2070,32 @@
     top: 0;
     z-index: var(--z-sticky);
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 2px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
     min-width: 0;
-    border-bottom: 1px solid var(--color-border-soft);
-    background: var(--color-page);
-    padding: 0 0 var(--space-1);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    padding: 3px;
+    box-shadow: var(--shadow-xs);
   }
   #detailsDialog .member-details-tab {
     position: relative;
     display: grid;
     min-width: 0;
-    min-height: 44px;
+    min-height: 46px;
     place-items: center;
     border: 0;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--color-text-muted);
-    padding: var(--space-1);
+    padding: 4px 2px;
     font: inherit;
-    font-size: clamp(11px, 3.1vw, var(--font-xs));
+    font-size: clamp(var(--font-2xs), 2.8vw, var(--font-xs));
     font-weight: var(--weight-semibold);
     white-space: nowrap;
     touch-action: manipulation;
+    transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
   }
   #detailsDialog .member-details-tab[aria-selected="true"] {
     background: var(--color-primary-soft);
@@ -2100,13 +2103,15 @@
   }
   #detailsDialog .member-details-tab[aria-selected="true"]::after {
     position: absolute;
-    inset-inline: var(--space-2);
-    inset-block-end: 0;
+    inset-inline: 7px;
+    inset-block-end: 3px;
     height: 2px;
     border-radius: var(--radius-pill);
     background: var(--color-primary);
     content: "";
   }
+  #detailsDialog .member-details-tab:hover:not([aria-selected="true"]) { background: var(--color-surface-muted); color: var(--color-text); }
+  #detailsDialog .member-details-tab:active { box-shadow: inset 0 0 0 1px var(--primary-border); }
   #detailsDialog .member-details-tab:focus-visible,
   #detailsDialog .member-details-tab-panel:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -2122,6 +2127,24 @@
   #detailsDialog .member-details-tab-panel[hidden] { display: none; }
   #detailsDialog .member-details-tab-panel > .details-section,
   #detailsDialog .member-details-tab-panel > .member-details-overview { min-width: 0; }
+  #detailsDialog .member-details-overview { gap: var(--space-3); }
+  #detailsDialog .member-details-overview-heading { display: grid; gap: 2px; padding-inline: 2px; }
+  #detailsDialog .member-details-overview-heading span { color: var(--color-text); font-size: var(--font-sm); font-weight: var(--weight-bold); }
+  #detailsDialog .member-details-overview-heading small { color: var(--color-text-muted); font-size: var(--font-xs); }
+  #detailsDialog .details-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  #detailsDialog .details-summary-card { min-height: 66px; align-content: center; gap: var(--space-1); border-color: var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-card); padding: var(--space-2); text-align: start; }
+  #detailsDialog .details-summary-card strong { font-size: var(--font-sm); }
+  #detailsDialog .member-details-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  #detailsDialog .member-details-stats > .member-detail-stat:first-child,
+  #detailsDialog .member-details-stats > .member-detail-stat:nth-child(4) { display: none; }
+  #detailsDialog .member-details-stats .member-detail-stat { min-height: 78px; gap: var(--space-2); border-color: var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-card); padding: var(--space-2); box-shadow: none; }
+  #detailsDialog .member-details-stats .member-detail-stat-icon { width: 32px; height: 32px; }
+  #detailsDialog .member-details-stats .member-detail-stat-icon .ui-icon { width: 16px; height: 16px; }
+  #detailsDialog .member-details-stats .member-detail-stat-copy small { font-size: 11px; }
+  #detailsDialog .member-details-stats .member-detail-stat-copy strong { font-size: var(--font-sm); }
+  #detailsDialog .member-details-stats .member-detail-stat-copy em { font-size: 11px; }
+  #detailsDialog .member-details-stats .member-detail-stat:nth-child(2) .member-detail-stat-icon { background: var(--info-soft); color: var(--info-text); }
+  #detailsDialog .member-details-stats .member-detail-stat:nth-child(3) .member-detail-stat-icon { background: var(--warning-soft); color: var(--warning-text); }
   body #detailsDialog > .dialog-body > .member-details-head::before {
     grid-column: 1;
     grid-row: 1;
@@ -2145,9 +2168,6 @@
   #detailsDialog .member-profile-badge[data-membership-status="expired"],
   #detailsDialog .member-profile-badge[data-membership-status="cancelled"] { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
   #detailsDialog .member-profile-registration { display: none; }
-  #detailsDialog .member-details-overview > .member-details-stats > .member-detail-stat:nth-child(-n + 2) { display: none; }
-  #detailsDialog .member-details-overview > .member-details-stats { grid-template-columns: minmax(0, 1fr); }
-  #detailsDialog .member-details-overview > .member-details-stats > .member-detail-stat:nth-child(4) { display: none; }
   #detailsDialog .member-details-overview-financial {
     display: grid;
     min-width: 0;
@@ -2218,10 +2238,21 @@
   #detailsDialog .member-detail-attendance-note { color: var(--color-text-muted); font-size: var(--font-xs); }
   #detailsDialog .member-detail-attendance-times strong { color: var(--color-text); font-size: var(--font-sm); font-variant-numeric: tabular-nums; }
   #detailsDialog .member-detail-attendance-note { margin: 0; line-height: 1.5; }
+  #detailsDialog .member-store-purchases,
+  #detailsDialog [data-member-training-panel] { min-width: 0; max-width: 100%; }
+  #detailsDialog .member-store-purchases .history-scroll { max-width: 100%; }
+  #detailsDialog .member-training-panel { gap: var(--space-3); padding: var(--space-3); }
+  #detailsDialog .member-training-head { align-items: flex-start; flex-direction: column; }
+  #detailsDialog .member-training-actions,
+  #detailsDialog .member-training-system-actions { max-width: 100%; flex-wrap: wrap; }
 }
 
 @media (max-width: 359px) {
-  #detailsDialog .member-details-overview > .member-details-stats { grid-template-columns: minmax(0, 1fr); }
+  #detailsDialog .member-details-tabs { gap: 2px; padding: 2px; }
+  #detailsDialog .member-details-tab { min-height: 44px; padding-inline: 1px; font-size: var(--font-2xs); }
+  #detailsDialog .member-details-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #detailsDialog .member-details-stats .member-detail-stat { min-height: 72px; }
+  #detailsDialog .details-summary-card { min-height: 60px; }
   #detailsDialog .current-membership-facts { grid-template-columns: minmax(0, 1fr); }
   #detailsDialog .member-details-overview-financial-grid { grid-template-columns: minmax(0, 1fr); }
 }

@@ -176,8 +176,13 @@ test('subscribers use the table on desktop and a single responsive card list on 
     expect(await page.locator('#detailsDialog .member-details-head').evaluate((head) => getComputedStyle(head, '::before').content)).toContain('تفاصيل المشترك');
     await expect(page.locator('#detailsDialog #detailsMemberBadge')).toHaveText('نشط');
     await expect(page.locator('#detailsDialog .member-profile-code')).toHaveText('TG-NV27-********');
-    await expect(page.locator('#detailsDialog [data-member-details-tabs] [role="tab"]')).toHaveText(['نظرة عامة', 'الاشتراكات', 'الحضور', 'الحساب']);
+    await expect(page.locator('#detailsDialog [data-member-details-tabs] [role="tab"]')).toHaveText(['ملخص', 'اشتراك', 'حضور', 'حساب', 'متجر', 'تدريب']);
+    expect(await page.locator('#detailsDialog [data-member-details-tabs] [role="tab"]').evaluateAll((tabs) => tabs.map((tab) => tab.getAttribute('aria-label')))).toEqual(['نظرة عامة', 'الاشتراكات', 'الحضور', 'الحساب', 'المتجر', 'التدريب والتغذية']);
+    await expect(page.locator('#detailsDialog [data-member-details-panel]')).toHaveCount(6);
     await expect(page.locator('#detailsDialog [data-member-details-tab="overview"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-overview-heading')).toContainText('ملخص العضوية');
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .details-summary')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-stats > .member-detail-stat:visible')).toHaveCount(2);
     await expect(page.locator('#detailsDialog [data-member-details-footer]')).toBeVisible();
     await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-overview-financial')).toContainText('إجمالي المدفوع');
     await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-overview-financial')).toContainText('إجمالي المتبقي');
@@ -191,6 +196,12 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('#detailsDialog [data-member-details-panel="attendance"]')).toContainText('لا يوجد حضور مسجل اليوم');
     await page.locator('#detailsDialog [data-member-details-tab="account"]').click();
     await expect(page.locator('#detailsDialog [data-member-details-panel="account"]')).toContainText('السجل المالي والإيصالات');
+    await page.locator('#detailsDialog [data-member-details-tab="store"]').click();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="store"] [data-member-store-purchases]')).toContainText('مشتريات المتجر');
+    await expect(page.locator('#detailsDialog [data-member-details-panel="account"] [data-member-store-purchases]')).toHaveCount(0);
+    await page.locator('#detailsDialog [data-member-details-tab="training"]').click();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="training"] [data-member-training-panel]')).toContainText('التدريب والتغذية');
+    await expect(page.locator('#detailsDialog [data-member-details-panel="account"] [data-member-training-panel]')).toHaveCount(0);
     await page.locator('#detailsDialog [data-member-details-tab="overview"]').click();
     const detailHeaderAlignment = await page.locator('#detailsDialog').evaluate((dialog) => {
         const headElement = dialog.querySelector('.member-details-head');
@@ -209,10 +220,11 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await page.screenshot({ path: test.info().outputPath('subscribers-member-details-mobile.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator('#detailsDialog [data-member-details-tabs]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-tabs] [role="tab"]')).toHaveCount(6);
     await expect(page.locator('#detailsDialog [data-member-details-footer]')).toBeVisible();
     await expect(page.locator('#detailsDialog [data-member-training-panel]')).toBeAttached();
     const phoneStatsColumns = await page.locator('#detailsDialog .member-details-stats').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
-    expect(phoneStatsColumns).toBe(1);
+    expect(phoneStatsColumns).toBe(2);
     const financialColumns = await page.locator('#detailsDialog .member-details-overview-financial-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
     expect(financialColumns).toBe(3);
     const detailViewportWidth = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));

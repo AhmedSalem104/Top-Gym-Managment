@@ -286,9 +286,10 @@
   function mobileDetailsCategory(node) {
     if (!(node instanceof Element)) return 'overview';
     if (node.querySelector('.event-list')) return 'account';
-    if (node.matches('[data-member-training-panel]')) return 'account';
-    if (node.matches('.payment-history-section, .financial-summary, [data-member-store-purchases], .membership-portal-code-card')) return 'account';
-    if (node.matches('.details-summary')) return 'account';
+    if (node.matches('[data-member-training-panel]')) return 'training';
+    if (node.matches('[data-member-store-purchases]')) return 'store';
+    if (node.matches('.payment-history-section, .financial-summary, .membership-portal-code-card')) return 'account';
+    if (node.matches('.details-summary')) return 'overview';
     if (node.matches('.member-details-overview, .member-scope-details, .current-membership-section')) return 'overview';
     const heading = node.querySelector(':scope > h4')?.textContent?.trim() || '';
     if (/الاشتراك|التجميد/.test(heading)) return 'subscriptions';
@@ -414,20 +415,29 @@
     if (mobileDetailsNodes || !content.isConnected) return;
     mobileDetailsNodes = [...content.children];
     updateMobileProfileBadge(member);
-    const tabs = [['overview', 'نظرة عامة'], ['subscriptions', 'الاشتراكات'], ['attendance', 'الحضور'], ['account', 'الحساب']];
+    const tabs = [
+      ['overview', 'ملخص', 'نظرة عامة'],
+      ['subscriptions', 'اشتراك', 'الاشتراكات'],
+      ['attendance', 'حضور', 'الحضور'],
+      ['account', 'حساب', 'الحساب'],
+      ['store', 'متجر', 'المتجر'],
+      ['training', 'تدريب', 'التدريب والتغذية']
+    ];
     const tabList = document.createElement('div');
     tabList.className = 'member-details-tabs';
     tabList.dataset.memberDetailsTabs = 'true';
     tabList.setAttribute('role', 'tablist');
     tabList.setAttribute('aria-label', 'أقسام تفاصيل المشترك');
     const panels = new Map();
-    for (const [id, label] of tabs) {
+    for (const [id, label, accessibleLabel] of tabs) {
       const tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'member-details-tab';
       tab.dataset.memberDetailsTab = id;
       tab.id = `memberDetailsTab-${id}`;
       tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-label', accessibleLabel);
+      tab.title = accessibleLabel;
       tab.setAttribute('aria-controls', `memberDetailsPanel-${id}`);
       tab.setAttribute('aria-selected', String(id === 'overview'));
       tab.tabIndex = id === 'overview' ? 0 : -1;
@@ -616,7 +626,7 @@
     const refundAction = canRefund ? '<button type="button" data-member-detail-action="refund" data-owner-only>' + icon('refund') + '<span>استرجاع الاشتراك</span></button>' : '';
     const overview = document.createElement('div');
     overview.className = 'member-details-overview';
-    overview.innerHTML = `<div class="member-details-stats" aria-label="ملخص الاشتراك">
+    overview.innerHTML = `<div class="member-details-overview-heading"><span>ملخص العضوية</span><small>الحالة والمدة والتجميد</small></div><div class="member-details-stats" aria-label="ملخص الاشتراك">
       <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('subscription')}</span><span class="member-detail-stat-copy"><small>الاشتراك</small><strong>${escapeHtml(planLabels[subscription.plan] || subscription.plan || '—')}</strong><em>${escapeHtml(typeLabels[subscription.type] || subscription.type || '—')}</em></span></article>
       <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('calendar')}</span><span class="member-detail-stat-copy"><small>تاريخ الانتهاء</small><strong class="member-ltr-value">${escapeHtml(dateText(subscription.effectiveEndDate || subscription.endDate))}</strong><em>${days === null ? '—' : days >= 0 ? `${days} يوم متبقي` : `منتهية منذ ${Math.abs(days)} يوم`}</em></span></article>
       <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('freeze')}</span><span class="member-detail-stat-copy"><small>التجميد</small><strong class="member-ltr-value">${freezeCount}/${freezeLimit}</strong><em>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات</em></span></article>
@@ -656,13 +666,18 @@
     overview.append(renderMemberScope(member, subscription));
   }
 
-  function renderStorePurchases(purchases, loading = false) {
+  function renderStorePurchases(purchases, loading = false, state = 'ready') {
     content.querySelector('[data-member-store-purchases]')?.remove();
     const section = document.createElement('section');
     section.className = 'details-section member-store-purchases';
     section.dataset.memberStorePurchases = 'true';
     if (loading) {
       section.innerHTML = '<h4>مشتريات المتجر</h4><div class="history-empty">جاري تحميل مشتريات العضو…</div>';
+      content.append(section);
+      return;
+    }
+    if (state === 'denied') {
+      section.innerHTML = '<h4>مشتريات المتجر</h4><div class="history-empty">لا تتوفر لديك صلاحية عرض مشتريات هذا العضو.</div>';
       content.append(section);
       return;
     }
@@ -675,7 +690,11 @@
     const canView = window.topGymAuth?.isOwner?.() === true
       || (window.topGymAuth?.hasPermission?.('members.read') === true
         && window.topGymAuth?.hasPermission?.('store.sales.view') === true);
-    if (!canView || !member?.id || !window.topGymApi?.get) return;
+    if (!canView) {
+      renderStorePurchases([], false, 'denied');
+      return;
+    }
+    if (!member?.id || !window.topGymApi?.get) return;
     const requestId = ++storePurchasesRequestId;
     renderStorePurchases([], true);
     try {
