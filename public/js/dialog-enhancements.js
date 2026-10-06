@@ -22,6 +22,7 @@
         platformActionDialog: 'lg',
         platformRegistrationCredentialsDialog: 'lg',
         detailsDialog: 'lg',
+        membersFiltersDialog: 'sm',
         trainerClientDetailsDialog: 'lg',
         trainerTimelineDialog: 'lg',
         coachingProfileDialog: 'lg',
@@ -40,7 +41,8 @@
         'platformActionDialog',
         'platformRegistrationCredentialsDialog',
         'pricingDialog',
-        'membershipTypesDialog'
+        'membershipTypesDialog',
+        'membersFiltersDialog'
     ]);
 
     function hydrateDialog(dialog) {
