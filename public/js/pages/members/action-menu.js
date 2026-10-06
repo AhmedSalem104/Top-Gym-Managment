@@ -106,6 +106,9 @@
                     actions.replaceChildren(...visible);
                     visible.forEach((button) => {
                         const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
+                        const mobileLabel = mobileCard
+                            ? ({ details: 'عرض', renew: 'تجديد' }[button.dataset.action] || label)
+                            : label;
                         button.type = 'button';
                         button.classList.add('table-action-visible');
                         button.setAttribute('aria-label', label);
@@ -113,7 +116,7 @@
                         // Desktop stays icon-only; mobile cards show text labels so actions
                         // remain discoverable and easy to tap.
                         button.innerHTML = mobileCard
-                            ? `${actionIcon(button.dataset.action)}<span class="table-action-label">${escapeHtml(label)}</span>`
+                            ? `${actionIcon(button.dataset.action)}<span class="table-action-label">${escapeHtml(mobileLabel)}</span>`
                             : actionIcon(button.dataset.action);
                     });
                     if (!advanced.length) return;

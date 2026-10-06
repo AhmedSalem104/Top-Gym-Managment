@@ -10,9 +10,11 @@
   overflow: visible;
 }
 
-.action-icon {
+.action-icon,
+.action-menu-icon {
   width: 17px;
   height: 17px;
+  flex-basis: 17px;
 }
 
 .alert-status {

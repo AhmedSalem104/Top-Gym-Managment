@@ -991,6 +991,16 @@ body #membersSection .members-toolbar-copy { display: none; }
 .members-mobile-details dd small { color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-regular); }
 .members-mobile-details dd .has-debt { color: var(--color-danger); font-weight: var(--weight-semibold); }
 .members-mobile-details dd .is-settled { color: var(--color-success); }
+.members-mobile-details .members-mobile-balance {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-secondary);
+  padding-top: var(--space-2);
+}
+.members-mobile-details .members-mobile-balance dd { display: block; }
 
 .members-mobile-actions .table-actions {
   display: flex;
@@ -1004,7 +1014,7 @@ body #membersSection .members-toolbar-copy { display: none; }
   min-height: 44px;
   flex: 1 1 0;
   align-items: center;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   gap: var(--space-2);
   padding-inline: var(--space-2);
@@ -1014,11 +1024,12 @@ body #membersSection .members-toolbar-copy { display: none; }
 .members-mobile-actions .table-action-label {
   max-width: 100%;
   overflow: hidden;
-  font-size: 10px;
-  line-height: 1.15;
+  font-size: var(--font-xs);
+  line-height: 1.25;
   text-overflow: ellipsis;
 }
-.members-mobile-actions .table-action-visible .action-icon { width: 16px; height: 16px; flex: 0 0 16px; }
+.members-mobile-actions .table-action-visible .action-icon,
+.members-mobile-actions .action-menu-toggle .action-menu-icon { width: 16px; height: 16px; flex: 0 0 16px; }
 .members-mobile-actions .action-menu { flex: 0 0 44px; }
 .members-mobile-actions .action-menu-toggle { width: 44px; min-width: 44px; min-height: 44px; }
 

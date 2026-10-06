@@ -691,6 +691,10 @@
             const expiryDetail = sub
                 ? sub.status === 'expired' ? `منتهية منذ ${Math.abs(days)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${days} يوم متبقي`
                 : '—';
+            const amountRemaining = Number(sub?.amountRemaining || 0);
+            const balance = sub
+                ? `<div class="members-mobile-balance"><dt>المتبقي من الحساب</dt><dd class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}">${money(amountRemaining)}</dd></div>`
+                : '';
             const membershipCode = memberPortalCodeMarkup(member);
             return `<article class="members-mobile-card" data-member-id="${escapeHtml(member.id)}">
                 <div class="members-mobile-card-head">
@@ -701,20 +705,21 @@
                 <dl class="members-mobile-details">
                     <div><dt>الاشتراك</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
                     <div><dt>الانتهاء</dt><dd>${sub ? `${escapeHtml(formatDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
+                    ${balance}
                 </dl>
                 <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
             </article>`;
         }
         function memberTableRow(member) {
             const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td>${memberActionsMarkup(member)}</td></tr>`;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
             const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td>${memberActionsMarkup(member)}</td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
         }
         function renderMembersSummary() {
             const section = document.getElementById('membersSection');
