@@ -215,8 +215,6 @@
     }
 
     function openDayPassRecords() {
-        const tab = document.querySelector('[data-page-tab="attendance"]');
-        if (tab && !tab.classList.contains('active')) tab.click();
         showDayPassDialog({ reset: false });
         window.setTimeout(() => $('dayPassDialog')?.querySelector('.day-pass-list-head')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 160);
     }

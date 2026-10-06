@@ -697,15 +697,17 @@ test('attendance log uses readable labeled mobile records without changing the d
 });
 
 test('day-pass records stay inside their dialog and are not mounted in attendance', async ({ page }) => {
-    await installLocalMemberApi(page);
+    await page.route('**/?members-popup-contract*', (route) => route.fulfill({ path: 'public/index.html' }));
     await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     const state = await page.evaluate(() => ({
         injectedAttendanceRecords: Boolean(document.getElementById('dayPassRecordsSection')),
         dayPassTableInDialog: document.querySelector('#dayPassDialog #dayPassPanel .day-pass-table-wrap') !== null,
+        dayPassDialogInsideAttendance: document.getElementById('attendanceSection')?.contains(document.getElementById('dayPassDialog')) === true,
         attendanceContainsOldHeading: [...document.querySelectorAll('#attendanceSection h1,#attendanceSection h2,#attendanceSection h3,#attendanceSection h4')].some((heading) => heading.textContent.trim() === 'سجل حصص اليوم' && heading.getClientRects().length > 0),
         dayPassPanelParent: document.getElementById('dayPassPanel')?.parentElement?.id || ''
     }));
     expect(state.injectedAttendanceRecords).toBe(false);
+    expect(state.dayPassDialogInsideAttendance).toBe(false);
     expect(state.dayPassTableInDialog).toBe(true);
     expect(state.attendanceContainsOldHeading).toBe(false);
     expect(state.dayPassPanelParent).toBe('dayPassDialog');
