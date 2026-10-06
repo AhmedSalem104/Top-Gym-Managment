@@ -2050,3 +2050,178 @@
   body #detailsDialog .member-details-stats { grid-template-columns: minmax(0, 1fr); }
   body #detailsDialog .member-details-stats .member-detail-stat { min-height: 76px; }
 }
+
+/* Mobile member profile follows the approved tabbed detail composition. */
+@media (max-width: 767px) {
+  body #detailsDialog > .dialog-body {
+    min-height: 0;
+    max-height: none;
+    flex: 1 1 auto;
+    gap: var(--space-3);
+  }
+  #detailsDialog #detailsContent { min-width: 0; gap: var(--space-3); }
+  body #detailsDialog > .dialog-body > .member-details-head {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 42px auto;
+  }
+  #detailsDialog .member-details-tabs {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+    min-width: 0;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-page);
+    padding: 0 0 var(--space-1);
+  }
+  #detailsDialog .member-details-tab {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    padding: var(--space-1);
+    font: inherit;
+    font-size: clamp(11px, 3.1vw, var(--font-xs));
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    touch-action: manipulation;
+  }
+  #detailsDialog .member-details-tab[aria-selected="true"] {
+    background: var(--color-primary-soft);
+    color: var(--color-primary);
+  }
+  #detailsDialog .member-details-tab[aria-selected="true"]::after {
+    position: absolute;
+    inset-inline: var(--space-2);
+    inset-block-end: 0;
+    height: 2px;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
+    content: "";
+  }
+  #detailsDialog .member-details-tab:focus-visible,
+  #detailsDialog .member-details-tab-panel:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+  #detailsDialog .member-details-tab-panel {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: var(--space-3);
+    padding-block: var(--space-1) var(--space-2);
+  }
+  #detailsDialog .member-details-tab-panel[hidden] { display: none; }
+  #detailsDialog .member-details-tab-panel > .details-section,
+  #detailsDialog .member-details-tab-panel > .member-details-overview { min-width: 0; }
+  body #detailsDialog > .dialog-body > .member-details-head::before {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    color: var(--color-text);
+    content: "تفاصيل المشترك";
+    font-size: var(--font-md);
+    font-weight: var(--weight-bold);
+    text-align: center;
+  }
+  body #detailsDialog .member-details-head-content { grid-column: 1; grid-row: 2; }
+  body #detailsDialog .member-details-head > #detailsClose { grid-column: 1; grid-row: 1; justify-self: start; z-index: 1; }
+  #detailsDialog .member-details-head-content,
+  #detailsDialog .member-profile-identity { width: 100%; justify-content: flex-start; }
+  #detailsDialog .member-profile-identity { direction: ltr; }
+  #detailsDialog .member-profile-copy { min-width: 0; flex: 1 1 auto; direction: rtl; text-align: right; }
+  #detailsDialog .member-profile-code { max-width: 100%; overflow-wrap: anywhere; color: var(--color-primary); font-family: var(--font-latin); font-size: var(--font-xs); }
+  #detailsDialog .member-profile-badge[data-membership-status="active"] { border-color: var(--success-border); background: var(--success-soft); color: var(--success-text); }
+  #detailsDialog .member-profile-badge[data-membership-status="expiring_soon"] { border-color: var(--warning-border); background: var(--warning-soft); color: var(--warning-text); }
+  #detailsDialog .member-profile-badge[data-membership-status="frozen"] { border-color: var(--info-border); background: var(--info-soft); color: var(--info-text); }
+  #detailsDialog .member-profile-badge[data-membership-status="expired"],
+  #detailsDialog .member-profile-badge[data-membership-status="cancelled"] { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
+  #detailsDialog .member-profile-registration { display: none; }
+  #detailsDialog .member-details-overview > .member-details-stats > .member-detail-stat:nth-child(-n + 2) { display: none; }
+  #detailsDialog .member-details-overview > .member-details-stats { grid-template-columns: minmax(0, 1fr); }
+  #detailsDialog .member-details-overview > .member-details-stats > .member-detail-stat:nth-child(4) { display: none; }
+  #detailsDialog .member-details-overview-financial {
+    display: grid;
+    min-width: 0;
+    gap: var(--space-2);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    padding: var(--space-3);
+  }
+  #detailsDialog .member-details-overview-financial > h4 { margin: 0; color: var(--color-text); font-size: var(--font-sm); }
+  #detailsDialog .member-details-overview-financial-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  #detailsDialog .member-details-overview-financial-card {
+    display: grid;
+    min-width: 0;
+    gap: var(--space-1);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    padding: var(--space-2);
+  }
+  #detailsDialog .member-details-overview-financial-card span { color: var(--color-text-muted); font-size: 10px; }
+  #detailsDialog .member-details-overview-financial-card strong { color: var(--color-text); font-size: clamp(11px, 3.2vw, var(--font-sm)); overflow-wrap: anywhere; }
+  #detailsDialog .member-details-overview-financial-card.paid strong { color: var(--success-text); }
+  #detailsDialog .member-details-overview-financial-card.remaining strong { color: var(--danger-text); }
+  #detailsDialog .current-membership-section { gap: var(--space-3); border-color: var(--border-primary); background: var(--bg-card); padding: var(--space-3); }
+  #detailsDialog .current-membership-head { align-items: center; flex-direction: row; gap: var(--space-2); }
+  #detailsDialog .current-membership-head p { display: none; }
+  #detailsDialog .current-membership-head > .badge { align-self: center; }
+  #detailsDialog .current-membership-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+  #detailsDialog .current-membership-facts > div { border-color: var(--border-secondary); background: var(--bg-surface); padding: var(--space-2); }
+  #detailsDialog .current-membership-facts strong { font-size: clamp(11px, 3.2vw, var(--font-sm)); }
+  #detailsDialog .current-membership-facts small { font-size: 10px; }
+  #detailsDialog .member-details-tab-panel .member-details-actions {
+    border-top: 1px solid var(--color-border-soft);
+    padding-top: 0;
+  }
+  #detailsDialog .member-details-mobile-footer {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    width: 100%;
+    border-top: 1px solid var(--color-border-soft);
+    background: var(--color-page);
+    padding: var(--space-2) var(--space-3) max(var(--space-2), env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 20px color-mix(in srgb, var(--color-page) 72%, transparent);
+  }
+  #detailsDialog .member-details-mobile-footer .member-details-actions { display: grid; gap: 0; border: 0; }
+  #detailsDialog .member-details-actions h4 { display: none; }
+  #detailsDialog .member-details-action-grid {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  #detailsDialog .member-details-action-grid > .member-details-action-renew { grid-column: 2; grid-row: 1; min-height: 46px; }
+  #detailsDialog .member-details-action-grid > [data-member-detail-action="view"] { grid-column: 1; grid-row: 1; min-height: 46px; }
+  #detailsDialog .member-details-action-grid > .member-details-more { grid-column: 3; grid-row: 1; }
+  #detailsDialog .member-details-action-grid > .member-details-more > .member-details-action-more { width: 44px; min-height: 46px; }
+  #detailsDialog .member-details-action-grid > [data-member-detail-action="print"],
+  #detailsDialog .member-details-action-grid > [data-member-detail-action="freeze"],
+  #detailsDialog .member-details-action-grid > [data-member-detail-action="resume"] { display: none; }
+  #detailsDialog .member-details-more-menu .member-details-action { min-height: 42px; justify-content: flex-start; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-soft); padding-inline: var(--space-3); font-size: var(--font-xs); text-align: start; }
+  #detailsDialog .member-details-tab-panel[data-member-details-panel="attendance"] .member-detail-attendance { display: grid; gap: var(--space-3); }
+  #detailsDialog .member-detail-attendance > h4 { margin: 0; color: var(--color-text); font-size: var(--font-md); }
+  #detailsDialog .member-detail-attendance-state { display: flex; min-height: 48px; align-items: center; gap: var(--space-2); color: var(--color-text-soft); }
+  #detailsDialog .member-detail-attendance-indicator { width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: var(--color-text-muted); }
+  #detailsDialog .member-detail-attendance-state.is-inside .member-detail-attendance-indicator { background: var(--color-success); }
+  #detailsDialog .member-detail-attendance-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  #detailsDialog .member-detail-attendance-times > div { display: grid; min-width: 0; gap: var(--space-1); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-3); }
+  #detailsDialog .member-detail-attendance-times span,
+  #detailsDialog .member-detail-attendance-note { color: var(--color-text-muted); font-size: var(--font-xs); }
+  #detailsDialog .member-detail-attendance-times strong { color: var(--color-text); font-size: var(--font-sm); font-variant-numeric: tabular-nums; }
+  #detailsDialog .member-detail-attendance-note { margin: 0; line-height: 1.5; }
+}
+
+@media (max-width: 359px) {
+  #detailsDialog .member-details-overview > .member-details-stats { grid-template-columns: minmax(0, 1fr); }
+  #detailsDialog .current-membership-facts { grid-template-columns: minmax(0, 1fr); }
+  #detailsDialog .member-details-overview-financial-grid { grid-template-columns: minmax(0, 1fr); }
+}

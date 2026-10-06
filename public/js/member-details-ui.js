@@ -48,6 +48,15 @@
   let moreMenuOutsideHandler = null;
   let moreMenuKeyHandler = null;
   let moreMenuRepositionHandler = null;
+  let mobileDetailsNodes = null;
+  let mobileDetailsObserver = null;
+  let mobileAttendancePanel = null;
+  let mobileDetailsBadgeOriginal = null;
+  let mobileProfileCodeNode = null;
+  let mobileDetailsData = null;
+  let mobileDetailsMedia = window.matchMedia?.('(max-width: 767px)') || null;
+  let mobileMovedElements = [];
+  let mobileDetailsMember = null;
 
   function hasRequiredPermissions(value) {
     const required = String(value || '').split(',').map((item) => item.trim()).filter(Boolean);
@@ -274,6 +283,266 @@
     activeMoreMenu.dataset.placement = openBelow ? 'bottom' : 'top';
   }
 
+  function mobileDetailsCategory(node) {
+    if (!(node instanceof Element)) return 'overview';
+    if (node.querySelector('.event-list')) return 'account';
+    if (node.matches('[data-member-training-panel]')) return 'account';
+    if (node.matches('.payment-history-section, .financial-summary, [data-member-store-purchases], .membership-portal-code-card')) return 'account';
+    if (node.matches('.details-summary')) return 'account';
+    if (node.matches('.member-details-overview, .member-scope-details, .current-membership-section')) return 'overview';
+    const heading = node.querySelector(':scope > h4')?.textContent?.trim() || '';
+    if (/الاشتراك|التجميد/.test(heading)) return 'subscriptions';
+    if (/الحساب|الدفع|الإيصال|مشتريات/.test(heading)) return 'account';
+    return 'overview';
+  }
+
+  function updateMobileProfileBadge(member) {
+    const profileBadge = dialog.querySelector('#detailsMemberBadge');
+    if (!profileBadge) return;
+    if (!mobileDetailsBadgeOriginal) {
+      mobileDetailsBadgeOriginal = { text: profileBadge.textContent, status: profileBadge.dataset.membershipStatus || '' };
+    }
+    const status = String(mobileDetailsData?.currentMembership?.status || member?.membership?.status || '').toLowerCase();
+    const labels = { active: 'نشط', expiring_soon: 'تنتهي قريبًا', frozen: 'مجمّدة', expired: 'منتهية', cancelled: 'ملغاة' };
+    if (labels[status]) {
+      profileBadge.textContent = labels[status];
+      profileBadge.dataset.membershipStatus = status;
+    }
+    const copy = dialog.querySelector('.member-profile-copy');
+    const maskedCode = String(member?.membershipCode?.maskedCode || '').trim();
+    if (copy && maskedCode) {
+      if (!mobileProfileCodeNode) {
+        mobileProfileCodeNode = document.createElement('small');
+        mobileProfileCodeNode.className = 'member-profile-code';
+        mobileProfileCodeNode.dir = 'ltr';
+        mobileProfileCodeNode.setAttribute('aria-label', 'كود العضوية');
+      }
+      mobileProfileCodeNode.textContent = maskedCode;
+      copy.append(mobileProfileCodeNode);
+    }
+  }
+
+  function formatAttendanceTime(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  function createAttendancePanel(member) {
+    const attendance = member?.attendance || {};
+    const checkedIn = Boolean(attendance.checkInAt);
+    const checkedOut = Boolean(attendance.checkOutAt);
+    const panel = document.createElement('section');
+    panel.className = 'member-detail-attendance details-section';
+    panel.dataset.mobileAttendancePanel = 'true';
+    panel.innerHTML = `<h4>حضور اليوم</h4><div class="member-detail-attendance-state${checkedIn && !checkedOut ? ' is-inside' : ''}"><span class="member-detail-attendance-indicator" aria-hidden="true"></span><strong>${checkedIn ? (checkedOut ? 'تم تسجيل الانصراف اليوم' : 'العضو داخل الجيم الآن') : 'لا يوجد حضور مسجل اليوم'}</strong></div><div class="member-detail-attendance-times"><div><span>وقت الدخول</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkInAt))}</strong></div><div><span>وقت الانصراف</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkOutAt))}</strong></div></div>${checkedIn ? '' : '<p class="member-detail-attendance-note">ستظهر حالة الدخول والانصراف هنا بعد تسجيل حركة اليوم.</p>'}`;
+    return panel;
+  }
+
+  function selectMobileDetailsTab(tabId, { focus = false } = {}) {
+    const tab = content.querySelector(`[data-member-details-tab="${tabId}"]`);
+    if (!tab) return;
+    content.querySelectorAll('[data-member-details-tab]').forEach((item) => {
+      const selected = item === tab;
+      item.setAttribute('aria-selected', String(selected));
+      item.tabIndex = selected ? 0 : -1;
+      if (selected) item.dataset.state = 'active'; else delete item.dataset.state;
+    });
+    content.querySelectorAll('[data-member-details-panel]').forEach((panel) => {
+      panel.hidden = panel.dataset.memberDetailsPanel !== tabId;
+    });
+    if (focus) tab.focus({ preventScroll: true });
+  }
+
+  function placeMobileDetailsNode(node) {
+    if (!(node instanceof Element) || node.matches('[data-member-details-tabs], [data-member-details-panel], [data-member-details-footer]')) return;
+    if (!mobileDetailsNodes.includes(node)) mobileDetailsNodes.push(node);
+    if (node.matches('.member-details-actions')) {
+      moveMobileActionNode(node);
+      return;
+    }
+    content.querySelector(`[data-member-details-panel="${mobileDetailsCategory(node)}"]`)?.append(node);
+    moveMobileFinancialSummary();
+  }
+
+  function moveMobileFinancialSummary() {
+    const overviewPanel = content.querySelector('[data-member-details-panel="overview"]');
+    if (!overviewPanel || overviewPanel.querySelector('.member-details-overview-financial')) return;
+    const financialSummary = mobileDetailsData?.financialSummary || {};
+    const subscription = resolveSubscription(mobileDetailsMember, mobileDetailsData);
+    const values = [
+      { label: 'إجمالي المستحق', value: financialSummary.totalDue ?? subscription?.amountDue, tone: '' },
+      { label: 'إجمالي المدفوع', value: financialSummary.totalPaid ?? subscription?.amountPaid, tone: 'paid' },
+      { label: 'إجمالي المتبقي', value: financialSummary.totalRemaining ?? subscription?.amountRemaining, tone: 'remaining' }
+    ].filter((item) => item.value !== undefined && item.value !== null && item.value !== '');
+    if (!values.length) return;
+    let summarySection = overviewPanel.querySelector('.member-details-overview-financial');
+    summarySection = document.createElement('section');
+    summarySection.className = 'member-details-overview-financial';
+    summarySection.setAttribute('aria-label', 'الرصيد المالي');
+    summarySection.innerHTML = '<h4>الرصيد المالي</h4><div class="member-details-overview-financial-grid"></div>';
+    const summaryGrid = summarySection.querySelector('.member-details-overview-financial-grid');
+    values.forEach(({ label, value, tone }) => {
+      const card = document.createElement('div');
+      card.className = `member-details-overview-financial-card${tone ? ` ${tone}` : ''}`;
+      card.innerHTML = `<span>${label}</span><strong dir="ltr">${escapeHtml(money(value))}</strong>`;
+      summaryGrid.append(card);
+    });
+    const overview = overviewPanel.querySelector('.member-details-overview') || overviewPanel;
+    const stats = overview.querySelector('.member-details-stats');
+    overview.insertBefore(summarySection, stats || null);
+  }
+
+  function rememberMobileMove(node, destination) {
+    const parent = node.parentNode;
+    if (!parent) return;
+    mobileMovedElements.push({ node, parent, nextSibling: node.nextSibling });
+    destination.append(node);
+  }
+
+  function moveMobileActionNode(actions) {
+    const footer = dialog.querySelector('[data-member-details-footer]');
+    if (!footer) return;
+    const menu = actions.querySelector('.member-details-more-menu');
+    actions.querySelectorAll('[data-member-detail-action="print"], [data-member-detail-action="freeze"], [data-member-detail-action="resume"]').forEach((action) => {
+      if (menu) rememberMobileMove(action, menu);
+    });
+    rememberMobileMove(actions, footer);
+  }
+
+  function enableMobileDetails(member) {
+    if (mobileDetailsNodes || !content.isConnected) return;
+    mobileDetailsNodes = [...content.children];
+    updateMobileProfileBadge(member);
+    const tabs = [['overview', 'نظرة عامة'], ['subscriptions', 'الاشتراكات'], ['attendance', 'الحضور'], ['account', 'الحساب']];
+    const tabList = document.createElement('div');
+    tabList.className = 'member-details-tabs';
+    tabList.dataset.memberDetailsTabs = 'true';
+    tabList.setAttribute('role', 'tablist');
+    tabList.setAttribute('aria-label', 'أقسام تفاصيل المشترك');
+    const panels = new Map();
+    for (const [id, label] of tabs) {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'member-details-tab';
+      tab.dataset.memberDetailsTab = id;
+      tab.id = `memberDetailsTab-${id}`;
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-controls', `memberDetailsPanel-${id}`);
+      tab.setAttribute('aria-selected', String(id === 'overview'));
+      tab.tabIndex = id === 'overview' ? 0 : -1;
+      tab.textContent = label;
+      tabList.append(tab);
+
+      const panel = document.createElement('section');
+      panel.className = 'member-details-tab-panel';
+      panel.dataset.memberDetailsPanel = id;
+      panel.id = `memberDetailsPanel-${id}`;
+      panel.setAttribute('role', 'tabpanel');
+      panel.setAttribute('aria-labelledby', tab.id);
+      panel.tabIndex = 0;
+      panel.hidden = id !== 'overview';
+      panels.set(id, panel);
+    }
+    mobileAttendancePanel = createAttendancePanel(member);
+    panels.get('attendance').append(mobileAttendancePanel);
+    const footer = document.createElement('div');
+    footer.className = 'member-details-mobile-footer';
+    footer.dataset.memberDetailsFooter = 'true';
+    content.append(tabList, ...panels.values());
+    dialog.append(footer);
+    mobileDetailsNodes.forEach(placeMobileDetailsNode);
+    const overviewPanel = content.querySelector('[data-member-details-panel="overview"]');
+    const currentMembership = overviewPanel?.querySelector('.current-membership-section');
+    if (currentMembership) overviewPanel.prepend(currentMembership);
+    moveMobileFinancialSummary();
+    const scopeDetails = overviewPanel?.querySelector('.member-scope-details');
+    const subscriptionsPanel = content.querySelector('[data-member-details-panel="subscriptions"]');
+    if (scopeDetails && subscriptionsPanel) rememberMobileMove(scopeDetails, subscriptionsPanel);
+    const nestedActions = content.querySelector('.member-details-overview .member-details-actions');
+    if (nestedActions) moveMobileActionNode(nestedActions);
+    content.addEventListener('click', onMobileDetailsClick);
+    content.addEventListener('keydown', onMobileDetailsKeydown);
+    footer.addEventListener('click', onMobileFooterClick);
+    mobileDetailsObserver = new MutationObserver((records) => {
+      for (const record of records) record.addedNodes.forEach(placeMobileDetailsNode);
+    });
+    mobileDetailsObserver.observe(content, { childList: true });
+    selectMobileDetailsTab('overview');
+  }
+
+  function disableMobileDetails() {
+    if (!mobileDetailsNodes) return;
+    mobileDetailsObserver?.disconnect();
+    mobileDetailsObserver = null;
+    content.removeEventListener('click', onMobileDetailsClick);
+    content.removeEventListener('keydown', onMobileDetailsKeydown);
+    dialog.querySelector('[data-member-details-footer]')?.removeEventListener('click', onMobileFooterClick);
+    for (const moved of mobileMovedElements.reverse()) {
+      if (!moved.parent?.isConnected) continue;
+      if (moved.nextSibling?.parentNode === moved.parent) moved.parent.insertBefore(moved.node, moved.nextSibling);
+      else moved.parent.append(moved.node);
+    }
+    mobileMovedElements = [];
+    const restored = mobileDetailsNodes.filter((node) => node?.isConnected && !node.matches?.('[data-mobile-attendance-panel]'));
+    content.replaceChildren(...restored);
+    dialog.querySelector('[data-member-details-footer]')?.remove();
+    mobileDetailsNodes = null;
+    mobileAttendancePanel = null;
+    mobileDetailsData = null;
+    mobileProfileCodeNode?.remove();
+    mobileProfileCodeNode = null;
+    if (mobileDetailsBadgeOriginal) {
+      const profileBadge = dialog.querySelector('#detailsMemberBadge');
+      if (profileBadge) {
+        profileBadge.textContent = mobileDetailsBadgeOriginal.text;
+        if (mobileDetailsBadgeOriginal.status) profileBadge.dataset.membershipStatus = mobileDetailsBadgeOriginal.status;
+        else delete profileBadge.dataset.membershipStatus;
+      }
+      mobileDetailsBadgeOriginal = null;
+    }
+  }
+
+  function onMobileDetailsClick(event) {
+    const tab = event.target.closest('[data-member-details-tab]');
+    if (tab) selectMobileDetailsTab(tab.dataset.memberDetailsTab);
+  }
+
+  function onMobileFooterClick(event) {
+    const button = event.target.closest('[data-member-detail-action]');
+    if (!button || !hasRequiredPermissions(button.dataset.requiredPermission)) return;
+    const action = button.dataset.memberDetailAction;
+    if (action === 'more') {
+      if (activeMoreMenu) closeMoreMenu({ restoreFocus: true }); else openMoreMenu(button);
+      return;
+    }
+    closeMoreMenu();
+    runExistingAction(action);
+  }
+
+  function onMobileDetailsKeydown(event) {
+    const tab = event.target.closest('[data-member-details-tab]');
+    if (!tab || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = [...content.querySelectorAll('[data-member-details-tab]')];
+    const index = tabs.indexOf(tab);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+      : (index + (event.key === 'ArrowLeft' ? 1 : -1) + tabs.length) % tabs.length;
+    selectMobileDetailsTab(tabs[next]?.dataset.memberDetailsTab, { focus: true });
+  }
+
+  function syncMobileDetailsMode(member) {
+    if (member) {
+      mobileDetailsMember = member;
+      updateMobileProfileBadge(member);
+    }
+    if (!dialog.open) return;
+    if (mobileDetailsMedia?.matches) {
+      enableMobileDetails(member);
+      moveMobileFinancialSummary();
+    } else disableMobileDetails();
+  }
+
   function openMoreMenu(trigger) {
     closeMoreMenu();
     const menu = document.getElementById('memberDetailsMoreMenu');
@@ -439,14 +708,18 @@
     runExistingAction(action);
   });
 
-  dialog.addEventListener('close', () => closeMoreMenu());
+  dialog.addEventListener('close', () => { closeMoreMenu(); disableMobileDetails(); mobileDetailsMember = null; });
+
+  mobileDetailsMedia?.addEventListener?.('change', () => syncMobileDetailsMode(mobileDetailsMember));
 
   window.addEventListener('topgym:member-details-opened', (event) => {
     const member = event.detail?.details?.member || event.detail?.member;
     const details = event.detail?.details;
     if (!member || !details || !dialog.open) return;
+    mobileDetailsData = details;
     updateHeader(member, details);
     renderOverview(member, details);
     void loadStorePurchases(member);
+    window.requestAnimationFrame(() => syncMobileDetailsMode({ ...member, ...(details.member || {}), attendance: member.attendance || details.member?.attendance }));
   });
 })();

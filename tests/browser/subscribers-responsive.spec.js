@@ -6,6 +6,7 @@ const member = {
     fullName: 'أحمد منير الشاذلي',
     phone: '+201014978491',
     phoneCountry: 'EG',
+    membershipCode: { maskedCode: 'TG-NV27-********' },
     registrationDate: '2026-09-01',
     membership: {
         plan: 'gym',
@@ -108,12 +109,18 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-mobile-card')).toHaveCount(4);
     const addButton = page.locator('#addMemberButton');
     await expect(addButton).toBeVisible();
-    const addButtonBeforeScroll = await addButton.boundingBox();
+    await expect(addButton).toContainText('إضافة مشترك');
+    await addButton.hover();
+    await expect(addButton).toBeVisible();
+    const addButtonAfterHover = await addButton.boundingBox();
+    expect(await addButton.evaluate((button) => getComputedStyle(button).transform)).toBe('none');
+    expect(addButtonAfterHover.width).toBeGreaterThan(120);
+    expect(addButtonAfterHover.height).toBe(52);
     await page.evaluate(() => window.scrollTo(0, 420));
     await expect(addButton).toBeVisible();
     const addButtonAfterScroll = await addButton.boundingBox();
-    expect(Math.abs(addButtonAfterScroll.x - addButtonBeforeScroll.x)).toBeLessThanOrEqual(1);
-    expect(Math.abs(addButtonAfterScroll.y - addButtonBeforeScroll.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(addButtonAfterScroll.x - addButtonAfterHover.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(addButtonAfterScroll.y - addButtonAfterHover.y)).toBeLessThanOrEqual(1);
     await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page.locator('.members-mobile-card').first().locator('.members-mobile-details > div')).toHaveCount(3);
     await expect(page.locator('.members-mobile-card').first().locator('.members-mobile-balance')).toContainText('١٥٠');
@@ -142,12 +149,12 @@ test('subscribers use the table on desktop and a single responsive card list on 
     });
     const lightMobileActionGeometry = await captureMobileActionGeometry();
     const lightAddButtonGeometry = await captureAddGeometry();
-    await page.locator('#themeToggleButton').click();
+    await page.evaluate(() => window.TopGymTheme.toggle());
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     expect(await captureMobileActionGeometry()).toEqual(lightMobileActionGeometry);
     expect(await captureAddGeometry()).toEqual(lightAddButtonGeometry);
     await page.screenshot({ path: test.info().outputPath('subscribers-mobile-320-populated-dark.png'), fullPage: true });
-    await page.locator('#themeToggleButton').click();
+    await page.evaluate(() => window.TopGymTheme.toggle());
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     runtime.member = { ...member, fullName: 'اسم عربي طويل جدًا لاختبار التفاف النص دون كسر تخطيط بطاقة المشترك على الهاتف', phone: '' };
     await page.locator('#searchInput').fill('missing-phone');
@@ -166,6 +173,25 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-mobile-actions [data-action="refund"]')).toHaveCount(1);
     await page.locator('.members-mobile-actions [data-action="details"]').click();
     await expect(page.locator('#detailsDialog')).toBeVisible();
+    expect(await page.locator('#detailsDialog .member-details-head').evaluate((head) => getComputedStyle(head, '::before').content)).toContain('تفاصيل المشترك');
+    await expect(page.locator('#detailsDialog #detailsMemberBadge')).toHaveText('نشط');
+    await expect(page.locator('#detailsDialog .member-profile-code')).toHaveText('TG-NV27-********');
+    await expect(page.locator('#detailsDialog [data-member-details-tabs] [role="tab"]')).toHaveText(['نظرة عامة', 'الاشتراكات', 'الحضور', 'الحساب']);
+    await expect(page.locator('#detailsDialog [data-member-details-tab="overview"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#detailsDialog [data-member-details-footer]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-overview-financial')).toContainText('إجمالي المدفوع');
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"] .member-details-overview-financial')).toContainText('إجمالي المتبقي');
+    await expect(page.locator('#detailsDialog [data-member-details-footer] [data-member-detail-action="renew"]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-footer] [data-member-detail-action="view"]')).toBeVisible();
+    await page.locator('#detailsDialog [data-member-details-tab="subscriptions"]').click();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="subscriptions"]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="overview"]')).toBeHidden();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="subscriptions"]')).toContainText('سجل الاشتراكات والتجديدات');
+    await page.locator('#detailsDialog [data-member-details-tab="attendance"]').click();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="attendance"]')).toContainText('لا يوجد حضور مسجل اليوم');
+    await page.locator('#detailsDialog [data-member-details-tab="account"]').click();
+    await expect(page.locator('#detailsDialog [data-member-details-panel="account"]')).toContainText('السجل المالي والإيصالات');
+    await page.locator('#detailsDialog [data-member-details-tab="overview"]').click();
     const detailHeaderAlignment = await page.locator('#detailsDialog').evaluate((dialog) => {
         const headElement = dialog.querySelector('.member-details-head');
         const head = headElement.getBoundingClientRect();
@@ -182,11 +208,37 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('#detailsContent')).toContainText('سجل التجميد');
     await page.screenshot({ path: test.info().outputPath('subscribers-member-details-mobile.png'), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#detailsDialog [data-member-details-tabs]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-details-footer]')).toBeVisible();
+    await expect(page.locator('#detailsDialog [data-member-training-panel]')).toBeAttached();
     const phoneStatsColumns = await page.locator('#detailsDialog .member-details-stats').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
-    expect(phoneStatsColumns).toBe(2);
+    expect(phoneStatsColumns).toBe(1);
+    const financialColumns = await page.locator('#detailsDialog .member-details-overview-financial-grid').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    expect(financialColumns).toBe(3);
     const detailViewportWidth = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
     expect(detailViewportWidth.document).toBeLessThanOrEqual(detailViewportWidth.viewport + 1);
+    const detailsFooterBounds = await page.locator('#detailsDialog [data-member-details-footer]').evaluate((footer) => {
+        const rect = footer.getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, viewportHeight: innerHeight };
+    });
+    expect(detailsFooterBounds.bottom).toBeLessThanOrEqual(detailsFooterBounds.viewportHeight + 1);
+    expect(detailsFooterBounds.top).toBeGreaterThan(0);
     await page.screenshot({ path: test.info().outputPath('subscribers-member-details-390.png'), fullPage: true });
+    await page.evaluate(() => window.TopGymTheme.toggle());
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('body')).toHaveAttribute('data-theme', 'dark');
+    const darkDetailsColors = await page.locator('#detailsDialog').evaluate((dialog) => ({
+        dialog: getComputedStyle(dialog).backgroundColor,
+        membership: getComputedStyle(dialog.querySelector('.current-membership-section')).backgroundColor,
+        text: getComputedStyle(dialog.querySelector('.current-membership-head h4')).color
+    }));
+    expect(darkDetailsColors.dialog).toBe('rgb(7, 13, 22)');
+    expect(darkDetailsColors.membership).toBe('rgb(17, 28, 43)');
+    expect(darkDetailsColors.text).toBe('rgb(248, 250, 252)');
+    await page.screenshot({ path: test.info().outputPath('subscribers-member-details-390-dark.png'), fullPage: true });
+    await page.evaluate(() => window.TopGymTheme.toggle());
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('body')).toHaveAttribute('data-theme', 'light');
     await page.setViewportSize({ width: 320, height: 800 });
     await expect(page.locator('#detailsClose')).toBeVisible();
     await page.locator('#detailsClose').click();
@@ -294,6 +346,7 @@ test('subscribers use the table on desktop and a single responsive card list on 
     expect(darkDesktopDimensions.document).toBeLessThanOrEqual(1441);
     expect(darkDesktopDimensions.body).toBeLessThanOrEqual(1441);
     await page.screenshot({ path: test.info().outputPath('subscribers-desktop-dark.png'), fullPage: true });
+    await expect(page.locator('.members-pagination-actions [data-members-page-size]')).toBeVisible();
     await page.locator('.members-pagination-actions [data-members-page-size]').selectOption('20');
     await expect(page.locator('.members-pagination-info')).toContainText('1–20 من 165');
     await page.locator('.members-pagination-actions [data-members-page="2"]').last().click();
