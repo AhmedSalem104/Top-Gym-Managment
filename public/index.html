@@ -1000,20 +1000,35 @@
                     </section>
                 </dialog>
 
-                <section class="panel members-panel bg-white border-slate-200 rounded-xl shadow-panel" id="membersSection">
-                    <div class="panel-header bg-slate-50"><div><h3>المشتركون</h3><p id="membersCount">—</p></div><div class="header-actions"><button class="btn btn-primary btn-small rounded-lg shadow-sm" id="addMemberButton" data-required-permission="members.create" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="pricingButton" data-owner-only type="button">أسعار الباقات</button><button class="btn btn-light btn-small rounded-lg shadow-none" id="membershipTypesButton" data-owner-only type="button">أنواع العضويات</button></div></div>
+                <section class="panel members-panel" id="membersSection">
+                    <div class="panel-header members-page-header"><div class="members-page-heading"><div class="members-page-title-row"><span class="members-page-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 8v6m3-3h-6"/></svg></span><h3>المشتركون</h3></div><p class="members-page-subtitle">إدارة أعضاء النادي والاشتراكات والحضور والتجديد</p><span id="membersCount" class="visually-hidden" aria-live="polite">—</span></div><div class="header-actions"><button class="btn btn-primary btn-small" id="addMemberButton" data-required-permission="members.create" type="button">+ إضافة مشترك</button><button class="btn btn-light btn-small" id="pricingButton" data-owner-only type="button">أسعار الباقات</button><button class="btn btn-light btn-small" id="membershipTypesButton" data-owner-only type="button">أنواع العضويات</button></div></div>
                     <div class="members-toolbar" aria-label="البحث وتصفية المشتركين">
                         <div class="members-toolbar-copy"><span class="members-toolbar-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><div><strong>بحث المشتركين</strong><span>الوصول السريع إلى بيانات الاسم أو الهاتف</span></div></div>
                         <div class="members-toolbar-controls">
-                            <label class="members-search-field" for="searchInput"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">البحث بالاسم أو الهاتف</span><input id="searchInput" type="search" placeholder="ابحث بالاسم أو الهاتف" aria-label="بحث بالاسم أو الهاتف" autocomplete="off"><button class="search-clear-button" id="membersSearchClearButton" type="button" aria-label="مسح بحث المشتركين" hidden>×</button></label>
+                            <label class="members-search-field" for="searchInput"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden">البحث بالاسم أو الهاتف أو كود العضوية</span><input id="searchInput" type="search" placeholder="ابحث بالاسم أو رقم الهاتف أو كود العضوية" aria-label="بحث بالاسم أو الهاتف أو كود العضوية" autocomplete="off"><button class="search-clear-button" id="membersSearchClearButton" type="button" aria-label="مسح بحث المشتركين" hidden>×</button></label>
                             <label class="members-filter-field"><span>حالة الاشتراك</span><select id="statusFilter" aria-label="فلتر الحالة"><option value="">كل الحالات</option><option value="active">نشطة</option><option value="expiring_soon">قريبة الانتهاء</option><option value="expired">منتهية</option><option value="frozen">مجمدة</option></select></label>
                             <label class="members-filter-field"><span>ترتيب النتائج</span><select id="sortFilter" aria-label="ترتيب القائمة"><option value="expiry">الأقرب انتهاءً</option><option value="newest">الأحدث تسجيلًا</option><option value="remaining">الأعلى مبلغًا متبقيًا</option></select></label>
                         </div>
                     </div>
+                    <p class="members-mobile-results-count" aria-live="polite"></p>
                     <div class="members-list" id="membersList" data-skeleton-kind="table" data-skeleton-rows="5" data-skeleton-columns="7" data-skeleton-class="members-skeleton"><div class="loading">جاري تحميل المشتركين…</div></div>
                     <div class="members-pagination" id="membersPagination" hidden></div>
                 </section>
             </section>
+
+            <dialog id="membersFiltersDialog" class="members-filter-dialog lf-modal-shell lf-modal--sm lf-modal--structured" aria-labelledby="membersFiltersTitle" aria-describedby="membersFiltersDescription">
+                <div class="dialog-body">
+                    <header class="members-filter-dialog-header modal-header">
+                        <div><h3 id="membersFiltersTitle">فلترة المشتركين</h3><p id="membersFiltersDescription">ضيّق النتائج حسب الحالة أو ترتيب الانتهاء.</p></div>
+                        <button class="btn btn-light btn-small" id="membersFiltersClose" type="button" aria-label="إغلاق الفلاتر">إغلاق</button>
+                    </header>
+                    <div id="membersFilterDialogFields" class="members-filter-dialog-fields"></div>
+                    <footer class="members-filter-dialog-footer">
+                        <button class="btn btn-light" id="membersFiltersClear" type="button">مسح الفلاتر</button>
+                        <button class="btn btn-primary" id="membersFiltersApply" type="button">تطبيق الفلاتر</button>
+                    </footer>
+                </div>
+            </dialog>
 
             <section class="coaching-section panel" id="traineesSection" hidden aria-labelledby="traineesTitle">
                 <div class="coaching-header">
@@ -1125,7 +1140,7 @@
     </dialog>
     <dialog id="detailsDialog" class="details-dialog lf-modal-shell lf-modal--lg lf-modal--structured rounded-lg border-slate-200 shadow-lift" aria-labelledby="detailsTitle" aria-describedby="detailsSubtitle">
         <div class="dialog-body">
-            <div class="details-dialog-head member-details-head"><div class="member-details-head-content"><div class="member-profile-identity"><span class="member-profile-avatar" id="detailsAvatar" aria-hidden="true">م</span><span class="member-profile-copy"><span class="member-profile-name-row"><h3 id="detailsTitle">تفاصيل العميل</h3><span class="member-profile-badge" id="detailsMemberBadge">عضو</span></span><p id="detailsSubtitle" class="member-profile-phone" dir="ltr"></p><small id="detailsRegistration" class="member-profile-registration"></small></span></div></div><button class="btn btn-light btn-small" id="detailsClose" type="button">إغلاق</button></div>
+            <div class="details-dialog-head member-details-head"><div class="member-details-head-content"><div class="member-profile-identity"><span class="member-profile-avatar" id="detailsAvatar" aria-hidden="true">م</span><span class="member-profile-copy"><span class="member-profile-name-row"><h3 id="detailsTitle">تفاصيل العميل</h3><span class="member-profile-badge" id="detailsMemberBadge">عضو</span></span><p id="detailsSubtitle" class="member-profile-phone" dir="ltr"></p><small id="detailsRegistration" class="member-profile-registration"></small></span></div></div><button class="btn btn-light btn-small dialog-close" id="detailsClose" data-dialog-close type="button" aria-label="إغلاق تفاصيل العضو">إغلاق</button></div>
             <div class="member-expiry-banner" id="detailsExpiryBanner" hidden><span class="member-expiry-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><strong id="detailsExpiryTitle">قريبة الانتهاء</strong><small id="detailsExpiryText">ينتهي الاشتراك قريبًا</small></span></div>
             <div id="detailsContent"><div class="loading">جاري تحميل التفاصيل…</div></div>
         </div>

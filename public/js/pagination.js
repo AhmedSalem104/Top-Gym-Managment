@@ -67,7 +67,7 @@
                 const pageSize = Math.max(1, Number(data?.pageSize || getState()?.membersPageSize || 5));
                 const totalPages = Math.max(0, Number(data?.totalPages ?? data?.pages ?? (total ? Math.ceil(total / pageSize) : 0)));
                 const currentPage = Number(data?.page || 1);
-                const targets = totalPages <= 7
+                const targets = totalPages <= 6
                     ? Array.from({ length: totalPages }, (_, index) => index + 1)
                     : currentPage <= 3
                         ? [1, 2, 3, 4, 5, 'ellipsis', totalPages]

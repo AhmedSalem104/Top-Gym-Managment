@@ -687,14 +687,10 @@
                 : '<span class="table-member-phone is-missing">لا يوجد رقم هاتف</span>';
             const membershipStatus = sub?.status || 'expired';
             const status = sub ? memberStatusBadge(membershipStatus) : memberStatusBadge('expired', 'بدون اشتراك');
-            const freezeLimit = Number(sub?.freezeLimit || FREEZE_LIMIT);
-            const freezeCount = Number(sub?.freezeCount || 0);
             const days = Number(sub?.daysRemaining || 0);
             const expiryDetail = sub
                 ? sub.status === 'expired' ? `منتهية منذ ${Math.abs(days)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${days} يوم متبقي`
                 : '—';
-            const remaining = Number(sub?.amountRemaining || 0);
-            const remainingClass = remaining > 0 ? 'has-debt' : 'is-settled';
             const membershipCode = memberPortalCodeMarkup(member);
             return `<article class="members-mobile-card" data-member-id="${escapeHtml(member.id)}">
                 <div class="members-mobile-card-head">
@@ -705,8 +701,6 @@
                 <dl class="members-mobile-details">
                     <div><dt>الاشتراك</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
                     <div><dt>الانتهاء</dt><dd>${sub ? `${escapeHtml(formatDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
-                    <div><dt>التجميد</dt><dd>${sub ? `${freezeCount}/${freezeLimit}<small>متبقي ${Math.max(0, freezeLimit - freezeCount)}</small>` : '—'}</dd></div>
-                    <div><dt>الحساب</dt><dd>${sub ? `${escapeHtml(money(sub.amountDue))}<small class="${remainingClass}">متبقي ${escapeHtml(money(remaining))}</small>` : '—'}</dd></div>
                 </dl>
                 <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
             </article>`;
@@ -753,13 +747,15 @@
             const pagination = state.pagination;
             const total = Number(pagination?.total ?? pagination?.totalItems ?? pagination?.totalCount ?? state.members.length);
             $('membersCount').textContent = `${total.toLocaleString('ar-EG')} مشترك`;
+            const mobileResultsCount = document.querySelector('.members-mobile-results-count');
+            if (mobileResultsCount) mobileResultsCount.textContent = `${total.toLocaleString('ar-EG')} مشترك`;
             renderMembersSummary();
             const isMobile = window.matchMedia('(max-width: 767px)').matches;
             $('membersList').innerHTML = state.members.length
                 ? isMobile
                     ? `<div class="members-mobile-list">${state.members.map(memberMobileCard).join('')}</div>`
                     : `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
-                : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>';
+                : '<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>لا يوجد مشتركون مطابقون</strong><p>جرّب تعديل البحث أو إزالة بعض الفلاتر لعرض النتائج.</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>مسح الفلاتر</button></div>';
         }
         const membersMobileMedia = window.matchMedia('(max-width: 767px)');
         membersMobileMedia.addEventListener?.('change', () => {
@@ -768,9 +764,14 @@
         function setupMembersMobileFilters() {
             const controls = document.querySelector('#membersSection .members-toolbar-controls');
             const search = controls?.querySelector('.members-search-field');
-            const statusField = controls?.querySelector('#statusFilter')?.closest('.members-filter-field');
-            const sortField = controls?.querySelector('#sortFilter')?.closest('.members-filter-field');
-            if (!controls || !search || !statusField || !sortField || controls.querySelector('.members-filter-disclosure')) return;
+            const searchInput = controls?.querySelector('#searchInput');
+            const statusInput = controls?.querySelector('#statusFilter');
+            const sortInput = controls?.querySelector('#sortFilter');
+            const statusField = statusInput?.closest('.members-filter-field');
+            const sortField = sortInput?.closest('.members-filter-field');
+            const dialog = document.getElementById('membersFiltersDialog');
+            const dialogFields = document.getElementById('membersFilterDialogFields');
+            if (!controls || !search || !statusField || !sortField || !dialog || !dialogFields || controls.querySelector('.members-filter-disclosure')) return;
             const disclosure = document.createElement('details');
             disclosure.className = 'members-filter-disclosure';
             disclosure.innerHTML = '<summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg><span>الفلاتر والترتيب</span><span class="members-filter-count" aria-live="polite"></span></summary><div class="members-filter-fields"></div>';
@@ -783,39 +784,59 @@
             clearButton.hidden = true;
             disclosure.after(clearButton);
             const count = disclosure.querySelector('.members-filter-count');
+            const summary = disclosure.querySelector('summary');
+            const clearDialogButton = document.getElementById('membersFiltersClear');
+            const closeDialog = () => { if (dialog.open) dialog.close(); };
             const syncLayout = () => {
                 if (membersMobileMedia.matches) {
                     fields.append(statusField, sortField);
+                    dialogFields.append(fields);
                     disclosure.hidden = false;
                 } else {
                     controls.insertBefore(statusField, disclosure);
                     controls.insertBefore(sortField, disclosure);
+                    disclosure.append(fields);
+                    disclosure.after(clearButton);
                     disclosure.hidden = true;
+                    disclosure.open = false;
+                    closeDialog();
                 }
             };
             const updateCount = () => {
-                const active = Number(Boolean(controls.querySelector('#statusFilter')?.value))
-                    + Number(controls.querySelector('#sortFilter')?.value && controls.querySelector('#sortFilter').value !== 'expiry');
+                const active = Number(Boolean(statusInput?.value))
+                    + Number(sortInput?.value && sortInput.value !== 'expiry');
                 count.textContent = active ? String(active) : '';
                 disclosure.classList.toggle('has-active-filters', active > 0);
-                clearButton.hidden = !active && !String(controls.querySelector('#searchInput')?.value || '').trim();
-                if (membersMobileMedia.matches) disclosure.open = active > 0;
+                clearButton.hidden = !active && !String(searchInput?.value || '').trim();
             };
-            controls.querySelector('#statusFilter')?.addEventListener('change', updateCount);
-            controls.querySelector('#sortFilter')?.addEventListener('change', updateCount);
-            controls.querySelector('#searchInput')?.addEventListener('input', updateCount);
-            clearButton.addEventListener('click', () => {
-                const searchInput = controls.querySelector('#searchInput');
-                const statusFilter = controls.querySelector('#statusFilter');
-                const sortFilter = controls.querySelector('#sortFilter');
+            const clearFilters = () => {
                 if (searchInput) searchInput.value = '';
-                if (statusFilter) statusFilter.value = '';
-                if (sortFilter) sortFilter.value = 'expiry';
+                if (statusInput) statusInput.value = '';
+                if (sortInput) sortInput.value = 'expiry';
                 const searchClear = document.getElementById('membersSearchClearButton');
                 if (searchClear) searchClear.hidden = true;
                 updateCount();
+                disclosure.open = false;
+                closeDialog();
                 void loadMembersOnly();
+            };
+            document.getElementById('membersList')?.addEventListener('click', (event) => {
+                if (event.target.closest('[data-members-clear-filters]')) clearFilters();
             });
+            summary?.addEventListener('click', (event) => {
+                if (!membersMobileMedia.matches) return;
+                event.preventDefault();
+                disclosure.open = true;
+                if (!dialog.open) dialog.showModal();
+            });
+            document.getElementById('membersFiltersClose')?.addEventListener('click', closeDialog);
+            document.getElementById('membersFiltersApply')?.addEventListener('click', closeDialog);
+            dialog.addEventListener('close', () => { disclosure.open = false; });
+            statusInput?.addEventListener('change', updateCount);
+            sortInput?.addEventListener('change', updateCount);
+            searchInput?.addEventListener('input', updateCount);
+            clearButton.addEventListener('click', clearFilters);
+            clearDialogButton?.addEventListener('click', clearFilters);
             membersMobileMedia.addEventListener?.('change', syncLayout);
             syncLayout();
             updateCount();

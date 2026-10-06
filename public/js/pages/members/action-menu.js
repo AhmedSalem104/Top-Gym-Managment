@@ -61,6 +61,23 @@
                     button.innerHTML = `${icon}<span>${escapeHtml(label)}</span>`;
                     panel.append(button);
                 });
+                const memberRow = actions.closest('tr[data-member-id], .members-mobile-card');
+                const attendanceState = memberRow?.querySelector('.member-quick-actions');
+                const attendanceButton = attendanceState?.querySelector('[data-attendance-action]');
+                const attendanceStatus = attendanceState?.querySelector('.member-attendance-status');
+                if (attendanceButton) {
+                    const label = attendanceButton.textContent.trim() || attendanceButton.getAttribute('aria-label');
+                    attendanceButton.className = 'action-menu-item member-attendance-menu-action';
+                    attendanceButton.innerHTML = `<span class="member-attendance-menu-indicator" aria-hidden="true"></span><span>${escapeHtml(label)}</span>`;
+                    panel.append(attendanceButton);
+                } else if (attendanceStatus && !panel.querySelector('.member-attendance-menu-status')) {
+                    const status = document.createElement('span');
+                    status.className = 'action-menu-item member-attendance-menu-status';
+                    status.setAttribute('role', 'status');
+                    status.textContent = attendanceStatus.textContent;
+                    panel.append(status);
+                }
+                attendanceState?.remove();
             }
 
             function compactActions() {
@@ -75,13 +92,18 @@
                     const mobileCard = Boolean(actions.closest('.members-mobile-card'));
                     const visibleActions = new Set(['details', 'renew']);
                     const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
+                    if (!mobileCard) {
+                        visible.sort((left, right) => (
+                            (left.dataset.action === 'renew' ? 0 : 1)
+                            - (right.dataset.action === 'renew' ? 0 : 1)
+                        ));
+                    }
                     const coachingButtons = [...actions.querySelectorAll(':scope > button[data-member-coaching-action]')];
                     const advanced = [
                         ...buttons.filter((button) => !visibleActions.has(button.dataset.action)),
                         ...coachingButtons
                     ];
-                    const directButtons = [...actions.children].filter((child) => visible.includes(child));
-                    actions.replaceChildren(...directButtons);
+                    actions.replaceChildren(...visible);
                     visible.forEach((button) => {
                         const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
                         button.type = 'button';
@@ -139,6 +161,9 @@
                     return;
                 }
                 if (!event.target.closest('.action-menu')) closeMenus();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeMenus();
             });
 
             window.addEventListener('scroll', repositionOpenMenus, { passive: true });
