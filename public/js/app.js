@@ -392,8 +392,12 @@
                 await window.topGymBranchContext?.getBootstrap?.();
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
                 const activeTab = requestedTab();
-                const dashboardRequest = isOwner && activeTab === 'dashboard'
-                    ? api('/api/dashboard')
+                const needsMembersSummary = activeTab === 'members' && !state.dashboard;
+                const dashboardRequest = isOwner && (activeTab === 'dashboard' || needsMembersSummary)
+                    ? api('/api/dashboard').catch((error) => {
+                        if (activeTab === 'members') return null;
+                        throw error;
+                    })
                     : Promise.resolve(null);
                 const subscriptionRequest = isOwner && activeTab === 'dashboard' && !state.saasSubscriptionLoaded
                     ? api('/api/saas/subscription?page=1&pageSize=1').catch(() => null)
@@ -418,6 +422,9 @@
                             state.saasSubscriptionLoaded = true;
                         }
                         renderDashboard();
+                    } else if (isOwner && activeTab === 'members') {
+                        if (dashboard) state.dashboard = dashboard;
+                        renderMembersSummary();
                     }
                     updateFormPricing();
                     if (isMembersTabActive()) await loadMembersOnly();
@@ -560,10 +567,11 @@
         function decorateMemberQuickActions() {
             const list = $('membersList');
             if (!list) return;
-            list.querySelectorAll('tr[data-member-id]').forEach((row) => {
+            list.querySelectorAll('tr[data-member-id], .members-mobile-card[data-member-id]').forEach((row) => {
                 if (row.dataset.quickActionsReady === 'true') return;
                 const member = state.members.find((item) => String(item.id) === String(row.dataset.memberId));
-                const cell = row.querySelector('td:last-child');
+                const isMobileCard = row.matches('.members-mobile-card');
+                const cell = isMobileCard ? row : row.querySelector('td:last-child');
                 if (!member || !cell) return;
                 const quickActions = document.createElement('div');
                 quickActions.className = 'member-quick-actions';
@@ -606,7 +614,9 @@
                     status.title = 'العضوية غير سارية أو مجمدة';
                     quickActions.append(status);
                 }
-                const tableActions = cell.querySelector(':scope > .table-actions');
+                const tableActions = isMobileCard
+                    ? row.querySelector('.members-mobile-actions .table-actions')
+                    : cell.querySelector(':scope > .table-actions');
                 if (tableActions && !tableActions.querySelector('[data-member-coaching-action="workout"]')) {
                     const detailsAction = tableActions.querySelector('[data-action="details"]');
                     const coachingActions = ['workout', 'diet'].map((action) => `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors table-action-visible coaching-table-action ${action}" data-member-coaching-action="${action}" data-member-id="${member.id}" data-member-name="${escapeHtml(member.fullName || '')}" aria-label="${COACHING_ACTION_LABELS[action]}" title="${COACHING_ACTION_LABELS[action]}" type="button"><svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${COACHING_ACTION_ICONS[action]}</svg></button>`).join('');
@@ -630,11 +640,16 @@
                 if (member.membership?.status === 'cancelled') {
                     tableActions?.querySelectorAll('[data-action="freeze"], [data-action="payment"]').forEach((button) => button.remove());
                 }
-                const actionRow = document.createElement('div');
-                actionRow.className = 'member-action-row';
-                actionRow.append(quickActions);
-                if (tableActions) actionRow.append(tableActions);
-                cell.append(actionRow);
+                if (isMobileCard) {
+                    quickActions.setAttribute('aria-label', `إجراءات الحضور لـ${member.fullName || 'العضو'}`);
+                    row.insertBefore(quickActions, row.querySelector('.members-mobile-actions'));
+                } else {
+                    const actionRow = document.createElement('div');
+                    actionRow.className = 'member-action-row';
+                    actionRow.append(quickActions);
+                    if (tableActions) actionRow.append(tableActions);
+                    cell.append(actionRow);
+                }
                 row.dataset.quickActionsReady = 'true';
             });
         }
@@ -647,25 +662,165 @@
             const preview = member.membershipCode?.maskedCode;
             return `<span class="table-sub member-code-preview">كود البوابة: ${preview ? `<b dir="ltr">${escapeHtml(preview)}</b>` : '<span>غير مُصدر</span>'}</span>`;
         }
+        function memberInitials(name) {
+            return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => Array.from(part)[0]).join('') || '؟';
+        }
+        function memberActionsMarkup(member) {
+            const sub = member.membership;
+            if (!sub) return `<div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div>`;
+            const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
+            const freezeCount = Number(sub.freezeCount || 0);
+            const status = String(sub.status || '').toLowerCase();
+            const freezeButton = status === 'frozen'
+                ? actionButton('resume', member.id, 'btn btn-purple btn-small')
+                : ['active', 'expiring_soon'].includes(status) && freezeCount < freezeLimit
+                    ? actionButton('freeze', member.id, 'btn btn-light btn-small')
+                    : '';
+            return `<div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div>`;
+        }
+        function memberMobileCard(member) {
+            const sub = member.membership;
+            const name = escapeHtml(member.fullName || 'عضو');
+            const phone = displayPhone(member.phone, member.phoneCountry);
+            const phoneMarkup = member.phone
+                ? `<a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(phone)}</a>`
+                : '<span class="table-member-phone is-missing">لا يوجد رقم هاتف</span>';
+            const membershipStatus = sub?.status || 'expired';
+            const status = sub ? memberStatusBadge(membershipStatus) : memberStatusBadge('expired', 'بدون اشتراك');
+            const freezeLimit = Number(sub?.freezeLimit || FREEZE_LIMIT);
+            const freezeCount = Number(sub?.freezeCount || 0);
+            const days = Number(sub?.daysRemaining || 0);
+            const expiryDetail = sub
+                ? sub.status === 'expired' ? `منتهية منذ ${Math.abs(days)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${days} يوم متبقي`
+                : '—';
+            const remaining = Number(sub?.amountRemaining || 0);
+            const remainingClass = remaining > 0 ? 'has-debt' : 'is-settled';
+            const membershipCode = memberPortalCodeMarkup(member);
+            return `<article class="members-mobile-card" data-member-id="${escapeHtml(member.id)}">
+                <div class="members-mobile-card-head">
+                    <span class="member-card-avatar" aria-hidden="true">${escapeHtml(memberInitials(member.fullName))}</span>
+                    <div class="member-card-copy"><strong class="members-mobile-name">${name}</strong>${phoneMarkup}${membershipCode}</div>
+                    ${status}
+                </div>
+                <dl class="members-mobile-details">
+                    <div><dt>الاشتراك</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
+                    <div><dt>الانتهاء</dt><dd>${sub ? `${escapeHtml(formatDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
+                    <div><dt>التجميد</dt><dd>${sub ? `${freezeCount}/${freezeLimit}<small>متبقي ${Math.max(0, freezeLimit - freezeCount)}</small>` : '—'}</dd></div>
+                    <div><dt>الحساب</dt><dd>${sub ? `${escapeHtml(money(sub.amountDue))}<small class="${remainingClass}">متبقي ${escapeHtml(money(remaining))}</small>` : '—'}</dd></div>
+                </dl>
+                <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
+            </article>`;
+        }
         function memberTableRow(member) {
             const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td>${memberActionsMarkup(member)}</td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
             const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
             const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
-             const membershipStatus = String(sub.status || '').toLowerCase();
-             const canFreeze = ['active', 'expiring_soon'].includes(membershipStatus) && freezeCount < freezeLimit;
-             const freezeButton = membershipStatus === 'frozen'
-                 ? actionButton('resume', member.id, 'btn btn-purple btn-small')
-                 : canFreeze
-                     ? actionButton('freeze', member.id, 'btn btn-light btn-small')
-                     : '';
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td><div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div></td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td>${memberActionsMarkup(member)}</td></tr>`;
         }
-        function renderMembers() { $('membersCount').textContent = `${state.members.length} عضو ظاهر`; $('membersList').innerHTML = state.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>` : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>'; }
+        function renderMembersSummary() {
+            const section = document.getElementById('membersSection');
+            if (!section) return;
+            let summary = document.getElementById('membersSummary');
+            if (!summary) {
+                summary = document.createElement('div');
+                summary.id = 'membersSummary';
+            summary.className = 'members-summary-grid';
+                summary.setAttribute('role', 'group');
+                summary.setAttribute('aria-label', 'ملخص المشتركين');
+                section.insertBefore(summary, section.querySelector('.members-toolbar'));
+            }
+            const stats = state.dashboard?.stats;
+            const metrics = [
+                { key: 'total', label: 'إجمالي المشتركين', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.5V19"', tone: 'total' },
+                { key: 'active', label: 'اشتراكات نشطة', icon: '<path d="m5 12 4 4L19 6"/>', tone: 'active' },
+                { key: 'expiringSoon', label: 'تنتهي قريبًا', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', tone: 'expiring' },
+                { key: 'expired', label: 'اشتراكات منتهية', icon: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"', tone: 'expired' }
+            ];
+            if (!stats || metrics.some(({ key }) => !Number.isFinite(Number(stats[key])))) {
+                summary.hidden = true;
+                summary.replaceChildren();
+                return;
+            }
+            summary.hidden = false;
+            summary.innerHTML = metrics.map(({ key, label, icon, tone }) => `<article class="stat-card members-summary-item ${tone}"><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><span class="members-summary-copy"><span class="stat-label">${label}</span><strong class="stat-value">${Number(stats[key]).toLocaleString('ar-EG')}</strong></span></article>`).join('');
+        }
+        function renderMembers() {
+            const pagination = state.pagination;
+            const total = Number(pagination?.total ?? pagination?.totalItems ?? pagination?.totalCount ?? state.members.length);
+            $('membersCount').textContent = `${total.toLocaleString('ar-EG')} مشترك`;
+            renderMembersSummary();
+            const isMobile = window.matchMedia('(max-width: 767px)').matches;
+            $('membersList').innerHTML = state.members.length
+                ? isMobile
+                    ? `<div class="members-mobile-list">${state.members.map(memberMobileCard).join('')}</div>`
+                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
+                : '<div class="empty">لا يوجد أعضاء مطابقون للبحث.</div>';
+        }
+        const membersMobileMedia = window.matchMedia('(max-width: 767px)');
+        membersMobileMedia.addEventListener?.('change', () => {
+            if (state.members?.length) renderMembers();
+        });
+        function setupMembersMobileFilters() {
+            const controls = document.querySelector('#membersSection .members-toolbar-controls');
+            const search = controls?.querySelector('.members-search-field');
+            const statusField = controls?.querySelector('#statusFilter')?.closest('.members-filter-field');
+            const sortField = controls?.querySelector('#sortFilter')?.closest('.members-filter-field');
+            if (!controls || !search || !statusField || !sortField || controls.querySelector('.members-filter-disclosure')) return;
+            const disclosure = document.createElement('details');
+            disclosure.className = 'members-filter-disclosure';
+            disclosure.innerHTML = '<summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg><span>الفلاتر والترتيب</span><span class="members-filter-count" aria-live="polite"></span></summary><div class="members-filter-fields"></div>';
+            const fields = disclosure.querySelector('.members-filter-fields');
+            search.after(disclosure);
+            const clearButton = document.createElement('button');
+            clearButton.className = 'btn btn-light btn-small members-clear-filters';
+            clearButton.type = 'button';
+            clearButton.textContent = 'مسح الفلاتر';
+            clearButton.hidden = true;
+            disclosure.after(clearButton);
+            const count = disclosure.querySelector('.members-filter-count');
+            const syncLayout = () => {
+                if (membersMobileMedia.matches) {
+                    fields.append(statusField, sortField);
+                    disclosure.hidden = false;
+                } else {
+                    controls.insertBefore(statusField, disclosure);
+                    controls.insertBefore(sortField, disclosure);
+                    disclosure.hidden = true;
+                }
+            };
+            const updateCount = () => {
+                const active = Number(Boolean(controls.querySelector('#statusFilter')?.value))
+                    + Number(controls.querySelector('#sortFilter')?.value && controls.querySelector('#sortFilter').value !== 'expiry');
+                count.textContent = active ? String(active) : '';
+                disclosure.classList.toggle('has-active-filters', active > 0);
+                clearButton.hidden = !active && !String(controls.querySelector('#searchInput')?.value || '').trim();
+                if (membersMobileMedia.matches) disclosure.open = active > 0;
+            };
+            controls.querySelector('#statusFilter')?.addEventListener('change', updateCount);
+            controls.querySelector('#sortFilter')?.addEventListener('change', updateCount);
+            controls.querySelector('#searchInput')?.addEventListener('input', updateCount);
+            clearButton.addEventListener('click', () => {
+                const searchInput = controls.querySelector('#searchInput');
+                const statusFilter = controls.querySelector('#statusFilter');
+                const sortFilter = controls.querySelector('#sortFilter');
+                if (searchInput) searchInput.value = '';
+                if (statusFilter) statusFilter.value = '';
+                if (sortFilter) sortFilter.value = 'expiry';
+                const searchClear = document.getElementById('membersSearchClearButton');
+                if (searchClear) searchClear.hidden = true;
+                updateCount();
+                void loadMembersOnly();
+            });
+            membersMobileMedia.addEventListener?.('change', syncLayout);
+            syncLayout();
+            updateCount();
+        }
+        setupMembersMobileFilters();
 
         function closeMemberDialog() { const dialog = $('memberDialog'); closeDialogSafely(dialog); }
         function canCreateMember() {

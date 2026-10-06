@@ -50,17 +50,37 @@
                     : actionIcon(action);
             }
 
+            function moveCoachingActionsToMenu(actions) {
+                const panel = actions.querySelector(':scope > .action-menu .action-menu-panel');
+                if (!panel) return;
+                actions.querySelectorAll(':scope > button[data-member-coaching-action]').forEach((button) => {
+                    const label = button.dataset.label || button.getAttribute('aria-label') || button.title || button.dataset.memberCoachingAction;
+                    const icon = button.querySelector('svg')?.outerHTML || '';
+                    button.className = 'action-menu-item';
+                    button.type = 'button';
+                    button.innerHTML = `${icon}<span>${escapeHtml(label)}</span>`;
+                    panel.append(button);
+                });
+            }
+
             function compactActions() {
                 list.querySelectorAll('.table-actions').forEach((actions) => {
-                    if (actions.dataset.compact === 'true') return;
+                    if (actions.dataset.compact === 'true') {
+                        moveCoachingActionsToMenu(actions);
+                        return;
+                    }
                     const buttons = [...actions.querySelectorAll(':scope > button[data-action]')];
                     if (!buttons.length) return;
                     actions.dataset.compact = 'true';
+                    const mobileCard = Boolean(actions.closest('.members-mobile-card'));
                     const visibleActions = new Set(['details', 'renew']);
                     const visible = buttons.filter((button) => visibleActions.has(button.dataset.action));
-                    const advanced = buttons.filter((button) => !visibleActions.has(button.dataset.action));
                     const coachingButtons = [...actions.querySelectorAll(':scope > button[data-member-coaching-action]')];
-                    const directButtons = [...actions.children].filter((child) => visible.includes(child) || coachingButtons.includes(child));
+                    const advanced = [
+                        ...buttons.filter((button) => !visibleActions.has(button.dataset.action)),
+                        ...coachingButtons
+                    ];
+                    const directButtons = [...actions.children].filter((child) => visible.includes(child));
                     actions.replaceChildren(...directButtons);
                     visible.forEach((button) => {
                         const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
@@ -68,10 +88,11 @@
                         button.classList.add('table-action-visible');
                         button.setAttribute('aria-label', label);
                         button.title = label;
-                        // Keep the primary row actions compact. The accessible name and
-                        // tooltip carry the action label; the button itself stays icon-only
-                        // so the members table does not surrender most of its width to one CTA.
-                        button.innerHTML = actionIcon(button.dataset.action);
+                        // Desktop stays icon-only; mobile cards show text labels so actions
+                        // remain discoverable and easy to tap.
+                        button.innerHTML = mobileCard
+                            ? `${actionIcon(button.dataset.action)}<span class="table-action-label">${escapeHtml(label)}</span>`
+                            : actionIcon(button.dataset.action);
                     });
                     if (!advanced.length) return;
 
@@ -80,10 +101,15 @@
                     menu.innerHTML = '<button class="btn btn-small action-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-label="المزيد من الإجراءات" title="المزيد من الإجراءات"><svg class="ui-icon action-menu-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button><div class="action-menu-panel" hidden></div>';
                     const panel = menu.querySelector('.action-menu-panel');
                     advanced.forEach((button) => {
-                        const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
-                        button.className = `action-menu-item${button.dataset.action === 'delete' ? ' danger' : ''}`;
+                        const action = button.dataset.action;
+                        const coachingAction = button.dataset.memberCoachingAction;
+                        const label = button.dataset.label || ACTION_LABELS[action] || button.getAttribute('aria-label') || action || coachingAction;
+                        const icon = action
+                            ? menuActionIcon(action)
+                            : button.querySelector('svg')?.outerHTML || '';
+                        button.className = `action-menu-item${action === 'delete' ? ' danger' : ''}`;
                         button.type = 'button';
-                        button.innerHTML = `${menuActionIcon(button.dataset.action)}<span>${escapeHtml(label)}</span>`;
+                        button.innerHTML = `${icon}<span>${escapeHtml(label)}</span>`;
                         panel.append(button);
                     });
                     actions.append(menu);

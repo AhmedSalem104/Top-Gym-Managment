@@ -281,7 +281,7 @@ body .auth-form:not(#loginForm) .auth-password-wrap > input:not([type="checkbox"
   top: 3px;
   left: 3px;
   width: 48px;
-  height: 36px;
+  height: 33px;
   border-radius: 999px;
   background: var(--auth-blue);
   box-shadow: 0 6px 14px rgb(23 105 232 / .26);

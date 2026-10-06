@@ -8,17 +8,17 @@ const test = require('node:test');
 const source = fs.readFileSync(path.join(__dirname, '../../public/js/app.js'), 'utf8');
 
 test('member actions restore the conditional freeze row flow', () => {
-    const rowStart = source.indexOf('function memberTableRow(member)');
-    const rowEnd = source.indexOf('function renderMembers()', rowStart);
-    assert.ok(rowStart >= 0 && rowEnd > rowStart, 'member row renderer must remain discoverable');
+    const actionsStart = source.indexOf('function memberActionsMarkup(member)');
+    const actionsEnd = source.indexOf('function memberMobileCard(member)', actionsStart);
+    assert.ok(actionsStart >= 0 && actionsEnd > actionsStart, 'shared member actions renderer must remain discoverable');
 
-    const rowSource = source.slice(rowStart, rowEnd);
-    assert.doesNotMatch(rowSource, /const freezeUnavailable\s*=/u);
-    assert.match(rowSource, /actionButton\(\s*'freeze',\s*member\.id/u);
-    assert.match(rowSource, /const membershipStatus\s*=\s*String\(sub\.status \|\| ''\)\.toLowerCase\(\)/u);
-    assert.match(rowSource, /const canFreeze\s*=\s*\['active', 'expiring_soon'\]\.includes\(membershipStatus\)/u);
-    assert.match(rowSource, /membershipStatus === 'frozen'/u);
-    assert.match(rowSource, /: ''/u);
+    const actionsSource = source.slice(actionsStart, actionsEnd);
+    assert.doesNotMatch(actionsSource, /const freezeUnavailable\s*=/u);
+    assert.match(actionsSource, /actionButton\(\s*'freeze',\s*member\.id/u);
+    assert.match(actionsSource, /const status\s*=\s*String\(sub\.status \|\| ''\)\.toLowerCase\(\)/u);
+    assert.match(actionsSource, /\['active', 'expiring_soon'\]\.includes\(status\)/u);
+    assert.match(actionsSource, /status === 'frozen'/u);
+    assert.match(actionsSource, /freezeCount < freezeLimit/u);
     assert.match(source, /querySelectorAll\('\[data-action="freeze"\], \[data-action="payment"\]'\)/u);
     assert.match(source, /if \(action === 'freeze' \|\| action === 'renew' \|\| action === 'payment'\)/u);
 });

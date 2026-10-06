@@ -7,34 +7,18 @@ const test = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../public/js/app.js'), 'utf8');
 
-function loadMemberTableRow() {
-    const start = source.indexOf('function memberTableRow(member)');
-    const end = source.indexOf('\n        function renderMembers', start);
-    assert.ok(start >= 0 && end > start, 'members table renderer must remain discoverable');
+function loadMemberActionsMarkup() {
+    const start = source.indexOf('function memberActionsMarkup(member)');
+    const end = source.indexOf('\n        function memberMobileCard', start);
+    assert.ok(start >= 0 && end > start, 'shared member actions renderer must remain discoverable');
 
     return new Function(
         'FREEZE_LIMIT',
         'actionButton',
-        'displayPhone',
-        'escapeHtml',
-        'formatDate',
-        'memberPortalCodeMarkup',
-        'memberStatusBadge',
-        'money',
-        'planLabel',
-        'typeLabel',
-        `${source.slice(start, end)}; return memberTableRow;`
+        `${source.slice(start, end)}; return memberActionsMarkup;`
     )(
         3,
-        (action, memberId, _classes, extra = '') => `<button data-action="${action}" data-id="${memberId}" ${extra}></button>`,
-        (value) => String(value ?? ''),
-        (value) => String(value ?? ''),
-        (value) => String(value ?? ''),
-        () => '',
-        () => '',
-        (value) => String(value ?? ''),
-        (value) => String(value ?? ''),
-        (value) => String(value ?? '')
+        (action, memberId) => `<button data-action="${action}" data-id="${memberId}"></button>`
     );
 }
 
@@ -59,19 +43,19 @@ function memberWithStatus(status, freezeCount = 0) {
 }
 
 test('eligible subscriptions render the freeze action', () => {
-    const renderMemberTableRow = loadMemberTableRow();
+    const renderMemberActions = loadMemberActionsMarkup();
 
     for (const status of ['active', 'expiring_soon']) {
-        const html = renderMemberTableRow(memberWithStatus(status));
+        const html = renderMemberActions(memberWithStatus(status));
         assert.match(html, /data-action="freeze" data-id="42"\s*><\/button>/, `${status} membership should be freezeable`);
     }
 });
 
 test('freeze action is absent when the usage limit is reached and for expired memberships', () => {
-    const renderMemberTableRow = loadMemberTableRow();
-    const enabled = renderMemberTableRow(memberWithStatus('active', 0));
-    const limitReached = renderMemberTableRow(memberWithStatus('active', 3));
-    const expired = renderMemberTableRow(memberWithStatus('expired', 0));
+    const renderMemberActions = loadMemberActionsMarkup();
+    const enabled = renderMemberActions(memberWithStatus('active', 0));
+    const limitReached = renderMemberActions(memberWithStatus('active', 3));
+    const expired = renderMemberActions(memberWithStatus('expired', 0));
 
     assert.match(enabled, /data-action="freeze" data-id="42"\s*><\/button>/);
     assert.doesNotMatch(limitReached, /data-action="freeze"/);
@@ -79,15 +63,15 @@ test('freeze action is absent when the usage limit is reached and for expired me
 });
 
 test('frozen memberships show resume instead of freeze', () => {
-    const html = loadMemberTableRow()(memberWithStatus('frozen', 1));
+    const html = loadMemberActionsMarkup()(memberWithStatus('frozen', 1));
 
     assert.doesNotMatch(html, /data-action="freeze"/);
     assert.match(html, /data-action="resume" data-id="42"/);
 });
 
 test('members without a subscription do not receive a freeze action', () => {
-    const renderMemberTableRow = loadMemberTableRow();
-    const html = renderMemberTableRow({
+    const renderMemberActions = loadMemberActionsMarkup();
+    const html = renderMemberActions({
         id: 42,
         fullName: 'QA member',
         phone: '0000000000',

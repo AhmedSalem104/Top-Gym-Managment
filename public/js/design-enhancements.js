@@ -7,12 +7,6 @@
                 return (parts[0]?.charAt(0) || 'T').toUpperCase();
             }
 
-            function movePrimaryAction() {
-                const button = document.getElementById('addMemberButton');
-                const controls = document.querySelector('.members-toolbar-controls');
-                if (button && controls && button.parentElement !== controls) controls.append(button);
-            }
-
             function enhanceMemberIdentity() {
                 list.querySelectorAll('.members-table tbody tr').forEach((row) => {
                     const cell = row.cells[0];
@@ -44,7 +38,6 @@
             }
 
             function enhanceLayout() {
-                movePrimaryAction();
                 enhanceMemberIdentity();
             }
 
