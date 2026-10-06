@@ -23,7 +23,7 @@ const member = {
     attendance: {}
 };
 
-async function installSubscribersRuntime(page) {
+async function installSubscribersRuntime(page, authUser = { id: 901, name: 'Subscribers QA', role: 'Owner', tenantType: 'gym', permissions: [] }) {
     const runtime = {
         total: 165,
         member,
@@ -38,7 +38,7 @@ async function installSubscribersRuntime(page) {
     await page.route('**/api/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
         const payloads = {
-            '/api/auth/session': { authenticated: true, user: { id: 901, name: 'Subscribers QA', role: 'Owner', tenantType: 'gym', permissions: [] } },
+            '/api/auth/session': { authenticated: true, user: authUser },
             '/api/branding': { identity: { brandName: 'Subscribers QA' } },
             '/api/saas/entitlements': {
                 tenantStatus: 'active',
@@ -106,6 +106,15 @@ test('subscribers use the table on desktop and a single responsive card list on 
 
     await page.setViewportSize({ width: 320, height: 800 });
     await expect(page.locator('.members-mobile-card')).toHaveCount(4);
+    const addButton = page.locator('#addMemberButton');
+    await expect(addButton).toBeVisible();
+    const addButtonBeforeScroll = await addButton.boundingBox();
+    await page.evaluate(() => window.scrollTo(0, 420));
+    await expect(addButton).toBeVisible();
+    const addButtonAfterScroll = await addButton.boundingBox();
+    expect(Math.abs(addButtonAfterScroll.x - addButtonBeforeScroll.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(addButtonAfterScroll.y - addButtonBeforeScroll.y)).toBeLessThanOrEqual(1);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await expect(page.locator('.members-mobile-card').first().locator('.members-mobile-details > div')).toHaveCount(3);
     await expect(page.locator('.members-mobile-card').first().locator('.members-mobile-balance')).toContainText('١٥٠');
     await expect(page.locator('.members-mobile-results-count')).toContainText('مشترك');
@@ -121,8 +130,22 @@ test('subscribers use the table on desktop and a single responsive card list on 
     const mobileActionIconSizes = await page.locator('.members-mobile-actions .table-action-visible .action-icon, .members-mobile-actions .action-menu-toggle .action-menu-icon').evaluateAll((icons) => icons.map((icon) => ({ width: getComputedStyle(icon).width, height: getComputedStyle(icon).height })));
     expect(mobileActionIconSizes.length).toBeGreaterThan(1);
     expect(new Set(mobileActionIconSizes.map(({ width, height }) => `${width}x${height}`)).size).toBe(1);
+    const captureMobileActionGeometry = () => page.locator('.members-mobile-actions .table-actions > .table-action-visible, .members-mobile-actions .table-actions > .action-menu > .action-menu-toggle').evaluateAll((items) => items.map((item) => {
+        const rect = item.getBoundingClientRect();
+        const style = getComputedStyle(item);
+        return { width: Math.round(rect.width), height: Math.round(rect.height), radius: style.borderRadius };
+    }));
+    const captureAddGeometry = () => addButton.evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        const style = getComputedStyle(button);
+        return { width: Math.round(rect.width), height: Math.round(rect.height), radius: style.borderRadius };
+    });
+    const lightMobileActionGeometry = await captureMobileActionGeometry();
+    const lightAddButtonGeometry = await captureAddGeometry();
     await page.locator('#themeToggleButton').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await captureMobileActionGeometry()).toEqual(lightMobileActionGeometry);
+    expect(await captureAddGeometry()).toEqual(lightAddButtonGeometry);
     await page.screenshot({ path: test.info().outputPath('subscribers-mobile-320-populated-dark.png'), fullPage: true });
     await page.locator('#themeToggleButton').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
@@ -143,10 +166,28 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-mobile-actions [data-action="refund"]')).toHaveCount(1);
     await page.locator('.members-mobile-actions [data-action="details"]').click();
     await expect(page.locator('#detailsDialog')).toBeVisible();
+    const detailHeaderAlignment = await page.locator('#detailsDialog').evaluate((dialog) => {
+        const headElement = dialog.querySelector('.member-details-head');
+        const head = headElement.getBoundingClientRect();
+        const style = getComputedStyle(headElement);
+        const close = dialog.querySelector('#detailsClose').getBoundingClientRect();
+        return { contentTop: head.top + parseFloat(style.paddingTop), closeTop: close.top, closeLeft: close.left, headLeft: head.left };
+    });
+    expect(Math.abs(detailHeaderAlignment.closeTop - detailHeaderAlignment.contentTop)).toBeLessThanOrEqual(3);
+    expect(detailHeaderAlignment.closeLeft).toBeGreaterThanOrEqual(detailHeaderAlignment.headLeft - 1);
+    const statsColumns = await page.locator('#detailsDialog .member-details-stats').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    expect(statsColumns).toBe(1);
     await expect(page.locator('#detailsContent .current-membership-facts')).toContainText('المستحق');
     await expect(page.locator('#detailsContent .payment-history-section')).toContainText('متبقي');
     await expect(page.locator('#detailsContent')).toContainText('سجل التجميد');
     await page.screenshot({ path: test.info().outputPath('subscribers-member-details-mobile.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phoneStatsColumns = await page.locator('#detailsDialog .member-details-stats').evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length);
+    expect(phoneStatsColumns).toBe(2);
+    const detailViewportWidth = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth }));
+    expect(detailViewportWidth.document).toBeLessThanOrEqual(detailViewportWidth.viewport + 1);
+    await page.screenshot({ path: test.info().outputPath('subscribers-member-details-390.png'), fullPage: true });
+    await page.setViewportSize({ width: 320, height: 800 });
     await expect(page.locator('#detailsClose')).toBeVisible();
     await page.locator('#detailsClose').click();
     await expect(page.locator('.members-mobile-actions .action-menu-panel [data-member-coaching-action="workout"]')).toBeHidden();
@@ -269,4 +310,18 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('#membersList [data-members-clear-filters]')).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('subscribers-empty-mobile.png'), fullPage: true });
     await expect(page.locator('#membersPagination')).toBeHidden();
+});
+
+test('mobile add-member floating action respects permission-driven hidden state', async ({ page }) => {
+    await installSubscribersRuntime(page, {
+        id: 902,
+        name: 'Subscribers Assistant QA',
+        role: 'Assistant',
+        tenantType: 'gym',
+        permissions: ['members.read', 'memberships.read']
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/index.html#members', { waitUntil: 'networkidle' });
+    await expect(page.locator('#membersSection')).toBeVisible();
+    await expect(page.locator('#addMemberButton')).toBeHidden();
 });

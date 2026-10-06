@@ -2004,3 +2004,49 @@
     gap: 2px;
   }
 }
+
+/* Compact the member profile header and key facts on small screens without
+   changing the existing member-detail data or action contract. */
+@media (max-width: 600px) {
+  body #detailsDialog > .dialog-body > .member-details-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px;
+    align-items: start;
+    gap: var(--space-2);
+  }
+
+  body #detailsDialog .member-details-head-content,
+  body #detailsDialog .member-profile-identity,
+  body #detailsDialog .member-profile-copy { min-width: 0; }
+
+  body #detailsDialog .member-profile-identity { gap: var(--space-2); }
+  body #detailsDialog .member-profile-avatar { width: 46px; height: 46px; font-size: var(--font-md); }
+  body #detailsDialog .member-profile-name-row { align-items: flex-start; gap: var(--space-1); }
+  body #detailsDialog .member-profile-name-row h3 { font-size: 17px; line-height: 1.3; }
+  body #detailsDialog .member-profile-badge { min-height: 22px; padding-inline: 7px; font-size: 10px; }
+  body #detailsDialog .member-profile-phone,
+  body #detailsDialog .member-profile-registration { font-size: 11px; }
+  body #detailsDialog .member-details-head > #detailsClose {
+    align-self: start;
+    margin: 0;
+  }
+
+  body #detailsDialog .member-details-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+  body #detailsDialog .member-details-stats .member-detail-stat {
+    box-sizing: border-box;
+    min-height: 92px;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+  body #detailsDialog .member-details-stats .member-detail-stat-icon { width: 34px; height: 34px; }
+  body #detailsDialog .member-details-stats .member-detail-stat-icon .ui-icon { width: 17px; height: 17px; }
+  body #detailsDialog .member-details-stats .member-detail-stat-copy { gap: 2px; }
+  body #detailsDialog .member-details-stats .member-detail-stat-copy small { font-size: 11px; }
+  body #detailsDialog .member-details-stats .member-detail-stat-copy strong { font-size: 16px; }
+  body #detailsDialog .member-details-stats .member-detail-stat-copy em { font-size: 11px; }
+}
+
+@media (max-width: 359px) {
+  body #detailsDialog .member-details-stats { grid-template-columns: minmax(0, 1fr); }
+  body #detailsDialog .member-details-stats .member-detail-stat { min-height: 76px; }
+}
