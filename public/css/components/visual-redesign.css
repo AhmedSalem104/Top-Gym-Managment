@@ -851,13 +851,13 @@ body .branch-context-menu {
   inset-inline: 0;
   display: grid;
   max-height: 230px;
-  gap: 4px;
-  padding: 6px;
+  gap: var(--space-1, 4px);
+  padding: var(--space-2, 8px);
   overflow-y: auto;
-  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--sidebar-divider));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--sidebar-bg) 96%, var(--primary) 4%);
-  box-shadow: 0 18px 34px rgb(2 6 23 / .28);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg, 14px);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-popup);
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -876,29 +876,50 @@ body .branch-context-field.is-open .branch-context-menu {
 
 body .branch-context-option {
   display: flex;
-  min-height: 34px;
+  min-height: 44px;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-sm, 8px);
   background: transparent;
-  color: var(--sidebar-text);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
-  font-weight: 800;
-  padding-inline: 10px;
+  font-size: var(--font-sm, .8125rem);
+  font-weight: var(--weight-medium, 500);
+  line-height: 1.45;
+  padding-block: var(--space-2, 8px);
+  padding-inline: var(--space-3, 12px);
   text-align: start;
+  unicode-bidi: plaintext;
   transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
 }
 
 body .branch-context-option:hover,
-body .branch-context-option:focus-visible,
-body .branch-context-option.is-selected {
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-  background: color-mix(in srgb, var(--primary-soft) 78%, transparent);
-  color: var(--color-primary);
+body .branch-context-option:focus-visible {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
   outline: 0;
+}
+
+body .branch-context-option.is-selected {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-semibold, 600);
+}
+
+body .branch-context-option.is-selected::after {
+  box-sizing: border-box;
+  width: 7px;
+  height: 11px;
+  flex: 0 0 7px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  content: "";
+  transform: rotate(45deg);
 }
 
 body .branch-context-option:disabled {

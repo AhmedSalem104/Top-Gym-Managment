@@ -112,6 +112,9 @@ test.describe('Egyptian local phone validation', () => {
         const phone = page.locator('input[name="whatsapp"]');
         const control = page.locator('.phone-input-control');
         const before = await control.boundingBox();
+        const phoneFieldHeight = await page.locator('.phone-number-control').evaluate((element) => element.getBoundingClientRect().height);
+        expect(phoneFieldHeight).toBeLessThanOrEqual(48);
+        expect(before?.height || 0).toBeLessThan(110);
         await phone.fill('010123');
         await phone.blur();
         const after = await control.boundingBox();

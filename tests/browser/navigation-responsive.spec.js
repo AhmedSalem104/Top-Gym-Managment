@@ -126,6 +126,41 @@ test('branch and section dropdowns support keyboard selection and dismiss predic
     await expect(sectionTrigger).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('branch context menu uses theme surfaces and comfortable option sizing', async ({ page }) => {
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+
+    const trigger = page.locator('[data-context-field="branch"] .branch-context-trigger');
+    const menu = page.locator('#branchContextSelectMenu');
+    const option = menu.locator('[data-context-option]').first();
+
+    for (const theme of ['light', 'dark']) {
+        await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+        await trigger.click();
+        await expect(menu).toBeVisible();
+        const metrics = await page.evaluate(() => {
+            const menuElement = document.querySelector('#branchContextSelectMenu');
+            const optionElement = menuElement?.querySelector('[data-context-option]');
+            const probe = document.createElement('span');
+            probe.style.backgroundColor = 'var(--bg-elevated)';
+            document.body.append(probe);
+            const expectedSurface = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return {
+                background: getComputedStyle(menuElement).backgroundColor,
+                expectedSurface,
+                optionHeight: optionElement?.getBoundingClientRect().height || 0,
+                optionFontSize: Number.parseFloat(getComputedStyle(optionElement).fontSize)
+            };
+        });
+        expect(metrics.background).toBe(metrics.expectedSurface);
+        expect(metrics.optionHeight).toBeGreaterThanOrEqual(44);
+        expect(metrics.optionFontSize).toBeGreaterThanOrEqual(12);
+        await page.keyboard.press('Escape');
+        await expect(menu).toBeHidden();
+    }
+});
+
 test('context dropdown stays a simple click menu and does not move on hover', async ({ page }) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
