@@ -79,7 +79,7 @@
 
             function printBrandMarkup(subtitle = 'إدارة الجيم') {
                 const config = branding();
-                const logo = config.assets?.printLogo?.url || config.assets?.primaryLogo?.url || '/assets/gym-brand.svg?v=2';
+                const logo = config.assets?.printLogo?.url || config.assets?.primaryLogo?.url || '/assets/logic-fit-logo-horizontal.svg?v=1';
                 return '<div class="print-brand"><img class="print-logo" src="' + assetUrl(logo) + '" alt="' + escapeHtml(brandName()) + '"><div class="print-brand-copy"><h1 class="print-brand-title">' + escapeHtml(brandName()) + '</h1><span class="print-brand-subtitle">' + escapeHtml(subtitle) + '</span></div></div>';
             }
 

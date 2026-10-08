@@ -28,6 +28,8 @@
         coachingProfileDialog: 'lg',
         libraryDetailsDialog: 'lg',
         authUserDialog: 'lg',
+        authRegistrationDialog: 'md',
+        authRecoveryDialog: 'sm',
         backupRestoreDialog: 'lg',
         memberDialog: 'lg',
         dayPassDialog: 'md',

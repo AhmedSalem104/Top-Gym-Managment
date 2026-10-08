@@ -125,10 +125,12 @@ test('new registration page is independent from the existing landing page', () =
     const server = read('server.js');
     const landing = read('public/index.html');
     const registration = read('public/register-gym.html');
+    const landingWithoutRegistrationChoice = landing.replace(/<dialog\b[^>]*id="authRegistrationDialog"[\s\S]*?<\/dialog>/u, '');
     assert.match(server, /app\.get\('\/register-gym'/);
     assert.match(registration, /id="gymRegistrationForm"/);
     assert.match(registration, /\/js\/register-gym\.js/);
-    assert.doesNotMatch(landing, /register-gym/);
+    assert.match(landing, /id="authRegistrationDialog"[\s\S]*href="\/register-gym"/u);
+    assert.doesNotMatch(landingWithoutRegistrationChoice, /register-gym|gymRegistrationForm/u);
 });
 
 test('registration wizard keeps its functional hooks while using the responsive product onboarding layout', () => {

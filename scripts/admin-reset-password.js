@@ -9,8 +9,11 @@ if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRaw
     process.stderr.write('Interactive TTY required.\n');
     process.exitCode = 2;
 } else {
+    // CLI scripts do not inherit the app server's dotenv bootstrap. Load the
+    // repository-local configuration before importing modules that read env.
+    require('dotenv').config({ quiet: true });
     const authService = require('../src/services/auth-service');
-    const { closePool, sql } = require('../src/database/pool');
+    const { closePool, parseConnectionString, sql } = require('../src/database/pool');
     const { withTransaction } = require('../src/database/transaction');
     const sessionRepository = require('../src/repositories/session.repository');
     const { runTenantContext } = require('../src/tenancy/tenant-context');
@@ -153,20 +156,26 @@ if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRaw
     }
 
     async function resetAccount(target, identity, newPassword) {
+        failurePhase = 'password-hash';
         const passwordHash = await authService.hashPassword(newPassword);
+        failurePhase = 'password-hash-verification';
         if (!(await authService.verifyPassword(newPassword, passwordHash))) {
             throw new Error('PASSWORD_HASH_VERIFICATION_FAILED');
         }
 
+        failurePhase = 'transaction-start';
         return runTenantContext({ mode: 'platform', tenantId: null }, () => withTransaction(async (transaction) => {
+            failurePhase = 'account-lookup';
             const account = await findAccount(transaction, identity);
             if (!account || String(account.role) !== target.role || String(account.status) !== 'Active') {
                 throw new Error('ACCOUNT_NOT_ACTIVE_OR_ROLE_MISMATCH');
             }
 
+            failurePhase = 'invariant-snapshot';
             const before = await loadInvariantState(transaction, Number(account.id));
             assertTargetAccount(before, target);
 
+            failurePhase = 'password-update';
             const updateResult = await transaction.request()
                 .input('userId', sql.Int, Number(account.id))
                 .input('role', sql.VarChar(20), target.role)
@@ -181,19 +190,32 @@ if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRaw
                 throw new Error('PASSWORD_UPDATE_NOT_APPLIED');
             }
 
+            failurePhase = 'session-revocation';
             await sessionRepository.revokeForUser(Number(account.id), transaction);
+            failurePhase = 'session-revocation-verification';
             if (await activeSessionCount(transaction, Number(account.id)) !== 0) {
                 throw new Error('SESSION_INVALIDATION_NOT_CONFIRMED');
             }
 
+            failurePhase = 'invariant-verification';
             const after = await loadInvariantState(transaction, Number(account.id));
             if (!sameInvariants(before, after)) throw new Error('ACCOUNT_INVARIANT_CHANGED');
 
+            failurePhase = 'transaction-commit';
             return true;
         }));
     }
 
+    let failurePhase = 'account-selection';
+
     async function main() {
+        const connectionString = process.env.MSSQL_CONNECTION_STRING || process.env.DATABASE_URL;
+        const connection = parseConnectionString(connectionString);
+        const isLocalServer = /^(localhost|127\.0\.0\.1|\.|\(local\))(\\.*)?$/i.test(connection.server);
+        if (!isLocalServer || !/^LogicFit_/i.test(connection.database)) {
+            throw new Error('LOCAL_QA_DATABASE_REQUIRED');
+        }
+
         process.stdout.write('Select the existing account to reset (choose one, then repeat for another):\n');
         process.stdout.write('1) Gym Owner\n2) Platform Admin\n3) Assistant / Team\n0) Exit\n');
         const choice = await promptVisible('Choice: ');
@@ -207,10 +229,12 @@ if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRaw
         let newPassword = null;
         let confirmation = null;
         try {
+            failurePhase = 'password-validation';
             newPassword = await promptHidden('New password: ');
             confirmation = await promptHidden('Confirm password: ');
             const validated = authService.validatePassword(newPassword, { field: 'newPassword' });
             if (validated !== confirmation) throw new Error('PASSWORD_CONFIRMATION_MISMATCH');
+            failurePhase = 'local-account-update';
             await resetAccount(target, identity, validated);
         } finally {
             newPassword = null;
@@ -222,8 +246,38 @@ if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRaw
     }
 
     main()
-        .catch(() => {
+        .catch((error) => {
             process.stderr.write('Password reset was not completed; no change was committed.\n');
+            // Report only safe diagnostic identifiers. Never print SQL text,
+            // driver messages, parameters, hashes, or entered credentials.
+            const safeDomainCodes = new Set([
+                'INVALID_PASSWORD', 'PASSWORD_CONFIRMATION_MISMATCH',
+                'LOCAL_QA_DATABASE_REQUIRED',
+                'PASSWORD_HASH_VERIFICATION_FAILED', 'ACCOUNT_NOT_ACTIVE_OR_ROLE_MISMATCH',
+                'ACTIVE_TENANT_MEMBERSHIP_REQUIRED', 'PASSWORD_UPDATE_NOT_APPLIED',
+                'SESSION_INVALIDATION_NOT_CONFIRMED', 'ACCOUNT_INVARIANT_CHANGED',
+                'INVALID_ACCOUNT_SELECTION', 'ACCOUNT_IDENTIFIER_REQUIRED'
+            ]);
+            const safeDomainCode = safeDomainCodes.has(String(error?.code || ''))
+                ? String(error.code)
+                : safeDomainCodes.has(String(error?.message || ''))
+                    ? String(error.message)
+                : null;
+            const safeDriverCode = /^[A-Z][A-Z0-9_]{1,30}$/.test(String(error?.code || ''))
+                ? String(error.code)
+                : null;
+            const rawSqlNumber = error?.number ?? error?.originalError?.info?.number;
+            const safeSqlNumber = Number.isInteger(Number(rawSqlNumber)) ? Number(rawSqlNumber) : null;
+            const safeErrorName = ['RequestError', 'ConnectionError', 'TransactionError', 'TimeoutError'].includes(String(error?.name || ''))
+                ? String(error.name)
+                : null;
+            process.stderr.write(`Diagnostic: phase=${failurePhase}`);
+            if (safeDomainCode) process.stderr.write(` code=${safeDomainCode}`);
+            else if (safeSqlNumber !== null) process.stderr.write(` sqlNumber=${safeSqlNumber}`);
+            else if (safeDriverCode) process.stderr.write(` driverCode=${safeDriverCode}`);
+            else if (safeErrorName) process.stderr.write(` errorType=${safeErrorName}`);
+            else process.stderr.write(' code=UNCLASSIFIED');
+            process.stderr.write('\n');
             process.exitCode = 1;
         })
         .finally(async () => {

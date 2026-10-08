@@ -612,7 +612,7 @@
         const accountBar = $('authAccountBar');
         if (accountBar) accountBar.hidden = true;
         document.body.classList.remove('auth-pending', 'top-gym-navigation-pending');
-        window.setTimeout(() => $('loginEmail')?.focus(), 50);
+        window.setTimeout(() => $('loginEmail')?.focus({ preventScroll: true }), 50);
     }
 
     async function requestApi(path, options = {}) {
@@ -718,6 +718,23 @@
             input.type = visible ? 'password' : 'text';
             $('loginPasswordToggle').setAttribute('aria-label', visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
         });
+        const bindEntryDialog = (triggerId, dialogId, initialFocusSelector) => {
+            const trigger = $(triggerId);
+            const dialog = $(dialogId);
+            if (!trigger || !dialog || trigger.dataset.bound) return;
+            trigger.dataset.bound = 'true';
+            trigger.addEventListener('click', () => {
+                if (typeof dialog.showModal === 'function') {
+                    dialog.showModal();
+                    dialog.querySelector(initialFocusSelector)?.focus();
+                }
+            });
+            dialog.addEventListener('click', (event) => {
+                if (event.target === dialog) dialog.close();
+            });
+        };
+        bindEntryDialog('authRegisterOpen', 'authRegistrationDialog', '.auth-choice-option');
+        bindEntryDialog('authForgotHelp', 'authRecoveryDialog', '.auth-dialog-confirm');
         const entryButton = $('saasEntryContinue');
         if (entryButton && !entryButton.dataset.bound) {
             entryButton.dataset.bound = 'true';

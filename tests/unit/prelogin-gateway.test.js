@@ -32,12 +32,14 @@ test('minimal login suppresses marketing composition without touching auth behav
 
 test('login remains keyboard and mobile friendly', () => {
     const markup = read('public/index.html');
-    const styles = read('public/css/pages/login.css');
+    const styles = read('public/css/components/theme-toggle.css');
+    const loginStyles = read('public/css/pages/login.css');
 
     assert.match(markup, /<label for="loginEmail">/u);
     assert.match(markup, /<label for="loginPassword">/u);
     assert.match(markup, /id="loginPasswordToggle"[^>]*aria-label=/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-theme-toggle[\s\S]*min-height: 44px;/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-password-toggle[\s\S]*min-width: 42px;[\s\S]*min-height: 42px;/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-theme-toggle/iu);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.theme-toggle-switch[\s\S]*height: 40px;[\s\S]*min-height: 40px;/u);
+    assert.match(styles, /@media \(max-width: 767px\)[\s\S]*\.auth-screen\[data-auth-stage="login"\] \.theme-toggle-switch::after[\s\S]*height: 44px;/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-theme-toggle[\s\S]*inset-inline-start: 20px;/u);
+    assert.match(loginStyles, /\.auth-screen\[data-auth-stage="login"\] \.auth-password-toggle[\s\S]*min-width: 42px;[\s\S]*min-height: 42px;/u);
 });

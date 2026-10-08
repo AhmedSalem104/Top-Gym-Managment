@@ -90,16 +90,16 @@
         ['watermark', 'Watermark', 'علامة مائية اختيارية للمستندات.']
     ];
     const AUDIT_LABELS = { draft_saved: 'حفظ مسودة', published: 'نشر الهوية', reset: 'استعادة الافتراضي', asset_uploaded: 'رفع أصل', asset_removed: 'إزالة أصل' };
-    const DEFAULT_LOGO_URL = '/assets/gym-brand.svg?v=2';
+    const DEFAULT_LOGO_URL = '/assets/logic-fit-app-icon.svg?v=2';
     const DEFAULT_ASSET_URLS = {
-        primaryLogo: '/assets/gym-brand-horizontal.svg?v=2',
-        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=2',
-        lightLogo: '/assets/gym-brand-light.svg?v=2',
-        darkLogo: '/assets/gym-brand-dark.svg?v=2',
+        primaryLogo: '/assets/logic-fit-logo-horizontal.svg?v=1',
+        horizontalLogo: '/assets/logic-fit-logo-horizontal.svg?v=1',
+        lightLogo: '/assets/logic-fit-logo-light.svg?v=1',
+        darkLogo: '/assets/logic-fit-logo-dark.svg?v=1',
         compactLogo: DEFAULT_LOGO_URL,
         favicon: DEFAULT_LOGO_URL,
         appIcon: DEFAULT_LOGO_URL,
-        printLogo: '/assets/gym-brand-horizontal.svg?v=2'
+        printLogo: '/assets/logic-fit-logo-horizontal.svg?v=1'
     };
 
     function clone(value) {

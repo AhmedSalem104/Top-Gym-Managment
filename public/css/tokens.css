@@ -50,6 +50,8 @@
   --info: #2563eb;
   --info-soft: rgb(37 99 235 / 0.1);
   --info-border: rgb(37 99 235 / 0.25);
+  --nav-context-cyan: #0e91aa;
+  --nav-context-cyan-soft: rgb(14 145 170 / 0.12);
 
   --overlay: rgb(2 6 23 / 0.58);
   --shadow-card: 0 8px 24px rgb(15 23 42 / 0.06);
@@ -97,6 +99,15 @@
   --sidebar-active-bg: var(--primary);
   --sidebar-active-text: var(--text-on-primary);
   --sidebar-active-shadow: 0 10px 24px rgb(23 105 232 / 0.22);
+  --nav-context-branch-accent: var(--info);
+  --nav-context-branch-surface: var(--info-soft);
+  --nav-context-section-accent: var(--nav-context-cyan);
+  --nav-context-section-surface: var(--nav-context-cyan-soft);
+  --nav-action-neutral: var(--sidebar-text-muted);
+  --nav-action-blue: var(--info-text);
+  --nav-action-blue-surface: var(--info-soft);
+  --nav-action-cyan: var(--nav-context-cyan);
+  --nav-action-cyan-surface: var(--nav-context-cyan-soft);
   --sidebar-width-collapsed: 84px;
   --sidebar-width-expanded: 292px;
 
@@ -339,6 +350,8 @@ body[data-theme="dark"] {
   --info: #3b82f6;
   --info-soft: rgb(59 130 246 / 0.13);
   --info-border: rgb(59 130 246 / 0.25);
+  --nav-context-cyan: #48c5d8;
+  --nav-context-cyan-soft: rgb(72 197 216 / 0.15);
   --overlay: rgb(2 6 23 / 0.75);
   --shadow-card: 0 8px 24px rgb(0 0 0 / 0.18);
   --shadow-popup: 0 20px 50px rgb(0 0 0 / 0.4);

@@ -1,5 +1,29 @@
 @import url("./whatsapp-templates.css");
 
+/* The central admin gateway shares the approved cinematic Logic Fit photo,
+   while preserving its isolated platform-admin form and theme behavior. */
+.platform-login-screen {
+    isolation: isolate;
+    background: #07111f;
+}
+.platform-login-screen::before {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: linear-gradient(115deg, rgb(3 13 27 / .84), rgb(4 20 40 / .64)), url("/assets/logic-fit-login-gym.webp") center / cover no-repeat;
+    content: "";
+    pointer-events: none;
+}
+.platform-login-card {
+    backdrop-filter: blur(12px);
+    z-index: 1;
+}
+.platform-login-glow { z-index: 0; }
+@media (max-width: 560px) {
+    .platform-login-screen { min-height: 100vh; min-height: 100dvh; padding: 16px; }
+    .platform-login-card { border-radius: 22px; }
+}
+
 /* Platform Admin is a separate product surface. It consumes the same
    semantic tokens as the gym app, but owns its layout and navigation. */
 .platform-admin-page {
@@ -43,6 +67,7 @@
 .platform-login-theme { position: absolute; top: 20px; inset-inline-start: 20px; }
 .platform-login-brand, .platform-sidebar-brand, .platform-admin-identity { display: flex; align-items: center; gap: 12px; }
 .platform-brand-mark { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border-radius: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-active)); color: var(--text-on-primary); font-size: 1.45rem; font-weight: 800; box-shadow: var(--shadow-primary); }
+.platform-brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
 .platform-login-brand strong, .platform-sidebar-brand strong { display: block; color: var(--text-primary); font-size: 1.1rem; }
 .platform-login-brand small, .platform-sidebar-brand small, .platform-admin-identity small { display: block; margin-top: 2px; color: var(--text-muted); font-size: .68rem; letter-spacing: .04em; }
 .platform-login-heading { margin: 44px 0 24px; }

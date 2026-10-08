@@ -92,14 +92,14 @@
         'IBM Plex Sans Arabic': 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap'
     };
     const DEFAULT_ASSET_URLS = Object.freeze({
-        primaryLogo: '/assets/gym-brand-horizontal.svg?v=2',
-        horizontalLogo: '/assets/gym-brand-horizontal.svg?v=2',
-        lightLogo: '/assets/gym-brand-light.svg?v=2',
-        darkLogo: '/assets/gym-brand-dark.svg?v=2',
-        compactLogo: '/assets/gym-brand.svg?v=2',
-        favicon: '/assets/gym-brand.svg?v=2',
-        appIcon: '/assets/gym-brand.svg?v=2',
-        printLogo: '/assets/gym-brand-horizontal.svg?v=2'
+        primaryLogo: '/assets/logic-fit-logo-horizontal.svg?v=1',
+        horizontalLogo: '/assets/logic-fit-logo-horizontal.svg?v=1',
+        lightLogo: '/assets/logic-fit-logo-light.svg?v=1',
+        darkLogo: '/assets/logic-fit-logo-dark.svg?v=1',
+        compactLogo: '/assets/logic-fit-app-icon.svg?v=2',
+        favicon: '/assets/logic-fit-app-icon.svg?v=2',
+        appIcon: '/assets/logic-fit-app-icon.svg?v=2',
+        printLogo: '/assets/logic-fit-logo-horizontal.svg?v=1'
     });
     const ASSET_FALLBACK_KEYS = Object.freeze({
         primaryLogo: ['primaryLogo', 'horizontalLogo', 'lightLogo', 'darkLogo', 'compactLogo'],

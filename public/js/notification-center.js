@@ -17,6 +17,7 @@
     coaching: { label: '\u0627\u0644\u062a\u062f\u0631\u064a\u0628', tone: 'info', icon: 'coaching' },
     registration: { label: 'التسجيل', tone: 'info', icon: 'registration' },
     membership: { label: 'العضويات', tone: 'success', icon: 'membership' },
+    attendance: { label: 'الحضور والانصراف', tone: 'info', icon: 'attendance' },
     payment: { label: 'المدفوعات', tone: 'warning', icon: 'payment' },
     system: { label: 'النظام', tone: 'neutral', icon: 'system' },
     default: { label: 'تنبيه', tone: 'neutral', icon: 'default' }
@@ -28,17 +29,41 @@
     subscription: '<path d="M7 4h10v16H7z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
     membership: '<path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5M9.5 16h3"/>',
     coaching: '<path d="M4 6h16v12H4z"/><path d="M8 10h8M8 14h5"/>',
+    attendance: '<path d="M12 3v9l6 3"/><circle cx="12" cy="12" r="9"/>',
     payment: '<path d="M5 7h14v10H5z"/><path d="M5 10h14M8 14h3"/>',
     system: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 8v5M12 16h.01"/>',
     default: '<path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'
   });
+  const eventTitles = Object.freeze({
+    member_created: 'تمت إضافة المشترك',
+    membership_created: 'تم إنشاء اشتراك',
+    membership_frozen: 'تم تجميد العضوية',
+    membership_resumed: 'تم استئناف العضوية',
+    membership_renewed: 'تم تجديد العضوية',
+    membership_updated: 'تم تحديث العضوية',
+    payment_updated: 'تم تحديث الدفع',
+    attendance_checked_in: 'تم تسجيل حضور',
+    attendance_auto_checked_out: 'تم تسجيل الانصراف تلقائيًا',
+    member_subscription_request_created: 'تم استلام طلب اشتراك',
+    member_subscription_request_approved: 'تم قبول طلب الاشتراك',
+    member_subscription_request_rejected: 'تم رفض طلب الاشتراك',
+    trainer_session_scheduled: 'تم جدولة جلسة تدريب',
+    trainer_session_updated: 'تم تحديث جلسة التدريب',
+    trainer_session_status_changed: 'تغيرت حالة جلسة التدريب',
+    trainer_plan_published: 'تم نشر خطة تدريب',
+    system_announcement: 'إعلان جديد'
+  });
   let root;
+  let panel;
   let list;
   let badge;
   let markAllButton;
   let refreshButton;
   let loadMoreButton;
   let triggerElement;
+  let closeButton;
+  let mobileLayer;
+  let endOfListElement;
   let summaryElement;
   let apiBase = '/api/notifications';
   let realtimeSource;
@@ -47,11 +72,15 @@
   let authBootstrapPromise;
   let liveToast;
   let liveToastTimer;
+  let bodyOverflowBeforeOpen = '';
+  let focusBeforeOpen = null;
+  let mobileViewportQuery;
 
   const formatDate = (value) => {
     if (!value) return '';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    const locale = document.documentElement.lang || navigator.language || 'ar-EG';
+    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
   };
 
   function setBadge(value) {
@@ -65,6 +94,31 @@
         ? `${state.unread.toLocaleString('ar-EG')} غير مقروءة`
         : 'كل التنبيهات مقروءة';
     }
+    if (markAllButton) markAllButton.disabled = state.unread === 0 || state.loading;
+  }
+
+  function notificationCopy(item) {
+    const type = String(item?.type || '').trim().toLowerCase();
+    const originalMessage = String(item?.message || '').trim();
+    const technical = originalMessage.match(/^Notification emitted for ([a-z0-9_-]+)\.\s*:?[ \t]*(.*)$/i);
+    if (technical) {
+      const key = type || technical[1].toLowerCase();
+      const label = eventTitles[key];
+      const detail = technical[2].trim();
+      const title = label
+        ? `${label}${detail ? (key === 'membership_created' ? ` لـ${detail}` : ` ${detail}`) : ''}`
+        : 'إشعار جديد';
+      return { title, message: '' };
+    }
+
+    const suppliedTitle = String(item?.title || '').trim();
+    const safeTitle = suppliedTitle && !/^[a-z][a-z0-9_-]+$/i.test(suppliedTitle)
+      ? suppliedTitle
+      : eventTitles[type] || 'إشعار جديد';
+    const safeMessage = originalMessage && !/^Notification emitted for\b/i.test(originalMessage)
+      ? originalMessage
+      : '';
+    return { title: safeTitle, message: safeMessage };
   }
 
   function safeActionUrl(value) {
@@ -197,7 +251,7 @@
       if (!item.read) {
         const unread = document.createElement('span');
         unread.className = 'notification-center-item-unread';
-        unread.textContent = 'غير مقروء';
+        unread.setAttribute('aria-label', 'غير مقروء');
         heading.appendChild(unread);
       }
 
@@ -205,12 +259,14 @@
       const content = document.createElement(actionUrl ? 'a' : 'div');
       content.className = 'notification-center-item-link';
       if (actionUrl) content.href = actionUrl;
+      const copy = notificationCopy(item);
       const title = document.createElement('strong');
       title.className = 'notification-center-item-title';
-      title.textContent = item.title || 'إشعار';
+      title.textContent = copy.title;
       const message = document.createElement('span');
       message.className = 'notification-center-item-message';
-      message.textContent = item.message || '';
+      message.textContent = copy.message;
+      message.hidden = !copy.message;
       content.append(title, message);
 
       const metaLine = document.createElement('div');
@@ -292,6 +348,12 @@
     if (!(await ensureNotificationSession())) return;
     if (state.loading) return;
     state.loading = true;
+    if (loadMoreButton && append) {
+      loadMoreButton.disabled = true;
+      loadMoreButton.setAttribute('aria-busy', 'true');
+      loadMoreButton.textContent = 'جارٍ تحميل المزيد…';
+    }
+    if (markAllButton) markAllButton.disabled = true;
     if (!append) setMessage('جاري تحميل الإشعارات...', 'notification-center-loading');
     try {
       const page = append ? state.page + 1 : 1;
@@ -319,6 +381,11 @@
       state.hasNext = Boolean(payload.pagination?.hasNext);
       renderNotifications(state.items);
       loadMoreButton.hidden = !state.hasNext;
+      if (!state.hasNext && state.items.length) {
+        endOfListElement.hidden = false;
+      } else {
+        endOfListElement.hidden = true;
+      }
       state.loaded = true;
       startRealtime();
       try { await refreshUnread(); } catch (_) { /* list remains usable */ }
@@ -326,6 +393,12 @@
       setMessage('تعذر تحميل الإشعارات. حاول مرة أخرى.', 'notification-center-error');
     } finally {
       state.loading = false;
+      if (loadMoreButton) {
+        loadMoreButton.disabled = false;
+        loadMoreButton.removeAttribute('aria-busy');
+        loadMoreButton.textContent = 'تحميل المزيد';
+      }
+      if (markAllButton) markAllButton.disabled = state.unread === 0;
     }
   }
 
@@ -343,6 +416,7 @@
   }
 
   async function markAllRead() {
+    if (state.unread === 0 || state.loading) return;
     if (markAllButton) markAllButton.disabled = true;
     try {
       const payload = await requestJson(apiPath('/read-all'), { method: 'POST' });
@@ -352,16 +426,57 @@
         setBadge(0);
       }
     } catch (_) { /* keep the panel usable */ }
-    finally { if (markAllButton) markAllButton.disabled = false; }
+    finally { if (markAllButton) markAllButton.disabled = state.unread === 0; }
+  }
+
+  function movePanelToMobileLayer() {
+    if (!mobileLayer) {
+      mobileLayer = document.createElement('div');
+      mobileLayer.className = 'notification-center-mobile-layer';
+      mobileLayer.hidden = true;
+      mobileLayer.setAttribute('data-notification-modal-layer', '');
+      mobileLayer.addEventListener('click', (event) => {
+        if (event.target === mobileLayer) toggle(false);
+      });
+    }
+    document.body.appendChild(mobileLayer);
+    mobileLayer.appendChild(panel);
+    mobileLayer.hidden = false;
+    panel.setAttribute('aria-modal', 'true');
+  }
+
+  function returnPanelToTrigger() {
+    if (root && panel && panel.parentElement !== root) root.appendChild(panel);
+    if (mobileLayer) {
+      mobileLayer.hidden = true;
+      mobileLayer.remove();
+    }
+    panel?.setAttribute('aria-modal', 'false');
   }
 
   function toggle(open = !state.open) {
-    state.open = Boolean(open);
+    const nextOpen = Boolean(open);
+    if (nextOpen === state.open) return;
+    if (nextOpen) {
+      focusBeforeOpen = document.activeElement;
+      if (mobileViewportQuery?.matches) movePanelToMobileLayer();
+      bodyOverflowBeforeOpen = document.body.style.overflow;
+      if (mobileViewportQuery?.matches) document.body.style.overflow = 'hidden';
+    } else {
+      returnPanelToTrigger();
+      document.body.style.overflow = bodyOverflowBeforeOpen;
+    }
+    state.open = nextOpen;
     root.classList.toggle('is-open', state.open);
-    const panel = root.querySelector('.notification-center-panel');
     panel.hidden = !state.open;
     triggerElement?.setAttribute('aria-expanded', String(state.open));
-    if (state.open && !state.loaded) void load();
+    if (state.open) {
+      (mobileViewportQuery?.matches ? closeButton : panel.querySelector('select, button, a'))?.focus({ preventScroll: true });
+      if (!state.loaded) void load();
+    } else if (focusBeforeOpen?.isConnected) {
+      focusBeforeOpen.focus({ preventScroll: true });
+      focusBeforeOpen = null;
+    }
   }
 
   function create(host) {
@@ -378,6 +493,7 @@
     trigger.type = 'button';
     trigger.className = 'notification-center-trigger';
     trigger.setAttribute('aria-label', 'الإشعارات');
+    trigger.setAttribute('title', 'الإشعارات');
     trigger.setAttribute('aria-expanded', 'false');
     trigger.setAttribute('aria-controls', 'notificationCenterPanel');
     trigger.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>';
@@ -387,12 +503,37 @@
     badge.setAttribute('aria-live', 'polite');
     trigger.appendChild(badge);
 
-    const panel = document.createElement('section');
+    panel = document.createElement('section');
     panel.id = 'notificationCenterPanel';
     panel.className = 'notification-center-panel';
     panel.hidden = true;
-    panel.setAttribute('aria-label', 'مركز الإشعارات');
-    panel.innerHTML = '<header class="notification-center-head"><div class="notification-center-heading"><span class="notification-center-eyebrow">مركز الحساب</span><h2>الإشعارات</h2><small>آخر التنبيهات الخاصة بحسابك</small></div><div class="notification-center-head-actions"><label class="notification-center-filter-wrap" for="notificationCategoryFilter"><span class="visually-hidden">تصفية الإشعارات</span><select id="notificationCategoryFilter" class="notification-center-filter"><option value="">كل الإشعارات</option><option value="registration">التسجيل</option><option value="membership">العضويات</option><option value="payment">المدفوعات</option><option value="system">النظام</option></select></label><button type="button" class="notification-center-icon-button" data-notification-refresh aria-label="تحديث الإشعارات" title="تحديث"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.7L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.7L20 16"/><path d="M20 20v-4h-4"/></svg></button></div></header><div class="notification-center-toolbar"><span class="notification-center-summary" data-notification-summary>كل التنبيهات مقروءة</span><span class="notification-center-toolbar-hint">تحديثات آمنة حسب صلاحياتك</span></div><div class="notification-center-list" data-notification-list role="list" aria-live="polite"><div class="notification-center-empty">افتح المركز لعرض الإشعارات.</div></div><footer class="notification-center-footer"><button type="button" class="notification-center-action" data-notification-more hidden>تحميل المزيد</button><button type="button" class="notification-center-action notification-center-read-all" data-notification-read-all><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"/></svg><span>تمييز الكل كمقروء</span></button></footer>';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-modal', 'false');
+    panel.setAttribute('aria-label', 'الإشعارات');
+    panel.tabIndex = -1;
+    panel.innerHTML = `
+      <header class="notification-center-head">
+        <div class="notification-center-heading"><h2>الإشعارات</h2><small>آخر المستجدات في حسابك</small></div>
+        <button type="button" class="notification-center-icon-button notification-center-close" data-notification-close aria-label="إغلاق الإشعارات" title="إغلاق">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </header>
+      <div class="notification-center-toolbar">
+        <span class="notification-center-summary" data-notification-summary>كل التنبيهات مقروءة</span>
+        <div class="notification-center-head-actions">
+          <label class="notification-center-filter-wrap" for="notificationCategoryFilter"><span class="visually-hidden">تصفية الإشعارات</span>
+            <select id="notificationCategoryFilter" class="notification-center-filter"><option value="">كل الإشعارات</option><option value="registration">التسجيل</option><option value="membership">العضويات</option><option value="payment">المدفوعات</option><option value="system">النظام</option></select>
+          </label>
+          <button type="button" class="notification-center-icon-button" data-notification-refresh aria-label="تحديث الإشعارات" title="تحديث">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.7L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.7L20 16"/><path d="M20 20v-4h-4"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="notification-center-list" data-notification-list role="list" aria-live="polite"><div class="notification-center-empty">افتح المركز لعرض الإشعارات.</div></div>
+      <footer class="notification-center-footer">
+        <div class="notification-center-footer-pagination"><button type="button" class="notification-center-action" data-notification-more hidden>تحميل المزيد</button><span class="notification-center-end" data-notification-end hidden>وصلت إلى نهاية الإشعارات</span></div>
+        <button type="button" class="notification-center-action notification-center-read-all" data-notification-read-all><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"/></svg><span>تمييز الكل كمقروء</span></button>
+      </footer>`;
     root.append(trigger, panel);
     host.prepend(root);
 
@@ -401,6 +542,8 @@
     markAllButton = panel.querySelector('[data-notification-read-all]');
     refreshButton = panel.querySelector('[data-notification-refresh]');
     loadMoreButton = panel.querySelector('[data-notification-more]');
+    endOfListElement = panel.querySelector('[data-notification-end]');
+    closeButton = panel.querySelector('[data-notification-close]');
     const categoryFilter = panel.querySelector('#notificationCategoryFilter');
     const coachingOption = document.createElement('option');
     coachingOption.value = 'coaching';
@@ -411,11 +554,51 @@
     subscriptionOption.textContent = '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a';
     categoryFilter.appendChild(subscriptionOption);
     trigger.addEventListener('click', () => toggle());
+    closeButton.addEventListener('click', () => toggle(false));
     refreshButton.addEventListener('click', () => void load());
     categoryFilter.addEventListener('change', () => { state.category = categoryFilter.value; state.loaded = false; state.page = 1; void load(); });
     markAllButton.addEventListener('click', () => void markAllRead());
     loadMoreButton.addEventListener('click', () => void load({ append: true }));
-    document.addEventListener('click', (event) => { if (state.open && !root.contains(event.target)) toggle(false); });
+    mobileViewportQuery = window.matchMedia('(max-width: 640px)');
+    mobileViewportQuery.addEventListener?.('change', (event) => {
+      if (!state.open) return;
+      if (event.matches) {
+        bodyOverflowBeforeOpen = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        movePanelToMobileLayer();
+      } else {
+        returnPanelToTrigger();
+        document.body.style.overflow = bodyOverflowBeforeOpen;
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (!state.open) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        toggle(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !mobileViewportQuery?.matches) return;
+      const focusable = [...panel.querySelectorAll('button:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.hidden && element.getClientRects().length);
+      if (!focusable.length) {
+        event.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (state.open && !root.contains(event.target) && !panel.contains(event.target)) toggle(false);
+    });
   }
 
   window.topGymNotificationCenter = { refresh: () => load(), toggle };

@@ -1,0 +1,318 @@
+/* Responsive shell composition. Desktop retains the existing inline toolbar;
+   phone widths use two explicit rows, never flex-wrap to create rows. */
+.topbar-mobile-row,
+.topbar-mobile-actions {
+  display: contents;
+}
+
+.mobile-topbar-action {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .app-shell > .topbar .topbar-inner {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+
+  .app-shell > .topbar .topbar-controls {
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: stretch;
+    justify-content: stretch;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .app-shell > .topbar .topbar-mobile-row {
+    display: grid;
+    min-width: 0;
+    grid-row: 1;
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: 44px;
+    align-items: center;
+    gap: 8px;
+    direction: rtl;
+  }
+
+  .app-shell > .topbar #mobileNavToggle {
+    display: inline-grid;
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
+    place-items: center;
+    padding: 0;
+  }
+
+  .app-shell > .topbar #mobileNavToggle .ui-icon,
+  .app-shell > .topbar .mobile-topbar-action .ui-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .app-shell > .topbar .topbar-mobile-actions {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    gap: 8px;
+    direction: ltr;
+  }
+
+  .app-shell > .topbar .topbar-quick-actions {
+    display: flex;
+    min-width: 44px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    order: 1;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger,
+  .app-shell > .topbar .mobile-topbar-action {
+    display: inline-grid;
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
+    place-items: center;
+    padding: 0;
+  }
+
+  .app-shell > .topbar .mobile-topbar-action {
+    display: inline-grid;
+    order: 3;
+    border: 1px solid var(--sidebar-divider);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--nav-action-neutral);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="globalKioskToggle"] {
+    color: var(--nav-action-blue);
+  }
+
+  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="authLogoutButton"] {
+    order: 4;
+  }
+
+  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="globalKioskToggle"][aria-pressed="true"] {
+    border-color: var(--primary-border);
+    background: var(--primary-soft);
+    color: var(--info-text);
+  }
+
+  .app-shell > .topbar .mobile-topbar-action:hover:not(:disabled),
+  .app-shell > .topbar .mobile-topbar-action:focus-visible {
+    border-color: var(--primary-border);
+    background: var(--sidebar-hover-bg);
+    color: var(--sidebar-text);
+  }
+
+  .app-shell > .topbar .mobile-topbar-action:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  .app-shell > .topbar .mobile-topbar-action:disabled,
+  .app-shell > .topbar .mobile-topbar-action[hidden] {
+    cursor: not-allowed;
+    opacity: .55;
+  }
+
+  .app-shell > .topbar .mobile-topbar-action[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 374px) {
+    .app-shell > .topbar .topbar-mobile-actions,
+    .app-shell > .topbar .topbar-quick-actions {
+      gap: 4px;
+    }
+  }
+
+  .app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button {
+    order: 2;
+  }
+
+  body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+  body .app-shell > .topbar .topbar-controls > #authAccountBar {
+    display: none;
+  }
+
+  .app-shell > .topbar #branchContextShell[hidden] {
+    display: none;
+  }
+
+  .app-shell > .topbar .topbar-controls > #branchContextShell {
+    position: relative;
+    inset: auto;
+    display: grid;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 44px;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-kicker,
+  .app-shell > .topbar #branchContextShell .branch-context-divider,
+  .app-shell > .topbar #branchContextShell .branch-context-status {
+    display: none;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field {
+    position: relative;
+    display: flex;
+    box-sizing: border-box;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    min-height: 44px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-inline: 4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    transform: none;
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-field + .branch-context-field[data-context-field="section"] {
+    border-inline-start: 0;
+  }
+
+  .app-shell > .topbar #branchContextShell [data-context-field="section"]::before {
+    position: absolute;
+    inset-block: 10px;
+    inset-inline-start: 0;
+    width: 1px;
+    background: var(--sidebar-divider);
+    content: "";
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field:hover,
+  .app-shell > .topbar #branchContextShell .branch-context-field:focus-within,
+  .app-shell > .topbar #branchContextShell .branch-context-field.is-open {
+    background: var(--sidebar-hover-bg);
+    transform: none;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field-icon {
+    display: grid;
+    box-sizing: border-box;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    place-items: center;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field-icon > svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field-copy > small {
+    display: none;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-field-copy select {
+    position: absolute;
+    width: 1px;
+    min-width: 1px;
+    max-width: 1px;
+    height: 1px;
+    min-height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-trigger {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 44px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0;
+    color: var(--sidebar-text);
+    font-size: var(--font-sm);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-trigger > [data-context-value] {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    unicode-bidi: plaintext;
+    white-space: nowrap;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-trigger-chevron {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+  }
+
+  .app-shell > .topbar #branchContextShell .branch-context-menu {
+    z-index: var(--z-dropdown, 1000);
+    inset-block-start: calc(100% + 4px);
+    width: max-content;
+    min-width: min(100%, 160px);
+    max-width: min(86vw, 300px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell > .topbar .mobile-topbar-action,
+  .app-shell > .topbar #branchContextShell .branch-context-field {
+    transition: none;
+  }
+}

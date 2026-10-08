@@ -264,47 +264,6 @@ body .auth-form:not(#loginForm) .auth-password-wrap > input:not([type="checkbox"
   background: var(--rf-surface-raised);
 }
 
-/* The reference login control is a compact two-state switch. Keep the
-   existing data-theme click contract while making both states visible. */
-.auth-screen[data-auth-stage="login"] .auth-theme-toggle {
-  position: absolute;
-  width: 96px;
-  height: 40px;
-  min-height: 40px;
-  justify-content: space-between;
-  padding: 0 10px;
-  border-radius: 999px;
-  overflow: hidden;
-}
-.auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 48px;
-  height: 33px;
-  border-radius: 999px;
-  background: var(--auth-blue);
-  box-shadow: 0 6px 14px rgb(23 105 232 / .26);
-  content: "";
-  transition: left .18s ease, right .18s ease;
-}
-.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-dark,
-.auth-screen[data-auth-stage="login"] .auth-theme-toggle .theme-toggle-icon-light {
-  position: relative;
-  z-index: 1;
-  display: block !important;
-  width: 19px;
-  height: 19px;
-}
-html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
-  left: 3px;
-  right: auto;
-}
-html:not([data-theme="dark"]) .auth-screen[data-auth-stage="login"] .auth-theme-toggle::before {
-  right: 3px;
-  left: auto;
-}
-
 body .branches-page {
   overflow: hidden;
   border: 0;
@@ -899,17 +858,20 @@ body .branch-context-menu {
   border-radius: 12px;
   background: color-mix(in srgb, var(--sidebar-bg) 96%, var(--primary) 4%);
   box-shadow: 0 18px 34px rgb(2 6 23 / .28);
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-5px) scale(.98);
   transform-origin: top center;
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
 }
 
 body .branch-context-field.is-open .branch-context-menu {
+  visibility: visible;
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0) scale(1);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s;
 }
 
 body .branch-context-option {
@@ -1035,9 +997,7 @@ body .dashboard-hero {
   overflow: hidden;
   border: 1px solid rgb(219 228 240 / .95);
   border-radius: 26px;
-  background:
-    radial-gradient(circle at 12% 12%, rgb(92 168 255 / .18), transparent 34%),
-    linear-gradient(118deg, #0a1730 0%, #10294c 58%, #0f6b72 155%);
+  background: #0a1730;
   box-shadow: 0 18px 44px rgb(37 55 91 / .08);
   animation: dashboard-hero-enter 420ms ease-out both;
   transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
@@ -1055,11 +1015,14 @@ body .dashboard-hero:hover {
 }
 
 body .dashboard-hero::before {
-  display: none;
-}
-
-body .dashboard-hero::after {
-  display: none;
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(105deg, rgb(5 16 34 / .48) 0%, rgb(5 16 34 / .34) 48%, rgb(5 16 34 / .54) 100%),
+    url('/assets/logic-fit-login-gym.webp') center 52% / cover no-repeat;
+  content: '';
+  pointer-events: none;
 }
 
 body .dashboard-hero-content,
@@ -1357,14 +1320,9 @@ body[data-theme="dark"] .dashboard-hero {
 html[data-theme="dark"] body .dashboard-hero::before,
 body[data-theme="dark"] .dashboard-hero::before {
   background:
-    linear-gradient(90deg, rgb(8 17 34 / .2), rgb(8 17 34 / .7) 54%, rgb(8 17 34 / .96)),
-    url('/assets/gym-background.webp') center / cover no-repeat;
-  opacity: .52;
-}
-
-html[data-theme="dark"] body .dashboard-hero::after,
-body[data-theme="dark"] .dashboard-hero::after {
-  background: linear-gradient(90deg, rgb(8 17 34 / .62), rgb(8 17 34 / .12) 54%, rgb(8 17 34 / .76));
+    linear-gradient(90deg, rgb(8 17 34 / .42), rgb(8 17 34 / .56) 54%, rgb(8 17 34 / .72)),
+    url('/assets/logic-fit-login-gym.webp') center 52% / cover no-repeat;
+  opacity: 1;
 }
 
 html[data-theme="dark"] body .dashboard-hero-heading h2,
@@ -1454,7 +1412,7 @@ body[data-theme="dark"] .dashboard-hero-mini-stat-icon {
   }
 
   body .dashboard-hero::before {
-    opacity: .2;
+    opacity: .72;
   }
 
   body .dashboard-hero-content,
@@ -1822,7 +1780,7 @@ body .topbar-controls > .branch-context-shell {
 body .topbar-controls > .branch-context-shell .branch-context-kicker,
 body .topbar-controls > .branch-context-shell .branch-context-status,
 body .topbar-controls > .branch-context-shell .branch-context-divider {
-  display: none !important;
+  display: none;
 }
 
 body .topbar-controls > .branch-context-shell .branch-context-field {
@@ -1893,7 +1851,6 @@ body .topbar-controls > #mobileNavToggle {
   order: 3;
 }
 
-body .topbar-controls > #themeToggleButton,
 body .topbar-controls > #globalKioskToggle,
 body .topbar-controls > #authAccountBar {
   order: 4;
@@ -1902,7 +1859,6 @@ body .topbar-controls > #authAccountBar {
 body .topbar-controls > #globalKioskToggle { order: 5; }
 body .topbar-controls > #authAccountBar { order: 6; }
 
-body .topbar-controls > #themeToggleButton,
 body .topbar-controls > #globalKioskToggle,
 body .topbar-controls > #authAccountBar .auth-logout-button {
   box-sizing: border-box;
@@ -1920,7 +1876,6 @@ body .topbar-controls > #authAccountBar .auth-logout-button > span {
   display: none;
 }
 
-body .topbar-controls > #themeToggleButton .ui-icon,
 body .topbar-controls > #globalKioskToggle .ui-icon,
 body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon {
   width: 18px;
@@ -2008,7 +1963,6 @@ body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon {
   }
 
   body .topbar-controls > #mobileNavToggle,
-  body .topbar-controls > #themeToggleButton,
   body .topbar-controls > #globalKioskToggle,
   body .topbar-controls > #authAccountBar .auth-logout-button {
     width: 38px;
@@ -2019,7 +1973,6 @@ body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon {
     border-radius: 9px;
   }
 
-  body .topbar-controls > #themeToggleButton .ui-icon,
   body .topbar-controls > #globalKioskToggle .ui-icon,
   body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon,
   body .topbar-controls > #mobileNavToggle .ui-icon {
@@ -2070,7 +2023,7 @@ body .topbar-controls > .branch-context-shell {
 
 body .topbar-controls > .branch-context-shell:hover,
 body .topbar-controls > .branch-context-shell:focus-within {
-  transform: translate(-50%, -50%) !important;
+  transform: none;
 }
 
 body .topbar-controls > .branch-context-shell .branch-context-field {
@@ -2123,7 +2076,7 @@ body .topbar-controls > .branch-context-shell .branch-context-field-copy {
 }
 
 body .topbar-controls > .branch-context-shell .branch-context-field-copy small {
-  display: none !important;
+  display: none;
 }
 
 body .topbar-controls > .branch-context-shell .branch-context-field-copy select {
@@ -2244,6 +2197,435 @@ body .topbar-quick-actions {
     min-width: 90px;
     max-width: 28vw;
     font-size: 10px;
+  }
+}
+
+/* Navigation refinement: keep the current route hooks and branch/section
+   controls, but present them as one calm, labelled command bar. */
+body .app-shell > .topbar .topbar-inner {
+  width: min(100% - 40px, 1520px);
+  min-height: 76px;
+  gap: var(--space-5);
+  overflow: visible;
+}
+
+body .app-shell > .topbar,
+body .app-shell > .topbar .topbar-inner,
+body .app-shell > .topbar .topbar-controls {
+  overflow: visible;
+}
+
+body .app-shell > .topbar:has(.branch-context-field.is-open),
+body .app-shell > .topbar:has(.branch-context-field.is-open) {
+  z-index: calc(var(--z-overlay) + 1);
+}
+
+body .app-shell > .topbar .topbar-controls {
+  position: static;
+  min-height: 56px;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+body .app-shell > .page-tabs {
+  background-color: var(--sidebar-bg);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--sidebar-bg) 92%, var(--primary) 8%), var(--sidebar-bg));
+  background-blend-mode: normal;
+}
+
+body .app-shell > .page-tabs::before {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sidebar-bg) 12%, transparent), color-mix(in srgb, var(--sidebar-bg) 42%, transparent));
+}
+
+body .app-shell > .page-tabs > .page-tab,
+body .app-shell > .page-tabs > .smart-assistant-launcher {
+  min-height: 48px;
+  border-color: transparent;
+  border-radius: var(--radius-md);
+  color: var(--sidebar-text-muted);
+  font-weight: var(--weight-semibold);
+  box-shadow: none;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible,
+body .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+body .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+  border-color: var(--sidebar-divider);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+  box-shadow: none;
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"],
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--sidebar-text);
+  box-shadow: inset 3px 0 0 var(--primary-hover);
+}
+
+body .app-shell > .page-tabs > .page-tab::before,
+body .app-shell > .page-tabs > .smart-assistant-launcher::before {
+  background: var(--primary-hover);
+}
+
+@media (max-width: 1199px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell {
+    width: auto;
+    max-width: 100%;
+    flex-basis: auto;
+  }
+}
+
+/* Navbar context/action contract. Keep selectors and existing actions in the
+   current shell; this layer only normalizes their presentation and hit areas. */
+body .app-shell > .topbar .topbar-controls > #branchContextShell {
+  box-sizing: border-box;
+  width: min(400px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  flex: 0 1 400px;
+  align-items: center;
+  gap: var(--space-2);
+  transform: none;
+  transition: none;
+}
+
+body .app-shell > .topbar .topbar-controls > #branchContextShell:hover,
+body .app-shell > .topbar .topbar-controls > #branchContextShell:focus-within {
+  transform: none;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 0;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field + .branch-context-field {
+  border-inline-start: 1px solid var(--sidebar-divider);
+  border-radius: 0;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field-copy,
+body .app-shell > .topbar #branchContextShell .branch-context-trigger {
+  width: 100%;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field-copy > small {
+  display: none;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field-icon {
+  box-sizing: border-box;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border: 1px solid var(--nav-context-branch-surface);
+  border-radius: var(--radius-sm);
+  background: var(--nav-context-branch-surface);
+  color: var(--nav-context-branch-accent);
+}
+
+body .app-shell > .topbar #branchContextShell [data-context-field="section"] .branch-context-field-icon {
+  border-color: var(--nav-context-section-surface);
+  background: var(--nav-context-section-surface);
+  color: var(--nav-context-section-accent);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field-icon > svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-trigger {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--sidebar-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  transform: none;
+  transition: color var(--transition-fast);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field:hover,
+body .app-shell > .topbar #branchContextShell .branch-context-field.is-open {
+  background: var(--sidebar-hover-bg);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-trigger:hover,
+body .app-shell > .topbar #branchContextShell .branch-context-trigger:active {
+  transform: none;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-trigger > [data-context-value] {
+  display: block;
+  min-width: 0;
+  max-width: clamp(72px, 13vw, 176px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  unicode-bidi: plaintext;
+  white-space: nowrap;
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-trigger-chevron {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-color: var(--sidebar-text-muted);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-field.is-open .branch-context-trigger-chevron {
+  color: var(--sidebar-text);
+}
+
+body .app-shell > .topbar #branchContextShell .branch-context-menu {
+  inset-block-start: calc(100% + var(--space-1));
+  width: max-content;
+  min-width: min(100%, 180px);
+  max-width: min(86vw, 320px);
+  transform: none;
+  transition: none;
+}
+
+/* Action order remains DOM/CSS-owned by the existing shell. Theme changes only
+   affect the semantic color treatment; geometry is identical in both modes. */
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button {
+  color: var(--nav-action-neutral);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle {
+  color: var(--nav-action-blue);
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+  color: var(--nav-action-cyan);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle .ui-icon,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button .ui-icon,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger .ui-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:hover,
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:active {
+  border-color: var(--info-border);
+  background: var(--nav-action-blue-surface);
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:hover,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:active {
+  border-color: var(--nav-context-section-surface);
+  background: var(--nav-action-cyan-surface);
+}
+
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:hover,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:active {
+  border-color: var(--sidebar-border);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:focus-visible,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:focus-visible,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:disabled,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:disabled,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
+  inset-block-start: 3px;
+  inset-inline-end: 3px;
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-controls > #branchContextShell {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    flex: 1 1 100%;
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-field {
+    flex: 1 1 0;
+    padding-inline: var(--space-1);
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-field-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-trigger > [data-context-value] {
+    max-width: min(30vw, 150px);
+  }
+
+  body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+  body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button,
+  body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+  }
+}
+
+@media (max-width: 380px) {
+  body .app-shell > .topbar #branchContextShell .branch-context-field {
+    gap: var(--space-1);
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-field-icon {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-trigger {
+    gap: var(--space-1);
+    font-size: var(--font-xs);
+  }
+
+  body .app-shell > .topbar #branchContextShell .branch-context-trigger > [data-context-value] {
+    max-width: 25vw;
+  }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 20px);
+    padding-block: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    gap: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell {
+    width: auto;
+    min-height: 0;
+    flex: 0 1 auto;
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell .branch-context-field {
+    padding-inline: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell .branch-context-field-icon {
+    width: 26px;
+    height: 26px;
+    flex-basis: 26px;
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell .branch-context-field-copy small {
+    font-size: 10px;
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell .branch-context-trigger {
+    font-size: var(--font-xs);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell .branch-context-menu {
+    max-height: min(280px, calc(100dvh - 150px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .app-shell > .topbar .branch-context-shell,
+  body .app-shell > .topbar .branch-context-field,
+  body .app-shell > .topbar .branch-context-menu,
+  body .app-shell > .topbar .branch-context-option,
+  body .app-shell > .topbar .branch-context-trigger-chevron,
+  body .app-shell > .page-tabs > .page-tab,
+  body .app-shell > .page-tabs > .smart-assistant-launcher {
+    transition: none;
   }
 }
 

@@ -16,8 +16,40 @@
     function mountContextShell() {
         const shell = $('branchContextShell');
         const controls = document.querySelector('.topbar-controls');
-        const actions = controls?.querySelector('.topbar-quick-actions');
+        const actions = controls?.querySelector(':scope > .topbar-mobile-row')
+            || controls?.querySelector(':scope > .topbar-quick-actions');
         if (shell && controls && shell.parentElement !== controls) controls.insertBefore(shell, actions || controls.firstChild);
+    }
+
+    function initMobileTopbarActions() {
+        const proxies = [...document.querySelectorAll('[data-mobile-topbar-action]')];
+        if (!proxies.length) return;
+
+        const accountBar = $('authAccountBar');
+        const sync = (proxy) => {
+            const target = $(proxy.dataset.mobileTopbarAction);
+            const accountUnavailable = proxy.dataset.mobileTopbarAction === 'authLogoutButton' && accountBar?.hidden;
+            proxy.hidden = !target || target.hidden || Boolean(accountUnavailable);
+            proxy.disabled = !target || Boolean(target.disabled);
+            if (target?.hasAttribute('aria-pressed')) proxy.setAttribute('aria-pressed', target.getAttribute('aria-pressed'));
+            else proxy.removeAttribute('aria-pressed');
+        };
+
+        proxies.forEach((proxy) => {
+            const target = $(proxy.dataset.mobileTopbarAction);
+            sync(proxy);
+            proxy.addEventListener('click', () => {
+                const currentTarget = $(proxy.dataset.mobileTopbarAction);
+                if (!proxy.hidden && !proxy.disabled && currentTarget && !currentTarget.disabled && !currentTarget.hidden) currentTarget.click();
+            });
+            if (target) new MutationObserver(() => sync(proxy)).observe(target, {
+                attributes: true,
+                attributeFilter: ['hidden', 'disabled', 'aria-pressed']
+            });
+            if (proxy.dataset.mobileTopbarAction === 'authLogoutButton' && accountBar) {
+                new MutationObserver(() => sync(proxy)).observe(accountBar, { attributes: true, attributeFilter: ['hidden'] });
+            }
+        });
     }
 
     function syncContextBar() {
@@ -139,6 +171,11 @@
         const selectedLabel = selectedOption?.textContent?.trim() || '—';
         const valueElement = trigger.querySelector('[data-context-value]');
         if (valueElement) valueElement.textContent = selectedLabel;
+        const contextLabel = field.dataset.contextField === 'section' ? 'القسم' : 'الفرع';
+        trigger.setAttribute('aria-label', `${contextLabel} الحالي: ${selectedLabel}`);
+        trigger.setAttribute('title', `${contextLabel}: ${selectedLabel}`);
+        trigger.setAttribute('dir', 'rtl');
+        if (valueElement) valueElement.setAttribute('dir', 'auto');
         trigger.disabled = Boolean(select.disabled);
         trigger.setAttribute('aria-disabled', String(Boolean(select.disabled)));
         trigger.setAttribute('aria-expanded', String(field.classList.contains('is-open')));
@@ -157,6 +194,21 @@
                 closeContextField(field);
             });
         });
+
+        menu.onkeydown = (event) => {
+            const options = [...menu.querySelectorAll('[data-context-option]:not(:disabled)')];
+            if (!options.length) return;
+            const currentIndex = options.indexOf(document.activeElement);
+            let nextIndex = currentIndex;
+            if (event.key === 'ArrowDown') nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % options.length;
+            else if (event.key === 'ArrowUp') nextIndex = currentIndex < 0 ? options.length - 1 : (currentIndex - 1 + options.length) % options.length;
+            else if (event.key === 'Home') nextIndex = 0;
+            else if (event.key === 'End') nextIndex = options.length - 1;
+            else return;
+            event.preventDefault();
+            options.forEach((option) => { option.tabIndex = -1; });
+            options[nextIndex].focus({ preventScroll: true });
+        };
     }
 
     function closeContextField(field, { restoreFocus = true } = {}) {
@@ -194,14 +246,27 @@
             menu.className = 'branch-context-menu';
             menu.id = `${select.id}Menu`;
             menu.setAttribute('role', 'listbox');
+            menu.setAttribute('aria-orientation', 'vertical');
             trigger.setAttribute('aria-controls', menu.id);
             field.querySelector('.branch-context-field-copy')?.append(trigger);
             field.append(menu);
 
             trigger.addEventListener('click', () => {
                 if (select.disabled) return;
-                const isOpen = field.classList.toggle('is-open');
-                trigger.setAttribute('aria-expanded', String(isOpen));
+                if (field.classList.contains('is-open')) {
+                    closeContextField(field);
+                    return;
+                }
+                document.querySelectorAll('[data-context-field].is-open').forEach((openField) => {
+                    if (openField !== field) closeContextField(openField, { restoreFocus: false });
+                });
+                field.classList.add('is-open');
+                trigger.setAttribute('aria-expanded', 'true');
+                window.requestAnimationFrame(() => {
+                    const selected = field.querySelector('.branch-context-option.is-selected:not(:disabled)');
+                    const firstAvailable = field.querySelector('.branch-context-option:not(:disabled)');
+                    (selected || firstAvailable)?.focus({ preventScroll: true });
+                });
             });
             trigger.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape') {
@@ -421,7 +486,13 @@
     }
 
     function bind() {
+        initMobileTopbarActions();
         document.addEventListener('keydown', closeOpenContextFields, true);
+        document.addEventListener('pointerdown', (event) => {
+            document.querySelectorAll('[data-context-field].is-open').forEach((field) => {
+                if (!field.contains(event.target)) closeContextField(field, { restoreFocus: false });
+            });
+        }, true);
         mountContextShell();
         ensureBranchTab();
         ensureBranchPanel();

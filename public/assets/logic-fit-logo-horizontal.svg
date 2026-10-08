@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 156" role="img" aria-labelledby="title desc">
+  <title id="title">Logic Fit</title>
+  <desc id="desc">Logic Fit — Manage, Motivate, Grow</desc>
+  <defs>
+    <linearGradient id="blue" x1="18" y1="20" x2="144" y2="139" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#168BFF"/><stop offset="1" stop-color="#0758DF"/>
+    </linearGradient>
+    <linearGradient id="navy" x1="37" y1="15" x2="94" y2="138" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102A5C"/><stop offset="1" stop-color="#07152F"/>
+    </linearGradient>
+  </defs>
+  <path d="M67 12 47 28c-6.1 4.9-9.7 12.3-9.7 20.1v48.2c0 17.5 14.2 31.7 31.7 31.7h31.5c4.6 0 6.2-5.9 2.3-8.3L72 98.2c-3-1.9-4.8-5.2-4.8-8.8V12Z" fill="url(#navy)"/>
+  <path d="M80.6 31.1h59.8c4.1 0 6.6 4.5 4.4 8l-12.6 19.4a10.8 10.8 0 0 1-9 4.9H76.4V42.8c0-5.2 1.9-9.5 4.2-11.7Z" fill="url(#blue)"/>
+  <path d="M77.1 72.8h47.2c4.1 0 6.6 4.5 4.4 8l-12.6 19.4a10.8 10.8 0 0 1-9 4.9H73.6V84.1c0-5.5 1.5-9 3.5-11.3Z" fill="url(#blue)"/>
+  <path d="m73.6 108.2 30.1 20.1H72.9c-11.3 0-20.4-9.1-20.4-20.4v-4.1h21.1Z" fill="url(#blue)"/>
+  <text x="188" y="98" fill="#0B1E45" font-family="Cairo, Tahoma, sans-serif" font-size="78" font-weight="800" letter-spacing="-3">Logic</text>
+  <text x="397" y="98" fill="#126BFF" font-family="Cairo, Tahoma, sans-serif" font-size="78" font-weight="800" letter-spacing="-3">Fit</text>
+  <text x="192" y="133" fill="#63738F" font-family="Cairo, Tahoma, sans-serif" font-size="13" font-weight="700" letter-spacing="6">MANAGE  |  MOTIVATE  |  GROW</text>
+</svg>

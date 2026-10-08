@@ -13,7 +13,11 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /credentials: 'same-origin'/);
     assert.match(center, /startsWith\('\/'\)/);
     assert.match(center, /!candidate\.startsWith\('\/\/'\)/);
-    assert.match(center, /textContent = item\.title/);
+    assert.match(center, /textContent = copy\.title/);
+    assert.match(center, /Notification emitted for/);
+    assert.match(center, /aria-modal/);
+    assert.match(center, /mobileLayer\.appendChild\(panel\)/);
+    assert.match(center, /event\.key === 'Escape'/);
     assert.match(center, /notificationCategoryFilter/);
     assert.match(center, /params\.set\('category', state\.category\)/);
     assert.match(center, /notification-center-item-icon/);

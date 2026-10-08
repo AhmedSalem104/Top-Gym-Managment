@@ -29,7 +29,8 @@ const cssLayers = [
     'components/ui-foundation.css',
     'components/design-foundation.css',
     'components/navigation-shell.css',
-    'components/visual-redesign.css'
+    'components/visual-redesign.css',
+    'components/theme-toggle.css'
 ];
 
 const cssImportPattern = /@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g;
@@ -57,6 +58,15 @@ function readAuthCard(source) {
     return source.slice(start + startMarker.length, end).trim();
 }
 
+function readAuthFeatures(source) {
+    const startMarker = '<!-- AUTH_ENTRY_FEATURES_START -->';
+    const endMarker = '<!-- AUTH_ENTRY_FEATURES_END -->';
+    const start = source.indexOf(startMarker);
+    const end = source.indexOf(endMarker);
+    if (start < 0 || end < 0 || end <= start) throw new Error('Login feature markers are missing or out of order');
+    return source.slice(start + startMarker.length, end).trim();
+}
+
 function buildLoginHtml(source, cssVersion) {
     const htmlOpen = source.match(/<html\b[^>]*>/i)?.[0];
     const head = source.match(/<head>[\s\S]*?<\/head>/i)?.[0]
@@ -65,7 +75,9 @@ function buildLoginHtml(source, cssVersion) {
         ?.replace('data-branding-entry="saas"', 'data-branding-entry="saas" data-auth-entry="login"');
     if (!htmlOpen || !head || !bodyOpen) throw new Error('Unable to derive login document shell from public/index.html');
     const authCard = readAuthCard(source);
-    return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${authCard.split('\n').map((line) => `            ${line}`).join('\n')}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
+    const authFeatures = readAuthFeatures(source);
+    const entryContent = [authCard, authFeatures].map((section) => section.split('\n').map((line) => `            ${line}`).join('\n')).join('\n');
+    return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${entryContent}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
 }
 
 const source = fs.readFileSync(indexPath, 'utf8');
@@ -83,5 +95,5 @@ fs.writeFileSync(loginCssPath, [
     minifiedCss,
     ''
 ].join('\n'), 'utf8');
-fs.writeFileSync(loginPath, buildLoginHtml(source, cssVersion).replaceAll('/js/auth-ui.js?v=20', '/js/auth-ui.js?v=21'), 'utf8');
+fs.writeFileSync(loginPath, buildLoginHtml(source, cssVersion).replaceAll('/js/theme.js?v=1', '/js/theme.js?v=2').replaceAll('/js/auth-ui.js?v=20', '/js/auth-ui.js?v=22'), 'utf8');
 console.log(`[LOGIN-ENTRY-OK] generated ${path.relative(root, loginPath)} and ${path.relative(root, loginCssPath)}`);
