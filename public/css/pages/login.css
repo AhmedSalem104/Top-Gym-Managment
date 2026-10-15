@@ -3436,7 +3436,7 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
   }
 }
 
-/* Login entry composition: centered V2 card, page-level controls and transparent benefits. */
+/* Login entry composition: split V2 layout with an unblurred photographic backdrop. */
 .auth-screen[data-auth-stage="login"] {
   --login-bg: var(--bg-header);
   --login-card: var(--bg-surface);
@@ -3470,7 +3470,7 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
 .auth-screen[data-auth-stage="login"]::before {
   inset: 0;
   background: var(--login-backdrop) center / cover no-repeat;
-  filter: brightness(.7);
+  filter: none;
 }
 
 .auth-screen[data-auth-stage="login"]::after {
@@ -3482,17 +3482,34 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
   z-index: 1;
   display: grid;
   box-sizing: border-box;
-  width: min(100%, 1200px);
+  width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   height: auto;
   grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  justify-items: center;
-  gap: clamp(var(--space-3), 2vh, var(--space-6));
+  align-content: stretch;
+  justify-items: stretch;
+  gap: 0;
   margin-inline: auto;
-  padding: 80px var(--space-6) var(--space-4);
+  padding: 80px clamp(var(--space-6), 5vw, var(--space-12)) var(--space-4);
   direction: rtl;
+}
+
+.auth-screen[data-auth-stage="login"] .auth-entry-layout {
+  display: grid;
+  width: min(100%, 1600px);
+  min-height: calc(100dvh - 96px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "marketing login";
+  align-items: center;
+  gap: clamp(var(--space-8), 6vw, var(--space-12));
+  margin-inline: auto;
+  direction: rtl;
+}
+
+html[dir="ltr"] .auth-screen[data-auth-stage="login"] .auth-entry-layout {
+  grid-template-areas: "login marketing";
+  direction: ltr;
 }
 
 .auth-screen[data-auth-stage="login"] .auth-reference-controls {
@@ -3537,8 +3554,9 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
 
 .auth-screen[data-auth-stage="login"] .auth-theme-toggle { position: static; inset: auto; }
 
-.auth-screen[data-auth-stage="login"] .auth-reference-features { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(var(--space-5), 5vw, var(--space-12)); margin: 0 auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; direction: rtl; }
-.auth-screen[data-auth-stage="login"] .auth-reference-features article { display: grid; min-width: 0; justify-items: center; gap: var(--space-2); color: var(--text-on-primary); font-size: var(--font-size-secondary); line-height: 1.6; text-align: center; }
+.auth-screen[data-auth-stage="login"] .auth-marketing-panel { grid-area: marketing; display: flex; min-width: 0; align-items: center; justify-content: center; direction: inherit; }
+.auth-screen[data-auth-stage="login"] .auth-reference-features { display: grid; width: min(100%, 600px); grid-template-columns: minmax(0, 1fr); gap: clamp(var(--space-5), 3vh, var(--space-8)); margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; direction: inherit; }
+.auth-screen[data-auth-stage="login"] .auth-reference-features article { display: grid; min-width: 0; grid-template-columns: 32px minmax(0, 1fr); align-items: center; justify-items: start; gap: var(--space-4); color: var(--text-on-primary); font-size: var(--font-size-secondary); line-height: 1.6; text-align: start; }
 .auth-screen[data-auth-stage="login"] .auth-reference-features article > span:last-child { display: grid; gap: 2px; }
 .auth-screen[data-auth-stage="login"] .auth-reference-features article strong { color: var(--text-on-primary); font-size: var(--font-size-body); font-weight: var(--weight-semibold); }
 .auth-screen[data-auth-stage="login"] .auth-reference-features article small { color: color-mix(in srgb, var(--text-on-primary) 84%, transparent); font-size: var(--font-size-secondary); font-weight: var(--weight-regular); }
@@ -3546,6 +3564,8 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
 .auth-screen[data-auth-stage="login"] .auth-reference-feature-icon .ui-icon { width: 22px; height: 22px; }
 
 .auth-screen[data-auth-stage="login"] .auth-card:not([hidden]) {
+  grid-area: login;
+  justify-self: center;
   display: block;
   width: 100%;
   max-width: 460px;
@@ -3626,12 +3646,21 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
 .auth-recovery-dialog > form:last-child { display: flex; justify-content: flex-start; }
 
 @media (max-width: 980px) {
-  .auth-screen[data-auth-stage="login"] .auth-shell { width: min(100%, 900px); }
+  .auth-screen[data-auth-stage="login"] .auth-shell { width: min(100%, 900px); padding-inline: var(--space-6); }
+  .auth-screen[data-auth-stage="login"] .auth-entry-layout { min-height: 0; grid-template-columns: minmax(0, 1fr); grid-template-areas: "login" "marketing"; justify-items: center; gap: clamp(var(--space-6), 4vh, var(--space-10)); padding-block: var(--space-6); }
+  .auth-screen[data-auth-stage="login"] .auth-marketing-panel { width: 100%; }
+  .auth-screen[data-auth-stage="login"] .auth-reference-features { width: 100%; max-width: 760px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
+  .auth-screen[data-auth-stage="login"] .auth-reference-features article { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-2); text-align: center; }
+}
+
+@media (max-width: 980px) and (min-width: 561px) {
+  html[dir="ltr"] .auth-screen[data-auth-stage="login"] .auth-entry-layout { grid-template-areas: "login" "marketing"; }
 }
 
 @media (max-width: 560px) {
   .auth-screen[data-auth-stage="login"] { background-position: 58% center; }
-  .auth-screen[data-auth-stage="login"] .auth-shell { width: 100%; padding: 72px var(--space-4) var(--space-4); gap: var(--space-4); }
+  .auth-screen[data-auth-stage="login"] .auth-shell { width: 100%; padding: 72px var(--space-4) var(--space-4); }
+  .auth-screen[data-auth-stage="login"] .auth-entry-layout { gap: var(--space-4); padding-block: var(--space-2); }
   .auth-screen[data-auth-stage="login"] .auth-reference-controls { inset-block-start: var(--space-3); inset-inline: var(--space-4); }
   .auth-screen[data-auth-stage="login"] .auth-reference-features { width: 100%; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
   .auth-screen[data-auth-stage="login"] .auth-reference-features article { grid-template-columns: 24px minmax(0, 1fr); justify-items: start; align-items: center; gap: var(--space-3); text-align: start; }
@@ -3643,11 +3672,13 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
 }
 
 @media (max-height: 680px) and (min-width: 561px) {
-  .auth-screen[data-auth-stage="login"] .auth-shell { align-content: center; gap: var(--space-3); padding-block: 72px var(--space-3); }
+  .auth-screen[data-auth-stage="login"] .auth-shell { align-content: center; padding-block: 72px var(--space-3); }
+  .auth-screen[data-auth-stage="login"] .auth-entry-layout { gap: var(--space-4); }
 }
 
 @media (max-height: 760px) and (max-width: 560px) {
-  .auth-screen[data-auth-stage="login"] .auth-shell { align-content: center; gap: var(--space-2); padding-block: 64px var(--space-3); }
+  .auth-screen[data-auth-stage="login"] .auth-shell { align-content: center; padding-block: 64px var(--space-3); }
+  .auth-screen[data-auth-stage="login"] .auth-entry-layout { gap: var(--space-3); }
   .auth-screen[data-auth-stage="login"] .auth-form-panel { padding: var(--space-4); }
   .auth-screen[data-auth-stage="login"] .auth-form { gap: var(--space-2); margin-top: var(--space-3); }
   .auth-screen[data-auth-stage="login"] .auth-registration-entry { margin-top: var(--space-3); }

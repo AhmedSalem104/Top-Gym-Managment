@@ -47,6 +47,7 @@ async function assertLoginSurface(page) {
         emailDirection: getComputedStyle(document.querySelector('#loginEmail')).direction,
         card: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
         visualCard: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
+        marketing: document.querySelector('.auth-marketing-panel').getBoundingClientRect().toJSON(),
         features: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
         featuresWidth: document.querySelector('.auth-reference-features').getBoundingClientRect().width,
         backgroundImage: getComputedStyle(document.querySelector('.auth-screen'), '::before').backgroundImage,
@@ -85,13 +86,10 @@ async function assertLoginSurface(page) {
     expect(metrics.emailDirection).toBe('ltr');
     expect(metrics.card.width).toBeGreaterThan(280);
     expect(metrics.card.width).toBeLessThanOrEqual(460);
-    expect(Math.abs((metrics.card.left + metrics.card.right) / 2 - metrics.viewport / 2)).toBeLessThanOrEqual(2);
     expect(metrics.featuresAfterCard).toBe(true);
-    expect(metrics.features.top).toBeGreaterThan(metrics.card.bottom);
-    expect(metrics.featuresWidth).toBeGreaterThanOrEqual(metrics.shell.width - 56);
     expect(metrics.backgroundImage).toContain('/assets/logic-fit-login-gym.webp');
     expect(metrics.backgroundFilter).not.toContain('blur(');
-    expect(metrics.backgroundFilter).toContain('brightness(0.7)');
+    expect(metrics.backgroundFilter).toBe('none');
     expect(metrics.overlayImage).toContain('gradient');
     expect(metrics.themeInsideCard).toBe(false);
     expect(metrics.themeInsideControls).toBe(true);
@@ -111,6 +109,16 @@ async function assertLoginSurface(page) {
     // belonged to the retired login styling and rejected the approved V2 CTA.
     expect(metrics.submitHeight).toBeGreaterThanOrEqual(44);
     expect(metrics.submitHeight).toBeLessThanOrEqual(48);
+    if (metrics.viewport > 980) {
+        expect(metrics.card.left, JSON.stringify(metrics)).toBeLessThan(metrics.viewport / 2);
+        expect(metrics.marketing.left, JSON.stringify(metrics)).toBeGreaterThan(metrics.viewport / 2 - 1);
+        expect(metrics.card.right, JSON.stringify(metrics)).toBeLessThan(metrics.marketing.left);
+        expect(metrics.marketing.width, JSON.stringify(metrics)).toBeGreaterThan(metrics.viewport * 0.35);
+    } else {
+        expect(metrics.features.top, JSON.stringify(metrics)).toBeGreaterThan(metrics.card.bottom);
+        expect(metrics.featuresWidth).toBeGreaterThanOrEqual(metrics.shell.width - 56);
+        expect(Math.abs((metrics.card.left + metrics.card.right) / 2 - metrics.viewport / 2)).toBeLessThanOrEqual(2);
+    }
 }
 
 test.beforeEach(async ({ page }) => {
@@ -118,7 +126,7 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
 });
 
-test('login centers the form and places product benefits below without image overlays', async ({ page }, testInfo) => {
+test('login uses a balanced desktop split and stacks the form and product benefits on smaller screens', async ({ page }, testInfo) => {
     await assertLoginSurface(page);
     if ((await page.evaluate(() => innerWidth)) > 980) {
         await page.screenshot({ path: testInfo.outputPath('login-desktop-split.png'), fullPage: true });
