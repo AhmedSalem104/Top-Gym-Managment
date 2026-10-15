@@ -3651,9 +3651,6 @@ html[data-theme="dark"] .auth-screen[data-auth-stage="login"] .auth-form-panel {
   .auth-screen[data-auth-stage="login"] .auth-marketing-panel { width: 100%; }
   .auth-screen[data-auth-stage="login"] .auth-reference-features { width: 100%; max-width: 760px; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); }
   .auth-screen[data-auth-stage="login"] .auth-reference-features article { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-2); text-align: center; }
-}
-
-@media (max-width: 980px) and (min-width: 561px) {
   html[dir="ltr"] .auth-screen[data-auth-stage="login"] .auth-entry-layout { grid-template-areas: "login" "marketing"; }
 }
 

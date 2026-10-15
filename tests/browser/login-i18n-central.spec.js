@@ -115,6 +115,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                         bodyFont: getComputedStyle(body).fontFamily,
                         headingFont: getComputedStyle(document.querySelector('.auth-form-heading h2')).fontFamily,
                         panel: panel.getBoundingClientRect().toJSON(),
+                        marketing: document.querySelector('.auth-marketing-panel').getBoundingClientRect().toJSON(),
+                        cardWidth: panel.getBoundingClientRect().width,
                         language: language.getBoundingClientRect().toJSON(),
                         submit: button.getBoundingClientRect().toJSON()
                     };
@@ -122,6 +124,13 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                 const label = `${viewport.width}/${theme}/${locale}: ${JSON.stringify(layout)}`;
                 expect(layout.document, `${label} document overflow`).toBeLessThanOrEqual(viewport.width + 1);
                 expect(layout.body, `${label} body overflow`).toBeLessThanOrEqual(viewport.width + 1);
+                expect(layout.cardWidth, label).toBeGreaterThan(280);
+                if (viewport.width > 980) {
+                    expect(layout.panel.left, label).toBeLessThan(viewport.width / 2);
+                    expect(layout.marketing.left, label).toBeGreaterThan(viewport.width / 2 - 1);
+                } else {
+                    expect(layout.marketing.top, label).toBeGreaterThan(layout.panel.bottom);
+                }
                 expect(layout.theme).toBe(theme);
                 expect(layout.locale).toBe(locale);
                 expect(layout.languageReceivesPointer, label).toBe(true);
