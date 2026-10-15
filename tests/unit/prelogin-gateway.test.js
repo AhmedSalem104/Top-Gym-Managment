@@ -19,14 +19,19 @@ test('minimal login keeps only the real auth hooks and theme control', () => {
     assert.match(markup, /data-theme-toggle/iu);
 });
 
-test('V2 login keeps the compact card, places features below it, and suppresses retired marketing surfaces', () => {
+test('V2 login keeps the compact card, splits desktop content, and stacks features on smaller screens', () => {
     const markup = read('public/index.html');
     const styles = read('public/css/pages/login.css');
+    const generatedLogin = read('public/login.html');
     const cardEnd = markup.indexOf('<!-- AUTH_ENTRY_CARD_END -->');
     const featuresStart = markup.indexOf('<!-- AUTH_ENTRY_FEATURES_START -->');
 
     assert.ok(cardEnd >= 0 && featuresStart > cardEnd, 'the three feature cards must follow the login card in the existing markup');
     assert.match(markup, /class="auth-reference-features"/u);
+    assert.match(generatedLogin, /class="auth-entry-layout"[\s\S]*class="auth-card"[\s\S]*class="auth-marketing-panel"[\s\S]*class="auth-reference-features"/u);
+    assert.match(styles, /grid-template-areas:\s*"marketing login"/u);
+    assert.match(styles, /@media \(max-width: 980px\)[\s\S]*?grid-template-areas:\s*"login" "marketing"/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\]::before[\s\S]*?filter:\s*none;/u);
     assert.doesNotMatch(markup, /class="auth-reference-hero(?:\s|["'])/u, 'the retired split hero must not return to the Login DOM');
     assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.saas-entry-card,[\s\S]*?display: none;/u);
     assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-security[\s\S]*?display: none;/u);

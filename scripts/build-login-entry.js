@@ -87,7 +87,15 @@ function buildLoginHtml(source, cssVersion) {
     const authCard = authCardMarkup.replace(themeControlMatch[0], '').replace(/^[\t ]+$/gm, '').trim();
     const authControls = readAuthControls(source).replace(/<\/div>\s*$/i, `${themeControlMatch[0]}</div>`);
     const authFeatures = readAuthFeatures(source);
-    const entryContent = [authControls, authCard, authFeatures].map((section) => section.split('\n').map((line) => line.trim() ? `            ${line.trimEnd()}` : '').join('\n')).join('\n');
+    const entryLayout = [
+        '<div class="auth-entry-layout">',
+        authCard,
+        '<div class="auth-marketing-panel">',
+        authFeatures,
+        '</div>',
+        '</div>'
+    ].join('\n');
+    const entryContent = [authControls, entryLayout].map((section) => section.split('\n').map((line) => line.trim() ? `            ${line.trimEnd()}` : '').join('\n')).join('\n');
     return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${entryContent}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/core/i18n.js?v=4"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
 }
 
