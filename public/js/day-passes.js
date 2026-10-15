@@ -3,7 +3,15 @@
     window.__topGymDayPassesLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const state = { pricing: [], records: [], dashboardRecords: [], initialized: false, loading: false, editingId: null, searchTimer: null };
+    const state = { pricing: [], records: [], dashboardRecords: [], dashboardSummary: null, dashboardMonthFrom: null, initialized: false, loading: false, editingId: null, searchTimer: null };
+
+    function t(key, params) {
+        return window.TopGymI18n?.t?.(key, params) || key;
+    }
+
+    function format(kind, value, options) {
+        return window.TopGymI18n?.format?.(kind, value, options) || '';
+    }
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -19,13 +27,13 @@
     }
 
     function money(value) {
-        return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+        return format('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            || `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     }
 
     function dateText(value) {
         if (!value) return '—';
-        const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-        return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+        return format('date', String(value).slice(0, 10), { dateStyle: 'medium' }) || String(value);
     }
 
     function paymentLabel(value) {
@@ -279,10 +287,24 @@
         const host = $('dashboardDayPassTableWrap');
         if (!host) return;
         if (!state.dashboardRecords.length) {
-            host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مسجلة هذا الشهر.</div>';
+            host.innerHTML = `<div class="day-pass-empty">${escapeHtml(t('dashboard.dayPasses.empty'))}</div>`;
             return;
         }
-        host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>التاريخ</th><th>المبلغ</th><th>الإجراءات</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><div class="day-pass-identity"><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || '')}</small><small class="day-pass-phone" dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></div></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
+        host.innerHTML = `<table class="dashboard-day-pass-table"><thead><tr><th>${escapeHtml(t('dashboard.dayPasses.column.visitor'))}</th><th>${escapeHtml(t('dashboard.dayPasses.column.type'))}</th><th>${escapeHtml(t('dashboard.dayPasses.column.date'))}</th><th>${escapeHtml(t('dashboard.dayPasses.column.amount'))}</th><th>${escapeHtml(t('dashboard.dayPasses.column.actions'))}</th></tr></thead><tbody>${state.dashboardRecords.map((item) => `<tr data-day-pass-id="${item.id}"><td><div class="day-pass-identity"><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || '')}</small><small class="day-pass-phone" dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></div></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td dir="ltr">${escapeHtml(dateText(item.visitDate))}</td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${renderRecordActions(item, { compact: true })}</td></tr>`).join('')}</tbody></table>`;
+    }
+
+    function renderDashboardSummary() {
+        const summary = state.dashboardSummary;
+        if (!summary) return;
+        const count = $('dashboardDayPassCount');
+        const total = $('dashboardDayPassTotal');
+        const meta = $('dashboardDayPassMonthMeta');
+        if (count) count.textContent = format('number', Number(summary.count || 0)) || String(summary.count || 0);
+        if (total) total.textContent = money(summary.amount || 0);
+        if (meta && state.dashboardMonthFrom) {
+            const month = format('date', state.dashboardMonthFrom, { month: 'long', year: 'numeric' }) || state.dashboardMonthFrom;
+            meta.textContent = t('dashboard.dayPasses.monthSummary', { month });
+        }
     }
 
     function yieldToBrowser() {
@@ -307,9 +329,9 @@
             const totalRecords = Number(list?.pagination?.total || dashboardRecords.length);
             const totalPages = Math.ceil(totalRecords / pageSize);
             state.dashboardRecords = dashboardRecords;
-            if ($('dashboardDayPassCount')) $('dashboardDayPassCount').textContent = Number(summary?.count || 0).toLocaleString('ar-EG');
-            if ($('dashboardDayPassTotal')) $('dashboardDayPassTotal').textContent = money(summary?.amount || 0);
-            if ($('dashboardDayPassMonthMeta')) $('dashboardDayPassMonthMeta').textContent = `ملخص ${new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(new Date(`${from}T00:00:00`))}`;
+            state.dashboardSummary = { count: Number(summary?.count || 0), amount: Number(summary?.amount || 0) };
+            state.dashboardMonthFrom = from;
+            renderDashboardSummary();
             renderDashboardList();
 
             if (totalPages > 1) {
@@ -493,6 +515,10 @@
         });
         $('dashboardDayPassAdd')?.addEventListener('click', openForm);
         $('dashboardDayPassManage')?.addEventListener('click', openDayPassRecords);
+        window.addEventListener('topgym:localechange', () => {
+            renderDashboardSummary();
+            renderDashboardList();
+        });
         $('dayPassDialog')?.addEventListener('click', (event) => {
             if (event.target.closest('[data-day-pass-dialog-close]')) closeDayPassDialog();
         });

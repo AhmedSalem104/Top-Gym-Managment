@@ -11,7 +11,7 @@
   justify-content: space-between;
   gap: var(--space-5);
   padding-bottom: var(--space-5);
-  border-bottom: 1px solid var(--border-color);
+  border-block-end: 1px solid var(--border-primary);
 }
 
 .member-requests-heading,
@@ -25,19 +25,19 @@
 .member-requests-heading-icon,
 .portal-analytics-heading-icon {
   display: grid;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   background: var(--primary-soft);
   color: var(--primary);
 }
 
 .member-requests-heading-icon .ui-icon,
 .portal-analytics-heading-icon .ui-icon {
-  width: 26px;
-  height: 26px;
+  width: var(--icon-size-prominent);
+  height: var(--icon-size-prominent);
 }
 
 .member-requests-kicker,
@@ -53,7 +53,9 @@
 .portal-analytics-heading h3 {
   margin: 3px 0 4px;
   color: var(--text-primary);
-  font-size: clamp(1.35rem, 2.6vw, 1.8rem);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--weight-semibold);
+  line-height: 1.35;
 }
 
 .member-requests-heading p,
@@ -83,12 +85,6 @@
 
 .member-requests-toolbar select,
 .portal-analytics-actions select {
-  min-height: 42px;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
-  background: var(--bg-input);
-  color: var(--text-primary);
   font: inherit;
 }
 
@@ -102,8 +98,8 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
 }
 
 .member-requests-table-scroll {
@@ -131,7 +127,7 @@
 }
 
 .member-requests-table th {
-  background: var(--color-surface-muted);
+  background: var(--table-header-bg);
   color: var(--text-secondary);
   font-size: var(--font-xs);
   white-space: nowrap;
@@ -160,7 +156,7 @@
 .member-request-date { color: var(--text-muted); font-size: var(--font-xs); white-space: nowrap; }
 .member-request-actions { min-width: 190px; }
 .member-request-action-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
-.member-request-status { display: inline-flex; min-height: 26px; align-items: center; padding: 4px 9px; border-radius: var(--radius-pill); font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.member-request-status { display: inline-flex; min-height: 26px; align-items: center; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: var(--font-xs); font-weight: var(--weight-medium); }
 .member-request-status-pending { background: var(--warning-soft); color: var(--warning-text); }
 .member-request-status-approved { background: var(--success-soft); color: var(--success-text); }
 .member-request-status-rejected,
@@ -174,7 +170,7 @@
 .member-requests-error .btn { margin-top: var(--space-2); }
 .member-requests-pagination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); color: var(--text-muted); font-size: var(--font-sm); }
 .member-requests-pagination > div { display: flex; gap: var(--space-2); }
-.member-requests-status { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--success-soft); color: var(--success-text); font-size: var(--font-sm); }
+.member-requests-status { padding: var(--space-3) var(--space-4); border: 1px solid var(--success-border); border-radius: var(--radius-md); background: var(--success-soft); color: var(--success-text); font-size: var(--font-sm); }
 .member-requests-status.is-error { background: var(--danger-soft); color: var(--danger-text); }
 
 @media (max-width: 760px) {
@@ -193,4 +189,91 @@
   .member-requests-toolbar .btn,
   .portal-analytics-actions .btn { width: 100%; }
   .member-requests-pagination { align-items: flex-start; flex-direction: column; }
+
+  .member-requests-table-scroll {
+    overflow: visible;
+    direction: inherit;
+  }
+
+  .member-requests-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .member-requests-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .member-requests-table tbody {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .member-requests-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-3);
+    min-width: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card);
+    background: var(--bg-surface);
+  }
+
+  .member-requests-table tbody tr:hover { background: var(--bg-surface); }
+
+  .member-requests-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    justify-items: start;
+    gap: var(--space-1);
+    min-width: 0;
+    padding: var(--space-2) 0;
+    border: 0;
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .member-requests-table tbody td::before {
+    grid-column: 1;
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-medium);
+  }
+
+  .member-requests-table.table-card-layout > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-1);
+  }
+
+  .member-requests-table tbody td:nth-child(1),
+  .member-requests-table tbody td:nth-child(2),
+  .member-requests-table tbody td:nth-child(6) { grid-column: 1 / -1; }
+
+  .member-request-member,
+  .member-request-membership,
+  .member-request-actions { justify-items: start; min-width: 0; }
+
+  .member-request-date { white-space: normal; }
+  .member-request-actions { width: 100%; }
+  .member-request-action-buttons { justify-content: flex-start; }
+}
+
+@media (max-width: 430px) {
+  .member-requests-table tbody tr { grid-template-columns: minmax(0, 1fr); }
+  .member-requests-table tbody td { grid-column: 1 / -1; }
+  .member-requests-table tbody td .btn { max-width: 100%; white-space: normal; }
 }

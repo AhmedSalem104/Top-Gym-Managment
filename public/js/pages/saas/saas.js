@@ -4,26 +4,33 @@
 
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-    const dateFormatter = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' });
-    const numberFormatter = new Intl.NumberFormat('ar-EG');
-    const state = { billing: null, plans: [], requests: [], pendingRequest: null, optimisticRequests: new Map(), requestsPagination: {}, requestPage: 1, loaded: false, loading: false, refreshAfterLoad: false, submitting: false, termSelections: {} };
+    const t = (key, params) => window.TopGymI18n?.t(key, params) || key;
+    const formatNumber = (value, options) => window.TopGymI18n?.format('number', value, options) ?? new Intl.NumberFormat('ar-EG', options).format(Number(value));
+    const formatDate = (value) => window.TopGymI18n?.format('date', value, { dateStyle: 'medium' }) || (value ? String(value) : t('saasBilling.summary.notSpecified'));
+    const state = { billing: null, plans: [], requests: [], pendingRequest: null, optimisticRequests: new Map(), requestsPagination: {}, requestPage: 1, loaded: false, loading: false, refreshAfterLoad: false, submitting: false, termSelections: {}, uiMessageKey: null };
 
     function notify(message, error = false, type = '') {
         if (typeof window.showToast === 'function') window.showToast(message, error, type || (error ? 'error' : 'success'));
         else window.alert(message);
     }
 
-    function date(value) {
-        if (!value) return 'غير محدد';
-        try { return dateFormatter.format(new Date(value)); } catch (_) { return String(value); }
+    function date(value) { return value ? formatDate(value) : t('saasBilling.summary.notSpecified'); }
+
+    function money(value, currency = 'EGP') {
+        const amount = formatNumber(Number(value || 0));
+        const displayCurrency = currency === 'EGP' && window.TopGymI18n?.get() === 'ar' ? 'ج.م' : currency;
+        return `${amount} ${displayCurrency}`;
     }
-
-    function money(value, currency = 'EGP') { return `${numberFormatter.format(Number(value || 0))} ${currency === 'EGP' ? 'ج.م' : currency}`; }
-    function statusLabel(status) { return { trial: 'فترة تجريبية', active: 'نشط', expired: 'منتهي', suspended: 'موقوف', cancelled: 'ملغى', pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' }[String(status || '').toLowerCase()] || status || 'غير محدد'; }
+    function statusLabel(status) {
+        const key = `saasBilling.status.${String(status || '').toLowerCase()}`;
+        const label = t(key);
+        return label !== key ? label : (status || t('saasBilling.summary.notSpecified'));
+    }
     function statusMarkup(status, className = 'saas-status') { const value = String(status || '').toLowerCase(); return `<span class="${className}" data-status="${escapeHtml(value)}">${escapeHtml(statusLabel(value))}</span>`; }
-    function limit(value) { return value == null ? 'غير محدود' : numberFormatter.format(value); }
+    function limit(value) { return value == null ? t('saasBilling.common.unlimited') : formatNumber(value); }
 
-    const termLabels = Object.freeze({ monthly: 'شهري', quarterly: '3 شهور', semiannual: '6 شهور', annual: 'سنوي' });
+    const termKeys = Object.freeze({ monthly: 'monthly', quarterly: 'quarterly', semiannual: 'semiannual', annual: 'annual' });
+    function termName(code) { const key = termKeys[code]; return key ? t(`saasBilling.plans.${key}`) : String(code || ''); }
     function planTerms(plan) {
         return Array.isArray(plan?.terms) ? plan.terms.filter((term) => term.isActive !== false) : [];
     }
@@ -32,32 +39,29 @@
         const selectedCode = state.termSelections[String(plan?.id)] || (terms.find((term) => term.code === 'monthly')?.code || terms[0]?.code);
         return terms.find((term) => term.code === selectedCode) || terms[0] || null;
     }
-    function termLabel(term) { return term ? `${termLabels[term.code] || 'مدة الاشتراك'} · ${numberFormatter.format(Number(term.durationMonths || 0))} شهر` : 'مدة غير متاحة'; }
+    function termLabel(term) { return term ? `${termName(term.code) || t('saasBilling.plans.term')} · ${t('saasBilling.plans.duration', { count: Number(term.durationMonths || 0) })}` : t('saasBilling.plans.termUnavailable'); }
     function termAmountDue(term) { return Math.max(0, Math.round((Number(term?.price || 0) - Number(term?.discountAmount || 0)) * 100) / 100); }
     function termSelectMarkup(plan) {
         const selected = selectedTerm(plan)?.code;
         const terms = planTerms(plan);
-        if (!terms.length) return '<p class="saas-muted">لا توجد مدة مفعّلة لهذه الباقة.</p>';
-        return `<label class="saas-term-control"><span>مدة الاشتراك</span><select data-saas-term-plan="${escapeHtml(plan.id)}" aria-label="مدة الاشتراك لباقة ${escapeHtml(plan.name)}">${terms.map((term) => `<option value="${escapeHtml(term.code)}" ${term.code === selected ? 'selected' : ''}>${escapeHtml(termLabel(term))} — ${escapeHtml(money(termAmountDue(term), term.currency))}</option>`).join('')}</select></label>`;
+        if (!terms.length) return `<p class="saas-muted">${escapeHtml(t('saasBilling.plans.termUnavailable'))}</p>`;
+        return `<label class="saas-term-control"><span>${escapeHtml(t('saasBilling.plans.term'))}</span><select data-saas-term-plan="${escapeHtml(plan.id)}" aria-label="${escapeHtml(t('saasBilling.plans.termFor', { name: plan.name }))}">${terms.map((term) => `<option value="${escapeHtml(term.code)}" ${term.code === selected ? 'selected' : ''}>${escapeHtml(termLabel(term))} — ${escapeHtml(money(termAmountDue(term), term.currency))}</option>`).join('')}</select></label>`;
     }
 
-    const featureLabels = Object.freeze({
-        dashboard: 'لوحة التحكم', members: 'إدارة المشتركين', attendance: 'الحضور والانصراف',
-        coaching: 'التدريب', nutrition: 'التغذية', ai: 'الذكاء الاصطناعي', library: 'المكتبة',
-        pricing: 'أسعار العضويات', payments: 'المدفوعات', finance: 'التقارير المالية',
-        day_passes: 'دخول اليوم الواحد', reports: 'التقارير', store: 'المتجر', inventory: 'المخزون',
-        branches: 'الفروع', bar: 'البار والوصفات', portal: 'البوابة', branding: 'هوية الجيم',
-        team: 'الفريق والصلاحيات', backup: 'النسخ الاحتياطي', audit: 'سجل النشاط', clients: 'إدارة العملاء',
-        assessments: 'القياسات والتقييمات', progress: 'متابعة التقدم', goals: 'الأهداف', sessions: 'الجلسات',
-        packages: 'الباقات', notifications: 'الإشعارات', tasks: 'مركز الإجراءات', templates: 'القوالب',
-        prioritySupport: 'دعم بأولوية'
+    const featureLabelKeys = Object.freeze({
+        dashboard: 'dashboard', members: 'members', attendance: 'attendance', coaching: 'coaching', nutrition: 'nutrition', ai: 'ai', library: 'library',
+        pricing: 'pricing', payments: 'payments', finance: 'finance', day_passes: 'day_passes', reports: 'reports', store: 'store', inventory: 'inventory',
+        branches: 'branches', bar: 'bar', portal: 'portal', branding: 'branding', team: 'team', backup: 'backup', audit: 'audit', clients: 'clients',
+        assessments: 'assessments', progress: 'progress', goals: 'goals', sessions: 'sessions', packages: 'packages', notifications: 'notifications',
+        tasks: 'tasks', templates: 'templates', prioritySupport: 'prioritySupport'
     });
+    function featureLabel(key) { const mapped = featureLabelKeys[key]; return mapped ? t(`saasBilling.feature.${mapped}`) : key; }
 
     function planFeaturesMarkup(plan) {
         const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
         const enabled = catalog.filter((feature) => plan.features?.[feature.key] !== false);
-        if (!enabled.length) return '<li class="saas-plan-feature-empty">لا توجد مميزات إضافية مسجلة لهذه الباقة.</li>';
-        return enabled.map((feature) => `<li data-saas-feature-key="${escapeHtml(feature.key)}"><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabels[feature.key] || feature.key)}</span></li>`).join('');
+        if (!enabled.length) return `<li class="saas-plan-feature-empty">${escapeHtml(t('saasBilling.plans.featuresEmpty'))}</li>`;
+        return enabled.map((feature) => `<li data-saas-feature-key="${escapeHtml(feature.key)}"><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabel(feature.key))}</span></li>`).join('');
     }
 
     function enhancePlanFeatureComparison(availablePlans, currentPlanId) {
@@ -72,19 +76,144 @@
             list.innerHTML = catalog.map((feature) => {
                 const enabled = plan.features?.[feature.key] !== false;
                 const currentEnabled = current ? current.features?.[feature.key] !== false : false;
-                const delta = enabled && !currentEnabled && current ? ' · upgrade' : '';
+                const delta = enabled && !currentEnabled && current ? ` · ${t('saasBilling.plans.upgrade')}` : '';
                 return `<span class="saas-entitlement ${enabled ? 'is-enabled' : 'is-disabled'}" title="${escapeHtml(feature.description)}">${enabled ? '✓' : '×'} ${escapeHtml(feature.key)}${delta}</span>`;
             }).join('');
             card.appendChild(list);
         });
     }
 
-    function showMessage(message, error = false) {
+    function showMessage(message, error = false, messageKey = null) {
         const element = $('saasSubscriptionMessage');
         if (!element) return;
+        state.uiMessageKey = messageKey;
         element.textContent = message || '';
         element.hidden = !message;
         element.classList.toggle('is-error', error);
+    }
+
+    function setText(selector, key, root = $('saasBillingSection')) {
+        const scopes = [root, document.querySelector('.saas-request-dialog')].filter((scope, index, all) => scope && all.indexOf(scope) === index);
+        scopes.forEach((scope) => scope.querySelectorAll(selector).forEach((element) => { element.textContent = t(key); }));
+    }
+
+    function setLabelText(selector, key) {
+        const element = document.querySelector(selector);
+        if (!element) return;
+        const textNode = [...element.childNodes].find((node) => node.nodeType === Node.TEXT_NODE);
+        if (textNode) textNode.nodeValue = `${t(key)} `;
+        else element.insertBefore(document.createTextNode(`${t(key)} `), element.firstChild);
+    }
+
+    function applyStaticTranslations() {
+        const root = $('saasBillingSection');
+        if (!root) return;
+        [['.saas-page-heading .saas-eyebrow', 'saasBilling.page.kicker'], ['#saasBillingTitle', 'saasBilling.page.title']]
+            .forEach(([selector, key]) => setText(selector, key));
+        const pageDescription = root.querySelector('.saas-page-heading p');
+        if (pageDescription) pageDescription.textContent = t('saasBilling.page.description');
+        const pageNav = root.querySelector('.saas-page-header-nav');
+        if (pageNav) pageNav.setAttribute('aria-label', t('saasBilling.navigation.aria'));
+        setText('.saas-back-button span', 'saasBilling.navigation.back');
+        setText('.saas-breadcrumb span', 'saasBilling.navigation.platform');
+        setText('.saas-breadcrumb strong', 'saasBilling.navigation.current');
+
+        setText('.saas-plans-panel .saas-eyebrow', 'saasBilling.plans.kicker');
+        setText('#saasPlansTitle', 'saasBilling.plans.title');
+        const plansDescription = root.querySelector('.saas-plans-panel .saas-panel-head p');
+        if (plansDescription) plansDescription.textContent = t('saasBilling.plans.description');
+        setText('.saas-plans-panel .saas-panel-badge', 'saasBilling.plans.compare');
+        setText('.saas-request-panel .saas-eyebrow', 'saasBilling.review.kicker');
+        setText('#saasRequestTitle', 'saasBilling.review.title');
+        const requestDescription = document.getElementById('saasRequestTitle')?.closest('.modal-header, .saas-panel-head')?.querySelector('p');
+        if (requestDescription) requestDescription.textContent = t('saasBilling.review.description');
+        setText('.saas-request-panel .saas-panel-badge.is-secure', 'saasBilling.review.secureUpload');
+        setLabelText('label[for="saasPlanSelect"]', 'saasBilling.form.plan');
+        setLabelText('label[for="saasTermSelect"]', 'saasBilling.form.term');
+        setLabelText('label[for="saasRequestNotes"]', 'saasBilling.form.notes');
+        setText('label[for="saasRequestNotes"] .saas-muted', 'saasBilling.form.optional');
+        const notes = $('saasRequestNotes');
+        if (notes) notes.placeholder = t('saasBilling.form.notesPlaceholder');
+        setLabelText('label[for="saasPaymentProof"]', 'saasBilling.form.proof');
+        setText('label[for="saasPaymentProof"] .saas-muted', 'saasBilling.form.proofHint');
+        setText('.saas-upload-box strong', 'saasBilling.form.uploadProof');
+        setText('.saas-upload-box div small', 'saasBilling.form.allowedTypes');
+        const selectedFile = $('saasPaymentProof')?.files?.[0];
+        if (!selectedFile) setText('.file-upload-control-name', 'saasBilling.form.noFile');
+        setText('.file-upload-control-trigger', 'saasBilling.form.chooseFile');
+        const submit = $('saasSubscriptionSubmit');
+        if (submit) {
+            submit.dataset.loadingText = t('saasBilling.form.submitLoading');
+            const loadingLabel = submit.querySelector('.logicfit-button-label');
+            if (state.submitting && loadingLabel) {
+                loadingLabel.textContent = submit.dataset.loadingText;
+            } else if (!state.submitting) {
+                submit.textContent = t('saasBilling.form.submit');
+            }
+        }
+        setText('.saas-requests-panel .saas-eyebrow', 'saasBilling.requests.kicker');
+        setText('#saasRequestsTitle', 'saasBilling.requests.title');
+        const historyDescription = root.querySelector('.saas-requests-panel .saas-panel-head p');
+        if (historyDescription) historyDescription.textContent = t('saasBilling.requests.description');
+        if (!state.loaded) {
+            const summaryLoading = root.querySelector('#saasSubscriptionSummary .saas-loading-block');
+            if (summaryLoading) summaryLoading.textContent = t('saasBilling.summary.loading');
+            const plansLoading = root.querySelector('#saasPlansList .saas-empty');
+            if (plansLoading) plansLoading.textContent = t('saasBilling.plans.loading');
+            const requestsLoading = root.querySelector('#saasRequestsList .saas-empty');
+            if (requestsLoading) requestsLoading.textContent = t('saasBilling.requests.loading');
+        }
+        const headings = root.querySelectorAll('.saas-requests-panel thead th');
+        ['date', 'plan', 'duration', 'amount', 'status', 'proof', 'reviewNotes'].forEach((key, index) => {
+            if (headings[index]) headings[index].textContent = t(`saasBilling.requests.${key}`);
+        });
+        const dialog = document.querySelector('.saas-request-dialog');
+        const close = dialog?.querySelector('.dialog-close-button');
+        if (close) {
+            close.setAttribute('aria-label', t('saasBilling.form.close'));
+            close.setAttribute('title', t('saasBilling.form.closeButton'));
+        }
+        const eyebrow = dialog?.querySelector('.modal-header .saas-eyebrow');
+        if (eyebrow) eyebrow.textContent = t('saasBilling.form.reviewPlatform');
+        const title = dialog?.querySelector('#saasRequestTitle');
+        if (title) title.textContent = t('saasBilling.form.renewTitle');
+        const description = dialog?.querySelector('.modal-header p');
+        if (description) description.textContent = t('saasBilling.form.renewDescription');
+        const termSummary = $('saasRequestPriceSummary');
+        if (!termSummary?.querySelector('[data-saas-selected-plan]')) {
+            const totalLabel = termSummary?.querySelector('span');
+            const chooseLabel = termSummary?.querySelector('strong');
+            if (totalLabel) totalLabel.textContent = t('saasBilling.form.totalPlatform');
+            if (chooseLabel) chooseLabel.textContent = t('saasBilling.form.choosePlanTerm');
+        }
+        const actionBar = root.querySelector('.saas-plan-action-bar');
+        const actionBarParts = actionBar?.querySelectorAll('div > span, div > strong, button span:last-child');
+        if (actionBarParts?.[0]) actionBarParts[0].textContent = t('saasBilling.form.manageTitle');
+        if (actionBarParts?.[1]) actionBarParts[1].textContent = t('saasBilling.form.managePrompt');
+        const openRequest = actionBar?.querySelector('button span:last-child');
+        if (openRequest) openRequest.textContent = t('saasBilling.form.openRequest');
+        const message = $('saasSubscriptionMessage');
+        if (message && state.uiMessageKey) message.textContent = t(state.uiMessageKey);
+    }
+
+    function renderLocalizedBilling() {
+        const root = $('saasBillingSection');
+        if (!root) return;
+        const planSelect = $('saasPlanSelect');
+        const termSelect = $('saasTermSelect');
+        const selectedPlanId = planSelect?.value || '';
+        const selectedTermCode = termSelect?.value || '';
+        if (selectedPlanId && selectedTermCode) state.termSelections[String(selectedPlanId)] = selectedTermCode;
+        if (state.loaded) {
+            renderSummary(state.billing);
+            renderPlans(state.plans);
+            renderRequests(state.requests);
+            renderRequestPagination();
+            renderPendingRequest(state.pendingRequest);
+            if (selectedPlanId) selectPlan(selectedPlanId, selectedTermCode || null);
+            renderRequestPricing();
+        }
+        applyStaticTranslations();
     }
 
     function renderSummary(billing) {
@@ -95,7 +224,7 @@
         const statusHost = $('saasSubscriptionStatus');
         if (statusHost) { statusHost.textContent = statusLabel(status); statusHost.dataset.status = status; }
         if (!host) return;
-        if (!billing?.tenant) { host.innerHTML = '<div class="saas-loading-block">تعذر العثور على بيانات الجيم.</div>'; return; }
+        if (!billing?.tenant) { host.innerHTML = `<div class="saas-loading-block">${escapeHtml(t('saasBilling.summary.gymNotFound'))}</div>`; return; }
         const daysRemaining = subscription?.daysRemaining;
         const durationDays = subscription?.startsAt && subscription?.expiresAt
             ? Math.max(1, Math.ceil((new Date(subscription.expiresAt).getTime() - new Date(subscription.startsAt).getTime()) / 86400000))
@@ -103,7 +232,7 @@
         const progress = durationDays && daysRemaining != null
             ? Math.max(0, Math.min(100, ((durationDays - Number(daysRemaining)) / durationDays) * 100))
             : 0;
-        host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>الجيم</span><strong>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr">${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>حالة الاشتراك</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${subscription ? statusLabel(subscription.status) : 'بدون اشتراك'}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? 'لا يوجد تاريخ انتهاء محدد' : `${numberFormatter.format(Math.max(0, daysRemaining))} يوم متبقٍ`}</p></article><article class="saas-summary-card"><span>الباقة الحالية</span><strong>${escapeHtml(plan?.name || 'بدون باقة')}</strong><p>${plan?.billingPeriod === 'yearly' ? 'دورة سنوية' : plan?.billingPeriod === 'monthly' ? 'دورة شهرية' : 'بيانات الاشتراك'}</p></article><article class="saas-summary-card"><span>تاريخ الاشتراك</span><strong>${subscription?.startsAt ? date(subscription.startsAt) : 'غير محدد'}</strong><p>${subscription?.expiresAt ? `حتى ${date(subscription.expiresAt)}` : 'اشتراك مفتوح'}</p></article><article class="saas-summary-card"><span>ملفات الأعضاء المستخدمة في الباقة</span><strong>${numberFormatter.format(Number(billing.usage?.members || 0))}</strong><p>من حد ${limit(plan?.maxMembers)} عضو</p></article>`;
+        host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>${escapeHtml(t('saasBilling.summary.gym'))}</span><strong data-i18n-preserve>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr" data-i18n-preserve>${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>${escapeHtml(t('saasBilling.summary.status'))}</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${escapeHtml(subscription ? statusLabel(subscription.status) : t('saasBilling.summary.noSubscription'))}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? escapeHtml(t('saasBilling.summary.expiryUnknown')) : escapeHtml(t('saasBilling.summary.daysRemaining', { count: Math.max(0, daysRemaining) }))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.currentPlan'))}</span><strong data-i18n-preserve>${escapeHtml(plan?.name || t('saasBilling.summary.noPlan'))}</strong><p>${escapeHtml(plan?.billingPeriod === 'yearly' ? t('saasBilling.summary.yearlyCycle') : plan?.billingPeriod === 'monthly' ? t('saasBilling.summary.monthlyCycle') : t('saasBilling.summary.subscriptionDetails'))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.startDate'))}</span><strong>${escapeHtml(subscription?.startsAt ? date(subscription.startsAt) : t('saasBilling.summary.notSpecified'))}</strong><p>${escapeHtml(subscription?.expiresAt ? t('saasBilling.summary.until', { date: date(subscription.expiresAt) }) : t('saasBilling.summary.openSubscription'))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.memberUsage'))}</span><strong>${escapeHtml(formatNumber(Number(billing.usage?.members || 0)))}</strong><p>${escapeHtml(t('saasBilling.summary.limitMembers', { count: limit(plan?.maxMembers) }))}</p></article>`;
         renderRequestContext();
     }
 
@@ -113,8 +242,8 @@
         const subscription = state.billing?.subscription;
         const plan = subscription?.plan;
         host.innerHTML = plan
-            ? `<div><small>الاشتراك الحالي</small><strong>${escapeHtml(plan.name)}</strong><span>${escapeHtml(statusLabel(subscription.status))}${subscription.expiresAt ? ` · حتى ${escapeHtml(date(subscription.expiresAt))}` : ''}</span></div>`
-            : '<div><small>الاشتراك الحالي</small><strong>لا توجد باقة مفعّلة</strong><span>اختر باقة من القائمة الحالية لإرسال الطلب.</span></div>';
+            ? `<div><small>${escapeHtml(t('saasBilling.current.title'))}</small><strong data-i18n-preserve>${escapeHtml(plan.name)}</strong><span>${escapeHtml(statusLabel(subscription.status))}${subscription.expiresAt ? ` · ${escapeHtml(t('saasBilling.summary.until', { date: date(subscription.expiresAt) }))}` : ''}</span></div>`
+            : `<div><small>${escapeHtml(t('saasBilling.current.title'))}</small><strong>${escapeHtml(t('saasBilling.current.noActivePlan'))}</strong><span>${escapeHtml(t('saasBilling.current.choosePlanHint'))}</span></div>`;
     }
 
     function renderPendingRequest(request) {
@@ -131,7 +260,7 @@
         const pending = state.pendingRequest;
         const planName = pending.plan?.name || pending.planName || '—';
         const duration = Number(pending.durationMonths || pending.duration_months || 0);
-        host.innerHTML = `<div class="saas-panel-head"><div><span class="saas-eyebrow">حالة الطلب</span><h4>طلب الاشتراك قيد المراجعة</h4><p>تم إرسال طلبك وسيتم إشعارك بعد مراجعته.</p></div>${statusMarkup(pending.status)}</div><p data-saas-pending-duration="${duration}"><strong>${escapeHtml(planName)}</strong> · ${escapeHtml(numberFormatter.format(duration))} ${duration === 1 ? 'شهر' : 'أشهر'} · ${escapeHtml(money(pending.amount, pending.currency))}</p><p class="saas-muted">تاريخ الإرسال: ${escapeHtml(date(pending.createdAt || pending.created_at))} · إثبات الدفع: ${pending.proof ? 'مرفق' : 'غير مرفق'}</p>`;
+        host.innerHTML = `<div class="saas-panel-head"><div><span class="saas-eyebrow">${escapeHtml(t('saasBilling.pending.kicker'))}</span><h4>${escapeHtml(t('saasBilling.pending.title'))}</h4><p>${escapeHtml(t('saasBilling.pending.description'))}</p></div>${statusMarkup(pending.status)}</div><p data-saas-pending-duration="${duration}"><strong data-i18n-preserve>${escapeHtml(planName)}</strong> · ${escapeHtml(formatNumber(duration))} ${escapeHtml(t(duration === 1 ? 'saasBilling.pending.month' : 'saasBilling.pending.months'))} · ${escapeHtml(money(pending.amount, pending.currency))}</p><p class="saas-muted">${escapeHtml(t('saasBilling.pending.sentAt', { date: date(pending.createdAt || pending.created_at) }))} · ${escapeHtml(t('saasBilling.requests.proof'))}: ${escapeHtml(t(pending.proof ? 'saasBilling.pending.proofAttached' : 'saasBilling.pending.proofMissing'))}</p>`;
     }
 
     async function refreshPendingRequest() {
@@ -188,18 +317,18 @@
             : activePlans;
         if (select) {
             const hasCurrentPlan = requestPlans.some((plan) => String(plan.id) === String(currentPlanId));
-            select.innerHTML = `<option value="">اختر الباقة المطلوبة</option>${requestPlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)}${String(plan.id) === String(currentPlanId) ? ' · الباقة الحالية' : ''}</option>`).join('')}`;
+            select.innerHTML = `<option value="">${escapeHtml(t('saasBilling.plans.choosePlaceholder'))}</option>${requestPlans.map((plan) => `<option value="${plan.id}" ${String(plan.id) === String(currentPlanId) ? 'selected' : ''}>${escapeHtml(plan.name)}${String(plan.id) === String(currentPlanId) ? ` · ${escapeHtml(t('saasBilling.plans.current'))}` : ''}</option>`).join('')}`;
             select.disabled = !requestPlans.length;
             select.value = hasCurrentPlan ? String(currentPlanId) : '';
         }
         if (!host) return;
-        if (!availablePlans.length) { host.innerHTML = '<div class="saas-empty">لا توجد باقات مفعّلة حاليًا. راجع مدير المنصة.</div>'; return; }
+        if (!availablePlans.length) { host.innerHTML = `<div class="saas-empty">${escapeHtml(t('saasBilling.plans.empty'))}</div>`; return; }
         const selectedId = currentPlan?.id ?? null;
         host.innerHTML = availablePlans.map((plan) => {
             const isCurrent = String(plan.id) === String(currentPlanId);
             const isSelected = String(plan.id) === String(selectedId);
             const term = selectedTerm(plan);
-            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? 'aria-current="true"' : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5>${escapeHtml(plan.name)}</h5><span class="saas-muted">${escapeHtml(plan.description || '')}</span></div></div>${termSelectMarkup(plan)}<div class="saas-plan-price">${money(term.price, term.currency)} <small>/ ${escapeHtml(termLabels[term.code] || term.code)}</small></div><ul class="saas-plan-limits"><li><span>الأعضاء</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>العملاء</span><strong>${limit(plan.maxClients)}</strong></li><li><span>المستخدمون</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>AI شهريًا</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>الفروع</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>التخزين</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">مميزات الباقة</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${isCurrent ? 'الباقة الحالية' : 'اختيار الباقة'}</button></article>`;
+            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? `aria-current="true" data-current-label="${escapeHtml(t('saasBilling.plans.current'))}"` : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5 data-i18n-preserve>${escapeHtml(plan.name)}</h5><span class="saas-muted" data-i18n-preserve>${escapeHtml(plan.description || '')}</span></div></div>${termSelectMarkup(plan)}<div class="saas-plan-price">${money(term.price, term.currency)} <small>/ ${escapeHtml(termName(term.code) || term.code)}</small></div><ul class="saas-plan-limits"><li><span>${escapeHtml(t('saasBilling.plans.members'))}</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.clients'))}</span><strong>${limit(plan.maxClients)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.users'))}</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.aiMonthly'))}</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.branches'))}</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.storage'))}</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">${escapeHtml(t('saasBilling.plans.features'))}</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${escapeHtml(t(isCurrent ? 'saasBilling.plans.current' : 'saasBilling.plans.select'))}</button></article>`;
         }).join('');
         host.querySelectorAll('[data-saas-term-plan]').forEach((termSelect) => {
             const plan = availablePlans.find((item) => String(item.id) === termSelect.dataset.saasTermPlan);
@@ -229,22 +358,22 @@
         box.querySelector('.saas-upload-icon')?.classList.replace('saas-upload-icon', 'file-upload-control-icon');
         const copy = box.querySelector('div');
         const uploadHint = copy?.querySelector('small');
-        if (uploadHint) uploadHint.textContent = 'PNG أو JPG أو PDF · الحد الأقصى 4MB';
+        if (uploadHint) uploadHint.textContent = t('saasBilling.form.allowedTypes');
         const fileName = document.createElement('span');
         fileName.className = 'file-upload-control-name';
         fileName.setAttribute('aria-live', 'polite');
-        fileName.textContent = 'لم يتم اختيار ملف بعد';
+        fileName.textContent = t('saasBilling.form.noFile');
         copy?.appendChild(fileName);
         const trigger = document.createElement('button');
         trigger.className = 'file-upload-control-trigger';
         trigger.type = 'button';
-        trigger.textContent = 'اختيار ملف';
+        trigger.textContent = t('saasBilling.form.chooseFile');
         trigger.addEventListener('click', () => input.click());
         box.appendChild(trigger);
         input.classList.add('visually-hidden');
         const update = (file) => {
             box.classList.toggle('has-file', Boolean(file));
-            fileName.textContent = file ? `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB` : 'لم يتم اختيار ملف بعد';
+            fileName.textContent = file ? `${file.name} · ${Math.max(1, Math.round(file.size / 1024))} KB` : t('saasBilling.form.noFile');
         };
         input.addEventListener('change', () => update(input.files?.[0]));
         box.addEventListener('dragover', (event) => { event.preventDefault(); box.classList.add('is-dragging'); });
@@ -273,16 +402,16 @@
         const close = document.createElement('button');
         close.className = 'btn btn-light dialog-close-button';
         close.type = 'button';
-        close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
-        close.textContent = 'إغلاق';
+        close.setAttribute('aria-label', t('saasBilling.form.close'));
+        close.textContent = t('saasBilling.form.closeButton');
         close.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>';
-        close.setAttribute('aria-label', 'إغلاق نموذج طلب الاشتراك');
+        close.setAttribute('aria-label', t('saasBilling.form.close'));
         const header = panel.querySelector('.saas-panel-head');
         header?.classList.remove('saas-panel-head');
         header?.classList.add('modal-header');
         header?.querySelector(':scope > div')?.classList.add('modal-heading-content', 'modal-heading-stack');
         const eyebrow = header?.querySelector('.saas-eyebrow');
-        if (eyebrow) eyebrow.textContent = 'مراجعة المنصة';
+        if (eyebrow) eyebrow.textContent = t('saasBilling.form.reviewPlatform');
         if (header) {
             dialog.appendChild(header);
             const headingActions = document.createElement('div');
@@ -292,9 +421,9 @@
         }
         header?.querySelector('.saas-panel-badge.is-secure')?.remove();
         const title = header?.querySelector('#saasRequestTitle');
-        if (title) title.textContent = 'طلب تجديد الاشتراك';
+        if (title) title.textContent = t('saasBilling.form.renewTitle');
         const description = header?.querySelector('p');
-        if (description) description.textContent = 'اختر الباقة والمدة، ثم أرفق إثبات الدفع لإرسال الطلب للمراجعة.';
+        if (description) description.textContent = t('saasBilling.form.renewDescription');
         const currentContext = document.createElement('div');
         currentContext.id = 'saasRequestCurrent';
         currentContext.className = 'modal-form-context';
@@ -317,7 +446,7 @@
         if (form && planField && !$('saasTermSelect')) {
             const termField = document.createElement('div');
             termField.className = 'field';
-            termField.innerHTML = '<label for="saasTermSelect">مدة الاشتراك المطلوبة *</label><select id="saasTermSelect" required disabled></select><div id="saasRequestPriceSummary" class="modal-form-summary" aria-live="polite"><span>الإجمالي حسب إعدادات المنصة</span><strong>اختر الباقة والمدة</strong></div>';
+            termField.innerHTML = `<label for="saasTermSelect">${escapeHtml(t('saasBilling.form.term'))}</label><select id="saasTermSelect" required disabled></select><div id="saasRequestPriceSummary" class="modal-form-summary" aria-live="polite"><span>${escapeHtml(t('saasBilling.form.totalPlatform'))}</span><strong>${escapeHtml(t('saasBilling.form.choosePlanTerm'))}</strong></div>`;
             planField.after(termField);
             const summary = $('saasRequestPriceSummary');
             summary?.classList.add('modal-form-summary--neutral', 'field-full');
@@ -333,17 +462,17 @@
         const submitButton = $('saasSubscriptionSubmit');
         if (submitButton && form && actions) {
             submitButton.setAttribute('form', form.id);
-            submitButton.dataset.loadingText = 'جارٍ إرسال الطلب...';
+            submitButton.dataset.loadingText = t('saasBilling.form.submitLoading');
             actions.remove();
         }
         if (actions) dialog.appendChild(actions);
         const actionBar = document.createElement('div');
         actionBar.className = 'saas-plan-action-bar';
-        actionBar.innerHTML = '<div><span>إدارة اشتراك الجيم</span><strong>هل تريد الترقية أو التجديد؟</strong></div>';
+        actionBar.innerHTML = `<div><span>${escapeHtml(t('saasBilling.form.manageTitle'))}</span><strong>${escapeHtml(t('saasBilling.form.managePrompt'))}</strong></div>`;
         const trigger = document.createElement('button');
         trigger.className = 'btn btn-primary saas-request-open';
         trigger.type = 'button';
-        trigger.innerHTML = '<span aria-hidden="true">＋</span><span>إرسال طلب اشتراك</span>';
+        trigger.innerHTML = `<span aria-hidden="true">＋</span><span>${escapeHtml(t('saasBilling.form.openRequest'))}</span>`;
         trigger.addEventListener('click', async () => {
             if (state.submitting || trigger.disabled) return;
             trigger.disabled = true;
@@ -354,7 +483,7 @@
                 renderRequestPricing();
                 dialog.showModal();
             } catch (error) {
-                notify(error.message || 'تعذر التحقق من حالة طلب الاشتراك.', true, 'error');
+                notify(error.message || t('saasBilling.message.requestFailed'), true, 'error');
             } finally {
                 trigger.disabled = Boolean(state.pendingRequest);
             }
@@ -374,8 +503,8 @@
     function renderRequests(requests) {
         const host = $('saasRequestsList');
         if (!host) return;
-        if (!requests?.length) { host.innerHTML = '<tr><td colspan="7"><div class="saas-empty">لم يتم إرسال طلبات اشتراك بعد.</div></td></tr>'; return; }
-        host.innerHTML = requests.map((request) => `<tr><td data-label="التاريخ">${escapeHtml(date(request.createdAt))}</td><td data-label="الباقة">${escapeHtml(request.plan?.name || '—')}</td><td data-label="المدة" data-saas-request-duration="true">${escapeHtml(numberFormatter.format(Number(request.durationMonths || 0)))} شهر</td><td data-label="المبلغ">${money(request.amount, request.currency)}</td><td data-label="الحالة">${statusMarkup(request.status)}</td><td data-label="إثبات الدفع">${request.proof ? `<a class="btn btn-light btn-small" data-saas-payment-proof href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">عرض الإثبات</a>` : '<span class="saas-muted">غير مرفق</span>'}</td><td data-label="ملاحظات"><span class="saas-muted">${escapeHtml(request.reviewNotes || 'لا توجد ملاحظات')}</span></td></tr>`).join('');
+        if (!requests?.length) { host.innerHTML = `<tr><td colspan="7"><div class="saas-empty">${escapeHtml(t('saasBilling.requests.empty'))}</div></td></tr>`; return; }
+        host.innerHTML = requests.map((request) => `<tr><td data-label="${escapeHtml(t('saasBilling.requests.date'))}">${escapeHtml(date(request.createdAt))}</td><td data-label="${escapeHtml(t('saasBilling.requests.plan'))}"><span data-i18n-preserve>${escapeHtml(request.plan?.name || '—')}</span></td><td data-label="${escapeHtml(t('saasBilling.requests.duration'))}" data-saas-request-duration="true">${escapeHtml(t('saasBilling.plans.duration', { count: Number(request.durationMonths || 0) }))}</td><td data-label="${escapeHtml(t('saasBilling.requests.amount'))}">${money(request.amount, request.currency)}</td><td data-label="${escapeHtml(t('saasBilling.requests.status'))}">${statusMarkup(request.status)}</td><td data-label="${escapeHtml(t('saasBilling.requests.proof'))}">${request.proof ? `<a class="btn btn-light btn-small" data-saas-payment-proof href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">${escapeHtml(t('saasBilling.requests.showProof'))}</a>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noProof'))}</span>`}</td><td data-label="${escapeHtml(t('saasBilling.requests.reviewNotes'))}">${request.reviewNotes ? `<span class="saas-muted" data-i18n-preserve>${escapeHtml(request.reviewNotes)}</span>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noNotes'))}</span>`}</td></tr>`).join('');
     }
 
     function ensureRequestPagination() {
@@ -385,7 +514,7 @@
         if (!footer) {
             footer = document.createElement('div');
             footer.className = 'directory-footer saas-request-footer';
-            footer.innerHTML = '<span id="saasRequestsSummary" class="table-summary"></span><div id="saasRequestsPagination" class="pagination" aria-label="Subscription request pagination"></div>';
+            footer.innerHTML = `<span id="saasRequestsSummary" class="table-summary"></span><div id="saasRequestsPagination" class="pagination" aria-label="${escapeHtml(t('saasBilling.requests.paginationAria'))}"></div>`;
             panel.appendChild(footer);
         }
         return { summary: $('saasRequestsSummary'), host: $('saasRequestsPagination') };
@@ -399,7 +528,7 @@
         if (headerRow && !headerRow.querySelector('[data-saas-duration-column]')) {
             const heading = document.createElement('th');
             heading.dataset.saasDurationColumn = 'true';
-            heading.textContent = 'المدة';
+            heading.textContent = t('saasBilling.requests.duration');
             headerRow.insertBefore(heading, headerRow.cells[2] || null);
         }
         const rows = $('saasRequestsList')?.rows || [];
@@ -407,16 +536,17 @@
         else [...rows].forEach((row, index) => {
             if (row.querySelector('[data-saas-request-duration]')) return;
             const cell = document.createElement('td');
-            cell.dataset.label = 'المدة';
+            cell.dataset.label = t('saasBilling.requests.duration');
             cell.dataset.saasRequestDuration = 'true';
-            cell.textContent = `${numberFormatter.format(Number(state.requests[index]?.durationMonths || 0))} شهر`;
+            cell.textContent = t('saasBilling.plans.duration', { count: Number(state.requests[index]?.durationMonths || 0) });
             row.insertBefore(cell, row.cells[2] || null);
         });
         const pagination = state.requestsPagination || {};
         const total = Number(pagination.total || 0);
         const page = Number(pagination.page || state.requestPage || 1);
         const pages = Number(pagination.pages || 1);
-        summary.textContent = total ? `عرض ${state.requests.length} من ${total} طلب` : 'لا توجد طلبات';
+        summary.textContent = total ? t('saasBilling.requests.summary', { shown: formatNumber(state.requests.length), total: formatNumber(total) }) : t('saasBilling.requests.none');
+        host.setAttribute('aria-label', t('saasBilling.requests.paginationAria'));
         host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-saas-request-page="${number}">${number}</button>`).join('') : '';
     }
 
@@ -446,7 +576,7 @@
             state.loaded = true;
             renderPendingRequest(state.pendingRequest);
         } catch (error) {
-            showMessage(error.message || 'تعذر تحميل اشتراك المنصة.', true);
+            showMessage(error.message || t('saasBilling.message.loadFailed'), true, error.message ? null : 'saasBilling.message.loadFailed');
         } finally {
             state.loading = false;
             if (state.refreshAfterLoad) {
@@ -474,7 +604,7 @@
             [...select.options].forEach((option) => {
                 if (!option.value) return;
                 const optionPlan = state.plans.find((item) => String(item.id) === option.value);
-                if (optionPlan) option.textContent = `${optionPlan.name}${String(optionPlan.id) === String(currentId) ? ' · الباقة الحالية' : ''}`;
+                if (optionPlan) option.textContent = `${optionPlan.name}${String(optionPlan.id) === String(currentId) ? ` · ${t('saasBilling.plans.current')}` : ''}`;
             });
         }
         renderRequestPricing();
@@ -486,8 +616,8 @@
         const term = planTerms(plan).find((item) => item.code === $('saasTermSelect')?.value);
         if (!host) return;
         host.innerHTML = plan && term
-            ? `<span>${escapeHtml(plan.name)} · ${escapeHtml(termLabel(term))}</span><strong>الإجمالي: ${escapeHtml(money(termAmountDue(term), term.currency))}</strong>`
-            : '<span>الإجمالي حسب إعدادات المنصة</span><strong>اختر الباقة والمدة</strong>';
+            ? `<span data-saas-selected-plan data-i18n-preserve>${escapeHtml(plan.name)}</span><span> · ${escapeHtml(termLabel(term))}</span><strong>${escapeHtml(t('saasBilling.summary.total', { amount: money(termAmountDue(term), term.currency) }))}</strong>`
+            : `<span>${escapeHtml(t('saasBilling.form.totalPlatform'))}</span><strong>${escapeHtml(t('saasBilling.form.choosePlanTerm'))}</strong>`;
     }
 
     async function submit(event) {
@@ -502,13 +632,13 @@
         const selectedTermCode = $('saasTermSelect')?.value || '';
         const selectedBillingTerm = planTerms(selectedPlan).find((term) => term.code === selectedTermCode);
         const termCode = selectedBillingTerm?.code || '';
-        if (!planId) return showMessage('اختر باقة أولًا.', true);
-        if (!selectedBillingTerm) return showMessage('اختر مدة اشتراك متاحة للباقة.', true);
-        if (!file) return showMessage('ارفع إثبات الدفع قبل إرسال الطلب.', true);
-        if (file.size > 4 * 1024 * 1024) return showMessage('حجم إثبات الدفع يجب ألا يتجاوز 4MB.', true);
+        if (!planId) return showMessage(t('saasBilling.message.choosePlan'), true, 'saasBilling.message.choosePlan');
+        if (!selectedBillingTerm) return showMessage(t('saasBilling.message.chooseTerm'), true, 'saasBilling.message.chooseTerm');
+        if (!file) return showMessage(t('saasBilling.message.uploadProof'), true, 'saasBilling.message.uploadProof');
+        if (file.size > 4 * 1024 * 1024) return showMessage(t('saasBilling.message.proofTooLarge'), true, 'saasBilling.message.proofTooLarge');
         const controls = [...(form?.querySelectorAll('input,select,textarea') || [])].map((control) => ({ control, disabled: control.disabled }));
         state.submitting = true;
-        const feedback = window.LogicFitFeedback?.start(button, { loadingText: button.dataset.loadingText || 'جارٍ إرسال الطلب...', allowLayoutShift: false });
+        const feedback = window.LogicFitFeedback?.start(button, { loadingText: button.dataset.loadingText || t('saasBilling.form.submitLoading'), allowLayoutShift: false });
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
         controls.forEach(({ control }) => { control.disabled = true; });
@@ -520,13 +650,13 @@
             payload.set('proof', file, file.name);
             const response = await window.topGymAuth.api('/api/saas/subscription-requests/submit', { method: 'POST', body: payload });
             const responseRequest = response.request;
-            if (!responseRequest?.id || !responseRequest.proof) throw new Error('تم حفظ الطلب لكن تعذر تأكيد إثبات الدفع. حدّث سجل الطلبات قبل إعادة الإرسال.');
+            if (!responseRequest?.id || !responseRequest.proof) throw new Error(t('saasBilling.message.requestSavedProofUnconfirmed'));
             const request = { ...responseRequest, termCode, durationMonths: selectedBillingTerm.durationMonths };
             state.submitting = false;
             form?.reset();
             const dialog = form?.closest('dialog');
             if (dialog?.open) dialog.close();
-            notify('تم إرسال طلب الاشتراك بنجاح، والطلب الآن تحت المراجعة.', false, 'success');
+            notify(t('saasBilling.message.requestSent'), false, 'success');
             renderPendingRequest(request);
             state.requestPage = 1;
             state.optimisticRequests.set(Number(request.id), request);
@@ -539,13 +669,13 @@
                     const pending = await refreshPendingRequest();
                     if (pending) {
                         $('saasSubscriptionForm')?.closest('dialog')?.close();
-                        notify('لديك طلب اشتراك قيد المراجعة بالفعل.', false, 'info');
+                        notify(t('saasBilling.message.pendingExists'), false, 'info');
                         return;
                     }
                 } catch (_) { /* preserve the original conflict response */ }
             }
-            showMessage(error.message || 'تعذر إرسال طلب الاشتراك.', true);
-            notify(error.message || 'تعذر إرسال طلب الاشتراك.', true, 'error');
+            showMessage(error.message || t('saasBilling.message.requestFailed'), true, error.message ? null : 'saasBilling.message.requestFailed');
+            notify(error.message || t('saasBilling.message.requestFailed'), true, 'error');
         } finally {
             state.submitting = false;
             controls.forEach(({ control, disabled }) => { control.disabled = disabled; });
@@ -554,6 +684,8 @@
                 button.disabled = false;
                 button.removeAttribute('aria-busy');
             }
+            button.textContent = t('saasBilling.form.submit');
+            button.dataset.loadingText = t('saasBilling.form.submitLoading');
         }
     }
 
@@ -563,21 +695,21 @@
         event.preventDefault();
         const preview = window.open('about:blank', '_blank');
         if (!preview) {
-            notify('اسمح بفتح نافذة معاينة الإثبات ثم حاول مرة أخرى.', true, 'error');
+            notify(t('saasBilling.proof.popupBlocked'), true, 'error');
             return;
         }
         try {
             const response = await window.topGymApi.raw(link.href, { cache: 'no-store', headers: { Accept: 'image/*, application/pdf' } });
             const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
             if (!(contentType.startsWith('image/') || contentType === 'application/pdf')) {
-                throw new Error('استجابة ملف الإثبات ليست صورة أو PDF صالحًا.');
+                throw new Error(t('saasBilling.proof.invalidType'));
             }
             const blob = await response.blob();
-            if (!blob.size || blob.type && blob.type !== contentType) throw new Error('تعذر التحقق من ملف إثبات الدفع.');
+            if (!blob.size || blob.type && blob.type !== contentType) throw new Error(t('saasBilling.proof.invalidFile'));
             preview.location.replace(URL.createObjectURL(blob));
         } catch (error) {
             preview.close();
-            notify(error.message || 'تعذر عرض إثبات الدفع.', true, 'error');
+            notify(error.message || t('saasBilling.proof.displayFailed'), true, 'error');
         }
     }
 
@@ -616,5 +748,7 @@
     }
 
     bind();
+    applyStaticTranslations();
+    window.addEventListener('topgym:localechange', renderLocalizedBilling);
     window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'saas-billing') void load(); });
 })();

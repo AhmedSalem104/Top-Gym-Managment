@@ -29,6 +29,43 @@
 
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+    const platformViewTitleKeys = Object.freeze({
+        dashboard: 'page.dashboard', gyms: 'page.gyms', requests: 'page.requests',
+        'gym-registrations': 'page.gymRegistrations', 'payment-methods': 'page.paymentMethods',
+        backups: 'page.backups', plans: 'page.plans', audit: 'page.audit', settings: 'page.settings'
+    });
+    const platformStatusKeys = Object.freeze({
+        active: 'filter.active', trial: 'filter.trial', suspended: 'filter.suspended', expired: 'filter.expired',
+        archived: 'filter.archived', cancelled: 'filter.cancelled', pending: 'filter.pending',
+        approved: 'filter.approved', rejected: 'filter.rejected'
+    });
+    function platformT(key, params = {}) {
+        return window.TopGymI18n?.t(`platformAdminScreen.${key}`, params) || key;
+    }
+    function updatePlatformTableCardLabels(root = document) {
+        const tables = [];
+        if (root instanceof HTMLTableElement && root.matches('.platform-table')) tables.push(root);
+        root.querySelectorAll?.('table.platform-table').forEach((table) => tables.push(table));
+        tables.forEach((table) => {
+            const headers = [...(table.tHead?.rows || [])].flatMap((row) => [...row.cells]).map((cell) => cell.textContent.trim());
+            table.tBodies && [...table.tBodies].forEach((body) => [...body.rows].forEach((row) => [...row.cells].forEach((cell, index) => {
+                if (cell.colSpan > 1) {
+                    delete cell.dataset.label;
+                    return;
+                }
+                const label = headers[index] || '';
+                if (label) cell.dataset.label = label;
+                else delete cell.dataset.label;
+            })));
+        });
+    }
+    function localizePlatformContent(root = document) {
+        window.TopGymI18n?.annotateText(root, 'platformAdminScreen.');
+        updatePlatformTableCardLabels(root);
+    }
+    function platformNumber(value) {
+        return window.TopGymI18n?.format('number', Number(value || 0)) || String(Number(value || 0));
+    }
     const loginScreen = $('#platformAdminLoginScreen');
     const appShell = $('#platformAdminApp');
     const dialog = $('#platformActionDialog');
@@ -51,17 +88,18 @@
     function formatDate(value, fallback = '—') {
         if (!value) return fallback;
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? fallback : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+        return Number.isNaN(date.getTime()) ? fallback : (window.TopGymI18n?.format('date', date.toISOString(), { dateStyle: 'medium' }) || new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date));
     }
 
     function formatDateTime(value, fallback = '—') {
         if (!value) return fallback;
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? fallback : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+        return Number.isNaN(date.getTime()) ? fallback : (window.TopGymI18n?.format('date', date.toISOString(), { dateStyle: 'medium', timeStyle: 'short' }) || new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date));
     }
 
     function formatMoney(value, currency = 'EGP') {
-        return new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value || 0)) + ` ${currency === 'EGP' ? 'ج.م' : currency}`;
+        return window.TopGymI18n?.format('currency', Number(value || 0), { currency: currency || 'EGP', maximumFractionDigits: 2 })
+            || new Intl.NumberFormat('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(Number(value || 0)) + ` ${currency === 'EGP' ? 'ج.م' : currency}`;
     }
 
     function formatBytes(value) {
@@ -72,11 +110,22 @@
     }
 
     function statusLabel(value) {
-        return ({ active: 'نشط', trial: 'تجريبي', suspended: 'موقوف', expired: 'منتهي', archived: 'مؤرشف', cancelled: 'ملغي', pending: 'قيد المراجعة', approved: 'مقبول', rejected: 'مرفوض' })[String(value || '').toLowerCase()] || value || '—';
+        const normalized = String(value || '').toLowerCase();
+        const key = platformStatusKeys[normalized];
+        return key ? platformT(key) : value || '—';
     }
 
     function tenantTypeLabel(value) {
-        return ({ gym: 'جيم', independent_trainer: 'مدرب مستقل' })[String(value || '').toLowerCase()] || 'نوع غير معروف';
+        const normalized = String(value || '').toLowerCase();
+        if (normalized === 'gym') return platformT('filter.gym');
+        if (normalized === 'independent_trainer') return platformT('filter.trainer');
+        return platformT('status.unknownTenantType');
+    }
+
+    function platformActivityLabel(value) {
+        const normalized = String(value || '').toLowerCase();
+        const supported = ['member_created', 'membership_created', 'attendance_checked_in'];
+        return supported.includes(normalized) ? platformT(`activity.${normalized}`) : value || platformT('activity.operation');
     }
 
     function normalizeWhatsappNumber(value) {
@@ -226,6 +275,7 @@
         $('#platformAdminName').textContent = user.name || user.email || 'Platform Admin';
         loginScreen.hidden = true;
         appShell.hidden = false;
+        localizePlatformContent(document);
     }
 
     function setTheme(theme) {
@@ -233,8 +283,8 @@
         document.documentElement.dataset.theme = next;
         try { localStorage.setItem('topgym-theme', next); } catch (_) { /* storage is optional */ }
         [$('#platformThemeToggle'), $('#platformLoginThemeToggle')].filter(Boolean).forEach((toggle) => {
-            toggle.setAttribute('aria-label', next === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
-            toggle.setAttribute('title', next === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
+            toggle.setAttribute('aria-label', platformT(next === 'dark' ? 'theme.enableLight' : 'theme.enableDark'));
+            toggle.setAttribute('title', platformT(next === 'dark' ? 'theme.enableLight' : 'theme.enableDark'));
         });
     }
 
@@ -250,8 +300,9 @@
         state.view = view;
         $$('[data-platform-view]').forEach((button) => button.classList.toggle('active', button.dataset.platformView === view));
         $$('[data-platform-panel]').forEach((panel) => panel.classList.toggle('active', panel.dataset.platformPanel === view));
-        const titles = { dashboard: 'لوحة المنصة', gyms: 'الجيمات', requests: 'طلبات الاشتراك', 'gym-registrations': 'طلبات الانضمام', 'payment-methods': 'وسائل دفع Logic Fit', backups: 'النسخ والتعافي', plans: 'الباقات', audit: 'سجل المنصة', settings: 'إعدادات المنصة' };
-        $('#platformPageTitle').textContent = titles[view] || 'إدارة المنصة';
+        const titleKey = platformViewTitleKeys[view] || 'page.dashboard';
+        $('#platformPageTitle').dataset.i18n = `platformAdminScreen.${titleKey}`;
+        $('#platformPageTitle').textContent = platformT(titleKey);
         $('.platform-sidebar')?.classList.remove('open');
         if (view === 'dashboard') loadDashboard();
         if (view === 'gyms') loadTenants();
@@ -307,20 +358,21 @@
     function renderKpis(metrics) {
         const gyms = metrics.gyms || {};
         const items = [
-            ['إجمالي الجيمات', gyms.total, 'كل الجيمات المسجلة', '▦', ''],
-            ['الجيمات النشطة', gyms.active, 'تعمل الآن', '✓', 'kpi-success'],
-            ['جيمات تجريبية', gyms.trial, 'في فترة التجربة', '◌', 'kpi-info'],
-            ['طلبات قيد المراجعة', metrics.pendingRequests, 'تحتاج إلى إجراء', '◷', 'kpi-warning'],
-            ['تنتهي قريبًا', metrics.expiringSubscriptions, 'خلال 30 يومًا', '!', 'kpi-danger'],
-            ['إجمالي المشتركين', metrics.members, 'في كل الجيمات', '◉', ''],
-            ['مستخدمو النظام', metrics.users, 'الملاك والمساعدون', '◎', ''],
-            ['استخدام AI', metrics.aiGenerations, 'هذا الشهر', '✦', 'kpi-info'],
-            ['التخزين', formatBytes(metrics.storageBytes), 'ملفات المنصة والجيمات', '▤', 'kpi-warning'],
-            ['جيمات جديدة', metrics.newGyms, 'خلال الفترة المحددة', '+', 'kpi-success']
+            [platformT('dashboard.gymsTotal'), platformNumber(gyms.total), platformT('dashboard.gymsTotalCaption'), '▦', ''],
+            [platformT('dashboard.gymsActive'), platformNumber(gyms.active), platformT('dashboard.gymsActiveCaption'), '✓', 'kpi-success'],
+            [platformT('dashboard.gymsTrial'), platformNumber(gyms.trial), platformT('dashboard.gymsTrialCaption'), '◌', 'kpi-info'],
+            [platformT('dashboard.pendingRequests'), platformNumber(metrics.pendingRequests), platformT('dashboard.pendingRequestsCaption'), '◷', 'kpi-warning'],
+            [platformT('dashboard.expiring'), platformNumber(metrics.expiringSubscriptions), platformT('dashboard.expiringCaption'), '!', 'kpi-danger'],
+            [platformT('dashboard.members'), platformNumber(metrics.members), platformT('dashboard.allGyms'), '◉', ''],
+            [platformT('dashboard.users'), platformNumber(metrics.users), platformT('dashboard.ownersAssistants'), '◎', ''],
+            [platformT('dashboard.aiUsage'), platformNumber(metrics.aiGenerations), platformT('dashboard.thisMonth'), '✦', 'kpi-info'],
+            [platformT('dashboard.storage'), formatBytes(metrics.storageBytes), platformT('dashboard.files'), '▤', 'kpi-warning'],
+            [platformT('dashboard.newGyms'), platformNumber(metrics.newGyms), platformT('dashboard.selectedPeriod'), '+', 'kpi-success']
         ];
         $('#platformKpis').innerHTML = items.map(([label, value, caption, icon, className]) => `<article class="platform-kpi ${className}"><div class="platform-kpi-top"><span class="platform-kpi-label">${escapeHtml(label)}</span><span class="platform-kpi-icon">${escapeHtml(icon)}</span></div><strong class="platform-kpi-value">${escapeHtml(value)}</strong><small class="platform-kpi-caption">${escapeHtml(caption)}</small></article>`).join('');
         $('#navGymsCount').textContent = gyms.total || 0;
         $('#navRequestsCount').textContent = metrics.pendingRequests || 0;
+        localizePlatformContent($('#platformKpis'));
     }
 
     function renderDashboard(data) {
@@ -332,8 +384,9 @@
         const recent = data.recentGyms || [];
         $('#recentTenants').innerHTML = recent.length ? recent.map((tenant) => `<button class="mini-tenant" type="button" data-open-tenant="${tenant.id}"><span class="mini-tenant-main"><strong>${escapeHtml(tenant.name)}</strong><small>${escapeHtml(tenantTypeLabel(tenant.tenantType))} · ${escapeHtml(tenant.slug)} · ${escapeHtml(tenant.owner?.name || 'بدون مالك')}</small></span>${statusPill(tenant.status)}</button>`).join('') : '<div class="empty-inline">لا توجد جيمات مضافة بعد.</div>';
         const activity = data.recentActivity || [];
-        $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(item.action || 'عملية')}</strong><small>${escapeHtml(item.actorName || 'النظام')} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
+        $('#recentActivity').innerHTML = activity.length ? activity.map((item) => `<div class="mini-activity"><span class="mini-activity-main"><strong>${escapeHtml(platformActivityLabel(item.action))}</strong><small>${escapeHtml(item.actorName || platformT('activity.system'))} · ${escapeHtml(item.details || '')}</small></span><small>${escapeHtml(formatDateTime(item.createdAt))}</small></div>`).join('') : '<div class="empty-inline">لا توجد عمليات مسجلة.</div>';
         setDashboardReady();
+        localizePlatformContent($('[data-platform-panel="dashboard"]'));
     }
 
     async function loadDashboard() {
@@ -356,12 +409,14 @@
         const pages = Number(data.pagination?.pages || 1);
         $('#tenantResultsSummary').textContent = total ? `عرض ${rows.length} من ${total} عميل منصة` : 'لا توجد نتائج';
         $('#tenantPagination').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-tenant-page="${number}">${number}</button>`).join('') : '';
+        localizePlatformContent($('[data-platform-panel="gyms"]'));
     }
 
     function updatePlanFilter() {
         const select = $('#tenantPlanFilter');
+        if (!select) return;
         const selected = state.tenantFilters.plan;
-        select.innerHTML = '<option value="">كل الباقات</option>' + state.plans.map((plan) => `<option value="${escapeHtml(plan.code)}">${escapeHtml(plan.name)}</option>`).join('');
+        select.innerHTML = `<option value="">${escapeHtml(platformT('filter.allPlans'))}</option>` + state.plans.map((plan) => `<option value="${escapeHtml(plan.code)}">${escapeHtml(plan.name)}</option>`).join('');
         select.value = selected;
     }
 
@@ -563,13 +618,18 @@
         const total = Number(pagination.total || 0);
         const page = Number(pagination.page || state.requestPage || 1);
         const pages = Number(pagination.pages || 1);
-        summary.textContent = total ? `عرض ${state.requests.length} من ${total} طلب` : 'لا توجد نتائج';
+        summary.textContent = total ? platformT('summary.rows', { shown: platformNumber(state.requests.length), total: platformNumber(total), entity: platformT('status.requests') }) : platformT('empty.results');
         host.innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-request-page="${number}">${number}</button>`).join('') : '';
+        localizePlatformContent($('[data-platform-panel="requests"]'));
     }
 
     function registrationTermLabel(term) {
         const months = Number(term?.durationMonths || 0);
-        return months === 1 ? 'شهري' : months === 3 ? '3 أشهر' : months === 6 ? '6 أشهر' : months === 12 ? 'سنوي' : `${months} شهر`;
+        if (months === 1) return platformT('status.monthly');
+        if (months === 3) return platformT('status.quarterly');
+        if (months === 6) return platformT('status.semiannual');
+        if (months === 12) return platformT('status.annual');
+        return platformT('status.months', { count: platformNumber(months) });
     }
 
     function renderGymRegistrations(data) {
@@ -592,8 +652,9 @@
         const total = Number(pagination.total || 0);
         const page = Number(pagination.page || state.gymRegistrationPage || 1);
         const pages = Number(pagination.pages || 1);
-        $('#gymRegistrationResultsSummary').textContent = total ? `عرض ${rows.length} من ${total} طلب` : 'لا توجد نتائج';
+        $('#gymRegistrationResultsSummary').textContent = total ? platformT('summary.rows', { shown: platformNumber(rows.length), total: platformNumber(total), entity: platformT('status.requests') }) : platformT('empty.results');
         $('#gymRegistrationPagination').innerHTML = pages > 1 ? Array.from({ length: pages }, (_, index) => index + 1).map((number) => `<button type="button" class="${number === page ? 'active' : ''}" data-gym-registration-page="${number}">${number}</button>`).join('') : '';
+        localizePlatformContent($('[data-platform-panel="gym-registrations"]'));
     }
 
     async function loadGymRegistrations() {
@@ -607,7 +668,7 @@
         state.platformPaymentMethods = Array.isArray(data?.paymentMethods) ? data.paymentMethods : [];
         const activeCount = state.platformPaymentMethods.filter((item) => item.isActive).length;
         const count = $('#platformPaymentMethodsCount');
-        if (count) count.textContent = `${activeCount} وسيلة نشطة · ${state.platformPaymentMethods.length} إجمالي`;
+        if (count) count.textContent = platformT('summary.paymentMethods', { active: platformNumber(activeCount), total: platformNumber(state.platformPaymentMethods.length) });
         const body = $('#platformPaymentMethodsTableBody');
         if (!body) return;
         body.innerHTML = state.platformPaymentMethods.length ? state.platformPaymentMethods.map((method) => `<tr>
@@ -619,6 +680,7 @@
             <td>${escapeHtml(formatDateTime(method.updatedAt || method.createdAt))}</td>
             <td><button class="table-action" type="button" data-platform-payment-method-edit="${escapeHtml(method.id)}">تعديل</button></td>
         </tr>`).join('') : '<tr><td colspan="7"><div class="empty-inline payment-methods-empty"><strong>لا توجد وسائل دفع للمنصة بعد.</strong><span>أضف وسيلة دفع نشطة حتى يستطيع صاحب الجيم إكمال التسجيل من /register-gym.</span></div></td></tr>';
+        localizePlatformContent($('[data-platform-panel="payment-methods"]'));
     }
 
     async function loadPlatformPaymentMethods() {
@@ -626,28 +688,15 @@
     }
 
     function backupStatusLabel(value) {
-        return ({
-            pending: 'قيد الانتظار',
-            running: 'جارٍ التنفيذ',
-            uploaded: 'تم الرفع',
-            verifying: 'جارٍ التحقق',
-            verified: 'تم التحقق',
-            failed: 'فشل',
-            expired: 'منتهية',
-            deleted: 'محذوفة'
-        })[String(value || '').toLowerCase()] || value || '—';
+        const normalized = String(value || '').toLowerCase();
+        return ['pending', 'running', 'uploaded', 'verifying', 'verified', 'failed', 'expired', 'deleted'].includes(normalized)
+            ? platformT(`backupStatus.${normalized}`) : value || '—';
     }
 
     function backupTypeLabel(value) {
-        return ({
-            platform_daily: 'نسخة يومية للمنصة',
-            platform_weekly: 'نسخة أسبوعية للمنصة',
-            platform_monthly: 'نسخة شهرية للمنصة',
-            platform_manual: 'نسخة يدوية للمنصة',
-            tenant_daily: 'نسخة يومية للجيم',
-            tenant_manual: 'نسخة يدوية للجيم',
-            tenant_pre_restore: 'نسخة أمان قبل الاستعادة'
-        })[String(value || '').toLowerCase()] || value || '—';
+        const normalized = String(value || '').toLowerCase();
+        return ['platform_daily', 'platform_weekly', 'platform_monthly', 'platform_manual', 'tenant_daily', 'tenant_manual', 'tenant_pre_restore'].includes(normalized)
+            ? platformT(`backupType.${normalized}`) : value || '—';
     }
 
     function backupStatusPill(value) {
@@ -663,34 +712,38 @@
     function renderBackupHealth(data) {
         state.backupHealth = data || {};
         const summary = data?.summary || {};
-        const providerStatus = data?.providerStatus === 'configured' ? 'متصل' : data?.providerStatus === 'local_development' ? 'محلي للاختبار' : 'غير مهيأ';
+        const providerStatus = data?.providerStatus === 'configured' ? platformT('backups.connected') : data?.providerStatus === 'local_development' ? platformT('backups.localTesting') : platformT('backups.unconfigured');
         const providerCaption = data?.providerStatus === 'configured'
-            ? 'التخزين الخاص جاهز للتحقق والرفع.'
+            ? platformT('backups.privateReady')
             : data?.providerStatus === 'local_development'
-                ? 'تخزين محلي للتطوير فقط؛ لا يُعتمد كنسخة Production أو Off-site.'
-            : 'يلزم ربط مزود تخزين خاص قبل التشغيل الفعلي.';
+                ? platformT('backups.localNotProduction')
+            : platformT('backups.privateStorageRequired');
         $('#platformBackupHealthKpis').innerHTML = [
-            backupHealthStat('الجيمات المستحقة اليوم', summary.eligibleTenants ?? 0, summary.backupDay || 'اليوم'),
-            backupHealthStat('نسخ تم التحقق منها', summary.verifiedToday ?? 0, 'نسخ يومية سليمة', 'kpi-success'),
-            backupHealthStat('نسخ فشلت', summary.failedToday ?? 0, 'تحتاج مراجعة أو إعادة محاولة', 'kpi-danger'),
-            backupHealthStat('نسخ مفقودة اليوم', summary.missingToday ?? 0, 'لم تُنشأ بعد', 'kpi-warning')
+            backupHealthStat(platformT('backups.eligibleToday'), summary.eligibleTenants ?? 0, summary.backupDay === 'اليوم' ? platformT('backups.today') : summary.backupDay || platformT('backups.today')),
+            backupHealthStat(platformT('backups.verifiedToday'), summary.verifiedToday ?? 0, platformT('backups.healthyDaily'), 'kpi-success'),
+            backupHealthStat(platformT('backups.failedToday'), summary.failedToday ?? 0, platformT('backups.reviewRetry'), 'kpi-danger'),
+            backupHealthStat(platformT('backups.missingToday'), summary.missingToday ?? 0, platformT('backups.notCreated'), 'kpi-warning')
         ].join('');
         const lastVerified = data?.lastVerifiedPlatformBackup?.verifiedAt || data?.lastVerifiedPlatformBackup?.createdAt;
         const schedule = data?.scheduledPolicy || {};
-        const recurring = [schedule.weekly ? 'أسبوعي' : '', schedule.monthly ? 'شهري' : ''].filter(Boolean).join(' + ') || 'اليومي فقط';
-        $('#platformBackupHealthSummary').innerHTML = `<div class="backup-summary-row"><span>اليوم</span><strong>${escapeHtml(summary.backupDay || '—')}</strong></div><div class="backup-summary-row"><span>تم التحقق</span><strong>${escapeHtml(`${summary.verifiedToday ?? 0} / ${summary.eligibleTenants ?? 0}`)}</strong></div><div class="backup-summary-row"><span>مفقود أو فاشل</span><strong>${escapeHtml(Number(summary.missingToday || 0) + Number(summary.failedToday || 0))}</strong></div><div class="backup-summary-row"><span>آخر نسخة منصة Verified</span><strong>${escapeHtml(formatDateTime(lastVerified))}</strong></div><div class="backup-summary-row"><span>استعادة تجريبية مثبتة</span><strong>${escapeHtml(formatDateTime(data?.lastRestoreRehearsalAt))}</strong></div><div class="backup-summary-row"><span>النسخ الدورية</span><strong>${escapeHtml(recurring)}</strong></div>`;
+        const recurring = [schedule.weekly ? platformT('backups.weekly') : '', schedule.monthly ? platformT('backups.monthly') : ''].filter(Boolean).join(' + ') || platformT('backups.dailyOnly');
+        const backupDay = summary.backupDay === 'اليوم' ? platformT('backups.today') : summary.backupDay || '—';
+        $('#platformBackupHealthSummary').innerHTML = `<div class="backup-summary-row"><span>${platformT('backups.today')}</span><strong>${escapeHtml(backupDay)}</strong></div><div class="backup-summary-row"><span>${platformT('backups.verified')}</span><strong>${escapeHtml(`${summary.verifiedToday ?? 0} / ${summary.eligibleTenants ?? 0}`)}</strong></div><div class="backup-summary-row"><span>${platformT('backups.missingOrFailed')}</span><strong>${escapeHtml(Number(summary.missingToday || 0) + Number(summary.failedToday || 0))}</strong></div><div class="backup-summary-row"><span>${platformT('backups.lastPlatformVerified')}</span><strong>${escapeHtml(formatDateTime(lastVerified))}</strong></div><div class="backup-summary-row"><span>${platformT('backups.restoreRehearsal')}</span><strong>${escapeHtml(formatDateTime(data?.lastRestoreRehearsalAt))}</strong></div><div class="backup-summary-row"><span>${platformT('backups.recurring')}</span><strong>${escapeHtml(recurring)}</strong></div>`;
         const coverage = data?.registryCoverage || {};
         const uncoveredCount = (coverage.uncoveredTenantTables || []).length
             + (coverage.unregisteredPhysicalTenantTables || []).length
             + (coverage.missingPhysicalTables || []).length;
         const coverageLabel = coverage.status === 'covered'
-            ? 'مكتملة'
-            : `تحتاج مراجعة (${uncoveredCount})`;
+            ? platformT('backups.complete')
+            : platformT('backups.reviewNeeded', { count: platformNumber(uncoveredCount) });
         const platformFailureCount = Array.isArray(data?.platformFailures) ? data.platformFailures.length : 0;
-        $('#platformBackupHealthSummary').insertAdjacentHTML('beforeend', `<div class="backup-summary-row"><span>تغطية سجل الجداول</span><strong>${escapeHtml(coverageLabel)}</strong></div><div class="backup-summary-row"><span>فشل نسخ المنصة مؤخرًا</span><strong>${escapeHtml(platformFailureCount)}</strong></div>`);
-        $('#platformBackupProviderState').innerHTML = `<div class="backup-provider-badge ${data?.providerStatus === 'configured' ? 'ready' : 'pending'}"><span class="scope-dot"></span><strong>${escapeHtml(providerStatus)}</strong></div><p>${escapeHtml(providerCaption)}</p><small>Off-site: ${escapeHtml(data?.offsiteStatus || 'غير مهيأ')} · لا يتم عرض مسارات التخزين أو روابط عامة للملفات الخاصة.</small>`;
+        $('#platformBackupHealthSummary').insertAdjacentHTML('beforeend', `<div class="backup-summary-row"><span>${platformT('backups.tableCoverage')}</span><strong>${escapeHtml(coverageLabel)}</strong></div><div class="backup-summary-row"><span>${platformT('backups.recentFailures')}</span><strong>${escapeHtml(platformFailureCount)}</strong></div>`);
+        const offsiteRaw = String(data?.offsiteStatus || 'غير مهيأ');
+        const offsiteStatus = offsiteRaw === 'غير مهيأ' ? platformT('backups.unconfigured') : offsiteRaw;
+        $('#platformBackupProviderState').innerHTML = `<div class="backup-provider-badge ${data?.providerStatus === 'configured' ? 'ready' : 'pending'}"><span class="scope-dot"></span><strong>${escapeHtml(providerStatus)}</strong></div><p>${escapeHtml(providerCaption)}</p><small>${escapeHtml(platformT('backups.offsitePrivacy', { status: offsiteStatus }))}</small>`;
         const tenantRows = data?.tenantDaily || [];
         $('#tenantBackupsHealthTableBody').innerHTML = tenantRows.length ? tenantRows.map((row) => `<tr><td><span class="tenant-cell"><strong>${escapeHtml(row.slug || `Tenant #${row.tenantId}`)}</strong><small>#${escapeHtml(row.tenantId)}</small></span></td><td>${backupStatusPill(row.status)}</td><td>${escapeHtml(formatDate(row.backupDay))}</td><td>${escapeHtml(row.sizeBytes == null ? '—' : formatBytes(row.sizeBytes))}</td><td>${escapeHtml(formatDateTime(row.verifiedAt))}</td><td>${row.id && row.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/tenants/${encodeURIComponent(row.tenantId)}/backups/${encodeURIComponent(row.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد بيانات نسخ للجيمات بعد.</div></td></tr>';
+        localizePlatformContent($('[data-platform-panel="backups"]'));
     }
 
     function renderBackupHistory(data) {
@@ -698,6 +751,7 @@
         state.backupAudit = data?.audit || [];
         $('#platformBackupsTableBody').innerHTML = state.backups.length ? state.backups.map((backup) => `<tr><td>${escapeHtml(backupTypeLabel(backup.backupType))}</td><td>${backupStatusPill(backup.status)}</td><td>${escapeHtml(formatDate(backup.backupDay))}</td><td>${escapeHtml(backup.sizeBytes == null ? '—' : formatBytes(backup.sizeBytes))}</td><td>${escapeHtml(formatDateTime(backup.verifiedAt))}</td><td>${backup.status === 'VERIFIED' ? `<a class="table-action" href="/api/platform-admin/backups/${encodeURIComponent(backup.id)}/download">تنزيل</a>` : '—'}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لم تُنشأ نسخ للمنصة بعد.</div></td></tr>';
         $('#platformBackupAuditTableBody').innerHTML = state.backupAudit.length ? state.backupAudit.map((item) => `<tr><td>${escapeHtml(formatDateTime(item.createdAt))}</td><td>${escapeHtml(item.eventType || '—')}</td><td>${escapeHtml(item.backupId || '—')}</td><td>${backupStatusPill(item.result === 'success' ? 'verified' : item.result)}</td><td>${escapeHtml(item.reason || '—')}</td></tr>`).join('') : '<tr><td colspan="5"><div class="empty-inline">لا توجد عمليات نسخ مسجلة.</div></td></tr>';
+        localizePlatformContent($('[data-platform-panel="backups"]'));
     }
 
     async function loadBackups() {
@@ -745,14 +799,79 @@
                     <div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">Edit</button><button class="platform-btn ${status === 'active' ? 'danger' : 'ghost'} plan-status" type="button" data-plan-status="${plan.id}" data-next-status="${statusAction}" ${status === 'active' && activeCount <= 1 ? 'disabled title="Keep one active plan"' : ''}>${status === 'active' ? 'Disable' : 'Activate'}</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${status === 'archived' || plan.availableForNewSubscriptions === false ? 'disabled title="Legacy plan is protected"' : ''}>Archive</button></div>
                 </article>`;
             }).join('') : '<div class="empty-inline">No plans.</div>';
+            localizePlatformContent($('[data-platform-panel="plans"]'));
             return;
         }
         const featureNames = { intelligence: 'الذكاء التشغيلي', coaching: 'التدريب والتغذية', store: 'المتجر', reports: 'التقارير', portal: 'بوابة المشترك', prioritySupport: 'دعم بأولوية' };
         $('#plansGrid').innerHTML = state.plans.length ? state.plans.map((plan) => `<article class="plan-card ${plan.isActive ? '' : 'is-inactive'}"><div class="card-heading"><div><span class="eyebrow">${escapeHtml(plan.code)}</span><h3>${escapeHtml(plan.name)}</h3></div>${plan.isActive ? statusPill('active') : statusPill('archived')}</div><p>${escapeHtml(plan.description || 'باقة SaaS لمنصة الجيم.')}</p><div class="plan-price">${escapeHtml(formatMoney(plan.price, plan.currency))}<small> / ${escapeHtml(plan.billingPeriod === 'yearly' ? 'سنة' : 'شهر')}</small></div><div class="plan-limits"><span>المشتركون <b>${escapeHtml(plan.maxMembers ?? '∞')}</b></span><span>المستخدمون <b>${escapeHtml(plan.maxUsers ?? '∞')}</b></span><span>AI شهريًا <b>${escapeHtml(plan.maxAiGenerations ?? '∞')}</b></span><span>التخزين <b>${escapeHtml(plan.maxStorageMb ? `${plan.maxStorageMb} MB` : '∞')}</b></span></div><div class="plan-features">${Object.entries(featureNames).map(([key,label]) => `<span class="feature-chip ${plan.features?.[key] === false ? 'off' : ''}">${plan.features?.[key] === false ? '×' : '✓'} ${label}</span>`).join('')}</div><div class="plan-card-actions"><button class="platform-btn ghost plan-edit" type="button" data-plan-edit="${plan.id}">تعديل الباقة</button><button class="platform-btn danger plan-delete" type="button" data-plan-delete="${plan.id}" ${plan.isActive && state.plans.filter((item) => item.isActive).length <= 1 ? 'disabled title="يجب إبقاء باقة مفعّلة"' : ''}>حذف</button></div></article>`).join('') : '<div class="empty-inline">لا توجد باقات.</div>';
+        localizePlatformContent($('[data-platform-panel="plans"]'));
+    }
+
+    function renderAudit() {
+        $('#auditTableBody').innerHTML = state.audit.length ? state.audit.map((item) => `<tr><td>${escapeHtml(formatDateTime(item.createdAt))}</td><td>${escapeHtml(item.actorName || 'System')}</td><td>${escapeHtml(item.action)}</td><td>${escapeHtml(item.tenantId || 'Platform')}</td><td>${escapeHtml(item.reason || '—')}</td><td>${escapeHtml(item.details || '')}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد عمليات.</div></td></tr>';
+        localizePlatformContent($('[data-platform-panel="audit"]'));
     }
 
     async function loadAudit() {
-        try { state.audit = (await api('/api/platform-admin/audit?limit=200')).audit || []; $('#auditTableBody').innerHTML = state.audit.length ? state.audit.map((item) => `<tr><td>${escapeHtml(formatDateTime(item.createdAt))}</td><td>${escapeHtml(item.actorName || 'System')}</td><td>${escapeHtml(item.action)}</td><td>${escapeHtml(item.tenantId || 'Platform')}</td><td>${escapeHtml(item.reason || '—')}</td><td>${escapeHtml(item.details || '')}</td></tr>`).join('') : '<tr><td colspan="6"><div class="empty-inline">لا توجد عمليات.</div></td></tr>'; } catch (error) { showToast(error.message, true); }
+        try { state.audit = (await api('/api/platform-admin/audit?limit=200')).audit || []; renderAudit(); } catch (error) { showToast(error.message, true); }
+    }
+
+    function rerenderCurrentViewForLocale() {
+        if (state.view === 'dashboard' && state.dashboard) renderDashboard(state.dashboard);
+        if (state.view === 'gyms') {
+            updatePlanFilter();
+            renderTenants(state.tenants || { tenants: [], pagination: {} });
+            if (state.profile && !$('#tenantProfile')?.hidden) renderProfile(state.profile);
+        }
+        if (state.view === 'requests') { renderRequests(); renderRequestPagination(); }
+        if (state.view === 'gym-registrations') renderGymRegistrations({ requests: state.gymRegistrationRequests, pagination: state.gymRegistrationPagination });
+        if (state.view === 'payment-methods') renderPlatformPaymentMethods({ paymentMethods: state.platformPaymentMethods });
+        if (state.view === 'backups') {
+            if (state.backupHealth) renderBackupHealth(state.backupHealth);
+            renderBackupHistory({ backups: state.backups, audit: state.backupAudit });
+        }
+        if (state.view === 'plans' && state.plans.length) renderPlans();
+        if (state.view === 'audit') renderAudit();
+    }
+
+    function applyPlatformLocale() {
+        if (!window.TopGymI18n) return;
+        localizePlatformContent(document);
+        const sidebar = $('.platform-sidebar');
+        if (sidebar) {
+            sidebar.dataset.i18nAriaLabel = 'platformAdminScreen.shell.navigationLabel';
+            sidebar.setAttribute('aria-label', platformT('shell.navigationLabel'));
+        }
+        const shellNavKeys = {
+            dashboard: 'page.dashboard', gyms: 'nav.gyms', requests: 'nav.requests',
+            'gym-registrations': 'nav.registrations', 'payment-methods': 'nav.paymentMethods',
+            backups: 'nav.backups', plans: 'nav.plans', audit: 'nav.audit', settings: 'nav.settings'
+        };
+        Object.entries(shellNavKeys).forEach(([view, key]) => {
+            const label = $(`#platformNav [data-platform-view="${view}"] > span:not(.nav-icon):not(.nav-count)`);
+            if (label) label.textContent = platformT(key);
+        });
+        const logoutLabel = $('#platformAdminLogoutButton > span:not(.nav-icon)');
+        if (logoutLabel) logoutLabel.textContent = window.TopGymI18n.t('shell.logout');
+        const mobileMenu = $('#platformMobileMenu');
+        if (mobileMenu) {
+            const menuLabel = window.TopGymI18n.t('shell.menu');
+            mobileMenu.setAttribute('aria-label', menuLabel);
+            mobileMenu.setAttribute('title', menuLabel);
+        }
+        const titleKey = platformViewTitleKeys[state.view];
+        if (titleKey) {
+            $('#platformPageTitle').dataset.i18n = `platformAdminScreen.${titleKey}`;
+            $('#platformPageTitle').textContent = platformT(titleKey);
+        }
+        const currentTheme = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+        [$('#platformThemeToggle'), $('#platformLoginThemeToggle')].filter(Boolean).forEach((toggle) => {
+            const label = platformT(currentTheme === 'dark' ? 'theme.enableLight' : 'theme.enableDark');
+            toggle.setAttribute('aria-label', label);
+            toggle.setAttribute('title', label);
+        });
+        rerenderCurrentViewForLocale();
+        localizePlatformContent(document);
     }
 
     function planOptions(selected = '') {
@@ -1251,6 +1370,8 @@
     async function boot() {
         initializeTheme();
         bindEvents();
+        window.addEventListener('topgym:localechange', applyPlatformLocale);
+        localizePlatformContent(document);
         try {
             const session = await api('/api/auth/session');
             if (!session.authenticated) { showLogin(); return; }

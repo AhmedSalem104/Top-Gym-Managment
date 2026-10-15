@@ -1,31 +1,339 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 const { hasClassSelector, hasRootClassSelector, rulesContainingClass, rulesWithRootClass } = require('../helpers/css-selector-ownership');
 
 const root = path.resolve(__dirname, '..', '..');
-const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
+const retiredVisualPath = 'public/css/components/visual-redesign.css';
+const retiredUiFoundationPath = 'public/css/components/ui-foundation.css';
+const read = relative => {
+    const absolutePath = path.join(root, relative);
+    if ([retiredVisualPath, retiredUiFoundationPath].includes(relative) && !fs.existsSync(absolutePath)) return '';
+    return fs.readFileSync(absolutePath, 'utf8');
+};
+
+test('retired global visual layer has no source file or entrypoint imports', () => {
+    assert.equal(fs.existsSync(path.join(root, retiredVisualPath)), false);
+    for (const entrypoint of ['public/css/main.source.css', 'public/css/app-shell.source.css']) {
+        assert.doesNotMatch(read(entrypoint), /visual-redesign\.css/u, `${entrypoint} must not import the retired layer`);
+    }
+});
+
+test('retired UI foundation has no source file or active entrypoint imports', () => {
+    assert.equal(fs.existsSync(path.join(root, retiredUiFoundationPath)), false);
+    for (const entrypoint of ['public/css/main.source.css', 'public/css/app-shell.source.css']) {
+        assert.doesNotMatch(read(entrypoint), /ui-foundation\.css/u, `${entrypoint} must not import the retired foundation`);
+    }
+    assert.doesNotMatch(read('scripts/build-login-entry.js'), /ui-foundation\.css/u,
+        'the isolated login bundle must not include the retired foundation');
+    for (const bundle of ['public/css/main.css', 'public/css/app-shell.css', 'public/css/login-entry.css']) {
+        assert.doesNotMatch(read(bundle), /(?:components\/|components\\)ui-foundation\.css/u,
+            `${bundle} must be generated without the retired foundation`);
+    }
+});
+
+test('retired global primitives retain canonical token and accessibility owners', () => {
+    const utilities = read('public/css/utilities.css');
+    const layout = read('public/css/layout.css');
+    const tokens = read('public/css/tokens.css');
+    const responsive = read('public/css/responsive.css');
+
+    assert.match(utilities, /body\.gym-page-bg::selection\s*\{[^}]*var\(--color-primary\)[^}]*var\(--text-on-primary\)/u);
+    assert.match(layout, /body \.page > \.workspace,[\s\S]*?gap:\s*var\(--space-page-stack\)/u);
+    assert.match(tokens, /--space-page-stack:\s*22px/u);
+    assert.match(responsive, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
+});
+
+test('hidden state and card footer borders have one canonical CSS owner', () => {
+    const reset = read('public/css/reset.css');
+    const utilities = read('public/css/utilities.css');
+    const cards = read('public/css/components/cards.css');
+    const footerRules = rulesWithRootClass(cards, 'panel-footer').filter(rule =>
+        /border-top:\s*1px solid var\(--border-color\)/u.test(rule.declarations));
+
+    assert.match(reset, /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/u);
+    assert.doesNotMatch(utilities, /\[hidden\]/u);
+    assert.match(utilities, /\.hidden\s*\{\s*display:\s*none\s*!important;\s*\}/u);
+    assert.equal(footerRules.length, 1, 'Cards owns one panel/card footer border rule');
+});
 
 test('shared empty, loading, and error surfaces have canonical component owners', () => {
     const empty = read('public/css/components/empty-states.css');
     const loading = read('public/css/components/loading.css');
     const alerts = read('public/css/components/alerts.css');
 
-    assert.match(empty, /body \.empty-state[\s\S]*?--rf-line[\s\S]*?--rf-surface-soft/u);
-    assert.match(loading, /body \.loading[\s\S]*?--rf-line[\s\S]*?--rf-surface-soft/u);
+    assert.match(empty, /body \.empty-state[\s\S]*?--border-primary[\s\S]*?--bg-card-hover[\s\S]*?--text-muted/u);
+    assert.match(loading, /body \.loading[\s\S]*?--border-primary[\s\S]*?--bg-card-hover/u);
     assert.match(alerts, /body \.error-state[\s\S]*?--danger-border[\s\S]*?--danger-soft/u);
+});
+
+test('retired RF visual aliases have no consumers or token definitions in canonical CSS sources', () => {
+    const cssRoot = path.join(root, 'public/css');
+    const sourcePaths = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+        const absolutePath = path.join(directory, entry.name);
+        if (entry.isDirectory()) return sourcePaths(absolutePath);
+        return entry.isFile() && entry.name.endsWith('.css') ? [absolutePath] : [];
+    });
+    for (const absolutePath of sourcePaths(cssRoot)) {
+        const relativePath = path.relative(root, absolutePath);
+        assert.doesNotMatch(read(relativePath), /--rf-/u, `${relativePath} must use canonical semantic tokens`);
+    }
 });
 
 test('global foundations and visual polish do not own shared status surfaces', () => {
     const sources = [
-        'public/css/components/ui-foundation.css',
-        'public/css/components/design-foundation.css',
+        retiredUiFoundationPath,
         'public/css/components/visual-redesign.css'
     ].map(read).join('\n');
 
     assert.doesNotMatch(sources, /body\s+\.(?:empty-state|empty|no-data|not-found-state|saas-empty|loading|error-state|page-error|registration-error|portal-error)(?![-\w])/u);
     assert.doesNotMatch(sources, /:where\(\s*\.(?:empty-state|empty|no-data|not-found-state|loading|error-state)(?![-\w])/u);
+});
+
+test('page and section heading presentation has canonical typography, layout, and responsive owners', () => {
+    const visual = read('public/css/components/visual-redesign.css');
+    const typography = read('public/css/typography.css');
+    const layout = read('public/css/layout.css');
+    const responsive = read('public/css/responsive.css');
+
+    assert.match(typography, /body \.page-header h2,[\s\S]*?font-size:\s*var\(--font-size-page-title\)[\s\S]*?font-weight:\s*var\(--weight-semibold\)/u);
+    assert.match(typography, /body \.page-header p,[\s\S]*?color:\s*var\(--color-text-muted\)[\s\S]*?line-height:\s*1\.6/u);
+    assert.match(layout, /\.section-heading\s*\{[^}]*min-height:\s*44px[^}]*var\(--space-4\)[^}]*var\(--border-secondary\)[^}]*var\(--space-3\)/u);
+    assert.match(responsive, /\.section-heading\s*\{[^}]*align-items:\s*flex-start[^}]*flex-direction:\s*column[^}]*gap:\s*var\(--space-3\)/u);
+    assert.doesNotMatch(visual, /body \.page-header h2|body \.section-heading|body \.members-panel h3/u);
+});
+
+test('shared mobile content grids collapse in the responsive owner, not visual polish', () => {
+    const responsive = read('public/css/responsive.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    assert.match(responsive, /@media\s*\(max-width:\s*767px\)[\s\S]*?body \.form-grid,[\s\S]*?body \.field-grid,[\s\S]*?body \.two-column-grid,[\s\S]*?grid-template-columns:\s*1fr/u);
+    assert.doesNotMatch(visual, /body \.form-grid|body \.field-grid|body \.two-column-grid|body \.page-header \.actions-row/u);
+});
+
+test('auth helper text has one shared form owner', () => {
+    const forms = read('public/css/components/forms.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const memberships = read('public/css/pages/memberships.css');
+
+    assert.match(forms, /\.form-help,[\s\S]*?\.auth-helper\s*\{[^}]*var\(--color-text-muted\)[^}]*var\(--font-2xs\)[^}]*line-height:\s*1\.65/u);
+    assert.doesNotMatch(visual, /\.auth-helper/u);
+    assert.doesNotMatch(memberships, /\.auth-helper/u);
+});
+
+test('Store card heading presentation is owned by the Store feature', () => {
+    const store = read('public/css/pages/store.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    assert.match(store, /body \.store-card-header\s*\{[^}]*--control-height-large[^}]*--border-secondary[^}]*--space-3/u);
+    assert.match(store, /@media\s*\(max-width:\s*700px\)[\s\S]*?body \.store-card-header \.header-actions \.btn\s*\{[^}]*flex:\s*1\s+1\s+auto/u);
+    assert.doesNotMatch(visual, /\.store-card-header/u);
+});
+
+test('SaaS panel heading presentation is owned by the SaaS page stylesheet', () => {
+    const saas = read('public/css/pages/saas.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    assert.match(saas, /body \.saas-panel-head\s*\{[^}]*min-height:\s*44px[^}]*--border-secondary/u);
+    assert.match(saas, /@media\s*\(max-width:\s*767px\)[\s\S]*?body \.saas-panel-head\s*\{[^}]*flex-direction:\s*column/u);
+    assert.doesNotMatch(visual, /\.saas-panel-head/u);
+});
+
+test('Dashboard Hero presentation is owned by the dashboard page, not visual polish', () => {
+    const dashboard = read('public/css/pages/dashboard.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const html = read('public/index.html');
+
+    assert.doesNotMatch(visual, /\.dashboard-hero(?:[\s:#.[,]|$)|dashboard-hero-enter/u);
+    assert.match(dashboard, /\.dashboard-hero::before[\s\S]*?logic-fit-login-gym\.webp/u);
+    assert.match(dashboard, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.dashboard-hero/u);
+    assert.match(dashboard, /\.dashboard-hero\s+#dashboardPrintPricingButton\s*\{\s*display:\s*none\s*;?\s*\}/u);
+    assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);
+    assert.match(html, /data-dashboard-hero-subscription="plan"[\s\S]*?data-dashboard-hero-source="statTotal"[\s\S]*?data-dashboard-hero-subscription="date"/u);
+});
+
+test('Branch Management presentation is feature-owned, not part of the visual polish layer', () => {
+    const branches = read('public/css/pages/branches.css');
+    const branchContext = read('public/css/components/branch-context.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const main = read('public/css/main.source.css');
+    const appShell = read('public/css/app-shell.source.css');
+
+    for (const selectorClass of [
+        'branches-page', 'branches-page-header', 'branches-page-heading', 'branches-page-actions',
+        'branches-page-summary', 'branches-create-trigger', 'branches-list-card',
+        'branches-card-header', 'branches-card-kicker', 'branches-list', 'branch-list-item',
+        'branch-list-marker', 'branch-list-copy', 'branch-list-actions', 'branches-form',
+        'branch-create-fields', 'branch-create-options', 'branches-check-field', 'branches-form-status',
+        'branch-commerce-chips', 'branch-commerce-chip', 'branch-status'
+    ]) {
+        assert.equal(hasClassSelector(branches, selectorClass), true, `${selectorClass} must be owned by pages/branches.css`);
+        assert.equal(hasClassSelector(branchContext, selectorClass), false, `${selectorClass} must not be owned by branch-context.css`);
+        assert.equal(hasClassSelector(visual, selectorClass), false, `${selectorClass} must not be owned by visual-redesign.css`);
+    }
+
+    assert.match(main, /@import url\("\.\/pages\/branches\.css"\);/u);
+    assert.match(appShell, /@import url\("\.\/pages\/branches\.css"\);/u);
+});
+
+test('branch/section dropdown styling and Navbar shell composition have canonical owners', () => {
+    const context = read('public/css/components/branch-context.css');
+    const navigation = read('public/css/components/navigation-shell.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const main = read('public/css/main.source.css');
+    const appShell = read('public/css/app-shell.source.css');
+    const componentClasses = [
+        'branch-context-kicker', 'branch-context-kicker-icon', 'branch-context-divider',
+        'branch-context-field', 'branch-context-field-icon', 'branch-context-field-copy',
+        'branch-context-status', 'branch-context-status-dot', 'branch-context-trigger',
+        'branch-context-trigger-chevron', 'branch-context-menu', 'branch-context-option'
+    ];
+
+    for (const selectorClass of componentClasses) {
+        assert.ok(rulesContainingClass(context, selectorClass).length > 0,
+            `${selectorClass} must be owned by components/branch-context.css`);
+        assert.equal(rulesContainingClass(visual, selectorClass).length, 0,
+            `${selectorClass} must not remain in components/visual-redesign.css`);
+    }
+
+    for (const source of [main, appShell]) {
+        const navigationIndex = source.indexOf('@import url("./components/navigation-shell.css");');
+        const contextIndex = source.indexOf('@import url("./components/branch-context.css");');
+        assert.ok(navigationIndex >= 0 && contextIndex > navigationIndex,
+            'branch context must load after the shell layout owner');
+        assert.doesNotMatch(source, /visual-redesign\.css/u, 'retired global visual CSS must not be imported');
+    }
+
+    assert.ok(rulesContainingClass(navigation, 'branch-context-shell').length > 0,
+        'Navbar shell placement/composition must be owned by navigation-shell.css');
+    for (const shellClass of ['topbar-inner', 'topbar-controls', 'topbar-quick-actions', 'branch-context-shell']) {
+        assert.equal(rulesContainingClass(visual, shellClass).length, 0,
+            `${shellClass} composition must not remain in visual-redesign.css`);
+    }
+});
+
+test('application page navigation states are owned by navigation-shell, not visual-redesign', () => {
+    const navigation = read('public/css/components/navigation-shell.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    for (const selector of [
+        'body .app-shell > .page-tabs',
+        'body .app-shell > .page-tabs::before',
+        'body .app-shell > .page-tabs > .page-tab',
+        'body .app-shell > .page-tabs > .smart-assistant-launcher',
+        'body .app-shell > .page-tabs > .page-tab:hover',
+        'body .app-shell > .page-tabs > .page-tab.active'
+    ]) {
+        assert.ok(navigation.includes(selector), `${selector} must be owned by navigation-shell.css`);
+        assert.equal(visual.includes(selector), false, `${selector} must not remain in visual-redesign.css`);
+    }
+
+    assert.match(navigation, /\.page-tab\.active,[\s\S]*?background:\s*var\(--primary-soft\)[\s\S]*?box-shadow:\s*inset 3px 0 0 var\(--primary-hover\)/u);
+});
+
+test('superseded branch-context positioning layer is removed while desktop and mobile owners remain', () => {
+    const visual = read('public/css/components/visual-redesign.css');
+    const navigation = read('public/css/components/navigation-shell.css');
+    const mobile = read('public/css/components/mobile-topbar.css');
+
+    assert.doesNotMatch(visual, /width:\s*min\(430px,\s*calc\(100%\s*-\s*500px\)\)/u);
+    assert.doesNotMatch(visual, /box-shadow:\s*0 12px 28px rgb\(2 6 23 \/ \.18\)/u);
+    assert.match(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*static/u,
+        'branch context selectors stay in document flow so they cannot cover adjacent shell actions');
+    assert.doesNotMatch(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*absolute/u,
+        'desktop and tablet context must not overlay the action row');
+    assert.match(mobile, /#branchContextShell\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u,
+        'the explicit two-column mobile context layout remains in its owner');
+    assert.match(navigation, /\.app-shell > \.topbar \.topbar-inner/u,
+        'the application shell remains the owner for topbar structure');
+});
+
+test('member add/edit dialog uses canonical modal and form owners without unreachable fallback CSS', () => {
+    const members = read('public/css/pages/members.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const modal = read('public/css/components/modal-foundation.css');
+    const manifest = read('public/js/core/feature-manifest.js');
+    const html = read('public/index.html');
+
+    assert.doesNotMatch(members, /#memberDialog:not\(\.lf-modal-shell\)/u);
+    assert.doesNotMatch(visual, /#memberDialog:not\(\.lf-modal-shell\)/u);
+    assert.match(manifest, /\/css\/pages\/members\.css/u,
+        'the authenticated members route loads the page stylesheet after the app shell');
+    assert.match(html, /id="memberDialog" class="member-dialog lf-modal-shell/u,
+        'the current dialog keeps its canonical modal class');
+    assert.match(modal, /dialog\.lf-modal-shell,[\s\S]*?\.lf-modal-shell\.lf-modal--lg/u,
+        'the live member dialog is owned by the shared modal foundation');
+    assert.match(modal, /\.lf-modal-shell \.member-dialog-header/u,
+        'the actual member dialog header uses the shared modal composition');
+});
+
+test('member details and floating more-menu presentation are owned by the members page stylesheet', () => {
+    const members = read('public/css/pages/members.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    for (const selector of [
+        'body #detailsDialog .member-profile-name-row h3',
+        'body #detailsDialog > .dialog-body',
+        'body #detailsDialog .member-details-overview',
+        'body #detailsDialog .member-detail-stat',
+        'body #detailsDialog .member-details-action-grid',
+        'body #detailsDialog .member-details-action',
+        'body #detailsDialog .member-details-more-menu.is-floating',
+        'body .member-details-more-menu.is-floating',
+        'body .member-details-more-menu.is-floating button'
+    ]) {
+        assert.ok(members.includes(selector), `${selector} must remain owned by pages/members.css`);
+        assert.equal(visual.includes(selector), false, `${selector} must not remain in visual-redesign.css`);
+    }
+
+    assert.match(members, /@media\s*\(max-width:\s*767px\)[\s\S]*?body #detailsDialog > \.dialog-body[\s\S]*?body #detailsDialog \.member-details-action-grid/u,
+        'member-details mobile composition must remain in the members page owner');
+    assert.match(members, /@media\s*\(max-width:\s*380px\)[\s\S]*?body #detailsDialog \.member-details-action/u,
+        'the narrow mobile member-details rule must remain in the members page owner');
+});
+
+test('member action dialog presentation is owned by the members page stylesheet', () => {
+    const members = read('public/css/pages/members.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    for (const selector of [
+        '#actionDialog {',
+        '#actionDialog #dialogTitle {',
+        '#actionDialog #dialogDescription {',
+        '#dialogFields {',
+        'body #actionDialog > form.dialog-body {',
+        'body #actionDialog > form.dialog-body > .dialog-actions {'
+    ]) {
+        assert.ok(members.includes(selector), `${selector} must be owned by pages/members.css`);
+        assert.equal(visual.includes(selector), false, `${selector} must not remain in visual-redesign.css`);
+    }
+
+    assert.match(members, /@media\s*\(max-width:\s*767px\)[\s\S]*?body #actionDialog > form\.dialog-body[\s\S]*?body #actionDialog > form\.dialog-body > \.dialog-actions/u,
+        'member action dialog mobile spacing must be owned by pages/members.css');
+    assert.doesNotMatch(visual, /#actionDialog|#dialogTitle|#dialogDescription|#dialogFields/u,
+        'visual-redesign.css must not own member action dialog presentation');
+    assert.doesNotMatch(visual, /body \.coaching-builder-dialog > form\.dialog-body/u,
+        'coaching-builder-dialog layout must not remain in the global visual layer');
+    assert.doesNotMatch(members, /\.coaching-builder-dialog/u,
+        'coaching builder dialog remains outside the members page owner');
+});
+
+test('coaching builder dialog scroll and action presentation is owned by the coaching page stylesheet', () => {
+    const coaching = read('public/css/pages/coaching.css');
+    const visual = read('public/css/components/visual-redesign.css');
+
+    assert.match(coaching, /body \.coaching-builder-dialog > form\.dialog-body\s*\{[^}]*scroll-padding-bottom:\s*112px/u,
+        'coaching page must own the builder dialog scroll padding');
+    assert.match(coaching, /body \.coaching-builder-dialog > form\.dialog-body > #coachingBuilderContent\s*\{[^}]*padding-bottom:\s*var\(--space-7\)/u,
+        'coaching page must own the builder content bottom spacing');
+    assert.match(coaching, /body \.coaching-builder-dialog > form\.dialog-body > \.builder-dialog-actions\s*\{[^}]*min-height:\s*66px[^}]*padding-block:\s*var\(--space-3\)/u,
+        'coaching page must own the builder action sizing');
+    assert.match(coaching, /@media\s*\(max-width:\s*767px\)\s*\{[^}]*body \.coaching-builder-dialog > form\.dialog-body > #coachingBuilderContent\s*\{[^}]*padding-bottom:\s*var\(--space-6\)/u,
+        'coaching page must retain the builder mobile spacing rule');
+    assert.doesNotMatch(visual, /body \.coaching-builder-dialog > form\.dialog-body/u,
+        'visual-redesign.css must not own coaching builder dialog layout');
 });
 
 test('structured modal contract owns form dialog scroll and sticky action regions', () => {
@@ -177,7 +485,7 @@ test('authentication alerts use Alerts owner and Platform form message stays fea
     assert.equal(hasRootClassSelector(alerts, 'auth-message'), true);
     assert.equal(hasRootClassSelector(visual, 'auth-message'), false);
     assert.equal(hasRootClassSelector(visual, 'platform-form-message'), false);
-    assert.match(platform, /\.platform-form-message\s*\{[^}]*line-height:\s*1\.65/u);
+    assert.match(platform, /\.platform-form-message\s*\{[^}]*line-height:\s*1\.6/u);
 });
 
 test('Member Portal error surface keeps semantic color and geometry in Alerts', () => {
@@ -203,12 +511,70 @@ test('SaaS panels delegate standard card surface and padding to Cards', () => {
 test('Platform Admin cards delegate their shared surface to Cards', () => {
     const cards = read('public/css/components/cards.css');
     const platform = read('public/css/pages/platform-admin.css');
+    const foundation = read('public/css/components/ui-foundation.css');
     const roots = rulesWithRootClass(platform, 'platform-card').filter(rule => rule.selector.trim() === '.platform-card');
 
     assert.equal(hasRootClassSelector(cards, 'platform-card'), true);
+    assert.doesNotMatch(foundation, /\.platform-(?:login-)?card\b/u,
+        'shared foundations must not override Platform Admin card or login-card surfaces');
     assert.equal(roots.length, 1);
     assert.equal(/(?:^|;)\s*(?:border|border-radius|background|box-shadow)\s*:/u.test(roots[0].declarations), false);
     assert.match(roots[0].declarations, /min-width:\s*0/u);
+    assert.match(platform, /\.platform-login-card\s*\{[^}]*border:\s*1px solid var\(--border-primary\)[^}]*box-shadow:\s*var\(--shadow-popup\)/u);
+    assert.match(platform, /\.platform-card \.card-heading\s*\{\s*min-width:\s*0/u);
+});
+
+test('page-level foundation rules have canonical feature owners', () => {
+    const foundation = read(retiredUiFoundationPath);
+    const platform = read('public/css/pages/platform-admin.css');
+    const portal = read('public/css/pages/member-portal.css');
+    const registration = read('public/css/pages/register-gym.css');
+
+    assert.equal(foundation, '', 'the retired shared foundation must not retain page rules');
+    for (const selectorClass of ['platform-shell', 'platform-content', 'platform-page-head', 'platform-table']) {
+        assert.equal(hasClassSelector(platform, selectorClass), true, `${selectorClass} must remain page-owned`);
+    }
+    assert.match(platform, /\.platform-table th\s*\{[^}]*letter-spacing:\s*0/u);
+    assert.match(portal, /\.member-portal-page \.portal-result\s*\{[^}]*width:\s*min\(100%,\s*1120px\)[^}]*margin-inline:\s*auto/u);
+    assert.match(portal, /\.portal-proof-picker\s*>\s*input\[type="file"\]\s*\{[^}]*width:\s*1px;[^}]*clip-path:\s*inset\(50%\)/u);
+    assert.match(registration, /\.public-registration-page \.registration-shell\s*\{[^}]*width:\s*min\(100%\s*-\s*32px,\s*1280px\)/u);
+    assert.match(registration, /\.registration-upload\s*>\s*input\[type="file"\]/u);
+});
+
+test('Platform Admin presentation is owned by its page stylesheet, not visual-redesign', () => {
+    const platform = read('public/css/pages/platform-admin.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const platformSelectors = [
+        'platform-shell', 'platform-sidebar', 'platform-main', 'platform-content',
+        'platform-topbar', 'platform-page-head', 'platform-kpi', 'platform-kpi-label',
+        'platform-kpi-value'
+    ];
+
+    for (const selectorClass of platformSelectors) {
+        assert.equal(hasClassSelector(platform, selectorClass), true, `${selectorClass} must remain page-owned`);
+        assert.equal(hasClassSelector(visual, selectorClass), false, `${selectorClass} must not be owned by visual-redesign`);
+    }
+
+    assert.match(platform, /\.platform-shell\s*\{[^}]*background:\s*var\(--bg-app\)[^}]*color:\s*var\(--text-primary\)/u);
+    assert.match(platform, /\.platform-sidebar\s*\{[^}]*background:\s*var\(--platform-sidebar\)/u);
+    assert.doesNotMatch(platform, /\.platform-sidebar\s*\{[^}]*linear-gradient/u);
+    assert.match(platform, /\.platform-topbar\s*\{[^}]*border-bottom-color:\s*var\(--border-primary\)[^}]*background:\s*color-mix\(in srgb, var\(--bg-surface\) 94%, transparent\)/u);
+    assert.match(platform, /\.platform-page-head\s*\{[^}]*var\(--border-secondary\)[^}]*padding:\s*0 0 15px/u);
+    assert.match(platform, /\.platform-kpi::before\s*\{[^}]*background:\s*var\(--primary\)/u);
+    assert.match(platform, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.platform-page-head\s*\{[^}]*gap:\s*12px/u);
+
+    // Generic section-heading geometry and typography remain with the shared
+    // layout/type owners; SaaS panel heading geometry is page-owned.
+    assert.doesNotMatch(visual, /body \.section-heading/u);
+    assert.match(read('public/css/layout.css'), /\.section-heading\s*\{[^}]*border-block-end:\s*1px solid var\(--border-secondary\)/u);
+    assert.doesNotMatch(visual, /\.saas-panel-head/u);
+    assert.doesNotMatch(visual, /body \.saas-page(?:\s*\{|-header h2)|body \.saas-panel h4/u);
+    const saas = read('public/css/pages/saas.css');
+    assert.match(saas, /body \.saas-page\s*\{[^}]*border-color:\s*var\(--border-primary\)[^}]*background:\s*var\(--bg-surface\)[^}]*box-shadow:\s*var\(--shadow-sm\)/u);
+    assert.match(saas, /body \.saas-page-header h2,\s*body \.saas-panel h4\s*\{[^}]*color:\s*var\(--text-primary\)/u);
+    assert.doesNotMatch(visual, /body \.skeleton,\s*body \.loading-skeleton\s*\{/u);
+    const loading = read('public/css/components/loading.css');
+    assert.match(loading, /body \.skeleton,\s*body \.loading-skeleton\s*\{[^}]*var\(--radius-lg\)[^}]*var\(--bg-card-hover\)[^}]*var\(--border-secondary\)[^}]*logicfit-skeleton-shimmer/u);
 });
 
 test('Platform navigation visual states are owned by its feature stylesheet', () => {
@@ -217,14 +583,14 @@ test('Platform navigation visual states are owned by its feature stylesheet', ()
 
     assert.equal(hasRootClassSelector(platform, 'platform-nav-item'), true);
     assert.equal(hasClassSelector(visual, 'platform-nav-item'), false);
-    assert.match(platform, /\.platform-nav-item:hover[\s\S]*?background:\s*rgb\(92 168 255 \/ \.12\)/u);
-    assert.match(platform, /\.platform-nav-item\.active\s*\{[^}]*min-height|\.platform-nav-item\.active\s*\{[^}]*background:\s*linear-gradient/u);
+    assert.match(platform, /\.platform-nav-item:hover[\s\S]*?background:\s*var\(--sidebar-hover-bg\)/u);
+    assert.match(platform, /\.platform-nav-item\.active\s*\{[^}]*background:\s*var\(--primary-soft\)[^}]*color:\s*var\(--azure-300\)/u);
 });
 
 test('shared search controls are owned by Forms, not foundation or visual layers', () => {
     const forms = read('public/css/components/forms.css');
     const nonOwners = [
-        'public/css/components/ui-foundation.css',
+        retiredUiFoundationPath,
         'public/css/components/visual-redesign.css'
     ].map(read).join('\n');
 
@@ -255,15 +621,33 @@ test('shared status badge geometry is owned by Badges, not visual-redesign', () 
 
 test('shared table wrapper geometry and mobile overflow are owned by Tables', () => {
     const tables = read('public/css/components/tables.css');
+    const permissions = read('public/css/pages/permissions.css');
     const visual = read('public/css/components/visual-redesign.css');
     const wrapperClasses = [
         'table-container', 'table-panel', 'members-panel', 'store-table-wrap', 'saas-table-wrap',
-        'platform-table-wrap', 'auth-users-table-wrap', 'attendance-table-wrap', 'member-requests-table-wrap'
+        'platform-table-wrap', 'attendance-table-wrap', 'member-requests-table-wrap'
     ];
 
     for (const selectorClass of wrapperClasses) {
         assert.equal(hasRootClassSelector(tables, selectorClass), true, `${selectorClass} must have a canonical Tables owner`);
         assert.equal(hasRootClassSelector(visual, selectorClass), false, `${selectorClass} must not be owned by visual-redesign`);
+    }
+
+    assert.equal(hasRootClassSelector(permissions, 'auth-users-table-wrap'), true, 'Assistant account records own their responsive table/card wrapper in Permissions');
+    assert.equal(hasRootClassSelector(visual, 'auth-users-table-wrap'), false, 'Assistant account wrapper must not be owned by visual-redesign');
+    assert.doesNotMatch(tables, /body\s+\.auth-users-table-wrap\s*\{[^}]*overflow-x:\s*auto/isu,
+        'the generic mobile table contract must not force horizontal scrolling on the responsive Assistant account cards');
+});
+
+test('empty spanning rows are excluded from sticky action-column treatment', () => {
+    const tables = read('public/css/components/tables.css');
+    for (const tableClass of ['members-table', 'attendance-table', 'external-trainees-table', 'library-data-table', 'backup-history-table']) {
+        assert.match(tables, new RegExp(`\\.${tableClass} td:last-child:not\\(\\[colspan\\]\\)`, 'u'),
+            `${tableClass} must not make a colspan empty-state cell a sticky action column`);
+        assert.match(tables, new RegExp(`\\.${tableClass} tbody tr:nth-child\\(even\\) td:last-child:not\\(\\[colspan\\]\\)`, 'u'),
+            `${tableClass} zebra treatment must exclude colspan empty-state cells`);
+        assert.match(tables, new RegExp(`\\.${tableClass} tbody tr:hover td:last-child:not\\(\\[colspan\\]\\)`, 'u'),
+            `${tableClass} hover treatment must exclude colspan empty-state cells`);
     }
 });
 
@@ -272,7 +656,7 @@ test('Members table composition is feature-owned while generic table behavior st
     const visual = read('public/css/components/visual-redesign.css');
     const tables = read('public/css/components/tables.css');
 
-    assert.match(members, /\.members-table:not\(\.table-card-layout\)\s*\{[^}]*min-width:\s*1120px[^}]*table-layout:\s*fixed/u);
+    assert.match(members, /\.members-table:not\(\.table-card-layout\)\s*\{[^}]*min-width:\s*1240px[^}]*table-layout:\s*fixed/u);
     assert.match(tables, /table,\s*\.data-table,\s*\.members-table,\s*\.history-table\s*\{[^}]*table-layout:\s*auto/u);
     assert.doesNotMatch(visual, /\.members-table(?:\b|\s|:|#)|#membersSection\s+\.members-table/u);
 });
@@ -289,4 +673,31 @@ test('feature card surfaces share the canonical Cards owner', () => {
         assert.equal(rulesWithRootClass(visual, selectorClass).some(rule => surfaceProperties.test(rule.declarations)), false,
             `${selectorClass} surface must not be redeclared in visual-redesign`);
     }
+});
+
+test('print data cells wrap long email and portal values inside canonical document grids', () => {
+    const print = read('public/css/print.css');
+
+    assert.match(print, /\.print-info-item,\s*\.print-billing-item,\s*\.print-system-kpi,\s*\.print-system-info\s*\{[^}]*min-width:\s*0/u);
+    assert.match(print, /\.print-info-item strong,\s*\.print-billing-item strong,\s*\.print-system-kpi strong,\s*\.print-system-info strong\s*\{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere/u);
+});
+
+test('payment receipt amounts use primary semantics while outstanding balances remain danger-coded', () => {
+    const print = read('public/css/print.css');
+
+    assert.match(print, /:root\s*\{[^}]*--print-danger-text:\s*#c53030/u);
+    assert.match(print, /\.print-billing-item\.remaining\s*\{[^}]*border-color:\s*var\(--print-danger-border\)[^}]*background:\s*var\(--print-danger-surface\)/u);
+    assert.match(print, /\.print-billing-item\.remaining strong\s*\{[^}]*color:\s*var\(--print-danger-text\)/u);
+    assert.match(print, /\.print-receipt-amount\s*\{[^}]*border-color:\s*var\(--print-brand-border\)[^}]*background:\s*var\(--print-brand-surface\)/u);
+    assert.match(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*var\(--print-brand-primary\)/u);
+    assert.doesNotMatch(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*#c53030/u);
+});
+
+test('style validator checks generated bundles but does not report them as duplicate token owners', () => {
+    const result = spawnSync(process.execPath, ['scripts/validate-styles.js'], { cwd: root, encoding: 'utf8' });
+
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    assert.match(result.stdout, /\[STYLES-OK\]/u);
+    assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /multiple source owners outside tokens\.css/u);
+    assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /login-entry\.css uses !important/u);
 });

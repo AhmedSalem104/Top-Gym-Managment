@@ -50,12 +50,24 @@
         surfaceMuted: '#f8fbff',
         border: '#d9e2ef',
         borderSubtle: '#e7edf5',
-        primary: '#1769e8',
+        primary: '#0070f3',
         primarySoft: '#eaf1ff',
         text: '#172033',
         textSecondary: '#41516a',
         textMuted: '#718096'
     });
+    function cardColors(branding) {
+        const configuredPrimary = String(branding?.themes?.light?.primary || '').trim();
+        const primary = /^#[\da-f]{6}$/i.test(configuredPrimary) ? configuredPrimary : CARD_COLORS.primary;
+        const red = Number.parseInt(primary.slice(1, 3), 16);
+        const green = Number.parseInt(primary.slice(3, 5), 16);
+        const blue = Number.parseInt(primary.slice(5, 7), 16);
+        return {
+            ...CARD_COLORS,
+            primary,
+            primarySoft: `rgba(${red}, ${green}, ${blue}, 0.10)`
+        };
+    }
     const drawText = (text, x, y, size, color, weight = 500, align = 'right', maxWidth = 840) => {
         if (!text) return;
         ctx.fillStyle = color;
@@ -93,39 +105,40 @@
             image.src = parsed.href;
         });
     }
-    function drawCard({ member, membership, gymName, logo, qrCanvas }) {
+    function drawCard({ member, membership, gymName, logo, qrCanvas, colors }) {
+        const palette = colors || CARD_COLORS;
         ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-        ctx.fillStyle = CARD_COLORS.background;
+        ctx.fillStyle = palette.background;
         ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-        roundedRect(42, 42, 996, 1266, 34, CARD_COLORS.surface, CARD_COLORS.border);
-        roundedRect(42, 42, 996, 18, 9, CARD_COLORS.primary);
+        roundedRect(42, 42, 996, 1266, 34, palette.surface, palette.border);
+        roundedRect(42, 42, 996, 18, 9, palette.primary);
 
         // Keep tenant identity and logo in separate, predictable zones. Long
         // gym names are constrained before the logo tile rather than drawn
         // underneath it.
-        roundedRect(92, 88, 176, 142, 24, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
+        roundedRect(92, 88, 176, 142, 24, palette.surfaceMuted, palette.borderSubtle);
         if (logo) {
             const ratio = Math.min(140 / logo.width, 106 / logo.height);
             const width = logo.width * ratio;
             const height = logo.height * ratio;
             ctx.drawImage(logo, 110 + (140 - width) / 2, 106 + (106 - height) / 2, width, height);
         } else {
-            roundedRect(110, 106, 140, 106, 20, CARD_COLORS.primarySoft);
-            drawText(initials(gymName), 180, 159, 36, CARD_COLORS.primary, 800, 'center');
+            roundedRect(110, 106, 140, 106, 20, palette.primarySoft);
+            drawText(initials(gymName), 180, 159, 36, palette.primary, 800, 'center');
         }
-        drawText(gymName, 970, 126, 46, CARD_COLORS.text, 800, 'right', 640);
-        drawText('بطاقة العضوية الرقمية', 970, 180, 24, CARD_COLORS.textMuted, 600, 'right', 640);
-        ctx.strokeStyle = CARD_COLORS.borderSubtle;
+        drawText(gymName, 970, 126, 46, palette.text, 800, 'right', 640);
+        drawText('بطاقة العضوية الرقمية', 970, 180, 24, palette.textMuted, 600, 'right', 640);
+        ctx.strokeStyle = palette.borderSubtle;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(92, 254);
         ctx.lineTo(988, 254);
         ctx.stroke();
 
-        roundedRect(92, 282, 896, 178, 28, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
-        roundedRect(818, 296, 146, 146, 73, CARD_COLORS.primarySoft);
-        drawText(initials(member.fullName), 891, 369, 52, CARD_COLORS.primary, 800, 'center');
-        drawText(member.fullName || '', 780, 342, 43, CARD_COLORS.text, 800, 'right', 660);
+        roundedRect(92, 282, 896, 178, 28, palette.surfaceMuted, palette.borderSubtle);
+        roundedRect(818, 296, 146, 146, 73, palette.primarySoft);
+        drawText(initials(member.fullName), 891, 369, 52, palette.primary, 800, 'center');
+        drawText(member.fullName || '', 780, 342, 43, palette.text, 800, 'right', 660);
         const statusColors = statusAppearance(membership);
         roundedRect(592, 390, 188, 44, 22, statusColors.background);
         drawText(membershipStatus(membership), 686, 412, 21, statusColors.foreground, 700, 'center');
@@ -144,22 +157,22 @@
             const row = Math.floor(index / 2);
             const x = column === 0 ? 548 : 92;
             const top = gridTop + row * (tileHeight + rowGap);
-            roundedRect(x, top, 440, tileHeight, 20, CARD_COLORS.surfaceMuted, CARD_COLORS.borderSubtle);
-            drawText(label, x + 408, top + 34, 20, CARD_COLORS.textMuted, 500, 'right', 390);
-            drawText(value, x + 408, top + 76, 28, CARD_COLORS.text, 700, 'right', 390);
+            roundedRect(x, top, 440, tileHeight, 20, palette.surfaceMuted, palette.borderSubtle);
+            drawText(label, x + 408, top + 34, 20, palette.textMuted, 500, 'right', 390);
+            drawText(value, x + 408, top + 76, 28, palette.text, 700, 'right', 390);
         });
         if (qrCanvas) {
             const qrSize = 350;
             const qrX = (CARD_WIDTH - qrSize) / 2;
             const rowCount = Math.ceil(fields.length / 2);
             const qrY = Math.max(574, Math.min(790, gridTop + rowCount * (tileHeight + rowGap) + 24));
-            roundedRect(qrX - 24, qrY - 24, qrSize + 48, qrSize + 48, 26, CARD_COLORS.surface, CARD_COLORS.border);
+            roundedRect(qrX - 24, qrY - 24, qrSize + 48, qrSize + 48, 26, palette.surface, palette.border);
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
             ctx.imageSmoothingEnabled = true;
-            drawText('اعرض الرمز لموظف الاستقبال لتسجيل الحضور أو الانصراف', CARD_WIDTH / 2, qrY + qrSize + 64, 22, CARD_COLORS.textSecondary, 600, 'center', 880);
+            drawText('اعرض الرمز لموظف الاستقبال لتسجيل الحضور أو الانصراف', CARD_WIDTH / 2, qrY + qrSize + 64, 22, palette.textSecondary, 600, 'center', 880);
         } else {
-            drawText('لا يوجد رمز عضوية نشط لهذه البطاقة', CARD_WIDTH / 2, 1080, 24, CARD_COLORS.textMuted, 600, 'center');
+            drawText('لا يوجد رمز عضوية نشط لهذه البطاقة', CARD_WIDTH / 2, 1080, 24, palette.textMuted, 600, 'center');
         }
     }
     async function renderCard(member, qrToken, tenant) {
@@ -175,7 +188,7 @@
         });
         const logo = await imageFromUrl(tenant.logoUrl);
         const membership = member.membership || member.currentMembership || null;
-        drawCard({ member, membership, gymName: tenant.gymName, logo, qrCanvas });
+        drawCard({ member, membership, gymName: tenant.gymName, logo, qrCanvas, colors: cardColors(tenant.branding) });
         currentCard = { member, membership, gymName: tenant.gymName };
         return currentCard;
     }

@@ -8,6 +8,7 @@
     if (!page) return;
 
     const $ = (id) => document.getElementById(id);
+    const t = (key, params) => window.TopGymI18n?.t?.(key, params) || key;
     const fallback = window.topGymBranding?.fallback?.() || { identity: {} };
     const state = {
         draft: null,
@@ -72,12 +73,56 @@
         return message || fallbackMessage;
     }
 
-    function updateStatus(message, kind = 'info') {
+    function updateStatus(message, kind = 'info', translationKey = '') {
         const status = $('memberPaymentMethodsStatus');
         if (!status) return;
-        status.textContent = message;
+        if (translationKey) status.dataset.i18n = translationKey;
+        else delete status.dataset.i18n;
+        status.textContent = translationKey ? t(translationKey) : message;
         status.classList.toggle('is-error', kind === 'error');
         status.classList.toggle('is-success', kind === 'success');
+    }
+
+    function setStatus(key, kind = 'info', params = {}) {
+        const status = $('memberPaymentMethodsStatus');
+        if (!status) return;
+        updateStatus(t(key, params), kind, key);
+        Object.keys(status.dataset).filter((name) => name.startsWith('i18nParam')).forEach((name) => delete status.dataset[name]);
+        Object.entries(params).forEach(([name, value]) => {
+            status.dataset[`i18nParam${name[0].toUpperCase()}${name.slice(1)}`] = String(value);
+        });
+    }
+
+    function annotateStaticText() {
+        const labels = [
+            ['.member-payment-eyebrow', 'memberPayment.eyebrow'],
+            ['#memberPaymentMethodsTitle', 'memberPayment.title'],
+            ['.member-payment-page-heading > p', 'memberPayment.description'],
+            ['#memberPaymentMethodsStatus', 'memberPayment.status.loading'],
+            ['#memberPaymentMethodsMeta', 'memberPayment.status.draft'],
+            ['.member-payment-section-head .member-payment-kicker', 'memberPayment.methods.eyebrow'],
+            ['#memberPaymentEditorTitle', 'memberPayment.methods.title'],
+            ['.member-payment-section-head p', 'memberPayment.methods.description'],
+            ['#memberPaymentMethodAdd', 'memberPayment.methods.add'],
+            ['.member-payment-loading', 'memberPayment.methods.loading'],
+            ['.member-payment-summary-top .member-payment-kicker', 'memberPayment.summary.eyebrow'],
+            ['#memberPaymentSummaryTitle', 'memberPayment.summary.title'],
+            ['.member-payment-summary-top p', 'memberPayment.summary.description'],
+            ['#memberPaymentSummaryNote', 'memberPayment.summary.inactiveNote'],
+            ['#memberPaymentMethodsActionTitle', 'memberPayment.action.cleanTitle'],
+            ['#memberPaymentMethodsActionHint', 'memberPayment.action.cleanHint'],
+            ['#memberPaymentMethodsSave', 'memberPayment.action.saveDraft'],
+            ['#memberPaymentMethodsPublish', 'memberPayment.action.publish']
+        ];
+        labels.forEach(([selector, key]) => {
+            const element = page.querySelector(selector);
+            if (element) element.dataset.i18n = key;
+        });
+        const activeLabel = $('memberPaymentActiveCount')?.previousElementSibling;
+        const totalLabel = $('memberPaymentTotalCount')?.previousElementSibling;
+        if (activeLabel) activeLabel.dataset.i18n = 'memberPayment.summary.activeCount';
+        if (totalLabel) totalLabel.dataset.i18n = 'memberPayment.summary.totalCount';
+        window.TopGymI18n?.apply?.(page);
     }
 
     function updateSummary() {
@@ -90,17 +135,31 @@
         const actionHint = $('memberPaymentMethodsActionHint');
         if (active) active.textContent = String(activeCount);
         if (total) total.textContent = String(methods.length);
-        if (note) note.textContent = activeCount
-            ? `${activeCount} وسيلة دفع نشطة ستظهر لأعضاء هذا الجيم بعد نشر الهوية.`
-            : 'لا توجد وسيلة نشطة منشورة لأعضاء هذا الجيم حاليًا.';
-        if (actionTitle) actionTitle.textContent = state.dirty
-            ? 'لديك تغييرات غير محفوظة'
-            : state.pendingPublish ? 'مسودة محفوظة ولم تُنشر' : 'لا توجد تغييرات غير محفوظة';
-        if (actionHint) actionHint.textContent = state.dirty
-            ? 'احفظ المسودة أولًا، ثم انشرها حتى تظهر البيانات في بوابة العضو.'
-            : state.pendingPublish ? 'البيانات محفوظة كمسودة ولن تظهر للعضو قبل النشر.' : 'التعديلات الحالية مطابقة للمسودة المنشورة.';
+        if (active?.previousElementSibling) active.previousElementSibling.dataset.i18n = 'memberPayment.summary.activeCount';
+        if (total?.previousElementSibling) total.previousElementSibling.dataset.i18n = 'memberPayment.summary.totalCount';
+        if (note) {
+            note.dataset.i18n = activeCount ? 'memberPayment.summary.activeNote' : 'memberPayment.summary.inactiveNote';
+            if (activeCount) note.dataset.i18nParamCount = String(activeCount);
+            else delete note.dataset.i18nParamCount;
+            note.textContent = activeCount ? t('memberPayment.summary.activeNote', { count: activeCount }) : t('memberPayment.summary.inactiveNote');
+        }
+        if (actionTitle) {
+            const key = state.dirty ? 'memberPayment.action.unsavedTitle' : state.pendingPublish ? 'memberPayment.action.pendingTitle' : 'memberPayment.action.cleanTitle';
+            actionTitle.dataset.i18n = key;
+            actionTitle.textContent = t(key);
+        }
+        if (actionHint) {
+            const key = state.dirty ? 'memberPayment.action.unsavedHint' : state.pendingPublish ? 'memberPayment.action.pendingHint' : 'memberPayment.action.cleanHint';
+            actionHint.dataset.i18n = key;
+            actionHint.textContent = t(key);
+        }
         const meta = $('memberPaymentMethodsMeta');
-        if (meta) meta.textContent = `v${state.version} · ${state.pendingPublish ? 'Draft' : 'Published'}`;
+        if (meta) {
+            const key = state.pendingPublish ? 'memberPayment.meta.draft' : 'memberPayment.meta.published';
+            meta.dataset.i18n = key;
+            meta.dataset.i18nParamVersion = String(state.version);
+            meta.textContent = t(key, { version: state.version });
+        }
     }
 
     function renderMethods() {
@@ -109,7 +168,8 @@
         const methods = methodsFor(state.draft);
         list.setAttribute('aria-busy', 'false');
         if (!methods.length) {
-            list.innerHTML = '<div class="member-payment-empty"><strong>لا توجد وسائل دفع مضافة</strong><span>أضف وسيلة دفع خاصة بهذا الجيم ليتمكن العضو من معرفة بيانات التحويل.</span></div>';
+            list.innerHTML = '<div class="member-payment-empty"><strong data-i18n="memberPayment.methods.empty.title"></strong><span data-i18n="memberPayment.methods.empty.body"></span></div>';
+            window.TopGymI18n?.apply?.(list);
             updateSummary();
             return;
         }
@@ -117,17 +177,18 @@
             const value = (key) => escapeHtml(method?.[key] ?? '');
             const checked = method?.isActive !== false ? ' checked' : '';
             return `<article class="member-payment-method-card" data-member-payment-row="${index}">
-                <div class="member-payment-method-card-head"><strong>وسيلة دفع ${index + 1}</strong><button class="btn btn-danger btn-small" type="button" data-member-payment-remove="${index}" data-async-action="false">إزالة</button></div>
+                <div class="member-payment-method-card-head"><strong data-i18n="memberPayment.methods.row" data-i18n-param-count="${index + 1}"></strong><button class="btn btn-danger btn-small" type="button" data-member-payment-remove="${index}" data-async-action="false" data-i18n="memberPayment.methods.remove"></button></div>
                 <div class="member-payment-field-grid">
-                    <div class="field"><label>اسم الوسيلة <span aria-hidden="true">*</span><input data-member-payment-field="name" data-member-payment-index="${index}" value="${value('name')}" maxlength="120" required placeholder="Vodafone Cash"></label></div>
-                    <div class="field"><label>الرقم أو الحساب <span aria-hidden="true">*</span><input data-member-payment-field="accountReference" data-member-payment-index="${index}" value="${value('accountReference')}" maxlength="160" dir="ltr" required placeholder="رقم الهاتف أو الحساب"></label></div>
-                    <div class="field"><label>اسم المستلم<input data-member-payment-field="recipientName" data-member-payment-index="${index}" value="${value('recipientName')}" maxlength="160"></label></div>
-                    <div class="field"><label>ترتيب الظهور<input data-member-payment-field="sortOrder" data-member-payment-index="${index}" value="${value('sortOrder')}" type="number" min="0" max="999" step="1"></label></div>
-                    <div class="field field-full"><label>تعليمات الدفع<textarea data-member-payment-field="instructions" data-member-payment-index="${index}" maxlength="1000" rows="2" placeholder="تعليمات مختصرة للعضو">${value('instructions')}</textarea></label></div>
+                    <div class="field"><label><span data-i18n="memberPayment.methods.name"></span> <span aria-hidden="true">*</span><input data-member-payment-field="name" data-member-payment-index="${index}" value="${value('name')}" maxlength="120" required data-i18n-placeholder="memberPayment.methods.name.placeholder"></label></div>
+                    <div class="field"><label><span data-i18n="memberPayment.methods.reference"></span> <span aria-hidden="true">*</span><input data-member-payment-field="accountReference" data-member-payment-index="${index}" value="${value('accountReference')}" maxlength="160" dir="ltr" required data-i18n-placeholder="memberPayment.methods.reference.placeholder"></label></div>
+                    <div class="field"><label><span data-i18n="memberPayment.methods.recipient"></span><input data-member-payment-field="recipientName" data-member-payment-index="${index}" value="${value('recipientName')}" maxlength="160"></label></div>
+                    <div class="field"><label><span data-i18n="memberPayment.methods.sortOrder"></span><input data-member-payment-field="sortOrder" data-member-payment-index="${index}" value="${value('sortOrder')}" type="number" min="0" max="999" step="1"></label></div>
+                    <div class="field field-full"><label><span data-i18n="memberPayment.methods.instructions"></span><textarea data-member-payment-field="instructions" data-member-payment-index="${index}" maxlength="1000" rows="2" data-i18n-placeholder="memberPayment.methods.instructions.placeholder">${value('instructions')}</textarea></label></div>
                 </div>
-                <label class="member-payment-method-active"><input type="checkbox" data-member-payment-field="isActive" data-member-payment-index="${index}"${checked}><span>عرض هذه الوسيلة للعضو</span></label>
+                <label class="member-payment-method-active"><input type="checkbox" data-member-payment-field="isActive" data-member-payment-index="${index}"${checked}><span data-i18n="memberPayment.methods.active"></span></label>
             </article>`;
         }).join('');
+        window.TopGymI18n?.apply?.(list);
         updateSummary();
     }
 
@@ -139,7 +200,7 @@
 
     function markChanged() {
         refreshDirtyState();
-        updateStatus('مسودة وسائل الدفع بها تغييرات جديدة');
+        setStatus('memberPayment.status.draftChanged');
     }
 
     function updateMethod(target) {
@@ -175,7 +236,7 @@
         const methods = methodsFor(state.draft);
         for (const [index, method] of methods.entries()) {
             if (!String(method?.name || '').trim() || !String(method?.accountReference || '').trim()) {
-                updateStatus(`أكمل اسم الوسيلة والرقم أو الحساب في وسيلة الدفع ${index + 1}.`, 'error');
+                setStatus('memberPayment.validation.required', 'error', { count: index + 1 });
                 document.querySelector(`[data-member-payment-field="name"][data-member-payment-index="${index}"]`)?.focus();
                 return false;
             }
@@ -207,7 +268,7 @@
         if (!window.topGymAuth?.isOwner?.()) return false;
         const list = $('memberPaymentMethodsList');
         if (list) list.setAttribute('aria-busy', 'true');
-        updateStatus('جاري تحميل إعدادات الدفع…');
+        setStatus('memberPayment.status.loadingSettings');
         try {
             const result = await window.topGymAuth.api('/api/branding/settings', { method: 'GET' });
             state.draft = merge(fallback, result?.draft || {});
@@ -218,14 +279,18 @@
             refreshDirtyState();
             renderMethods();
             state.initialized = true;
-            updateStatus(state.pendingPublish ? 'توجد مسودة محفوظة لم تُنشر بعد.' : 'بيانات الدفع المنشورة جاهزة لبوابة العضو.', state.pendingPublish ? 'info' : 'success');
+            setStatus(state.pendingPublish ? 'memberPayment.status.draftNotPublished' : 'memberPayment.status.publishedReady', state.pendingPublish ? 'info' : 'success');
             return true;
         } catch (error) {
             if (list) {
                 list.setAttribute('aria-busy', 'false');
-                list.innerHTML = '<div class="member-payment-empty"><strong>تعذر تحميل وسائل الدفع</strong><span>حاول تحديث الشاشة مرة أخرى.</span></div>';
+                list.innerHTML = '<div class="member-payment-empty"><strong data-i18n="memberPayment.methods.loadError.title"></strong><span data-i18n="memberPayment.methods.loadError.body"></span></div>';
+                window.TopGymI18n?.apply?.(list);
             }
-            updateStatus(errorMessage(error, 'تعذر تحميل إعدادات الدفع.'), 'error');
+            const message = String(error?.message || '').trim();
+            const genericRequestFailure = !message || /^تعذر تنفيذ الطلب(?:\s*\(\d+\))?\.?$/u.test(message);
+            if (genericRequestFailure) setStatus('memberPayment.status.loadError', 'error');
+            else updateStatus(message, 'error');
             return false;
         }
     }
@@ -238,16 +303,16 @@
                 method: 'PUT',
                 body: JSON.stringify({ config: state.draft })
             }), {
-                loadingText: 'جاري حفظ وسائل الدفع…',
-                successText: 'تم حفظ المسودة',
-                successMessage: 'تم حفظ وسائل الدفع كمسودة.',
-                errorMessage: 'تعذر حفظ وسائل الدفع.'
+                loadingText: t('memberPayment.action.loadingSave'),
+                successText: t('memberPayment.action.savedTitle'),
+                successMessage: t('memberPayment.action.saved'),
+                errorMessage: t('memberPayment.action.saveError')
             });
             applySettings(result);
-            updateStatus('تم حفظ وسائل الدفع كمسودة.', 'success');
+            setStatus('memberPayment.status.draftSaved', 'success');
             return true;
         } catch (error) {
-            updateStatus(errorMessage(error, 'تعذر حفظ وسائل الدفع. حاول مرة أخرى.'), 'error');
+            updateStatus(errorMessage(error, t('memberPayment.status.saveError')), 'error');
             return false;
         } finally {
             state.busy = false;
@@ -268,20 +333,20 @@
                 method: 'POST',
                 body: JSON.stringify({})
             }), {
-                loadingText: 'جاري نشر وسائل الدفع…',
-                successText: 'تم النشر',
-                successMessage: 'تم نشر وسائل الدفع لبوابة العضو.',
-                errorMessage: 'تعذر نشر وسائل الدفع.'
+                loadingText: t('memberPayment.action.loadingPublish'),
+                successText: t('memberPayment.action.publishedTitle'),
+                successMessage: t('memberPayment.action.published'),
+                errorMessage: t('memberPayment.action.publishError')
             });
             applySettings(result);
             state.pendingPublish = false;
             updateSummary();
-            updateStatus('تم نشر وسائل الدفع لبوابة العضو.', 'success');
+            setStatus('memberPayment.status.publishedReady', 'success');
             window.topGymBranding?.refresh?.();
             window.dispatchEvent(new CustomEvent('topgym:brandingchange'));
             return true;
         } catch (error) {
-            updateStatus(errorMessage(error, 'تعذر نشر وسائل الدفع. حاول مرة أخرى.'), 'error');
+            updateStatus(errorMessage(error, t('memberPayment.status.publishError')), 'error');
             return false;
         } finally {
             state.busy = false;
@@ -293,17 +358,17 @@
         if (window.Swal) {
             const result = await window.Swal.fire({
                 icon: 'warning',
-                title: 'تغييرات غير محفوظة',
-                text: 'هل تريد مغادرة الشاشة دون حفظ وسائل الدفع؟',
+                title: t('memberPayment.leave.title'),
+                text: t('memberPayment.leave.body'),
                 showCancelButton: true,
-                confirmButtonText: 'مغادرة دون حفظ',
-                cancelButtonText: 'البقاء',
+                confirmButtonText: t('memberPayment.leave.confirm'),
+                cancelButtonText: t('memberPayment.leave.cancel'),
                 buttonsStyling: false,
                 customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
             });
             return Boolean(result.isConfirmed);
         }
-        return window.confirm('توجد تغييرات غير محفوظة. هل تريد المغادرة؟');
+        return window.confirm(t('memberPayment.status.leaveError'));
     }
 
     function bind() {
@@ -331,6 +396,11 @@
     }
 
     bind();
+    annotateStaticText();
+    window.addEventListener('topgym:localechange', () => {
+        window.TopGymI18n?.apply?.(page);
+        updateSummary();
+    });
     window.topGymMemberPaymentMethodsEditor = Object.freeze({ confirmLeave, reload: loadSettings });
     if (window.topGymAuthReady) void window.topGymAuthReady.then(loadSettings).catch(() => null);
 })();

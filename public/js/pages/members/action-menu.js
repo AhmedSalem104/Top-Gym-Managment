@@ -50,6 +50,21 @@
                     : actionIcon(action);
             }
 
+            function mobileActionLabel(action) {
+                const key = action === 'details'
+                    ? 'members.action.mobileDetails'
+                    : action === 'renew' ? 'members.action.mobileRenew' : null;
+                return key ? (window.TopGymI18n?.t?.(key) || ACTION_LABELS[action] || action) : ACTION_LABELS[action] || action;
+            }
+
+            function refreshMobileActionLabels() {
+                list.querySelectorAll('.members-mobile-card .table-actions > button[data-action]').forEach((button) => {
+                    const label = button.querySelector('.table-action-label');
+                    const nextLabel = mobileActionLabel(button.dataset.action);
+                    if (label && label.textContent !== nextLabel) label.textContent = nextLabel;
+                });
+            }
+
             function moveCoachingActionsToMenu(actions) {
                 const panel = actions.querySelector(':scope > .action-menu .action-menu-panel');
                 if (!panel) return;
@@ -84,6 +99,7 @@
                 list.querySelectorAll('.table-actions').forEach((actions) => {
                     if (actions.dataset.compact === 'true') {
                         moveCoachingActionsToMenu(actions);
+                        refreshMobileActionLabels();
                         return;
                     }
                     const buttons = [...actions.querySelectorAll(':scope > button[data-action]')];
@@ -106,9 +122,7 @@
                     actions.replaceChildren(...visible);
                     visible.forEach((button) => {
                         const label = button.dataset.label || ACTION_LABELS[button.dataset.action] || button.dataset.action;
-                        const mobileLabel = mobileCard
-                            ? ({ details: 'عرض', renew: 'تجديد' }[button.dataset.action] || label)
-                            : label;
+                        const mobileLabel = mobileCard ? mobileActionLabel(button.dataset.action) : label;
                         button.type = 'button';
                         button.classList.add('table-action-visible');
                         button.setAttribute('aria-label', label);
@@ -171,6 +185,7 @@
 
             window.addEventListener('scroll', repositionOpenMenus, { passive: true });
             window.addEventListener('resize', repositionOpenMenus, { passive: true });
+            document.addEventListener('topgym:localechange', refreshMobileActionLabels);
 
             new MutationObserver(compactActions).observe(list, { childList: true, subtree: true });
             function initializeActionMenu() {

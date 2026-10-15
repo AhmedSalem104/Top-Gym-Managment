@@ -15,7 +15,6 @@
 @import url("./components/alerts.css");
 @import url("./components/sidebar.css");
 @import url("./components/navbar.css");
-@import url("./components/branch-context.css");
 @import url("./components/bar-pos.css");
 @import url("./components/dropdowns.css");
 @import url("./components/assistant.css");
@@ -52,13 +51,9 @@
 @import url("./pages/trainer-workspace.css");
 @import url("./responsive.css");
 @import url("./theme.css");
-@import url("./components/ui-foundation.css");
-@import url("./components/design-foundation.css");
 @import url("./components/navigation-shell.css");
-/* Canonical visual layer: explicit component ownership keeps the legacy
-   selectors as compatibility fallbacks while this system owns the rendered
-   hierarchy, density and states. */
-@import url("./components/visual-redesign.css");
+@import url("./components/branch-context.css");
+@import url("./pages/branches.css");
 @import url("./print.css");
 @import url("./components/modal-foundation.css");
 @import url("./components/mobile-topbar.css");

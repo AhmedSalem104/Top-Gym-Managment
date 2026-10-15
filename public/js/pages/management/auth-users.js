@@ -4,9 +4,13 @@
 
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-    const roleLabel = (role) => role === 'Owner' ? 'مالك النظام' : 'مساعد';
-    const statusLabel = (status) => status === 'Disabled' ? 'معطل' : 'نشط';
-    const dateLabel = (value) => value ? new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(value)) : 'لم يسجل دخولًا';
+    const t = (key, params) => window.TopGymI18n?.t?.(key, params) ?? key;
+    const locale = () => window.TopGymI18n?.get?.() || 'ar';
+    const roleLabel = (role) => role === 'Owner' ? t('permissionsScreen.authUsers.role.owner') : t('permissionsScreen.authUsers.role.assistant');
+    const statusLabel = (status) => t(status === 'Disabled' ? 'permissionsScreen.status.disabled' : 'permissionsScreen.status.active');
+    const dateLabel = (value) => value
+        ? window.TopGymI18n?.format?.('date', value, { dateStyle: 'medium' }) || new Intl.DateTimeFormat(locale() === 'en' ? 'en' : 'ar-EG', { dateStyle: 'medium' }).format(new Date(value))
+        : t('permissionsScreen.authUsers.lastLogin.never');
     const state = { users: [], editingId: null };
 
     function notify(message, error = false) {
@@ -14,17 +18,29 @@
         window.alert(message);
     }
 
+    function applyDialogTranslations(user = null) {
+        const editing = Boolean(user || state.editingId);
+        $('authUserDialog').dir = locale() === 'en' ? 'ltr' : 'rtl';
+        $('authUserDialogTitle').textContent = t(editing ? 'permissionsScreen.authUsers.dialog.editTitle' : 'permissionsScreen.authUsers.dialog.addTitle');
+        $('authUserDialogDescription').textContent = t(editing ? 'permissionsScreen.authUsers.dialog.editDescription' : 'permissionsScreen.authUsers.dialog.addDescription');
+        document.querySelector('label[for="authUserName"]').childNodes[0].textContent = `${t('permissionsScreen.authUsers.dialog.name')} `;
+        document.querySelector('label[for="authUserEmail"]').childNodes[0].textContent = `${t('permissionsScreen.authUsers.dialog.email')} `;
+        document.querySelector('label[for="authUserPassword"]').childNodes[0].textContent = `${t('permissionsScreen.authUsers.dialog.password')} `;
+        $('authUserPasswordHint').textContent = t(editing ? 'permissionsScreen.authUsers.dialog.passwordHintEdit' : 'permissionsScreen.authUsers.dialog.passwordHintAdd');
+        $('authUserDialogClose').textContent = t('permissionsScreen.authUsers.dialog.close');
+        $('authUserDialogCancel').textContent = t('permissionsScreen.authUsers.dialog.cancel');
+        $('authUserSave').textContent = t('permissionsScreen.authUsers.dialog.save');
+    }
+
     function openDialog(user = null) {
         state.editingId = user ? Number(user.id) : null;
-        $('authUserDialogTitle').textContent = user ? 'تعديل حساب مساعد' : 'إضافة مساعد';
-        $('authUserDialogDescription').textContent = user ? 'عدّل الاسم أو البريد، ويمكنك إدخال كلمة مرور جديدة لإعادة التعيين.' : 'أنشئ حسابًا مساعدًا بصلاحيات تشغيلية محدودة.';
+        applyDialogTranslations(user);
         $('authUserId').value = user ? String(user.id) : '';
         $('authUserName').value = user?.name || '';
         $('authUserEmail').value = user?.email || '';
         $('authUserPassword').value = '';
         $('authUserPassword').required = !user;
         $('authUserPasswordRequired').hidden = Boolean(user);
-        $('authUserPasswordHint').textContent = user ? 'اترك الحقل فارغًا للحفاظ على كلمة المرور الحالية، أو أدخل كلمة مرور جديدة لإعادة التعيين.' : 'يجب أن تكون 8 أحرف على الأقل. لا يتم عرضها أو إرسالها مرة أخرى بعد الحفظ.';
         const dialog = $('authUserDialog');
         if (typeof dialog.showModal === 'function') dialog.showModal();
         else dialog.setAttribute('open', '');
@@ -42,29 +58,29 @@
         const container = $('authUsersList');
         if (!container) return;
         if (!state.users.length) {
-            container.innerHTML = '<div class="auth-users-empty">لا توجد حسابات إدارة حتى الآن.</div>';
+            container.innerHTML = `<div class="auth-users-empty">${escapeHtml(t('permissionsScreen.noAccounts'))}</div>`;
             return;
         }
         const rows = state.users.map((user) => {
             const assistant = user.role === 'Assistant';
             const action = assistant
-                ? `<button class="btn btn-light btn-small" type="button" data-auth-user-action="edit" data-id="${user.id}">تعديل</button><button class="btn btn-light btn-small${user.status === 'Active' ? ' auth-danger' : ''}" type="button" data-auth-user-action="status" data-id="${user.id}" data-status="${user.status === 'Active' ? 'Disabled' : 'Active'}">${user.status === 'Active' ? 'تعطيل' : 'تفعيل'}</button><button class="btn btn-light btn-small auth-delete" type="button" data-auth-user-action="delete" data-id="${user.id}" aria-label="حذف ${escapeHtml(user.name)}">حذف</button>`
-                : '<span class="table-sub">الحساب الرئيسي</span>';
-            return `<tr><td><div class="auth-user-primary"><strong>${escapeHtml(user.name)}</strong><small dir="ltr">${escapeHtml(user.email)}</small></div></td><td><span class="auth-role-badge ${assistant ? 'assistant' : 'owner'}">${roleLabel(user.role)}</span></td><td><span class="auth-status-badge ${user.status === 'Disabled' ? 'disabled' : 'active'}">${statusLabel(user.status)}</span></td><td dir="ltr">${escapeHtml(dateLabel(user.lastLoginAt))}</td><td><div class="auth-user-actions">${action}</div></td></tr>`;
+                ? `<button class="btn btn-light btn-small" type="button" data-auth-user-action="edit" data-id="${user.id}">${escapeHtml(t('permissionsScreen.action.update'))}</button><button class="btn btn-light btn-small${user.status === 'Active' ? ' auth-danger' : ''}" type="button" data-auth-user-action="status" data-id="${user.id}" data-status="${user.status === 'Active' ? 'Disabled' : 'Active'}">${escapeHtml(t(user.status === 'Active' ? 'permissionsScreen.authUsers.action.disable' : 'permissionsScreen.authUsers.action.activate'))}</button><button class="btn btn-light btn-small auth-delete" type="button" data-auth-user-action="delete" data-id="${user.id}" aria-label="${escapeHtml(t('permissionsScreen.action.delete'))} ${escapeHtml(user.name)}">${escapeHtml(t('permissionsScreen.action.delete'))}</button>`
+                : `<span class="table-sub">${escapeHtml(t('permissionsScreen.authUsers.primaryAccount'))}</span>`;
+            return `<tr><td data-label="${escapeHtml(t('permissionsScreen.accounts'))}"><div class="auth-user-primary"><strong>${escapeHtml(user.name)}</strong><small dir="ltr">${escapeHtml(user.email)}</small></div></td><td data-label="${escapeHtml(t('permissionsScreen.authUsers.table.role'))}"><span class="auth-role-badge ${assistant ? 'assistant' : 'owner'}">${roleLabel(user.role)}</span></td><td data-label="${escapeHtml(t('members.table.status'))}"><span class="auth-status-badge ${user.status === 'Disabled' ? 'disabled' : 'active'}">${statusLabel(user.status)}</span></td><td data-label="${escapeHtml(t('permissionsScreen.authUsers.table.lastLogin'))}"><span dir="auto">${escapeHtml(dateLabel(user.lastLoginAt))}</span></td><td data-label="${escapeHtml(t('members.table.actions'))}"><div class="auth-user-actions">${action}</div></td></tr>`;
         }).join('');
-        container.innerHTML = `<div class="auth-users-table-wrap"><table class="auth-users-table"><thead><tr><th>الحساب</th><th>الدور</th><th>الحالة</th><th>آخر دخول</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        container.innerHTML = `<div class="auth-users-table-wrap"><table class="auth-users-table"><thead><tr><th>${escapeHtml(t('permissionsScreen.accounts'))}</th><th>${escapeHtml(t('permissionsScreen.authUsers.table.role'))}</th><th>${escapeHtml(t('members.table.status'))}</th><th>${escapeHtml(t('permissionsScreen.authUsers.table.lastLogin'))}</th><th>${escapeHtml(t('members.table.actions'))}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     async function loadUsers() {
         const container = $('authUsersList');
         if (!container || !window.topGymAuth?.isOwner?.()) return;
-        container.innerHTML = '<div class="auth-users-loading">جاري تحميل حسابات الإدارة…</div>';
+        container.innerHTML = `<div class="auth-users-loading">${escapeHtml(t('permissionsScreen.loadingAccounts'))}</div>`;
         try {
             const data = await window.topGymAuth.api('/api/auth/users');
             state.users = data.users || [];
             renderUsers();
         } catch (error) {
-            container.innerHTML = `<div class="auth-users-error">${escapeHtml(error.message || 'تعذر تحميل الحسابات.')}</div>`;
+            container.innerHTML = `<div class="auth-users-error">${escapeHtml(error.message || t('permissionsScreen.authUsers.error.load'))}</div>`;
         }
     }
 
@@ -78,7 +94,7 @@
             password: $('authUserPassword').value
         };
         if (!body.name || !body.email || (!id && !body.password)) {
-            window.topGymShowDialogValidation?.('أكمل الاسم والبريد وكلمة المرور المطلوبة.', 'error');
+            window.topGymShowDialogValidation?.(t('permissionsScreen.authUsers.error.requiredFields'), 'error');
             return;
         }
         button.disabled = true;
@@ -86,23 +102,23 @@
             await window.topGymAuth.api(id ? `/api/auth/users/${id}` : '/api/auth/users', { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
             closeDialog();
             await loadUsers();
-            notify(id ? 'تم حفظ بيانات الحساب.' : 'تم إنشاء حساب المساعد بنجاح.');
+            notify(t(id ? 'permissionsScreen.authUsers.message.saved' : 'permissionsScreen.authUsers.message.created'));
         } catch (error) {
-            window.topGymShowDialogValidation?.(error.message || 'تعذر حفظ الحساب.', 'error') || notify(error.message || 'تعذر حفظ الحساب.', true);
+            window.topGymShowDialogValidation?.(error.message || t('permissionsScreen.authUsers.error.save'), 'error') || notify(error.message || t('permissionsScreen.authUsers.error.save'), true);
         } finally {
             button.disabled = false;
         }
     }
 
     async function toggleStatus(user, nextStatus) {
-        const label = nextStatus === 'Disabled' ? 'تعطيل' : 'إعادة تفعيل';
-        if (!window.confirm(`هل تريد ${label} حساب ${user.name}؟`)) return;
+        const nextKey = nextStatus === 'Disabled' ? 'disable' : 'activate';
+        if (!window.confirm(t(`permissionsScreen.authUsers.confirm.${nextKey}`, { name: user.name }))) return;
         try {
             await window.topGymAuth.api(`/api/auth/users/${user.id}/status`, { method: 'PATCH', body: JSON.stringify({ status: nextStatus }) });
             await loadUsers();
-            notify(`تم ${label} الحساب.`);
+            notify(t(`permissionsScreen.authUsers.message.${nextKey}`, { name: user.name }));
         } catch (error) {
-            notify(error.message || 'تعذر تحديث حالة الحساب.', true);
+            notify(error.message || t('permissionsScreen.authUsers.error.status'), true);
         }
     }
 
@@ -113,25 +129,25 @@
                 position: 'center',
                 backdrop: window.topGymThemeValue('--overlay'),
                 icon: 'warning',
-                title: 'تأكيد حذف حساب المساعد',
-                text: `سيتم حذف حساب ${user.name} نهائيًا وإلغاء جلساته وصلاحياته. لا يمكن التراجع عن هذه العملية.`,
+                title: t('permissionsScreen.authUsers.confirm.deleteTitle'),
+                text: t('permissionsScreen.authUsers.confirm.deleteBody', { name: user.name }),
                 showCancelButton: true,
-                confirmButtonText: 'نعم، احذف الحساب',
-                cancelButtonText: 'إلغاء',
+                confirmButtonText: t('permissionsScreen.authUsers.confirm.delete'),
+                cancelButtonText: t('permissionsScreen.authUsers.dialog.cancel'),
                 buttonsStyling: false,
                 customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
             });
             confirmed = Boolean(result.isConfirmed);
         } else {
-            confirmed = window.confirm(`سيتم حذف حساب ${user.name} نهائيًا وإلغاء جلساته وصلاحياته. لا يمكن التراجع عن هذه العملية. هل تريد المتابعة؟`);
+            confirmed = window.confirm(t('permissionsScreen.authUsers.confirm.deleteFallback', { name: user.name }));
         }
         if (!confirmed) return;
         try {
             await window.topGymAuth.api(`/api/auth/users/${user.id}`, { method: 'DELETE' });
             await loadUsers();
-            notify('تم حذف حساب المساعد نهائيًا.');
+            notify(t('permissionsScreen.authUsers.message.deleted', { name: user.name }));
         } catch (error) {
-            notify(error.message || 'تعذر حذف حساب المساعد.', true);
+            notify(error.message || t('permissionsScreen.authUsers.error.delete'), true);
         }
     }
 
@@ -155,6 +171,12 @@
         });
         window.addEventListener('topgym:tab-changed', (event) => {
             if (event.detail?.name === 'permissions') void loadUsers();
+        });
+        window.addEventListener('topgym:localechange', () => {
+            if (state.users.length) renderUsers();
+            else if ($('authUsersList')?.querySelector('.auth-users-empty')) renderUsers();
+            const dialog = $('authUserDialog');
+            if (dialog?.open) applyDialogTranslations(state.users.find((user) => Number(user.id) === state.editingId) || null);
         });
     }
 

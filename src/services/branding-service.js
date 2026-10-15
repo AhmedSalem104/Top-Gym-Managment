@@ -38,37 +38,37 @@ const COLOR_KEYS = Object.freeze([
 ]);
 
 const DEFAULT_LIGHT_TOKENS = Object.freeze({
-    primary: '#1769E8', primaryHover: '#0F56C9', primaryActive: '#0D47A1', onPrimary: '#FFFFFF',
-    secondary: '#41516A', accent: '#7C3AED', background: '#F5F7FB', surface: '#FFFFFF',
+    primary: '#0070F3', primaryHover: '#0061DD', primaryActive: '#0052C7', onPrimary: '#FFFFFF',
+    secondary: '#41516A', accent: '#0070F3', background: '#F5F7FB', surface: '#FFFFFF',
     surfaceSecondary: '#EEF3F9', card: '#FFFFFF', cardHover: '#F8FBFF', elevated: '#FFFFFF',
     sidebar: '#132238', header: '#132238', textPrimary: '#172033', textSecondary: '#41516A',
     textMuted: '#718096', textDisabled: '#98A3B5', border: '#D9E2EF', borderSecondary: '#E7EDF5',
     borderHover: '#B9D1F8', inputBackground: '#FFFFFF', tableHeader: '#F1F5F9',
     scrollbarTrack: '#EEF3F9', scrollbarThumb: '#CBD7E6', success: '#0F9F6E',
     warning: '#BD7604', danger: '#D74343', info: '#2563EB',
-    primarySoft: 'rgb(23 105 232 / 0.10)', primaryBorder: 'rgb(23 105 232 / 0.24)',
+    primarySoft: 'rgb(0 112 243 / 0.10)', primaryBorder: 'rgb(0 112 243 / 0.24)',
     successSoft: 'rgb(15 159 110 / 0.10)', successBorder: 'rgb(15 159 110 / 0.25)',
     warningSoft: 'rgb(189 118 4 / 0.10)', warningBorder: 'rgb(189 118 4 / 0.25)',
     dangerSoft: 'rgb(215 67 67 / 0.10)', dangerBorder: 'rgb(215 67 67 / 0.25)',
     infoSoft: 'rgb(37 99 235 / 0.10)', infoBorder: 'rgb(37 99 235 / 0.25)',
-    overlay: 'rgb(2 6 23 / 0.58)', focusRing: 'rgb(23 105 232 / 0.18)'
+    overlay: 'rgb(2 6 23 / 0.58)', focusRing: 'rgb(0 112 243 / 0.20)'
 });
 
 const DEFAULT_DARK_TOKENS = Object.freeze({
-    primary: '#7C3AED', primaryHover: '#8B5CF6', primaryActive: '#6D28D9', onPrimary: '#FFFFFF',
-    secondary: '#CBD5E1', accent: '#A78BFA', background: '#070D16', surface: '#0F1826',
+    primary: '#0070F3', primaryHover: '#80B8FF', primaryActive: '#4C9AFF', onPrimary: '#FFFFFF',
+    secondary: '#CBD5E1', accent: '#80B8FF', background: '#070D16', surface: '#0F1826',
     surfaceSecondary: '#0C1421', card: '#111C2B', cardHover: '#162235', elevated: '#182437',
     sidebar: '#09111D', header: '#0C1421', textPrimary: '#F8FAFC', textSecondary: '#CBD5E1',
     textMuted: '#94A3B8', textDisabled: '#64748B', border: '#243247', borderSecondary: '#1B293B',
     borderHover: '#35465E', inputBackground: '#0B1522', tableHeader: '#0C1624',
     scrollbarTrack: '#09111D', scrollbarThumb: '#35465E', success: '#22C55E',
     warning: '#F59E0B', danger: '#F43F5E', info: '#3B82F6',
-    primarySoft: 'rgb(124 58 237 / 0.14)', primaryBorder: 'rgb(139 92 246 / 0.30)',
+    primarySoft: 'rgb(0 112 243 / 0.18)', primaryBorder: 'rgb(76 154 255 / 0.38)',
     successSoft: 'rgb(34 197 94 / 0.13)', successBorder: 'rgb(34 197 94 / 0.25)',
     warningSoft: 'rgb(245 158 11 / 0.13)', warningBorder: 'rgb(245 158 11 / 0.25)',
     dangerSoft: 'rgb(244 63 94 / 0.13)', dangerBorder: 'rgb(244 63 94 / 0.30)',
     infoSoft: 'rgb(59 130 246 / 0.13)', infoBorder: 'rgb(59 130 246 / 0.25)',
-    overlay: 'rgb(2 6 23 / 0.75)', focusRing: 'rgb(124 58 237 / 0.18)'
+    overlay: 'rgb(2 6 23 / 0.75)', focusRing: 'rgb(76 154 255 / 0.30)'
 });
 
 const DEFAULT_BRANDING = Object.freeze({
@@ -91,11 +91,11 @@ const DEFAULT_BRANDING = Object.freeze({
     assets: Object.fromEntries(ASSET_KEYS.map((key) => [key, null])),
     themes: { light: DEFAULT_LIGHT_TOKENS, dark: DEFAULT_DARK_TOKENS },
     typography: {
-        arabicFont: 'Cairo', englishFont: 'Cairo', headingFont: 'Cairo', bodyFont: 'Cairo',
-        baseFontSize: 16, headingWeight: 800, bodyWeight: 400
+        arabicFont: 'Tajawal', englishFont: 'Geist Sans', headingFont: 'Tajawal', bodyFont: 'Tajawal',
+        baseFontSize: 14, headingWeight: 600, bodyWeight: 400
     },
     login: {
-        backgroundColor: '#070D16', gradientStart: '#7C3AED', gradientEnd: '#070D16',
+        backgroundColor: '#070D16', gradientStart: '#0070F3', gradientEnd: '#070D16',
         overlayOpacity: 0.72, showIllustration: true, showBrandCopy: true
     },
     interface: { radius: 'medium', cardStyle: 'border', shadow: 'soft', sidebar: 'brand', activeStyle: 'background' },

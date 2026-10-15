@@ -1,0 +1,440 @@
+/* Branch Management page composition. Shared branch/section context controls
+   remain owned by components/branch-context.css. */
+/* The page root is also mounted as a shared `.panel`. Keep its shell reset
+   stronger than the generic `body .panel` surface without changing that
+   canonical shared card owner. */
+body .branches-page.panel {
+  display: grid;
+  inline-size: 100%;
+  max-inline-size: none;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.branches-page-header {
+  display: flex;
+  min-block-size: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin: 0;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding-block: var(--space-4);
+  padding-inline: 18px;
+}
+
+.branches-page-heading {
+  min-inline-size: 0;
+}
+
+.branches-page-heading h2 {
+  margin-block: var(--space-1) 0;
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  letter-spacing: -.025em;
+}
+
+.branches-page-heading p {
+  max-inline-size: 560px;
+  margin-block: 5px 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+  line-height: 1.55;
+}
+
+.branches-page-kicker,
+.branches-page .branches-card-kicker,
+#branchCreateDialog .branches-card-kicker {
+  color: var(--color-primary);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0;
+}
+
+.branches-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.branches-page-summary {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.branches-page-summary > span {
+  display: grid;
+  min-inline-size: 82px;
+  gap: 1px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  padding-block: var(--space-2);
+  padding-inline: 11px;
+}
+
+.branches-page-summary strong {
+  color: var(--color-text);
+  font-size: var(--font-xl);
+  line-height: 1.15;
+}
+
+.branches-page-summary small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.branches-create-trigger {
+  min-block-size: var(--ui-touch-target);
+  padding-inline: var(--space-4);
+  white-space: nowrap;
+}
+
+.branches-create-trigger > span {
+  margin-inline-end: var(--space-1);
+  font-size: 1.15em;
+  font-weight: var(--weight-medium);
+  line-height: 0;
+}
+
+.branches-page .branches-list-card {
+  inline-size: 100%;
+  min-inline-size: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.branches-page .branches-card-header {
+  display: flex;
+  min-block-size: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-block-end: 18px;
+  border-block-end: 1px solid var(--border-secondary);
+  background: transparent;
+  padding-block: 0 15px;
+  padding-inline: 0;
+}
+
+.branches-page .branches-card-header h3,
+.branches-page .branches-card-header p {
+  margin: 0;
+}
+
+.branches-page .branches-card-header > div {
+  min-inline-size: 0;
+}
+
+.branches-list-card .branches-card-header h3 {
+  color: var(--color-text);
+  font-size: var(--font-md);
+}
+
+.branches-list-card .branches-card-header p {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
+.branches-list {
+  display: grid;
+  inline-size: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.branches-page .branch-list-item {
+  position: relative;
+  display: grid;
+  min-inline-size: 0;
+  min-block-size: 112px;
+  grid-template-columns: 4px minmax(0, 1fr) minmax(148px, auto);
+  align-items: center;
+  gap: var(--space-3);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
+  box-shadow: none;
+  padding: var(--space-4);
+  transition: border-color var(--transition-fast);
+}
+
+.branches-page .branch-list-item:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--border-primary));
+}
+
+.branches-page .branch-list-item:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.branches-page .branch-list-marker {
+  inline-size: 4px;
+  block-size: 56px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+
+.branches-page .branch-list-copy {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--space-1);
+}
+
+.branches-page .branch-list-copy strong {
+  color: var(--color-text);
+  font-size: var(--font-md);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.branches-page .branch-list-copy span {
+  color: var(--color-primary-hover);
+  font-size: var(--font-xs);
+  letter-spacing: .02em;
+}
+
+.branches-page .branch-list-copy small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  overflow-wrap: anywhere;
+}
+
+.branches-page .branch-list-actions {
+  display: flex;
+  flex-direction: row;
+  min-inline-size: 0;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-inline-start: 1px solid var(--border-secondary);
+  padding-block-start: 0;
+  padding-inline-start: var(--space-3);
+}
+
+.branches-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* The modal foundation pins its generated close control to physical left.
+   The branch dialog heading follows the document direction, so keep the
+   control at logical end to prevent it covering the title in either locale. */
+:root[dir="ltr"] #branchCreateDialog.lf-modal-shell > .dialog-close-button {
+  inset-inline-start: auto;
+  inset-inline-end: var(--lf-modal-inline);
+  left: auto;
+  right: var(--lf-modal-inline);
+}
+
+.branches-form input {
+  inline-size: 100%;
+}
+
+.branch-create-fields,
+.branch-create-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.branches-check-field {
+  min-block-size: var(--ui-touch-target);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-elevated);
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3);
+}
+
+.branches-check-field input {
+  inline-size: 16px;
+  block-size: 16px;
+  accent-color: var(--color-primary);
+}
+
+.branches-form-status {
+  min-block-size: 22px;
+  margin: var(--space-2) 0 0;
+  color: var(--success-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.branch-commerce-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+.branch-commerce-chip {
+  display: inline-flex;
+  min-block-size: 26px;
+  align-items: center;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
+  padding-inline: var(--space-2);
+}
+
+.branch-commerce-chip.is-on {
+  border-color: var(--primary-border);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.branches-page .branch-status {
+  display: inline-flex;
+  max-inline-size: 100%;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--success-soft);
+  color: var(--success-text);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+  white-space: nowrap;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-2);
+}
+
+.branches-page .branch-status.inactive {
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+
+.branches-page .branch-status.archived {
+  background: var(--color-surface-muted);
+  color: var(--text-muted);
+}
+
+.branches-page .branch-list-actions .btn {
+  min-block-size: 32px;
+}
+
+@media (max-width: 900px) {
+  .branches-page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .branches-page-actions {
+    justify-content: space-between;
+  }
+
+  .branches-page .branch-list-item {
+    min-block-size: 0;
+    grid-template-columns: 4px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .branches-page .branch-list-marker {
+    block-size: 100%;
+    min-block-size: 56px;
+  }
+
+  .branches-page .branch-list-actions {
+    grid-column: 2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    border-block-start: 1px solid var(--border-secondary);
+    border-inline-start: 0;
+    padding-block-start: var(--space-3);
+    padding-inline-start: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .branches-page .branches-card-header {
+    align-items: center;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .branches-page-summary {
+    inline-size: 100%;
+  }
+
+  .branches-page-summary > span {
+    min-inline-size: 0;
+    flex: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .branches-page-header {
+    border-radius: var(--radius-lg);
+    padding: 15px;
+  }
+
+  .branches-page-actions,
+  .branches-page-summary {
+    inline-size: 100%;
+  }
+
+  .branches-page-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .branches-page-summary > span {
+    flex: 1 1 0;
+  }
+
+  .branches-create-trigger,
+  .branches-page .branches-card-header .btn {
+    inline-size: 100%;
+  }
+
+  .branches-page .branches-card-header {
+    align-items: flex-start;
+  }
+
+  .branches-list {
+    grid-template-columns: 1fr;
+  }
+
+  .branches-page .branch-list-actions {
+    align-items: stretch;
+  }
+
+  .branches-page .branch-list-actions .btn {
+    min-block-size: var(--ui-touch-target);
+  }
+}
+
+@media (max-width: 640px) {
+  .branch-create-fields,
+  .branch-create-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .branches-page .branch-list-item {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

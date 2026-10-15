@@ -16,13 +16,41 @@
     };
 
     const api = window.topGymApi;
+    const i18n = window.TopGymI18n;
+    const tr = (key, params) => i18n?.t?.(`store.${key}`, params) || key;
+    const fullTranslationKey = (key) => key.startsWith('store.') ? key : `store.${key}`;
+    const localizedMarkup = (key, params = {}) => {
+        const fullKey = fullTranslationKey(key);
+        const countAttribute = Object.hasOwn(params, 'count') ? ` data-i18n-param-count="${esc(params.count)}"` : '';
+        return `<span data-i18n="${esc(fullKey)}"${countAttribute}>${esc(tr(key, params))}</span>`;
+    };
+    const localizedValueMarkup = (kind, value, currency = 'EGP') => `<span data-i18n-format="${kind}" data-i18n-value="${esc(value)}"${kind === 'currency' ? ` data-i18n-currency="${esc(currency)}"` : ''}>${esc(i18n?.format?.(kind, value, kind === 'currency' ? { currency } : {}) ?? String(value ?? ''))}</span>`;
+    const moneyMarkup = (value) => localizedValueMarkup('currency', value);
+    const numberMarkup = (value) => localizedValueMarkup('number', Number(value || 0));
+    const dateMarkup = (value) => value ? localizedValueMarkup('date', value) : '—';
+    const setLocalizedValue = (element, kind, value, currency = 'EGP') => {
+        if (!element) return;
+        element.dataset.i18nFormat = kind;
+        element.dataset.i18nValue = String(value ?? '');
+        if (kind === 'currency') element.dataset.i18nCurrency = currency;
+        i18n?.apply?.(element);
+    };
     const can = (permission) => window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.(permission);
     const canCreateSale = () => Boolean(can('store.sales.create'));
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
     const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
-    const money = (value) => `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
-    const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
+    const money = (value) => i18n?.format?.('currency', Number(value || 0), { currency: 'EGP' }) ?? `${Number(value || 0).toFixed(2)} EGP`;
+    const paymentMarkup = (value) => {
+        const keys = { cash: 'cash', card: 'card', transfer: 'transfer', wallet: 'wallet', other: 'other' };
+        return Object.hasOwn(keys, value) ? localizedMarkup(`pos.${keys[value]}`) : esc(String(value ?? ''));
+    };
+    const statusMarkup = (value) => {
+        const keyByValue = { received: 'store.status.received', completed: 'store.status.completed' };
+        return Object.hasOwn(keyByValue, value) ? localizedMarkup(keyByValue[value]) : esc(String(value ?? '—'));
+    };
     const today = () => new Date().toISOString().slice(0, 10);
+    let storeTranslationObserver = null;
+    let storeLocaleListenerBound = false;
 
     function mountStoreSummary() {
         const summary = $('dashboardStoreSummary');
@@ -37,6 +65,59 @@
         if (window.showToast) window.showToast(message, type === 'error');
         else if (type === 'error') console.error(message);
     };
+
+    function bindStoreTranslations() {
+        const root = $('storeSection');
+        if (!root || !i18n?.apply || !i18n?.annotateText) return;
+
+        const placeholderKeys = {
+            storePosSearch: 'store.pos.searchPlaceholder',
+            storeCustomerSearch: 'store.pos.customerPlaceholder',
+            storeSalePaid: 'store.pos.amountPlaceholder',
+            storeExpenseCategory: 'store.expenses.categoryPlaceholder',
+            barPosSearch: 'store.bar.searchPlaceholder',
+            barPosMemberId: 'store.bar.memberNumber'
+        };
+        const translate = (target = root) => {
+            i18n.annotateText(target, 'store.');
+            const scope = target.nodeType === Node.ELEMENT_NODE ? target : root;
+            if (scope === root || root.contains(scope)) {
+                const pageLabels = [
+                    [$('storeTitle'), 'store.page.title'],
+                    [root.querySelector('.store-page-heading p'), 'store.page.description'],
+                    [$('storeRefreshButton'), 'store.page.refresh']
+                ];
+                pageLabels.forEach(([element, key]) => {
+                    if (element) element.dataset.i18n = key;
+                });
+                root.dataset.i18nAriaLabel = 'store.page.navigation';
+                scope.querySelectorAll?.('.store-subnav-button[data-store-view]').forEach((button) => {
+                    const label = button.querySelector('.store-tab-label');
+                    if (label) label.dataset.i18n = `store.tabs.${button.dataset.storeView}`;
+                });
+                Object.entries(placeholderKeys).forEach(([id, key]) => {
+                    const field = $(id);
+                    if (field && (field === scope || scope.contains?.(field))) field.dataset.i18nPlaceholder = key;
+                });
+            }
+            i18n.apply(target);
+        };
+
+        translate();
+        if (!storeTranslationObserver && typeof MutationObserver === 'function') {
+            storeTranslationObserver = new MutationObserver((records) => {
+                records.forEach((record) => record.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) translate(node);
+                    else if (node.nodeType === Node.TEXT_NODE && node.parentElement) translate(node.parentElement);
+                }));
+            });
+            storeTranslationObserver.observe(root, { childList: true, subtree: true });
+        }
+        if (!storeLocaleListenerBound) {
+            window.addEventListener('topgym:localechange', () => translate());
+            storeLocaleListenerBound = true;
+        }
+    }
 
     function queryRange() {
         const to = today();
@@ -59,7 +140,7 @@
         const search = String($('storePosSearch')?.value || '').trim().toLowerCase();
         const variants = flattenVariants().filter((item) => !search || [item.productName, item.variantName, item.sku, item.barcode].some((value) => String(value || '').toLowerCase().includes(search)));
         const salesAllowed = canCreateSale();
-        $('storeProductCatalog').innerHTML = variants.length ? variants.map((item) => `<button class="store-product-card" type="button" data-store-add-variant="${esc(item.id)}"${salesAllowed ? '' : ' disabled'} aria-disabled="${String(!salesAllowed)}"><span><strong>${esc(item.productName)}</strong><small>${esc(item.variantName)} · ${esc(item.sku)}</small></span><span class="store-product-price">${money(item.discountPrice ?? item.sellingPrice)}</span></button>`).join('') : '<div class="empty">لا توجد منتجات مطابقة للبحث.</div>';
+        $('storeProductCatalog').innerHTML = variants.length ? variants.map((item) => `<button class="store-product-card" type="button" data-store-add-variant="${esc(item.id)}"${salesAllowed ? '' : ' disabled'} aria-disabled="${String(!salesAllowed)}"><span><strong>${esc(item.productName)}</strong><small>${esc(item.variantName)} · ${esc(item.sku)}</small></span><span class="store-product-price">${localizedValueMarkup('currency', item.discountPrice ?? item.sellingPrice)}</span></button>`).join('') : '<div class="empty">لا توجد منتجات مطابقة للبحث.</div>';
     }
 
     function cartTotals() {
@@ -71,9 +152,9 @@
 
     function renderCart() {
         const totals = cartTotals();
-        $('storeCartMeta').textContent = state.cart.length ? `${state.cart.length.toLocaleString('ar-EG')} أصناف` : 'لم تتم إضافة منتجات';
-        $('storeCartLines').innerHTML = state.cart.length ? state.cart.map((line) => `<div class="store-cart-line" data-store-cart-line="${esc(line.variantId)}"><div><strong>${esc(line.productName)}</strong><small>${esc(line.variantName)} · ${money(line.unitPrice)}</small></div><div class="store-cart-quantity"><button type="button" data-store-cart-minus="${esc(line.variantId)}" aria-label="تقليل الكمية">−</button><input type="number" min="1" step="1" value="${esc(line.quantity)}" data-store-cart-quantity="${esc(line.variantId)}" aria-label="كمية ${esc(line.productName)}"><button type="button" data-store-cart-plus="${esc(line.variantId)}" aria-label="زيادة الكمية">+</button></div><div><strong>${money(line.quantity * line.unitPrice)}</strong><button class="store-cart-remove" type="button" data-store-cart-remove="${esc(line.variantId)}" aria-label="حذف ${esc(line.productName)}">×</button></div></div>`).join('') : '<div class="empty">أضف منتجًا إلى السلة للبدء.</div>';
-        $('storeCartTotal').textContent = money(totals.total);
+        $('storeCartMeta').innerHTML = state.cart.length ? localizedMarkup('common.itemCount', { count: state.cart.length }) : localizedMarkup('pos.noProductsAdded');
+        $('storeCartLines').innerHTML = state.cart.length ? state.cart.map((line) => `<div class="store-cart-line" data-store-cart-line="${esc(line.variantId)}"><div><strong>${esc(line.productName)}</strong><small>${esc(line.variantName)} · ${localizedValueMarkup('currency', line.unitPrice)}</small></div><div class="store-cart-quantity"><button type="button" data-store-cart-minus="${esc(line.variantId)}" aria-label="تقليل الكمية">−</button><input type="number" min="1" step="1" value="${esc(line.quantity)}" data-store-cart-quantity="${esc(line.variantId)}" aria-label="كمية ${esc(line.productName)}"><button type="button" data-store-cart-plus="${esc(line.variantId)}" aria-label="زيادة الكمية">+</button></div><div><strong>${localizedValueMarkup('currency', line.quantity * line.unitPrice)}</strong><button class="store-cart-remove" type="button" data-store-cart-remove="${esc(line.variantId)}" aria-label="حذف ${esc(line.productName)}">×</button></div></div>`).join('') : '<div class="empty">أضف منتجًا إلى السلة للبدء.</div>';
+        setLocalizedValue($('storeCartTotal'), 'currency', totals.total);
         const paid = $('storeSalePaid');
         if (paid && !paid.value) paid.placeholder = totals.total.toFixed(2);
         const submit = $('storeCompleteSale');
@@ -161,11 +242,11 @@
         if (!summaryElement) return;
         summaryElement.hidden = !can('store.view');
         const todaySales = data.today?.revenue ?? data.todaySales ?? 0;
-        $('dashboardStoreTodaySales').textContent = money(todaySales);
-        $('dashboardStoreRevenue').textContent = money(summary.revenue);
-        $('dashboardStoreLowStock').textContent = Number((data.alerts?.lowStock || []).length).toLocaleString('ar-EG');
-        $('dashboardStoreExpenses').textContent = money(profit.expenses);
-        $('dashboardStoreNetProfit').textContent = money(profit.netProfit);
+        setLocalizedValue($('dashboardStoreTodaySales'), 'currency', todaySales);
+        setLocalizedValue($('dashboardStoreRevenue'), 'currency', summary.revenue);
+        setLocalizedValue($('dashboardStoreLowStock'), 'number', (data.alerts?.lowStock || []).length);
+        setLocalizedValue($('dashboardStoreExpenses'), 'currency', profit.expenses);
+        setLocalizedValue($('dashboardStoreNetProfit'), 'currency', profit.netProfit);
         summaryElement.querySelectorAll('[data-store-profit-only]').forEach((element) => { element.hidden = !can('store.profit.view'); });
     }
 
@@ -184,7 +265,7 @@
         state.products = data.items || [];
         renderProductCatalog();
         renderPurchaseVariants();
-        const rows = state.products.map((product) => `<tr><td><strong>${esc(product.nameAr)}</strong><small>${esc(product.variants?.length || 0)} نسخة</small></td><td dir="ltr">${esc(product.sku)}</td><td>${esc(product.categoryName || '—')}</td><td>${Number(product.stock || 0).toLocaleString('ar-EG')}</td><td>${product.active ? '<span class="store-status">نشط</span>' : '<span class="store-status danger">غير نشط</span>'}</td><td>${can('store.products.manage') ? `<div class="store-row-actions">${product.active ? `<button class="btn btn-light btn-small" type="button" data-store-edit-product="${esc(product.id)}">تعديل</button><button class="btn btn-light btn-small" type="button" data-store-deactivate-product="${esc(product.id)}">تعطيل</button>` : '—'}</div>` : '—'}</td></tr>`);
+        const rows = state.products.map((product) => `<tr><td><strong>${esc(product.nameAr)}</strong><small>${localizedMarkup('products.variants', { count: product.variants?.length || 0 })}</small></td><td dir="ltr">${esc(product.sku)}</td><td>${esc(product.categoryName || '—')}</td><td>${numberMarkup(product.stock)}</td><td>${product.active ? `<span class="store-status">${localizedMarkup('products.statusActive')}</span>` : `<span class="store-status danger">${localizedMarkup('products.statusInactive')}</span>`}</td><td>${can('store.products.manage') ? `<div class="store-row-actions">${product.active ? `<button class="btn btn-light btn-small" type="button" data-store-edit-product="${esc(product.id)}">${localizedMarkup('products.edit')}</button><button class="btn btn-light btn-small" type="button" data-store-deactivate-product="${esc(product.id)}">${localizedMarkup('products.deactivate')}</button>` : '—'}</div>` : '—'}</td></tr>`);
         renderTable('storeProductsTable', ['المنتج', 'SKU', 'التصنيف', 'المخزون', 'الحالة', 'الإجراء'], rows, 'لا توجد منتجات بعد.');
     }
 
@@ -196,28 +277,28 @@
 
     async function loadInventory() {
         const data = await api.request('/api/store/inventory');
-        const rows = (data.items || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${Number(item.quantityOnHand || 0).toLocaleString('ar-EG')}</td><td>${Number(item.minimumStock || 0).toLocaleString('ar-EG')}</td><td>${item.nearestExpiry ? esc(item.nearestExpiry) : '—'}</td><td>${item.lowStock ? '<span class="store-status warning">مخزون منخفض</span>' : '<span class="store-status">متاح</span>'}</td><td>${can('store.inventory.adjust') ? `<button class="btn btn-light btn-small" type="button" data-store-adjust="${esc(item.id)}">تسوية</button>` : '—'}</td></tr>`);
+        const rows = (data.items || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${numberMarkup(item.quantityOnHand)}</td><td>${numberMarkup(item.minimumStock)}</td><td>${dateMarkup(item.nearestExpiry)}</td><td>${item.lowStock ? `<span class="store-status warning">${localizedMarkup('inventory.low')}</span>` : `<span class="store-status">${localizedMarkup('inventory.available')}</span>`}</td><td>${can('store.inventory.adjust') ? `<button class="btn btn-light btn-small" type="button" data-store-adjust="${esc(item.id)}">${localizedMarkup('inventory.adjust')}</button>` : '—'}</td></tr>`);
         renderTable('storeInventoryTable', ['المنتج', 'النسخة', 'SKU', 'الرصيد', 'الحد الأدنى', 'الصلاحية', 'الحالة', 'الإجراء'], rows, 'لا توجد حركات أو أصناف مخزنية بعد.');
     }
 
     async function loadPurchases() {
         const range = queryRange();
         const data = await api.request(`/api/store/purchases?${new URLSearchParams({ ...range, page: '1', pageSize: '100' })}`);
-        const rows = (data.items || []).map((item) => `<tr><td>#${esc(item.id)}</td><td>${esc(item.invoiceNumber || '—')}</td><td>${esc(item.supplierName || 'بدون مورد')}</td><td>${esc(item.purchaseDate)}</td><td>${money(item.totalAmount)}</td><td>${money(item.paidAmount)}</td><td>${money(item.remainingAmount)}</td><td><span class="store-status">${esc(item.status)}</span></td></tr>`);
+        const rows = (data.items || []).map((item) => `<tr><td>#${esc(item.id)}</td><td>${esc(item.invoiceNumber || '—')}</td><td>${item.supplierName ? esc(item.supplierName) : localizedMarkup('purchases.noneSupplier')}</td><td>${dateMarkup(item.purchaseDate)}</td><td>${moneyMarkup(item.totalAmount)}</td><td>${moneyMarkup(item.paidAmount)}</td><td>${moneyMarkup(item.remainingAmount)}</td><td><span class="store-status">${statusMarkup(item.status)}</span></td></tr>`);
         renderTable('storePurchasesTable', ['#', 'الفاتورة', 'المورد', 'التاريخ', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'], rows, 'لا توجد مشتريات في الفترة الحالية.');
     }
 
     async function loadSales() {
         const range = queryRange();
         const data = await api.request(`/api/store/sales?${new URLSearchParams({ ...range, page: '1', pageSize: '100' })}`);
-        const rows = (data.items || []).map((item) => `<tr><td>${esc(item.saleNumber)}</td><td>${esc(item.customerName || 'عميل نقدي')}</td><td dir="ltr">${esc(item.customerPhone || '—')}</td><td>${esc(String(item.saleDate || '').slice(0, 10))}</td><td>${money(item.totalAmount)}</td><td>${money(item.paidAmount)}</td><td>${money(item.remainingAmount)}</td><td><span class="store-status">${esc(item.status)}</span></td></tr>`);
+        const rows = (data.items || []).map((item) => `<tr><td>${esc(item.saleNumber)}</td><td>${item.customerName ? esc(item.customerName) : localizedMarkup('sales.cashCustomer')}</td><td dir="ltr">${esc(item.customerPhone || '—')}</td><td>${dateMarkup(item.saleDate)}</td><td>${moneyMarkup(item.totalAmount)}</td><td>${moneyMarkup(item.paidAmount)}</td><td>${moneyMarkup(item.remainingAmount)}</td><td><span class="store-status">${statusMarkup(item.status)}</span></td></tr>`);
         renderTable('storeSalesTable', ['الفاتورة', 'العميل', 'الهاتف', 'التاريخ', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'], rows, 'لا توجد مبيعات في الفترة الحالية.');
     }
 
     async function loadSuppliers() {
         state.suppliers = await api.request('/api/store/suppliers');
         renderSupplierOptions();
-        const rows = state.suppliers.map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td dir="ltr">${esc(item.email || '—')}</td><td>${item.active ? '<span class="store-status">نشط</span>' : '<span class="store-status danger">غير نشط</span>'}</td><td>${can('store.suppliers.manage') ? `<button class="btn btn-light btn-small" type="button" data-store-edit-supplier="${esc(item.id)}">تعديل</button>` : '—'}</td></tr>`);
+        const rows = state.suppliers.map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td dir="ltr">${esc(item.email || '—')}</td><td>${item.active ? `<span class="store-status">${localizedMarkup('products.statusActive')}</span>` : `<span class="store-status danger">${localizedMarkup('products.statusInactive')}</span>`}</td><td>${can('store.suppliers.manage') ? `<button class="btn btn-light btn-small" type="button" data-store-edit-supplier="${esc(item.id)}">${localizedMarkup('products.edit')}</button>` : '—'}</td></tr>`);
         renderTable('storeSuppliersTable', ['المورد', 'الهاتف', 'البريد', 'الحالة', 'الإجراء'], rows, 'لا يوجد موردون بعد.');
     }
 
@@ -225,7 +306,7 @@
         const range = queryRange();
         const data = await api.request(`/api/store/expenses?${new URLSearchParams(range)}`);
         state.expenses = data.expenses || [];
-        const rows = state.expenses.map((item) => `<tr><td>${esc(item.name)}</td><td>${esc(item.category || 'عام')}</td><td>${esc(item.expenseDate)}</td><td>${money(item.amount)}</td><td>${esc(item.paymentMethod)}</td><td>${can('store.expenses.manage') ? `<div class="store-row-actions"><button class="btn btn-light btn-small" type="button" data-store-edit-expense="${esc(item.id)}">تعديل</button><button class="btn btn-light btn-small" type="button" data-store-delete-expense="${esc(item.id)}">إلغاء</button></div>` : '—'}</td></tr>`);
+        const rows = state.expenses.map((item) => `<tr><td>${esc(item.name)}</td><td>${esc(item.category || 'عام')}</td><td>${dateMarkup(item.expenseDate)}</td><td>${moneyMarkup(item.amount)}</td><td>${paymentMarkup(item.paymentMethod)}</td><td>${can('store.expenses.manage') ? `<div class="store-row-actions"><button class="btn btn-light btn-small" type="button" data-store-edit-expense="${esc(item.id)}">${localizedMarkup('products.edit')}</button><button class="btn btn-light btn-small" type="button" data-store-delete-expense="${esc(item.id)}">${localizedMarkup('common.cancel')}</button></div>` : '—'}</td></tr>`);
         renderTable('storeExpensesTable', ['المصروف', 'التصنيف', 'التاريخ', 'المبلغ', 'طريقة الدفع', 'الإجراء'], rows, 'لا توجد مصروفات للمتجر في الفترة الحالية.');
     }
 
@@ -234,38 +315,38 @@
         const to = $('storeReportTo').value || queryRange().to;
         const data = await api.request(`/api/store/reports?${new URLSearchParams({ from, to })}`);
         const summary = data.summary || {};
-        $('storeReportSummary').innerHTML = [['الإيراد', money(summary.revenue)], ['الفواتير', Number(summary.orders || 0).toLocaleString('ar-EG')], ['المرتجعات', money(summary.refunds)], ...(data.profit && can('store.profit.view') ? [['تكلفة البضاعة', money(data.profit.cogs)], ['صافي الربح', money(data.profit.netProfit)]] : [])].map(([label, value]) => `<article><span>${label}</span><strong>${esc(value)}</strong></article>`).join('');
+        $('storeReportSummary').innerHTML = [['common.revenue', moneyMarkup(summary.revenue)], ['common.orders', numberMarkup(summary.orders)], ['common.refunds', moneyMarkup(summary.refunds)], ...(data.profit && can('store.profit.view') ? [['reports.cogs', moneyMarkup(data.profit.cogs)], ['reports.netProfit', moneyMarkup(data.profit.netProfit)]] : [])].map(([key, value]) => `<article><span>${localizedMarkup(key)}</span><strong>${value}</strong></article>`).join('');
         const mode = $('storeReportMode')?.value || 'products';
         const profitVisible = data.profit && can('store.profit.view');
         let headers = [];
         let rows = [];
         if (mode === 'categories') {
             headers = ['التصنيف', 'الكمية', 'الإيراد', ...(profitVisible ? ['التكلفة'] : [])];
-            rows = (data.byCategory || []).map((item) => `<tr><td>${esc(item.name)}</td><td>${Number(item.quantity || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td>${profitVisible ? `<td>${money(item.cogs)}</td>` : ''}</tr>`);
+            rows = (data.byCategory || []).map((item) => `<tr><td>${esc(item.name)}</td><td>${numberMarkup(item.quantity)}</td><td>${moneyMarkup(item.revenue)}</td>${profitVisible ? `<td>${moneyMarkup(item.cogs)}</td>` : ''}</tr>`);
         } else if (mode === 'customers') {
             headers = ['العميل', 'الهاتف', 'الفواتير', 'الإيراد'];
-            rows = (data.byCustomer || []).map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td></tr>`);
+            rows = (data.byCustomer || []).map((item) => `<tr><td>${esc(item.name)}</td><td dir="ltr">${esc(displayPhone(item.phone, item.phoneCountry) || '—')}</td><td>${numberMarkup(item.orders)}</td><td>${moneyMarkup(item.revenue)}</td></tr>`);
         } else if (mode === 'payments') {
             headers = ['طريقة الدفع', 'الفواتير', 'القيمة'];
-            rows = (data.paymentMethods || []).map((item) => `<tr><td>${esc(paymentLabels[item.method] || item.method)}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.amount)}</td></tr>`);
+            rows = (data.paymentMethods || []).map((item) => `<tr><td>${paymentMarkup(item.method)}</td><td>${numberMarkup(item.orders)}</td><td>${moneyMarkup(item.amount)}</td></tr>`);
         } else if (mode === 'daily') {
             headers = ['اليوم', 'الفواتير', 'الإيراد'];
-            rows = (data.dailySales || []).map((item) => `<tr><td>${esc(item.date)}</td><td>${Number(item.orders || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td></tr>`);
+            rows = (data.dailySales || []).map((item) => `<tr><td>${dateMarkup(item.date)}</td><td>${numberMarkup(item.orders)}</td><td>${moneyMarkup(item.revenue)}</td></tr>`);
         } else if (mode === 'purchases') {
             headers = ['الفاتورة', 'المورد', 'التاريخ', 'الإجمالي', 'المدفوع', 'المتبقي'];
-            rows = (data.purchases || []).map((item) => `<tr><td>${esc(item.invoiceNumber || `#${item.id}`)}</td><td>${esc(item.supplierName || 'بدون مورد')}</td><td>${esc(item.purchaseDate)}</td><td>${money(item.totalAmount)}</td><td>${money(item.paidAmount)}</td><td>${money(item.remainingAmount)}</td></tr>`);
+            rows = (data.purchases || []).map((item) => `<tr><td>${esc(item.invoiceNumber || `#${item.id}`)}</td><td>${item.supplierName ? esc(item.supplierName) : localizedMarkup('purchases.noneSupplier')}</td><td>${dateMarkup(item.purchaseDate)}</td><td>${moneyMarkup(item.totalAmount)}</td><td>${moneyMarkup(item.paidAmount)}</td><td>${moneyMarkup(item.remainingAmount)}</td></tr>`);
         } else if (mode === 'inventory') {
             headers = ['المنتج', 'النسخة', 'SKU', 'الرصيد', 'الحد الأدنى', 'الصلاحية', 'الحالة'];
-            rows = (data.inventory || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${Number(item.quantityOnHand || 0).toLocaleString('ar-EG')}</td><td>${Number(item.minimumStock || 0).toLocaleString('ar-EG')}</td><td>${esc(item.nearestExpiry || '—')}</td><td>${item.lowStock ? '<span class="store-status warning">مخزون منخفض</span>' : '<span class="store-status">متاح</span>'}</td></tr>`);
+            rows = (data.inventory || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${numberMarkup(item.quantityOnHand)}</td><td>${numberMarkup(item.minimumStock)}</td><td>${dateMarkup(item.nearestExpiry)}</td><td>${item.lowStock ? `<span class="store-status warning">${localizedMarkup('inventory.low')}</span>` : `<span class="store-status">${localizedMarkup('inventory.available')}</span>`}</td></tr>`);
         } else if (mode === 'returns') {
             headers = ['المرتجع', 'الفاتورة', 'التاريخ', 'المبلغ', 'طريقة الاسترداد', 'السبب'];
-            rows = (data.returns || []).map((item) => `<tr><td dir="ltr">${esc(item.returnNumber)}</td><td dir="ltr">${esc(item.saleNumber)}</td><td>${esc(String(item.createdAt || '').slice(0, 10))}</td><td>${money(item.refundAmount)}</td><td>${esc(paymentLabels[item.refundMethod] || item.refundMethod)}</td><td>${esc(item.reason || '—')}</td></tr>`);
+            rows = (data.returns || []).map((item) => `<tr><td dir="ltr">${esc(item.returnNumber)}</td><td dir="ltr">${esc(item.saleNumber)}</td><td>${dateMarkup(item.createdAt)}</td><td>${moneyMarkup(item.refundAmount)}</td><td>${paymentMarkup(item.refundMethod)}</td><td>${esc(item.reason || '—')}</td></tr>`);
         } else if (mode === 'expenses') {
             headers = ['المصروف', 'التصنيف', 'التاريخ', 'المبلغ', 'طريقة الدفع'];
-            rows = (data.expenses || []).map((item) => `<tr><td>${esc(item.name)}</td><td>${esc(item.category || 'عام')}</td><td>${esc(item.expenseDate)}</td><td>${money(item.amount)}</td><td>${esc(paymentLabels[item.paymentMethod] || item.paymentMethod)}</td></tr>`);
+            rows = (data.expenses || []).map((item) => `<tr><td>${esc(item.name)}</td><td>${esc(item.category || 'عام')}</td><td>${dateMarkup(item.expenseDate)}</td><td>${moneyMarkup(item.amount)}</td><td>${paymentMarkup(item.paymentMethod)}</td></tr>`);
         } else {
             headers = ['المنتج', 'النسخة', 'SKU', 'الكمية', 'الإيراد', ...(profitVisible ? ['التكلفة'] : [])];
-            rows = (data.bestSelling || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${Number(item.quantity || 0).toLocaleString('ar-EG')}</td><td>${money(item.revenue)}</td>${profitVisible ? `<td>${money(item.cogs)}</td>` : ''}</tr>`);
+            rows = (data.bestSelling || []).map((item) => `<tr><td>${esc(item.productName)}</td><td>${esc(item.variantName)}</td><td dir="ltr">${esc(item.sku)}</td><td>${numberMarkup(item.quantity)}</td><td>${moneyMarkup(item.revenue)}</td>${profitVisible ? `<td>${moneyMarkup(item.cogs)}</td>` : ''}</tr>`);
         }
         renderTable('storeReportTable', headers, rows, mode === 'expenses' && !data.expenses ? 'لا تملك صلاحية عرض مصروفات المتجر.' : 'لا توجد نتائج في الفترة المحددة.');
     }
@@ -332,7 +413,7 @@
         const brandName = branding.identity?.brandName || 'Logic Fit';
         const logo = branding.assets?.printLogo?.url || branding.assets?.primaryLogo?.url || '/assets/logic-fit-logo-horizontal.svg?v=1';
         const lines = (sale.items || []).map((item) => `<tr><td>${esc(item.productName)}<br><small>${esc(item.variantName)}</small></td><td>${esc(item.quantity)}</td><td>${money(item.lineTotal)}</td></tr>`).join('');
-        popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=37"><title>${esc(sale.saleNumber)} | ${esc(brandName)}</title><style>body{font-family:Cairo,Arial,sans-serif;padding:24px;color:var(--text-primary)}.receipt-brand{display:grid;justify-items:center;gap:6px}.receipt-brand img{width:48px;height:48px;object-fit:contain}.receipt-brand h1{text-align:center;color:var(--primary);margin:0}.receipt-brand p{margin:0;color:var(--text-muted)}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:8px;border-bottom:1px solid var(--border-secondary);text-align:center}.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-top:18px}@media print{button{display:none}}</style></head><body><div class="receipt-brand"><img src="${esc(logo)}" alt="${esc(brandName)}"><h1>${esc(brandName)}</h1><p>إيصال مبيعات: ${esc(sale.saleNumber)}</p></div><table><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>${lines}</tbody></table><div class="total"><span>الإجمالي</span><span>${money(sale.totalAmount)}</span></div><p>شكرًا لزيارتكم</p><script>window.onload=()=>window.print();</script></body></html>`);
+        popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${esc(window.location.origin)}/css/main.css?v=37"><link rel="stylesheet" href="${esc(window.location.origin)}/css/print.css?v=1"><title>${esc(sale.saleNumber)} | ${esc(brandName)}</title><style>body{font-family:var(--font-body,sans-serif);padding:24px;color:var(--text-primary)}.receipt-brand{display:grid;justify-items:center;gap:6px}.receipt-brand img{width:48px;height:48px;object-fit:contain}.receipt-brand h1{text-align:center;color:var(--primary);margin:0}.receipt-brand p{margin:0;color:var(--text-muted)}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:8px;border-bottom:1px solid var(--border-secondary);text-align:center}.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-top:18px}@media print{button{display:none}}</style></head><body><div class="receipt-brand"><img src="${esc(logo)}" alt="${esc(brandName)}"><h1>${esc(brandName)}</h1><p>إيصال مبيعات: ${esc(sale.saleNumber)}</p></div><table><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>${lines}</tbody></table><div class="total"><span>الإجمالي</span><span>${money(sale.totalAmount)}</span></div><p>شكرًا لزيارتكم</p><script>window.onload=()=>window.print();</script></body></html>`);
         popup.document.close();
     }
 
@@ -425,6 +506,7 @@
 
     function bind() {
         mountStoreSummary();
+        bindStoreTranslations();
         const permissionControls = {
             storeAddProduct: 'store.products.manage',
             storeAddPurchase: 'store.purchases.manage',

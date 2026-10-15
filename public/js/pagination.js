@@ -4,6 +4,54 @@
             if (!list || !pagination) return;
             let pageController = null;
             const getState = () => window.topGymMembersState || null;
+            const translate = (key, params = {}) => window.TopGymI18n?.t?.(`members.${key}`, params) || key;
+            const formatNumber = (value) => window.TopGymI18n?.format?.('number', Number(value)) || String(value);
+
+            function translatePagination() {
+                const data = getState()?.pagination;
+                if (!data || pagination.hidden) return;
+                const total = Number(data.total ?? data.totalItems ?? data.totalCount ?? 0);
+                const pageSize = Math.max(1, Number(data.pageSize || getState()?.membersPageSize || 5));
+                const pages = Math.max(0, Number(data.totalPages ?? data.pages ?? (total ? Math.ceil(total / pageSize) : 0)));
+                const page = Number(data.page || 1);
+                const hasPrevious = data.hasPrevious === undefined ? page > 1 : Boolean(data.hasPrevious);
+                const hasNext = data.hasNext === undefined ? page < pages : Boolean(data.hasNext);
+                const info = pagination.querySelector('.members-pagination-info');
+                if (info) info.textContent = translate('pagination.range', { first: formatNumber((page - 1) * pageSize + 1), last: formatNumber(Math.min(page * pageSize, total)), total: formatNumber(total) });
+                pagination.setAttribute('aria-label', translate('pagination.pages'));
+                const actionButtons = [...pagination.querySelectorAll('.members-pagination-actions [data-members-page]')];
+                const desktopFirst = actionButtons[0];
+                const desktopPrevious = actionButtons[1];
+                const desktopLast = actionButtons[actionButtons.length - 1];
+                const desktopNext = actionButtons[actionButtons.length - 2];
+                const setButton = (button, key, disabled, params = {}) => {
+                    if (!button) return;
+                    const label = translate(key, params);
+                    button.setAttribute('aria-label', label);
+                    button.title = label;
+                    button.disabled = disabled;
+                };
+                setButton(desktopFirst, 'pagination.first', !hasPrevious);
+                setButton(desktopPrevious, 'pagination.previous', !hasPrevious);
+                setButton(desktopNext, 'pagination.next', !hasNext);
+                setButton(desktopLast, 'pagination.last', !hasNext);
+                pagination.querySelectorAll('.members-pagination-window [data-members-page]').forEach((button) => {
+                    const label = translate('pagination.page', { page: formatNumber(button.dataset.membersPage) });
+                    button.setAttribute('aria-label', label);
+                    button.title = label;
+                });
+                const current = pagination.querySelector('.members-pagination-actions .members-page-button.active');
+                if (current) setButton(current, 'pagination.page', false, { page: formatNumber(page) });
+                const mobileButtons = pagination.querySelectorAll('.members-mobile-pagination .members-mobile-page-button');
+                setButton(mobileButtons[0], 'pagination.mobilePrevious', !hasPrevious);
+                setButton(mobileButtons[1], 'pagination.mobileNext', !hasNext);
+                const pageSizeLabel = pagination.querySelector('.members-page-size > span');
+                if (pageSizeLabel) pageSizeLabel.textContent = translate('pagination.pageSize');
+                const pageSizeSelect = pagination.querySelector('[data-members-page-size]');
+                if (pageSizeSelect) pageSizeSelect.setAttribute('aria-label', translate('pagination.pageSizeAria'));
+                const pageNumber = pagination.querySelector('.members-mobile-pagination > span');
+                if (pageNumber) pageNumber.textContent = `${formatNumber(page)} / ${formatNumber(pages)}`;
+            }
 
             function renderPagination() {
                 const data = getState()?.pagination;
@@ -132,6 +180,11 @@
                     }
                 }, true);
                 new MutationObserver(renderPagination).observe(list, { childList: true, subtree: true });
+                window.addEventListener('topgym:localechange', () => {
+                    renderPagination();
+                    window.requestAnimationFrame(translatePagination);
+                });
+                window.requestAnimationFrame(translatePagination);
             }
 
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializePagination, { once: true });

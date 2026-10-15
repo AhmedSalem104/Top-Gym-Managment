@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), 'utf8');
@@ -27,6 +28,53 @@ test('shared skeleton utility exposes bounded component primitives without artif
     assert.match(source, /aria-busy/);
     assert.match(source, /loadingState/);
     assert.doesNotMatch(source, /setTimeout|setInterval/);
+});
+
+test('shared skeleton accessible labels follow the centralized Arabic and English locale', () => {
+    const source = read('public/js/loading-skeleton.js');
+    const localeLabels = {
+        ar: { 'common.loading.data': 'جارٍ تحميل البيانات' },
+        en: { 'common.loading.data': 'Loading data' }
+    };
+
+    for (const locale of ['ar', 'en']) {
+        const window = { TopGymI18n: { t: (key) => localeLabels[locale][key] || key }, addEventListener() {} };
+        vm.runInNewContext(source, {
+            window,
+            document: { addEventListener() {} }
+        });
+        assert.match(window.topGymSkeleton.list({ rows: 1 }), new RegExp(`aria-label=\"${localeLabels[locale]['common.loading.data']}\"`, 'u'));
+        assert.match(window.topGymSkeleton.table({ rows: 1, columns: 2 }), new RegExp(`aria-label=\"${localeLabels[locale]['common.loading.data']}\"`, 'u'));
+    }
+});
+
+test('existing loading skeleton labels update when locale changes before the request finishes', () => {
+    const source = read('public/js/loading-skeleton.js');
+    const translations = {
+        ar: { 'common.loading.data': 'جارٍ تحميل البيانات' },
+        en: { 'common.loading.data': 'Loading data' }
+    };
+    let locale = 'ar';
+    let localeListener;
+    const loadingRegion = {
+        attributes: {},
+        setAttribute(name, value) { this.attributes[name] = value; }
+    };
+    const document = {
+        addEventListener() {},
+        querySelectorAll(selector) { return selector.includes('.skeleton-list') ? [loadingRegion] : []; }
+    };
+    const window = {
+        TopGymI18n: { t: (key) => translations[locale][key] || key },
+        addEventListener(name, callback) { if (name === 'topgym:localechange') localeListener = callback; }
+    };
+
+    vm.runInNewContext(source, { window, document });
+    loadingRegion.attributes['aria-label'] = translations.ar['common.loading.data'];
+    locale = 'en';
+    localeListener();
+
+    assert.equal(loadingRegion.attributes['aria-label'], translations.en['common.loading.data']);
 });
 
 test('members, dashboard, platform and trainer surfaces use component-scoped loading contracts', () => {

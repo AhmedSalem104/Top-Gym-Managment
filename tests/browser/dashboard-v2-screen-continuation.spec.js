@@ -1,0 +1,327 @@
+const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const featureCatalog = require('../../src/services/feature-catalog');
+const planCatalog = require('../../src/services/saas-plan-catalog');
+
+const WIDTHS = [320, 375, 390, 768, 1024, 1440, 1920];
+const THEMES = ['light', 'dark'];
+const LOCALES = ['ar', 'en'];
+const SCREENSHOT_DIR = path.resolve(process.cwd(), 'qa/artifacts/dashboard-v2-screen-continuation');
+
+function normalizeLocalizedDigits(value) {
+    return value.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+}
+
+async function installReadOnlyDashboardFixture(page) {
+    const writes = [];
+    const thirdParty = [];
+    let analyticsMode = 'empty';
+    const plan = planCatalog.PLAN_CONFIGURATIONS.find((item) => item.code === 'business');
+
+    await page.route('**/*', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.origin !== 'http://127.0.0.1:4173') {
+            thirdParty.push(url.href);
+            return route.abort('blockedbyclient');
+        }
+        return route.continue();
+    });
+
+    await page.route('**/api/**', async (route) => {
+        const request = route.request();
+        const pathname = new URL(request.url()).pathname;
+        if (pathname === '/api/dashboard-analytics') {
+            if (analyticsMode === 'loading') await new Promise((resolve) => setTimeout(resolve, 900));
+            if (analyticsMode === 'error') {
+                return route.fulfill({ status: 503, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: 'Analytics unavailable in the read-only visual fixture.' }) });
+            }
+            return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify({}) });
+        }
+        if (pathname.endsWith('/stream')) {
+            return route.fulfill({ status: 200, contentType: 'text/event-stream; charset=utf-8', body: ': read-only visual fixture\n\n' });
+        }
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method().toUpperCase())) {
+            writes.push(`${request.method()} ${pathname}`);
+            return route.fulfill({ status: 405, contentType: 'application/json', body: JSON.stringify({ error: 'Read-only dashboard fixture.' }) });
+        }
+
+        let payload = {};
+        if (pathname === '/api/auth/session') {
+            payload = { authenticated: true, user: { id: 98201, name: 'V2 Dashboard QA', role: 'Owner', tenantId: 98201, tenantType: 'gym', permissions: ['dashboard.read', 'members.read', 'finance.read', 'expenses.read', 'attendance.read'] } };
+        } else if (pathname === '/api/branding') {
+            payload = { branding: { identity: { brandName: 'V2 Dashboard QA Gym' }, assets: {} } };
+        } else if (pathname === '/api/saas/entitlements') {
+            payload = {
+                tenantStatus: 'active',
+                subscription: { status: 'active', plan: { code: 'business', name: plan.name } },
+                entitlements: {
+                    tenantType: 'gym',
+                    features: planCatalog.featureFlagsForPlan('business'),
+                    featureCatalog: featureCatalog.getFeatureCatalog({ tenantType: 'gym' }),
+                    limits: {}
+                }
+            };
+        } else if (pathname === '/api/branches/bootstrap') {
+            const branch = { id: 98201, name: 'QA Main Branch', status: 'active', isMain: true };
+            payload = { branch, branches: [branch], activeBranches: [branch], defaultBranch: branch, sections: [], branchLimit: 1, hasMultipleActiveBranches: false };
+        } else if (pathname === '/api/bootstrap') {
+            payload = { branches: [{ id: 98201, name: 'QA Main Branch', status: 'active' }], sections: [] };
+        } else if (pathname === '/api/dashboard') {
+            payload = { stats: { total: 125, active: 98, expiringSoon: 8, expired: 12, frozen: 7 }, alerts: [] };
+        } else if (pathname === '/api/saas/subscription') {
+            payload = { subscription: { status: 'active', plan: { code: 'business', name: plan.name }, startedAt: '2026-01-01' } };
+        }
+
+        return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
+    });
+
+    return { writes, thirdParty, setAnalyticsMode: (mode) => { analyticsMode = mode; } };
+}
+
+test.describe('Dashboard V2 visual continuation (read-only)', () => {
+    test('preserves dashboard information and fits the locale/theme/viewport matrix', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'The complete 7-width × 2-locale × 2-theme matrix is captured once in the desktop project.');
+        test.setTimeout(120_000);
+
+        const runtime = await installReadOnlyDashboardFixture(page);
+        const pageErrors = [];
+        const consoleErrors = [];
+        page.on('pageerror', (error) => pageErrors.push(error.message));
+        page.on('console', (message) => {
+            if (message.type() === 'error' && !message.text().includes('ERR_BLOCKED_BY_CLIENT') && !message.text().includes('503 (Service Unavailable)')) consoleErrors.push(message.text());
+        });
+
+        await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
+        await page.evaluate(() => window.topGymAppUsable);
+        await expect(page.locator('#dashboardSection .dashboard-hero')).toBeVisible({ timeout: 15000 });
+        // Apply the canonical page stylesheet in this disposable source-QA page.
+        // The generated shell bundle is outside this task's permitted write set.
+        await page.addStyleTag({ path: path.resolve(process.cwd(), 'public/css/pages/dashboard.css') });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await expect(page.locator('#dashboardSection [data-skeleton-region="dashboard-stats"] .stat-card')).toHaveCount(5);
+        for (const [selector, expected] of [['#statTotal', '125'], ['#statActive', '98'], ['#statExpiring', '8'], ['#statExpired', '12'], ['#statFrozen', '7']]) {
+            const displayed = await page.locator(selector).innerText();
+            expect(normalizeLocalizedDigits(displayed)).toBe(expected);
+        }
+        await expect(page.locator('.dashboard-hero-buttons [data-page-tab-link="members"]')).toBeVisible();
+
+        await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
+        const matrix = [];
+        const localizationGaps = new Map();
+        const touchTargetGaps = new Map();
+        const runtimeStateGaps = [];
+        for (const width of WIDTHS) {
+            await page.setViewportSize({ width, height: width <= 390 ? 844 : 1000 });
+            for (const locale of LOCALES) {
+              for (const theme of THEMES) {
+                await page.evaluate((mode) => {
+                    document.documentElement.dataset.theme = mode;
+                    document.body.dataset.theme = mode;
+                    window.scrollTo(0, 0);
+                }, theme);
+                await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), locale);
+                await page.evaluate(() => document.fonts.ready);
+                for (const [selector, expected] of [['#statTotal', '125'], ['#statActive', '98'], ['#statExpiring', '8'], ['#statExpired', '12'], ['#statFrozen', '7']]) {
+                    expect(normalizeLocalizedDigits(await page.locator(selector).innerText()), `${width}px ${locale}/${theme}: locale switch changed dashboard data`).toBe(expected);
+                }
+
+                const localeState = await page.evaluate(() => {
+                    const root = document.querySelector('#dashboardSection');
+                    const isVisible = (element) => {
+                        const style = getComputedStyle(element);
+                        const box = element.getBoundingClientRect();
+                        return style.display !== 'none' && style.visibility !== 'hidden' && box.width > 0 && box.height > 0;
+                    };
+                    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                    const untranslatedArabic = [];
+                    while (walker.nextNode()) {
+                        const node = walker.currentNode;
+                        const text = node.nodeValue.trim();
+                        const owner = node.parentElement;
+                        const isFormattedAmount = /^[\d\s.,٬٫٠-٩\u066b\u066c]*(?:ج\.م|EGP)?$/i.test(text);
+                        if (text && !isFormattedAmount && /[\u0621-\u064a]/.test(text) && owner && isVisible(owner) && !owner.closest('[data-i18n]')) untranslatedArabic.push({ key: null, text, selector: owner.id ? `#${owner.id}` : `${owner.tagName.toLowerCase()}.${String(owner.className?.baseVal || owner.className || '').trim().replace(/\s+/g, '.')}` });
+                    }
+                    return {
+                        locale: window.TopGymI18n.get(),
+                        htmlLang: document.documentElement.lang,
+                        bodyLang: document.body.lang,
+                        htmlDir: document.documentElement.dir,
+                        bodyDir: document.body.dir,
+                        untranslatedArabic
+                    };
+                });
+                expect(localeState.locale).toBe(locale);
+                expect(localeState.htmlDir).toBe(locale === 'ar' ? 'rtl' : 'ltr');
+                expect(localeState.bodyDir).toBe(locale === 'ar' ? 'rtl' : 'ltr');
+                expect(localeState.htmlLang).toBe(locale);
+                expect(localeState.bodyLang).toBe(localeState.htmlLang);
+                if (locale === 'en') {
+                    localeState.untranslatedArabic.forEach((gap) => localizationGaps.set(`${gap.selector}|${gap.text}`, gap));
+                }
+
+                const layout = await page.evaluate(() => {
+                    const dashboard = document.querySelector('#dashboardSection');
+                    const hero = dashboard.querySelector('.dashboard-hero');
+                    const stats = [...dashboard.querySelectorAll('[data-skeleton-region="dashboard-stats"] .stat-card')];
+                    const actionButtons = [...dashboard.querySelectorAll('.dashboard-hero-buttons .btn')].filter((button) => getComputedStyle(button).display !== 'none');
+                    const rect = (element) => {
+                        const box = element.getBoundingClientRect();
+                        return { left: box.left, right: box.right, width: box.width, height: box.height };
+                    };
+                    const statBoxes = stats.map(rect);
+                    return {
+                        viewport: document.documentElement.clientWidth,
+                        documentWidth: document.documentElement.scrollWidth,
+                        bodyWidth: document.body.scrollWidth,
+                        direction: getComputedStyle(dashboard).direction,
+                        theme: document.documentElement.dataset.theme,
+                        locale: document.documentElement.dataset.locale,
+                        dashboard: rect(dashboard),
+                        hero: rect(hero),
+                        heroChildren: [...hero.children].map((element) => ({
+                            className: element.className,
+                            height: rect(element).height,
+                            scrollHeight: element.scrollHeight
+                        })),
+                        heroColumns: getComputedStyle(hero).gridTemplateColumns,
+                        statCount: stats.length,
+                        statGridColumns: getComputedStyle(dashboard.querySelector('[data-skeleton-region="dashboard-stats"]')).gridTemplateColumns,
+                        statGrid: rect(dashboard.querySelector('[data-skeleton-region="dashboard-stats"]')),
+                        statBoxes,
+                        actionCount: actionButtons.length,
+                        actionBoxes: actionButtons.map(rect),
+                        miniStatsColumns: getComputedStyle(dashboard.querySelector('.dashboard-hero-mini-stats')).gridTemplateColumns.split(' ').length,
+                        miniStats: [...dashboard.querySelectorAll('.dashboard-hero-mini-stat')].map((item) => ({
+                            text: item.innerText.trim(),
+                            clientHeight: item.clientHeight,
+                            scrollHeight: item.scrollHeight,
+                            gridColumn: getComputedStyle(item).gridColumn
+                        }))
+                    };
+                });
+
+                expect(layout.documentWidth, `${width}px ${theme}: document horizontal overflow`).toBeLessThanOrEqual(width);
+                expect(layout.bodyWidth, `${width}px ${theme}: body horizontal overflow`).toBeLessThanOrEqual(width);
+                expect(layout.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
+                expect(layout.theme).toBe(theme);
+                expect(layout.locale).toBe(locale);
+                expect(layout.hero.width).toBeGreaterThan(0);
+                expect(layout.hero.height).toBeGreaterThan(0);
+                expect(layout.statCount).toBe(5);
+                expect(
+                    layout.statBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1),
+                    `${width}px ${locale}/${theme}: dashboard stat cards exceed the viewport (grid=${layout.statGridColumns}, parent=${JSON.stringify(layout.statGrid)}): ${JSON.stringify(layout.statBoxes)}`
+                ).toBeTruthy();
+                expect(layout.actionCount).toBeGreaterThanOrEqual(2);
+                expect(layout.actionBoxes.every((box) => box.width > 0 && box.height >= 38 && box.left >= -1 && box.right <= width + 1)).toBeTruthy();
+                expect(layout.miniStats).toHaveLength(3);
+                expect(layout.miniStatsColumns).toBe(width <= 360 ? 2 : 3);
+                if (width <= 360) expect(layout.miniStats[2].gridColumn).toBe('1 / -1');
+
+                const visibleControls = await page.locator('#dashboardSection button:visible, #dashboardSection a:visible, #dashboardSection input:visible, #dashboardSection select:visible').evaluateAll((elements) => elements.map((element) => {
+                    const box = element.getBoundingClientRect();
+                    return {
+                        label: element.getAttribute('aria-label') || element.innerText.trim() || element.getAttribute('title') || '',
+                        height: box.height,
+                        left: box.left,
+                        right: box.right,
+                        top: box.top,
+                        bottom: box.bottom,
+                        hasAccessibleName: Boolean(element.getAttribute('aria-label') || element.innerText.trim() || element.getAttribute('title') || element.labels?.length)
+                    };
+                }));
+                expect(visibleControls.every((control) => control.hasAccessibleName), `${width}px ${locale}/${theme}: unnamed dashboard controls`).toBeTruthy();
+                if (width <= 1024) expect(visibleControls.filter((control) => control.height < 44), `${width}px ${locale}/${theme}: undersized touch targets`).toEqual([]);
+                const controlOverlaps = visibleControls.flatMap((a, index) => visibleControls.slice(index + 1)
+                    .filter((b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1)
+                    .map((b) => [a.label, b.label]));
+                expect(controlOverlaps, `${width}px ${locale}/${theme}: overlapping dashboard controls`).toEqual([]);
+
+                if ([320, 768, 1440].includes(width)) {
+                    const memberShortcut = page.locator('.dashboard-hero-buttons [data-page-tab-link="members"]');
+                    await memberShortcut.focus();
+                    await page.keyboard.press('Tab');
+                    const focusState = await page.evaluate(() => ({
+                        insideDashboard: Boolean(document.activeElement?.closest('#dashboardSection')),
+                        visibleRing: document.activeElement?.matches(':focus-visible') === true
+                    }));
+                    expect(focusState.insideDashboard, `${width}px ${locale}/${theme}: keyboard focus left Dashboard unexpectedly`).toBeTruthy();
+                    expect(focusState.visibleRing, `${width}px ${locale}/${theme}: keyboard focus indicator missing`).toBeTruthy();
+                    await page.evaluate(() => window.scrollTo(0, 0));
+                }
+
+                const states = await page.locator('#dashboardSection .loading:visible, #dashboardSection .empty:visible, #dashboardSection [role="alert"]:visible, #dashboardSection .error:visible').allTextContents();
+                matrix.push({ width, theme, locale, localeState, visibleControls, states, ...layout });
+                await page.screenshot({ path: path.join(SCREENSHOT_DIR, `dashboard-${width}-${locale}-${theme}.png`), fullPage: true });
+                await page.screenshot({ path: path.join(SCREENSHOT_DIR, `dashboard-${width}-${locale}-${theme}-viewport.png`), fullPage: false });
+              }
+            }
+        }
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
+        await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; document.body.dataset.theme = 'light'; });
+        runtime.setAnalyticsMode('loading');
+        await page.evaluate(() => { void window.topGymRefreshDashboardAnalytics?.(); });
+        await expect(page.locator('#dashboardAnalyticsLoading')).toBeVisible();
+        await page.locator('#dashboardAnalyticsLoading').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-analytics-loading-1440-ar-light-viewport.png'), fullPage: false });
+        await page.locator('#dashboardAnalytics').screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-analytics-loading-1440-ar-light.png') });
+        await expect(page.locator('#dashboardAnalyticsLoading')).toBeHidden();
+        runtime.setAnalyticsMode('error');
+        await page.evaluate(() => { void window.topGymRefreshDashboardAnalytics?.(); });
+        await expect(page.locator('#dashboardAnalytics .analytics-error')).toBeVisible();
+        await expect(page.locator('#dashboardAnalytics .analytics-error')).toHaveText('تعذر تحميل التحليلات.');
+        const periodText = (await page.locator('#dashboardAnalyticsPeriod').innerText()).trim();
+        if (/loading analytics|جاري تحميل التحليلات/i.test(periodText)) {
+            runtimeStateGaps.push({ selector: '#dashboardAnalyticsPeriod', expectedState: 'localized error summary', actualText: periodText, cause: 'The central i18n annotation restores the loading label after the request enters its error state.' });
+        }
+        expect(periodText).toBe('تعذر تحميل التحليلات.');
+        await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
+        await expect(page.locator('#dashboardAnalytics .analytics-error')).toHaveText('Could not load analytics.');
+        await expect(page.locator('#dashboardAnalyticsPeriod')).toHaveText('Could not load analytics.');
+        await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
+        await expect(page.locator('#dashboardAnalytics .analytics-error')).toHaveText('تعذر تحميل التحليلات.');
+        const errorLayout = await page.locator('#dashboardAnalytics .analytics-error').evaluate((element) => ({
+            text: element.innerText.trim(),
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight
+        }));
+        const periodErrorLayout = await page.locator('#dashboardAnalyticsPeriod').evaluate((element) => ({
+            clientWidth: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight
+        }));
+        expect(errorLayout.scrollWidth).toBeLessThanOrEqual(errorLayout.clientWidth);
+        expect(errorLayout.scrollHeight).toBeLessThanOrEqual(errorLayout.clientHeight);
+        expect(periodErrorLayout.scrollWidth).toBeLessThanOrEqual(periodErrorLayout.clientWidth);
+        expect(periodErrorLayout.scrollHeight).toBeLessThanOrEqual(periodErrorLayout.clientHeight);
+        await fs.writeFile(path.join(SCREENSHOT_DIR, 'analytics-error-state.json'), JSON.stringify({ periodText, errorText: errorLayout.text, runtimeStateGaps }, null, 2));
+        if (/[A-Za-z]/.test(errorLayout.text)) localizationGaps.set(`analytics-error|${errorLayout.text}`, { key: null, locale: 'ar', state: 'error', selector: '#dashboardAnalytics .analytics-error', text: errorLayout.text });
+        await page.locator('#dashboardAnalytics .analytics-error').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-analytics-error-1440-ar-light-viewport.png'), fullPage: false });
+        await page.locator('#dashboardAnalytics').screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-analytics-error-1440-ar-light.png') });
+
+        expect(runtime.writes, 'The dashboard fixture must not perform any API writes.').toEqual([]);
+        expect(runtime.thirdParty.every((url) => {
+            const parsed = new URL(url);
+            return parsed.hostname === 'cdn.jsdelivr.net' && parsed.pathname.startsWith('/npm/sweetalert2@11');
+        }), `Only the existing SweetAlert CDN request may be attempted; all external requests are aborted by the fixture: ${runtime.thirdParty.join(', ')}`).toBe(true);
+        expect(pageErrors, 'Unexpected uncaught browser errors.').toEqual([]);
+        expect(consoleErrors, 'Unexpected browser console errors.').toEqual([]);
+        await fs.writeFile(path.join(SCREENSHOT_DIR, 'matrix.json'), JSON.stringify(matrix, null, 2));
+        const localizationGapList = [...localizationGaps.values()];
+        const touchTargetGapList = [...touchTargetGaps.values()];
+        await fs.writeFile(path.join(SCREENSHOT_DIR, 'localization-gaps.json'), JSON.stringify(localizationGapList, null, 2));
+        await fs.writeFile(path.join(SCREENSHOT_DIR, 'touch-target-gaps.json'), JSON.stringify(touchTargetGapList, null, 2));
+        await fs.writeFile(path.join(SCREENSHOT_DIR, 'runtime-state-gaps.json'), JSON.stringify(runtimeStateGaps, null, 2));
+        expect(touchTargetGapList, `Dashboard touch targets below 44px; see ${path.join(SCREENSHOT_DIR, 'touch-target-gaps.json')}`).toEqual([]);
+        expect(runtimeStateGaps, `Dashboard async state gaps; see ${path.join(SCREENSHOT_DIR, 'runtime-state-gaps.json')}`).toEqual([]);
+        expect(localizationGapList, `Visible dashboard text missing English localization; see ${path.join(SCREENSHOT_DIR, 'localization-gaps.json')}`).toEqual([]);
+    });
+});

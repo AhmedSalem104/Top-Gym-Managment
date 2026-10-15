@@ -1,6 +1,16 @@
 .saas-page {
     display: block;
-    direction: rtl;
+    color: var(--text-primary);
+}
+
+body .saas-page {
+    border-color: var(--border-primary);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+}
+
+body .saas-page-header h2,
+body .saas-panel h4 {
     color: var(--text-primary);
 }
 
@@ -11,6 +21,18 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--space-4);
+}
+
+body .saas-panel-head {
+    min-height: 44px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid var(--border-secondary);
+    background: transparent;
+    padding: 0 0 15px;
+}
+
+.saas-panel-head > div {
+    min-width: 0;
 }
 
 .saas-page-header {
@@ -203,6 +225,14 @@
 .saas-panel-head { margin-bottom: var(--space-4); }
 .saas-panel-head-inline { align-items: center; }
 .saas-panel-head-inline > select { flex: 0 0 150px; width: auto; }
+
+@media (max-width: 767px) {
+    body .saas-panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+}
 .saas-panel-badge {
     flex: 0 0 auto;
     border: 1px solid var(--primary-border);
@@ -225,9 +255,6 @@
 .saas-form-grid .field { min-width: 0; }
 .saas-form-grid .field-full { grid-column: 1 / -1; }
 .saas-form-grid label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
-.saas-form-grid input,
-.saas-form-grid select,
-.saas-form-grid textarea { width: 100%; }
 
 .saas-form-actions {
     display: flex;
@@ -243,27 +270,21 @@
 }
 
 .saas-table {
-    width: 100%;
     min-width: 720px;
     border-collapse: collapse;
-    color: var(--text-primary);
-    font-size: var(--font-sm);
 }
 
 .saas-table th,
 .saas-table td {
     padding: 11px 12px;
     border-bottom: 1px solid var(--border-secondary);
-    text-align: right;
+    text-align: start;
     vertical-align: middle;
     white-space: nowrap;
 }
 
 .saas-table th {
     background: var(--table-header-bg);
-    color: var(--text-secondary);
-    font-size: var(--font-xs);
-    font-weight: var(--weight-bold);
 }
 
 .saas-table tbody tr:last-child td { border-bottom: 0; }
@@ -356,7 +377,7 @@
 .saas-plan-card .btn { width: 100%; margin-top: auto; }
 
 .saas-plan-entitlements { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.saas-entitlement { border-radius: var(--radius-pill); padding: 4px 8px; font-size: var(--font-2xs); font-weight: 700; }
+.saas-entitlement { border-radius: var(--radius-pill); padding: 4px 8px; font-size: var(--font-2xs); font-weight: var(--weight-bold); }
 .saas-entitlement.is-enabled { background: var(--success-soft); color: var(--success-text); }
 .saas-entitlement.is-disabled { background: var(--border-secondary); color: var(--text-muted); }
 
@@ -376,8 +397,8 @@
 }
 
 .saas-feature-grid > .saas-muted { grid-column: 1 / -1; }
-.saas-feature-toggle { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 6px; color: var(--text-secondary) !important; cursor: pointer; }
-.saas-feature-toggle input { width: 15px !important; height: 15px; accent-color: var(--primary); }
+.saas-feature-toggle { display: flex; min-height: var(--control-height-medium); align-items: center; gap: var(--space-2); color: var(--text-secondary); cursor: pointer; }
+.saas-feature-toggle input[type="checkbox"] { flex: 0 0 auto; accent-color: var(--primary); }
 
 .saas-admin-plan-card .saas-plan-edit .saas-inline-input { min-width: 0; width: 100%; }
 
@@ -443,7 +464,7 @@
     width: min(100%, 1800px);
     max-width: 1800px;
     margin-inline: auto;
-    gap: 20px;
+    gap: var(--space-5);
 }
 
 .saas-billing-page .saas-page-header {
@@ -466,7 +487,7 @@
 .saas-summary-card {
     min-height: 92px;
     padding: 15px 16px;
-    border-radius: 14px;
+    border-radius: var(--radius-card);
     background: var(--bg-card);
     box-shadow: var(--shadow-sm);
 }
@@ -475,12 +496,12 @@
 .saas-summary-card-top .saas-status { min-height: 24px; padding: 3px 8px; }
 .saas-summary-card strong { font-size: clamp(17px, 1.5vw, 22px); }
 .saas-summary-card p { line-height: 1.45; }
-.saas-summary-progress { height: 6px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: var(--border-secondary); }
-.saas-summary-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--info)); }
+.saas-summary-progress { height: 6px; margin-top: 10px; overflow: hidden; border-radius: var(--radius-pill); background: var(--border-secondary); }
+.saas-summary-progress span { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
 
 .saas-billing-grid {
     grid-template-columns: minmax(0, 1fr) minmax(500px, 1.08fr);
-    gap: 20px;
+    gap: var(--space-5);
     align-items: stretch;
 }
 
@@ -498,20 +519,20 @@
     min-height: 100%;
     grid-template-rows: auto auto 1fr auto;
     padding: 18px;
-    border-radius: 15px;
+    border-radius: var(--radius-card);
 }
 
 .saas-owner-plan-list .saas-plan-card.is-current::before {
     position: absolute;
     top: 12px;
     inset-inline-start: 12px;
-    content: "الباقة الحالية";
+    content: attr(data-current-label);
     border: 1px solid var(--success-border);
-    border-radius: 99px;
+    border-radius: var(--radius-pill);
     background: var(--success-soft);
     color: var(--success-text);
     padding: 4px 8px;
-    font-size: 10px;
+    font-size: var(--font-xs);
     font-weight: 800;
 }
 
@@ -560,7 +581,7 @@
     .saas-table tbody,
     .saas-table tr,
     .saas-table td { display: block; width: 100%; }
-    .saas-table tr { margin-bottom: 10px; padding: 12px; border: 1px solid var(--border-secondary); border-radius: 14px; background: var(--bg-card); box-shadow: var(--shadow-sm); }
+    .saas-table tr { margin-bottom: 10px; padding: 12px; border: 1px solid var(--border-secondary); border-radius: var(--radius-card); background: var(--bg-card); box-shadow: var(--shadow-sm); }
     .saas-table td { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border: 0; white-space: normal; text-align: start; }
     .saas-table td::before { flex: 0 0 92px; color: var(--text-muted); content: attr(data-label); font-size: var(--font-xs); font-weight: 700; }
     .saas-table td:last-child { justify-content: space-between; }
@@ -578,44 +599,20 @@
    composition: compact header, five-card summary, balanced workspace, and a
    quiet history surface. */
 .saas-billing-page {
-    --subscription-page: var(--bg-app);
-    --subscription-panel: var(--bg-card);
-    --subscription-panel-soft: var(--bg-surface);
-    --subscription-line: var(--border-secondary);
-    --subscription-muted: var(--text-muted);
-    --subscription-accent: var(--primary);
-    --subscription-accent-soft: var(--primary-soft);
     width: calc(100% - clamp(24px, 3vw, 64px));
     max-width: none;
     min-height: calc(100dvh - 24px);
     margin-inline: auto;
     padding: 18px 0 24px;
-    gap: 14px;
-    background: var(--subscription-page);
+    gap: var(--space-3);
+    background: var(--bg-app);
     border: 0;
     border-radius: 0;
     box-shadow: none;
 }
 
-html[data-theme="dark"] .saas-billing-page,
-body[data-theme="dark"] .saas-billing-page {
-    --subscription-page: #07172a;
-    --subscription-panel: #10233b;
-    --subscription-panel-soft: #0c1c31;
-    --subscription-line: rgba(136, 165, 202, .22);
-    --subscription-muted: #9aacc5;
-    --subscription-accent: #8b45f2;
-    --subscription-accent-soft: rgba(139, 69, 242, .14);
-    background:
-        radial-gradient(circle at 86% 0%, rgba(91, 62, 183, .13), transparent 28%),
-        linear-gradient(180deg, #08192e 0%, #07172a 100%);
-}
-
-/* visual-redesign.css is intentionally loaded after page layers. Keep the
-   subscription canvas itself as the final visual authority for this route. */
-.saas-billing-page { background: var(--subscription-page) !important; }
-html[data-theme="dark"] .saas-billing-page,
-body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg, #08192e 0%, #07172a 100%) !important; }
+/* Route composition keeps a neutral canvas; theme colors remain token-owned. */
+.saas-page.saas-billing-page { background: var(--bg-app); }
 
 .saas-billing-page .saas-page-header {
     align-items: flex-start;
@@ -627,13 +624,13 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 
 .saas-billing-page .saas-page-heading h3 {
     margin: 5px 0 4px;
-    font-size: clamp(22px, 1.9vw, 29px);
+    font-size: var(--font-size-page-title);
     letter-spacing: -.025em;
 }
 
 .saas-billing-page .saas-page-heading p {
     max-width: 620px;
-    font-size: 12px;
+    font-size: var(--font-sm);
     line-height: 1.6;
 }
 
@@ -648,72 +645,72 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 .saas-back-button {
     min-height: 34px;
     padding-inline: 12px;
-    border-color: color-mix(in srgb, var(--success) 55%, var(--subscription-line));
+    border-color: var(--success-border);
     color: var(--success);
-    background: color-mix(in srgb, var(--success-soft) 60%, transparent);
+    background: var(--success-soft);
 }
 
-.saas-back-button .ui-icon { width: 15px; height: 15px; }
+.saas-back-button .ui-icon { width: 16px; height: 16px; }
 
 .saas-breadcrumb {
     display: flex;
     align-items: center;
     gap: 7px;
-    color: var(--subscription-muted);
-    font-size: 11px;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
     white-space: nowrap;
 }
 
-.saas-breadcrumb b { color: var(--subscription-accent); font-size: 15px; line-height: 1; }
+.saas-breadcrumb b { color: var(--primary); font-size: var(--font-md); line-height: 1; }
 .saas-breadcrumb strong { color: var(--text-primary); font-weight: 700; }
 
 .saas-billing-page .saas-subscription-summary {
-    grid-template-columns: minmax(190px, 1fr) minmax(270px, 1.55fr) repeat(3, minmax(170px, 1fr));
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.55fr) repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
     margin: 0;
 }
 
 .saas-billing-page .saas-summary-card {
     min-height: 88px;
-    padding: 14px 16px;
-    background: var(--subscription-panel);
-    border: 1px solid var(--subscription-line);
-    border-radius: 13px;
-    box-shadow: 0 10px 26px rgba(1, 8, 20, .12);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
 }
 
-.saas-billing-page .saas-summary-card span { color: var(--subscription-muted); font-size: 11px; }
-.saas-billing-page .saas-summary-card strong { margin-top: 7px; font-size: clamp(17px, 1.35vw, 21px); }
-.saas-billing-page .saas-summary-card p { margin-top: 4px; color: var(--subscription-muted); font-size: 11px; }
+.saas-billing-page .saas-summary-card span { color: var(--text-muted); font-size: var(--font-xs); }
+.saas-billing-page .saas-summary-card strong { margin-top: 7px; font-size: var(--font-lg); }
+.saas-billing-page .saas-summary-card p { margin-top: 4px; color: var(--text-muted); font-size: var(--font-xs); }
 .saas-billing-page .saas-summary-card-top { gap: 6px; }
 .saas-billing-page .saas-summary-card-top .saas-status { min-height: 23px; padding: 3px 8px; }
-.saas-billing-page .saas-summary-progress { height: 5px; margin-top: 9px; background: color-mix(in srgb, var(--success) 20%, var(--subscription-line)); }
-.saas-billing-page .saas-summary-progress span { background: linear-gradient(90deg, #19c47b, #36e19b); }
+.saas-billing-page .saas-summary-progress { height: 5px; margin-top: 9px; background: color-mix(in srgb, var(--success) 20%, var(--border-secondary)); }
+.saas-billing-page .saas-summary-progress span { background: var(--success); }
 
 .saas-billing-page .saas-billing-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 14px;
+    gap: var(--space-3);
     align-items: stretch;
 }
 
 .saas-billing-page .saas-panel {
     padding: 18px;
-    background: var(--subscription-panel);
-    border: 1px solid var(--subscription-line);
-    border-radius: 14px;
-    box-shadow: 0 14px 32px rgba(1, 8, 20, .14);
+    background: var(--bg-card);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-sm);
 }
 
 .saas-billing-page .saas-plans-panel,
 .saas-billing-page .saas-request-panel { min-height: 354px; }
 .saas-billing-page .saas-panel-head { align-items: flex-start; gap: 12px; margin-bottom: 13px; }
-.saas-billing-page .saas-panel-head h4 { margin-top: 4px; font-size: 18px; }
-.saas-billing-page .saas-panel-head p { max-width: 530px; font-size: 11px; line-height: 1.55; }
-.saas-billing-page .saas-panel-badge { padding: 4px 8px; font-size: 10px; }
+.saas-billing-page .saas-panel-head h4 { margin-top: 4px; font-size: var(--font-lg); }
+.saas-billing-page .saas-panel-head p { max-width: 530px; font-size: var(--font-size-secondary); line-height: 1.6; }
+.saas-billing-page .saas-panel-badge { padding: 4px 8px; font-size: var(--font-xs); }
 
 .saas-billing-page .saas-owner-plan-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--space-2);
     height: calc(100% - 66px);
 }
 
@@ -721,15 +718,15 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     min-height: 260px;
     gap: 10px;
     padding: 14px;
-    background: var(--subscription-panel-soft);
-    border: 1px solid var(--subscription-line);
-    border-radius: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
 }
 
 .saas-billing-page .saas-plan-card-heading {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
+    gap: var(--space-2);
     min-width: 0;
 }
 
@@ -739,48 +736,49 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     height: 34px;
     flex: 0 0 34px;
     place-items: center;
-    border: 1px solid color-mix(in srgb, var(--subscription-accent) 42%, var(--subscription-line));
-    border-radius: 10px;
-    background: var(--subscription-accent-soft);
-    color: var(--subscription-accent);
+    border: 1px solid var(--primary-border);
+    border-radius: var(--radius-md);
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
 .saas-billing-page .saas-plan-card-icon .ui-icon { width: 18px; height: 18px; }
-.saas-billing-page .saas-plan-card h5 { padding-inline: 0; font-size: 16px; }
-.saas-billing-page .saas-plan-card-heading .saas-muted { display: block; margin-top: 3px; font-size: 10px; line-height: 1.45; }
-.saas-billing-page .saas-plan-price { color: var(--subscription-accent); font-size: 19px; }
-.saas-billing-page .saas-plan-price small { font-size: 10px; }
-.saas-billing-page .saas-plan-limits { gap: 4px; padding: 2px 0 5px; font-size: 11px; }
+.saas-billing-page .saas-plan-card h5 { padding-inline: 0; font-size: var(--font-lg); }
+.saas-billing-page .saas-plan-card-heading .saas-muted { display: block; margin-top: 3px; font-size: var(--font-size-secondary); line-height: 1.5; }
+.saas-billing-page .saas-plan-price { color: var(--primary); font-size: var(--font-xl); }
+.saas-billing-page .saas-plan-price small { font-size: var(--font-xs); }
+.saas-billing-page .saas-plan-limits { gap: var(--space-1); padding: 2px 0 5px; font-size: var(--font-xs); }
 .saas-billing-page .saas-plan-limits strong { color: var(--text-primary); }
 
 .saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current {
-    border-color: color-mix(in srgb, var(--subscription-accent) 78%, #fff 0%);
-    background: color-mix(in srgb, var(--subscription-accent-soft) 58%, var(--subscription-panel-soft));
+    border-color: var(--primary-border);
+    background: var(--primary-soft);
 }
 
 .saas-billing-page .saas-owner-plan-list .saas-plan-card.is-selected {
-    border-color: var(--subscription-accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--subscription-accent) 22%, transparent), 0 14px 26px color-mix(in srgb, var(--subscription-accent) 13%, transparent);
+    border-color: var(--primary);
+    box-shadow: var(--focus-ring);
 }
 
 .saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current::before {
     top: 10px;
-    inset-inline-start: 10px;
+    inset-inline-start: auto;
+    inset-inline-end: 10px;
     padding: 3px 7px;
-    border-color: color-mix(in srgb, var(--subscription-accent) 55%, var(--subscription-line));
-    background: var(--subscription-accent-soft);
-    color: color-mix(in srgb, var(--subscription-accent) 75%, #fff);
-    font-size: 9px;
+    border-color: var(--primary-border);
+    background: var(--primary-soft);
+    color: var(--primary-active);
+    font-size: var(--font-xs);
 }
 
-.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current h5 { padding-inline-start: 74px; }
-.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current .btn { background: var(--subscription-accent); color: #fff; }
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current h5 { padding-inline-end: 74px; }
+.saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current .btn { background: var(--primary); color: var(--text-on-primary); }
 .saas-billing-page .saas-plan-entitlements { display: none; }
-.saas-billing-page .saas-plan-card .btn { min-height: 36px; font-size: 11px; }
+.saas-billing-page .saas-plan-card .btn { min-height: var(--control-height-medium); }
 
 .saas-billing-page .saas-requests-panel { margin-top: 0; }
 .saas-billing-page .saas-requests-panel .saas-panel-head { margin-bottom: 10px; }
-.saas-billing-page .saas-table-wrap { border-color: var(--subscription-line); }
+.saas-billing-page .saas-table-wrap { border-color: var(--border-secondary); }
 
 @media (max-width: 1279px) {
     .saas-billing-page .saas-subscription-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -811,7 +809,7 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     .saas-breadcrumb { justify-self: end; }
     .saas-billing-page .saas-subscription-summary { gap: 9px; }
     .saas-billing-page .saas-summary-card { min-height: 80px; padding: 12px; }
-    .saas-billing-page .saas-summary-card strong { font-size: 17px; }
+    .saas-billing-page .saas-summary-card strong { font-size: var(--font-lg); }
     .saas-billing-page .saas-panel { padding: 14px; }
     .saas-billing-page .saas-panel-head { flex-direction: column; gap: 7px; }
     .saas-billing-page .saas-panel-badge { align-self: flex-start; }
@@ -823,7 +821,25 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     .saas-billing-page { width: calc(100% - 20px); padding-top: 10px; }
     .saas-billing-page .saas-subscription-summary { grid-template-columns: 1fr; }
     .saas-billing-page .saas-summary-status { grid-column: auto; }
-    .saas-billing-page .saas-page-heading h3 { font-size: 22px; }
+    .saas-billing-page .saas-table { width: 100%; }
+    .saas-billing-page .saas-table.table-card-layout > tbody > tr {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .saas-billing-page .saas-table td {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+        justify-content: stretch;
+        gap: 3px;
+    }
+    .saas-billing-page .saas-table.table-card-layout > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+        gap: var(--space-1);
+    }
+    .saas-billing-page .saas-table td::before { flex: initial; }
+    .saas-billing-page .saas-table td > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+    .saas-billing-page .saas-table td .saas-status { justify-self: start; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -833,17 +849,17 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 /* Current plan and payment proof polish: one source of truth for plans and a
    clear, touch-friendly upload surface. */
 .saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current .btn-current-plan {
-    min-height: 38px;
-    border: 1px solid color-mix(in srgb, var(--subscription-accent) 50%, var(--subscription-line));
-    background: var(--subscription-accent-soft);
-    color: var(--subscription-accent);
+    min-height: var(--control-height-medium);
+    border: 1px solid var(--primary-border);
+    background: var(--primary-soft);
+    color: var(--primary-active);
     cursor: default;
     opacity: 1;
 }
 
 .saas-billing-page .saas-owner-plan-list .saas-plan-card:not(.is-current) .btn-light:hover {
-    border-color: var(--subscription-accent);
-    color: var(--subscription-accent);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 /* Full-width plan comparison with feature-led cards. */
@@ -865,9 +881,9 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 .saas-billing-page .saas-owner-plan-list .saas-plan-card {
     min-height: 100%;
     grid-template-rows: auto auto auto 1fr auto;
-    gap: 14px;
-    padding: 20px;
-    background: linear-gradient(180deg, var(--subscription-panel-soft), color-mix(in srgb, var(--subscription-panel) 82%, var(--subscription-panel-soft)));
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--bg-surface);
 }
 
 .saas-billing-page .saas-owner-plan-list .saas-plan-card.is-current {
@@ -877,15 +893,15 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 .saas-billing-page .saas-plan-features {
     min-width: 0;
     padding-top: 4px;
-    border-top: 1px solid var(--subscription-line);
+    border-top: 1px solid var(--border-secondary);
 }
 
 .saas-billing-page .saas-plan-features-title {
     display: block;
     margin-bottom: 9px;
     color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 800;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
 }
 
 .saas-billing-page .saas-plan-features > ul {
@@ -903,15 +919,15 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
     align-items: center;
     gap: 7px;
     color: var(--text-secondary);
-    font-size: 11px;
+    font-size: var(--font-size-secondary);
     line-height: 1.45;
 }
 
 .saas-billing-page .saas-plan-feature-check {
     display: inline-grid;
-    width: 19px;
-    height: 19px;
-    flex: 0 0 19px;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
     place-items: center;
     border: 1px solid color-mix(in srgb, var(--success) 62%, transparent);
     border-radius: 50%;
@@ -923,19 +939,19 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 
 .saas-billing-page .saas-plan-feature-empty {
     grid-column: 1 / -1;
-    color: var(--subscription-muted);
+    color: var(--text-muted);
 }
 
 .saas-billing-page .saas-plan-action-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--space-4);
     margin-bottom: 12px;
     padding: 12px 16px;
-    border: 1px solid var(--subscription-line);
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--subscription-panel) 82%, var(--subscription-accent-soft));
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-card);
+    background: var(--bg-card);
 }
 
 .saas-billing-page .saas-plan-action-bar > div {
@@ -944,8 +960,8 @@ body[data-theme="dark"] .saas-billing-page { background: linear-gradient(180deg,
 }
 
 .saas-billing-page .saas-plan-action-bar span {
-    color: var(--subscription-muted);
-    font-size: 11px;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
 }
 
 .saas-billing-page .saas-plan-action-bar strong {

@@ -81,7 +81,10 @@ async function assertLoginSurface(page) {
     expect(metrics.card.height, JSON.stringify(metrics)).toBeLessThan(650);
     expect(metrics.submitGap, JSON.stringify(metrics)).toBeGreaterThanOrEqual(12);
     expect(metrics.submitGap).toBeLessThanOrEqual(32);
-    expect(metrics.submitHeight).toBeGreaterThanOrEqual(54);
+    // Design System V2 Large controls are 44px; the former 54px threshold
+    // belonged to the retired login styling and rejected the approved V2 CTA.
+    expect(metrics.submitHeight).toBeGreaterThanOrEqual(44);
+    expect(metrics.submitHeight).toBeLessThanOrEqual(48);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -110,6 +113,26 @@ test('login keeps its shared theme toggle accessible and visually stable on mobi
     const toggleAccent = await toggle.evaluate((element) => getComputedStyle(element, '::before').backgroundImage);
     expect(toggleAccent).not.toContain('124, 58, 237');
     await page.screenshot({ path: testInfo.outputPath('login-390-after-toggle.png'), fullPage: false });
+});
+
+test('V2 Arabic and English fonts are self-hosted and selected by script direction', async ({ page }) => {
+    const fontState = await page.evaluate(async () => {
+        await Promise.all([
+            document.fonts.load('400 14px Tajawal', 'مرحبا بعودتك'),
+            document.fonts.load('400 14px "Geist Variable"', 'Logic Fit English')
+        ]);
+        return {
+            arabicFamily: getComputedStyle(document.querySelector('.auth-form-heading h2')).fontFamily,
+            englishFamily: getComputedStyle(document.querySelector('#loginEmail')).fontFamily,
+            tajawalLoaded: document.fonts.check('400 14px Tajawal', 'مرحبا بعودتك'),
+            geistLoaded: document.fonts.check('400 14px "Geist Variable"', 'Logic Fit English')
+        };
+    });
+
+    expect(fontState.arabicFamily).toContain('Tajawal');
+    expect(fontState.englishFamily).toContain('Geist Variable');
+    expect(fontState.tajawalLoaded).toBe(true);
+    expect(fontState.geistLoaded).toBe(true);
 });
 
 test('public registration offers only gym and independent trainer paths', async ({ page }) => {

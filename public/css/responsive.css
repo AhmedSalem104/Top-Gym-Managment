@@ -272,11 +272,16 @@
 
 
   .page-header,
-.section-heading,
 .members-toolbar,
 .toolbar{
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-3);
   }
 
   .page-header-actions,
@@ -453,6 +458,17 @@ table{
 .page .store-card,
 .page .dashboard-store-summary{
     box-shadow: var(--shadow-card);
+  }
+}
+
+/* Canonical compact-screen reflow for shared form and content grids. */
+@media (max-width: 767px) {
+  body .form-grid,
+  body .field-grid,
+  body .two-column-grid,
+  body .content-grid-two,
+  body .dashboard-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -723,6 +739,53 @@ table{
     grid-template-columns: minmax(64px, 42%) minmax(0, 1fr);
     align-items: center;
     gap: var(--space-2);
+  }
+
+  /* Library rows contain long names plus several compound numeric cells.
+     Use a single vertical record card, and stack each cell label above its
+     value instead of squeezing the wide table into two narrow columns. */
+  .table-card-layout.library-data-table > tbody > tr {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .table-card-layout.library-data-table > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-1);
+  }
+
+  /* Account-management records carry a mix of status, identity and multiple
+     row actions; keep them as one-column smart records instead of forcing the
+     generic two-column table-card layout. */
+  .table-card-layout.auth-users-table > tbody > tr {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  .table-card-layout.auth-users-table > tbody > tr > td:not(.mobile-card-primary):not(.mobile-card-actions):not([colspan]) {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(76px, 30%) minmax(0, 1fr);
+  }
+
+  .table-card-layout.auth-users-table > tbody > tr > td.mobile-card-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(76px, 30%) minmax(0, 1fr);
+  }
+
+  .table-card-layout.auth-users-table .auth-user-primary strong {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .table-card-layout.auth-users-table .auth-user-primary small {
+    text-align: start;
+    overflow-wrap: anywhere;
+  }
+
+  .table-card-layout.auth-users-table .auth-user-actions {
+    justify-content: flex-start;
   }
 
   .table-card-layout > tbody > tr > td.mobile-card-actions{

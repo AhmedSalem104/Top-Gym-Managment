@@ -63,8 +63,8 @@
             function printBrandVariables() {
                 const config = branding();
                 const theme = config.themes?.light || {};
-                const primary = safeBrandHex(theme.primary, '#7C3AED');
-                const hover = safeBrandHex(theme.primaryHover, '#6D28D9');
+                const primary = safeBrandHex(theme.primary, '#0070F3');
+                const hover = safeBrandHex(theme.primaryHover, '#0061DD');
                 const text = safeBrandHex(theme.textPrimary, '#172033');
                 const muted = safeBrandHex(theme.textMuted, '#718096');
                 const border = safeBrandHex(theme.border, '#D9E2EF');
@@ -74,7 +74,7 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" data-top-gym-print-fonts href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"><link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=5') + '">' + printBrandVariables();
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=5') + '">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = 'إدارة الجيم') {
@@ -188,7 +188,7 @@
                     <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
                 const printHeader = `<header class="print-header">${printBrandMarkup('إدارة العضويات والاشتراكات')}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
                 const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipAccessInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet${mode === 'full' ? ' print-member-full' : ''}">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipAccessInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {
@@ -371,7 +371,53 @@
             }
 
             async function waitForPrintWindowFonts(printWindow) {
-                if (printWindow?.document?.fonts?.ready) await printWindow.document.fonts.ready;
+                const printDocument = printWindow?.document;
+                if (!printDocument?.head) return;
+
+                const stylesheet = printDocument.querySelector('[data-top-gym-print-styles]');
+                if (stylesheet && !stylesheet.sheet) {
+                    await new Promise((resolve) => {
+                        let settled = false;
+                        const finish = () => {
+                            if (settled) return;
+                            settled = true;
+                            clearTimeout(timeout);
+                            stylesheet.removeEventListener('load', finish);
+                            stylesheet.removeEventListener('error', finish);
+                            resolve();
+                        };
+                        const timeout = window.setTimeout(finish, 1200);
+                        stylesheet.addEventListener('load', finish, { once: true });
+                        stylesheet.addEventListener('error', finish, { once: true });
+                    });
+
+                    if (!stylesheet.sheet) {
+                        try {
+                            const response = await fetch(stylesheet.href, { credentials: 'same-origin' });
+                            if (!response.ok) throw new Error('Print stylesheet could not be loaded.');
+                            const inlineStyles = printDocument.createElement('style');
+                            inlineStyles.dataset.topGymPrintStylesFallback = '';
+                            inlineStyles.textContent = await response.text();
+                            const base = printDocument.createElement('base');
+                            base.href = new URL('/', window.location.href).href;
+                            stylesheet.remove();
+                            printDocument.head.prepend(base);
+                            printDocument.head.append(inlineStyles);
+                        } catch {
+                            // Printing the generated document is preferable to
+                            // leaving the user stuck if a stylesheet is unavailable.
+                            stylesheet.remove();
+                        }
+                    }
+                }
+
+                const fontsReady = printDocument.fonts?.ready;
+                if (fontsReady) {
+                    await Promise.race([
+                        fontsReady,
+                        new Promise((resolve) => window.setTimeout(resolve, 1800))
+                    ]);
+                }
             }
 
             function coachingReps(exercise) {

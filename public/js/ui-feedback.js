@@ -114,6 +114,8 @@
             originalHtml: button.innerHTML,
             originalDisabled: Boolean(button.disabled),
             originalMinWidth: button.style?.minWidth || '',
+            originalWidth: button.style?.width || '',
+            originalBoxSizing: button.style?.boxSizing || '',
             originalAriaLabel: button.getAttribute?.('aria-label'),
             originalLoading: button.getAttribute?.('data-loading'),
             originalFeedbackLoading: button.getAttribute?.('data-feedback-loading'),
@@ -128,7 +130,13 @@
         button.setAttribute('aria-busy', 'true');
         button.setAttribute('aria-label', loadingText);
         button.disabled = true;
-        if (rect?.width > 0 && !options.allowLayoutShift) button.style.minWidth = `${rect.width}px`;
+        if (rect?.width > 0 && !options.allowLayoutShift) {
+            // min-width alone is content-box sized, so replacing a text label
+            // with the spinner/feedback label can still widen the button by
+            // its padding and border. Lock the measured outer width instead.
+            button.style.boxSizing = 'border-box';
+            button.style.width = `${rect.width}px`;
+        }
         button.innerHTML = `<span class="logicfit-button-spinner" aria-hidden="true"></span><span class="logicfit-button-label"></span>`;
         button.querySelector('.logicfit-button-label').textContent = loadingText;
         announce(loadingText);
@@ -174,6 +182,8 @@
         else button.setAttribute('data-feedback-loading', record.originalFeedbackLoading);
         button.disabled = record.originalDisabled;
         button.style.minWidth = record.originalMinWidth;
+        button.style.width = record.originalWidth;
+        button.style.boxSizing = record.originalBoxSizing;
         if (record.originalAriaLabel == null) button.removeAttribute('aria-label');
         else button.setAttribute('aria-label', record.originalAriaLabel);
     }

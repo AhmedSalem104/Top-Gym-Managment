@@ -40,8 +40,20 @@ function resolvePublicFile(requestUrl) {
     const pathname = new URL(requestUrl, 'http://127.0.0.1').pathname;
     const routeFiles = new Map([
         ['/', 'index.html'],
+        ['/login', 'login.html'],
+        ['/login/', 'login.html'],
         ['/change-password', 'change-password.html'],
         ['/change-password/', 'change-password.html'],
+        ['/member-portal', 'member-portal.html'],
+        ['/member-portal/', 'member-portal.html'],
+        ['/register-gym', 'register-gym.html'],
+        ['/register-gym/', 'register-gym.html'],
+        ['/register-trainer', 'register-trainer.html'],
+        ['/register-trainer/', 'register-trainer.html'],
+        ['/platform-admin', 'platform-admin.html'],
+        ['/platform-admin/', 'platform-admin.html'],
+        ['/platform-admin-forbidden', 'platform-admin-forbidden.html'],
+        ['/platform-admin-forbidden/', 'platform-admin-forbidden.html'],
         ['/trainer-workspace', 'trainer-workspace.html'],
         ['/trainer-workspace/', 'trainer-workspace.html']
     ]);
@@ -56,6 +68,24 @@ const server = http.createServer((request, response) => {
     const pathname = new URL(request.url, 'http://127.0.0.1').pathname;
     if (pathname === '/api/health' || pathname === '/api/health/live') {
         return sendJson(response, 200, { status: 'ok', browserQa: true });
+    }
+    // The standalone login requests these two read-only public endpoints at
+    // boot. Keep the static visual harness self-contained and unauthenticated;
+    // authenticated workflow tests provide their own route fixtures.
+    if (request.method === 'GET' && pathname === '/api/auth/session') {
+        return sendJson(response, 200, { authenticated: false, user: null });
+    }
+    if (request.method === 'GET' && pathname === '/api/branding') {
+        return sendJson(response, 200, {});
+    }
+    if (request.method === 'GET' && pathname === '/api/phone/countries') {
+        return sendJson(response, 200, { countries: [{ isoCode: 'EG', dialCode: '+20', country: 'Egypt' }] });
+    }
+    if (request.method === 'GET' && pathname === '/api/saas/entitlements') {
+        return sendJson(response, 200, { tenantStatus: 'active', subscription: { status: 'active' }, entitlements: { features: {}, limits: {} } });
+    }
+    if (request.method === 'GET' && /^\/api\/public\/(gym|trainer)-registration\/catalog$/.test(pathname)) {
+        return sendJson(response, 200, { plans: [], paymentMethods: [] });
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
         response.writeHead(405, { Allow: 'GET, HEAD' });

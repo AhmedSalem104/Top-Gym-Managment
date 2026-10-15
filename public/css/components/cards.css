@@ -10,16 +10,16 @@ body .library-card,
 body .finance-card,
 body .attendance-card {
   min-width: 0;
-  border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius-card);
-  background: var(--rf-surface);
-  box-shadow: var(--rf-shadow-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 body .panel,
 body .content-card,
 body .shadow-panel {
-  padding: clamp(16px, 2vw, 24px);
+  padding: var(--space-4);
 }
 
 body .store-card,
@@ -28,23 +28,23 @@ body .saas-panel,
 body .platform-card,
 body .portal-tool-card,
 body .platform-kpi {
-  border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius-card);
-  background: var(--rf-surface);
-  box-shadow: var(--rf-shadow-sm);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
 body .branches-card,
 body .store-card,
 body .saas-panel {
-  padding: clamp(16px, 2vw, 24px);
+  padding: var(--space-4);
 }
 
 body .store-card:hover,
 body .branches-card:hover,
 body .saas-panel:hover {
-  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
-  box-shadow: var(--rf-shadow-md);
+  border-color: color-mix(in srgb, var(--primary) 33%, var(--border-primary));
+  box-shadow: var(--shadow-md);
 }
 
 @media (max-width: 767px) {
@@ -60,7 +60,7 @@ body .panel-header,
 body .card-header {
   min-height: 44px;
   margin-bottom: 18px;
-  border-bottom: 1px solid var(--rf-line-soft);
+  border-bottom: 1px solid var(--border-secondary);
   background: transparent;
   padding: 0 0 15px;
 }
@@ -82,13 +82,13 @@ body .card-header > div {
 
 body .panel-header h3,
 body .card-header h3 {
-  color: var(--rf-ink);
+  color: var(--text-primary);
   letter-spacing: -.025em;
 }
 
 body .panel-header p,
 body .card-header p {
-  color: var(--rf-muted);
+  color: var(--text-muted);
   line-height: 1.75;
 }
 
@@ -98,9 +98,8 @@ body .content-card:hover,
 body .stat-card:hover,
 body .management-card:hover,
 body .library-card:hover {
-  border-color: color-mix(in srgb, var(--rf-accent) 33%, var(--rf-line));
-  box-shadow: var(--rf-shadow-md);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 33%, var(--border-primary));
+  box-shadow: var(--shadow-md);
 }
 
 body .stat-card {
@@ -110,8 +109,8 @@ body .stat-card {
   min-height: 126px;
   gap: var(--space-3);
   overflow: hidden;
-  padding: 18px;
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  padding: var(--space-4);
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
 }
 
 body .stat-card::before {
@@ -120,28 +119,23 @@ body .stat-card::before {
   top: 0;
   height: 3px;
   border-radius: 0 0 999px 999px;
-  background: var(--rf-accent);
+  background: var(--primary);
   content: "";
 }
 
 body .stat-label {
-  color: var(--rf-muted);
-  font-size: .72rem;
-  font-weight: 800;
+  color: var(--text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
 }
 
 body .stat-value {
   display: block;
   min-width: 0;
-  color: var(--rf-ink);
+  color: var(--text-primary);
   font-size: clamp(1.5rem, 2.5vw, 2rem);
-  font-weight: 800;
+  font-weight: var(--weight-semibold);
   letter-spacing: -.04em;
-}
-
-.panel-footer,
-.card-footer {
-  border-top: 1px solid var(--border-color);
 }
 
 .stat-head,
@@ -252,8 +246,8 @@ body .stat-value {
   body .panel,
   body .content-card,
   body .shadow-panel {
-    border-radius: 15px;
-    padding: 15px;
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
   }
 
   body .panel-header,

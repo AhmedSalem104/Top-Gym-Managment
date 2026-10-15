@@ -19,11 +19,11 @@ body .popover {
   z-index: var(--z-dropdown);
   min-width: 180px;
   max-width: min(320px, calc(100vw - 24px));
-  border: 1px solid var(--rf-line);
-  border-radius: 13px;
-  background: var(--rf-surface-raised);
-  box-shadow: var(--rf-shadow-md);
-  color: var(--rf-ink-soft);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text-soft);
   padding: var(--space-2);
 }
 
@@ -90,7 +90,7 @@ body .popover {
 [data-dropdown-item] {
   display: flex;
   width: 100%;
-  min-height: 38px;
+  min-height: var(--ui-touch-target);
   align-items: center;
   gap: var(--space-2);
   border: 0;
@@ -103,12 +103,25 @@ body .popover {
 }
 
 .dropdown-item:hover,
+.dropdown-item:focus-visible,
 .action-menu button:hover,
+.action-menu button:focus-visible,
 .more-menu button:hover,
+.more-menu button:focus-visible,
 [data-dropdown-menu] button:hover,
-[data-dropdown-item]:hover {
+[data-dropdown-menu] button:focus-visible,
+[data-dropdown-item]:is(:hover, :focus-visible) {
   background: var(--color-primary-soft);
   color: var(--color-primary);
+}
+
+.dropdown-item:focus-visible,
+.action-menu button:focus-visible,
+.more-menu button:focus-visible,
+[data-dropdown-menu] button:focus-visible,
+[data-dropdown-item]:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
 }
 
 /* Member advanced actions keep the same compact menu, but each operation has

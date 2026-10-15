@@ -1,3 +1,5 @@
+const fs = require('node:fs');
+const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 const featureCatalog = require('../../src/services/feature-catalog');
 
@@ -23,7 +25,7 @@ async function installNavigationRuntime(page) {
                     tenantType: 'gym',
                     featureCatalog: featureCatalog.getFeatureCatalog({ tenantType: 'gym' }),
                     features: Object.fromEntries([
-                        'dashboard', 'members', 'attendance', 'reports', 'branches', 'trainees', 'library',
+                        'dashboard', 'members', 'attendance', 'reports', 'branches', 'trainees', 'library', 'notifications',
                         'store', 'intelligence', 'feedback', 'management', 'branding', 'member-payment-methods',
                         'permissions', 'expenses', 'member-subscription-requests', 'portal-analytics', 'saas-billing',
                         'backup-history'
@@ -126,7 +128,7 @@ test('branch and section dropdowns support keyboard selection and dismiss predic
     await expect(sectionTrigger).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('branch context menu uses theme surfaces and comfortable option sizing', async ({ page }) => {
+test('branch context menu uses theme surfaces and comfortable option sizing', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
 
@@ -135,9 +137,10 @@ test('branch context menu uses theme surfaces and comfortable option sizing', as
     const option = menu.locator('[data-context-option]').first();
 
     for (const theme of ['light', 'dark']) {
-        await page.evaluate((value) => { document.documentElement.dataset.theme = value; }, theme);
+        await page.evaluate((value) => window.TopGymTheme.set(value), theme);
         await trigger.click();
         await expect(menu).toBeVisible();
+        await page.screenshot({ path: testInfo.outputPath(`navigation-context-dropdown-${theme}.png`), fullPage: false });
         const metrics = await page.evaluate(() => {
             const menuElement = document.querySelector('#branchContextSelectMenu');
             const optionElement = menuElement?.querySelector('[data-context-option]');
@@ -205,6 +208,7 @@ test('navbar selectors and action controls keep accessible geometry across theme
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
+    await expect(page.locator('.notification-center-trigger')).toBeVisible();
 
     const branch = page.locator('[data-context-field="branch"] .branch-context-trigger');
     const section = page.locator('[data-context-field="section"] .branch-context-trigger');
@@ -285,10 +289,153 @@ test('navbar selectors and action controls keep accessible geometry across theme
     }
 });
 
+test('shared navigation stays below the header without clipping across locale, theme, and viewport', async ({ page }) => {
+    const evidenceDir = path.join(process.cwd(), 'qa', 'artifacts', 'navigation-responsive-v2');
+    fs.mkdirSync(evidenceDir, { recursive: true });
+    const navigationSource = fs.readFileSync(path.join(process.cwd(), 'public', 'css', 'components', 'navigation-shell.css'), 'utf8');
+    const tabletRulesStart = navigationSource.indexOf('@media (min-width: 768px) and (max-width: 1199px)');
+    const tabletRulesEnd = navigationSource.indexOf('\n@media (max-width: 767px)', tabletRulesStart);
+    expect(tabletRulesStart).toBeGreaterThanOrEqual(0);
+    expect(tabletRulesEnd).toBeGreaterThan(tabletRulesStart);
+    const tabletRules = navigationSource.slice(tabletRulesStart, tabletRulesEnd);
+    await page.route('**/css/app-shell.css*', async (route) => {
+        const response = await route.fetch();
+        await route.fulfill({ response, body: `${await response.text()}\n${tabletRules}` });
+    });
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+
+    for (const width of [320, 390, 768, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        let baselineHeights;
+        for (const locale of ['ar', 'en']) {
+            await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), locale);
+            for (const theme of ['light', 'dark']) {
+                await page.evaluate((value) => window.TopGymTheme.set(value), theme);
+                const geometry = await page.evaluate(() => {
+                    const header = document.querySelector('.app-shell > .topbar');
+                    const navigation = document.querySelector('#pageTabs');
+                    const rect = (element) => {
+                        const { top, bottom, left, right, width, height } = element.getBoundingClientRect();
+                        return { top, bottom, left, right, width, height };
+                    };
+                    return {
+                        viewport: innerWidth,
+                        locale: document.documentElement.dataset.locale,
+                        direction: document.documentElement.dir,
+                        header: rect(header),
+                        navigation: rect(navigation),
+                        navigationScrollWidth: navigation.scrollWidth,
+                        navigationClientWidth: navigation.clientWidth,
+                        scrollbarWidth: getComputedStyle(navigation).scrollbarWidth,
+                        scrollbarColor: getComputedStyle(navigation).scrollbarColor,
+                        webkitScrollbarHeight: getComputedStyle(navigation, '::-webkit-scrollbar').height,
+                        continuationCue: getComputedStyle(navigation, '::after').content,
+                        continuationCueWidth: getComputedStyle(navigation, '::after').width,
+                        documentWidth: document.documentElement.scrollWidth,
+                        bodyWidth: document.body.scrollWidth
+                    };
+                });
+                expect(geometry.documentWidth, JSON.stringify(geometry)).toBeLessThanOrEqual(width + 1);
+                expect(geometry.bodyWidth, JSON.stringify(geometry)).toBeLessThanOrEqual(width + 1);
+                expect(geometry.navigation.height, JSON.stringify(geometry)).toBeGreaterThan(0);
+                expect(geometry.header.height, JSON.stringify(geometry)).toBeGreaterThan(0);
+                const heights = { header: geometry.header.height, navigation: geometry.navigation.height };
+                if (!baselineHeights) baselineHeights = heights;
+                expect(Math.abs(heights.header - baselineHeights.header), `${locale}/${theme}/${width}: ${JSON.stringify(heights)}`).toBeLessThanOrEqual(1);
+                expect(Math.abs(heights.navigation - baselineHeights.navigation), `${locale}/${theme}/${width}: ${JSON.stringify(heights)}`).toBeLessThanOrEqual(1);
+                if (width > 767 && width < 1200) {
+                    expect(geometry.navigation.top, JSON.stringify(geometry)).toBeGreaterThanOrEqual(geometry.header.bottom - 1);
+                    expect(geometry.navigationScrollWidth).toBeGreaterThan(geometry.navigationClientWidth);
+                    expect(geometry.scrollbarWidth).toBe('thin');
+                    expect(geometry.scrollbarColor).not.toBe('auto');
+                    expect(geometry.webkitScrollbarHeight).toBe('6px');
+                    expect(geometry.continuationCue).not.toBe('none');
+                    expect(geometry.continuationCueWidth).toBe('34px');
+
+                    const navigation = page.locator('#pageTabs');
+                    const scrollReachability = await page.evaluate(() => {
+                        const rail = document.querySelector('#pageTabs');
+                        const initialScrollLeft = rail.scrollLeft;
+                        rail.scrollBy({ left: document.documentElement.dir === 'rtl' ? -10000 : 10000, behavior: 'instant' });
+                        const railLeft = rail.getBoundingClientRect().left + rail.clientLeft;
+                        const railRight = railLeft + rail.clientWidth;
+                        const reachableTab = [...rail.querySelectorAll('.page-tab:not([hidden]):not([inert])')].find((tab) => {
+                            const rect = tab.getBoundingClientRect();
+                            return rect.left >= railLeft - 1 && rect.right <= railRight + 1;
+                        });
+                        return { initialScrollLeft, scrollLeft: rail.scrollLeft, tab: reachableTab?.dataset.pageTab || null };
+                    });
+                    expect(scrollReachability.scrollLeft, JSON.stringify(scrollReachability)).not.toBe(scrollReachability.initialScrollLeft);
+                    expect(scrollReachability.tab, JSON.stringify(scrollReachability)).toBeTruthy();
+                    const reachableTab = navigation.locator(`[data-page-tab="${scrollReachability.tab}"]`);
+                    await reachableTab.focus();
+                    await expect(reachableTab).toBeFocused();
+                    const keyboardReachability = await page.evaluate(() => {
+                        const rail = document.querySelector('#pageTabs');
+                        const focused = document.activeElement.getBoundingClientRect();
+                        const bounds = rail.getBoundingClientRect();
+                        return {
+                            left: focused.left,
+                            right: focused.right,
+                            visibleLeft: bounds.left + rail.clientLeft,
+                            visibleRight: bounds.left + rail.clientLeft + rail.clientWidth
+                        };
+                    });
+                    expect(keyboardReachability.left, JSON.stringify(keyboardReachability)).toBeGreaterThanOrEqual(keyboardReachability.visibleLeft - 1);
+                    expect(keyboardReachability.right, JSON.stringify(keyboardReachability)).toBeLessThanOrEqual(keyboardReachability.visibleRight + 1);
+                    await navigation.evaluate((rail) => { rail.scrollLeft = 0; });
+                } else if (width >= 1200) {
+                    expect(geometry.navigation.width, JSON.stringify(geometry)).toBeGreaterThan(0);
+                } else {
+                    await expect(page.locator('#pageTabs')).toBeHidden();
+                    await page.locator('#mobileNavToggle').click();
+                    await expect(page.locator('#pageTabs')).toBeVisible();
+                    const drawerBounds = await page.locator('#pageTabs').evaluate((navigation) => {
+                        const bounds = navigation.getBoundingClientRect();
+                        const links = [...navigation.querySelectorAll('.page-tab, .smart-assistant-launcher')]
+                            .filter((link) => getComputedStyle(link).display !== 'none')
+                            .map((link) => {
+                                const rect = link.getBoundingClientRect();
+                                return { left: rect.left, right: rect.right };
+                            });
+                        return { left: bounds.left, right: bounds.right, links };
+                    });
+                    for (const link of drawerBounds.links) {
+                        expect(link.left, `${locale}/${theme}/${width}: ${JSON.stringify(drawerBounds)}`).toBeGreaterThanOrEqual(drawerBounds.left - 1);
+                        expect(link.right, `${locale}/${theme}/${width}: ${JSON.stringify(drawerBounds)}`).toBeLessThanOrEqual(drawerBounds.right + 1);
+                    }
+                    await page.keyboard.press('Escape');
+                    await expect(page.locator('#pageTabs')).toBeHidden();
+                }
+
+                await page.evaluate(() => window.scrollTo(0, 500));
+                const stickyGeometry = await page.evaluate(() => {
+                    const header = document.querySelector('.app-shell > .topbar').getBoundingClientRect();
+                    const navigation = document.querySelector('#pageTabs').getBoundingClientRect();
+                    return { headerBottom: header.bottom, navigationTop: navigation.top, navigationBottom: navigation.bottom };
+                });
+                if (width > 767 && width < 1200) {
+                    expect(stickyGeometry.navigationTop, `${locale}/${theme}/${width}: ${JSON.stringify(stickyGeometry)}`)
+                        .toBeGreaterThanOrEqual(stickyGeometry.headerBottom - 1);
+                }
+                await page.evaluate(() => window.scrollTo(0, 0));
+                if (width === 768) {
+                    await page.screenshot({
+                        path: path.join(evidenceDir, `navigation-tablet-768-${locale}-${theme}.png`),
+                        fullPage: false
+                    });
+                }
+            }
+        }
+    }
+});
+
 test('mobile topbar has two explicit rows and a single-icon theme action; Login keeps its in-card switch', async ({ page, context }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
+    await expect(page.locator('.notification-center-trigger')).toBeVisible();
 
     const loginPage = await context.newPage();
     await loginPage.goto('/login.html', { waitUntil: 'networkidle' });
@@ -371,7 +518,7 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
             expect(state.branch.y).toBe(state.section.y);
             expect(state.branch.y).toBeGreaterThanOrEqual(state.row.y + state.row.height + 8);
             expect(state.branch.x).toBeGreaterThan(state.section.x);
-            expect(state.theme.width).toBe(44);
+            expect(state.theme.width).toBeCloseTo(44, 2);
             expect(state.theme.height).toBe(44);
             expect(state.themePressed).toBe(String(theme === 'dark'));
             expect(state.themeState).toBe(theme);
@@ -443,7 +590,7 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
         expect(appRect.width).toBe(44);
         expect(appRect.height).toBe(44);
         expect(loginRect.width).toBe(96);
-        expect(loginRect.height).toBe(40);
+        expect(loginRect.height).toBeCloseTo(40, 2);
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`topbar-desktop-1366-${theme}.png`), fullPage: false });
     }

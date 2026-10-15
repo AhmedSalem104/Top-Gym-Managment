@@ -10,12 +10,12 @@
   justify-content: center;
   gap: var(--space-1);
   border: 1px solid transparent;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   padding: 3px var(--space-2);
   background: var(--color-surface-muted);
   color: var(--color-text-muted);
   font-size: var(--font-xs);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -31,9 +31,9 @@ body .saas-panel-badge {
   min-height: 26px;
   max-width: 100%;
   border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: .68rem;
-  font-weight: 800;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-medium);
   overflow-wrap: anywhere;
 }
 

@@ -6,8 +6,29 @@ textarea {
   font-family: var(--font-body);
 }
 
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../assets/fonts/geist-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Tajawal";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../assets/fonts/tajawal-arabic-400-normal.woff2") format("woff2");
+}
+
 body {
   font-size: var(--brand-base-font-size, 16px);
+}
+
+:lang(en),
+[dir="ltr"] {
+  font-family: var(--font-latin);
 }
 
 h1,
@@ -19,6 +40,10 @@ h6 {
   font-family: var(--font-heading, var(--font-body));
 }
 
+:where(.page-header, .section-heading, .panel-header) :is(h1, h2, h3) {
+  overflow-wrap: anywhere;
+}
+
 .ltr,
 [dir="ltr"],
 input[type="email"],
@@ -26,6 +51,7 @@ input[type="tel"],
 input[type="number"],
 input[type="date"],
 input[type="time"] {
+  font-family: var(--font-latin);
   direction: ltr;
   text-align: left;
 }
@@ -62,12 +88,33 @@ input[type="time"] {
 .page-title,
 .section-title {
   color: var(--color-text);
-  font-weight: var(--weight-extrabold);
+  font-weight: var(--weight-semibold);
   letter-spacing: -0.02em;
 }
 
+body .page-header h2,
+body .section-heading h2 {
+  color: var(--color-text);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+body .section-heading h3,
+body .members-panel h3 {
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+body .page-header p,
+body .section-heading p {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
 .page-title {
-  font-size: clamp(1.5rem, 2.4vw, 2.2rem);
+  font-size: var(--font-size-page-title);
   line-height: 1.25;
 }
 

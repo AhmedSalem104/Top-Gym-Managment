@@ -6,6 +6,8 @@
     let refreshTimer = null;
     let financeRequest = null;
     let financeData = null;
+    let financeLoadState = 'idle';
+    let financeErrorKind = 'load';
 
     function canReadFinance() {
         return window.topGymAuth?.isOwner?.() === true || window.topGymAuth?.hasPermission?.('finance.read') === true;
@@ -64,13 +66,86 @@
     }
 
     function money(value) {
-        return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+        return window.TopGymI18n?.format?.('currency', Number(value || 0), {
+            currency: 'EGP',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }) || `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     }
 
     function formatDate(value) {
         if (!value) return '—';
-        return new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' })
-            .format(new Date(`${String(value).slice(0, 10)}T00:00:00`));
+        return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { dateStyle: 'medium' })
+            || new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(`${String(value).slice(0, 10)}T00:00:00`));
+    }
+
+    function translate(key, fallback, params = {}) {
+        return window.TopGymI18n?.t?.(key, params) || fallback;
+    }
+
+    function setDynamicText(element, key, fallback, params = {}) {
+        if (!element) return;
+        element.dataset.i18nPreserve = 'true';
+        delete element.dataset.i18n;
+        element.textContent = translate(key, fallback, params);
+    }
+
+    function setExpenseListState(key, state, fallback, role = 'status') {
+        const list = $('monthlyExpensesList');
+        if (!list) return;
+        const message = document.createElement('span');
+        message.className = `monthly-expenses-empty monthly-expenses-${state}`;
+        message.dataset.i18nPreserve = 'true';
+        message.setAttribute('role', role);
+        message.textContent = translate(key, fallback);
+        list.replaceChildren(message);
+    }
+
+    function setFinanceSummaryUnavailable(key, fallback) {
+        const valueIds = [
+            'monthlySubscriptionsTotal', 'monthlyDayPassesTotal', 'monthlyExpensesTotal', 'monthlyNetTotal',
+            'monthlySubscriptionsSnapshotTotal', 'monthlyExpensesSnapshotTotal', 'monthlyNetSnapshotTotal'
+        ];
+        valueIds.forEach((id) => {
+            const element = $(id);
+            if (!element) return;
+            element.dataset.i18nPreserve = 'true';
+            delete element.dataset.i18n;
+            element.textContent = '—';
+        });
+        ['monthlySubscriptionsMeta', 'monthlyDayPassesMeta', 'monthlyExpensesMeta', 'monthlyNetMeta']
+            .forEach((id) => setDynamicText($(id), key, fallback));
+    }
+
+    function renderFinanceStatus() {
+        const status = $('monthlyFinanceStatus');
+        const period = $('monthlyFinancePeriod');
+        const snapshotPeriod = $('monthlyFinanceSnapshotPeriod');
+        if (financeLoadState === 'loading') {
+            if (!financeData) {
+                setFinanceSummaryUnavailable('expenses.state.loadingData', 'Loading finance data…');
+                setDynamicText(period, 'expenses.state.loading', 'Loading monthly finance…');
+                setDynamicText(snapshotPeriod, 'expenses.state.loading', 'Loading monthly finance…');
+                setExpenseListState('expenses.state.loadingExpenses', 'loading', 'Loading expenses…');
+            }
+            setDynamicText(status, 'expenses.state.refreshing', 'Updating monthly finance…');
+            return;
+        }
+        if (financeLoadState === 'error') {
+            setDynamicText(status, financeErrorKind === 'refresh' ? 'expenses.state.refreshFailed' : 'expenses.state.loadFailed', 'Update failed');
+            if (!financeData) {
+                setFinanceSummaryUnavailable('expenses.state.unavailable', 'Unavailable until finance data loads.');
+                setDynamicText(period, 'expenses.state.loadError', 'Monthly finance could not be loaded.');
+                setDynamicText(snapshotPeriod, 'expenses.state.loadError', 'Monthly finance could not be loaded.');
+                setExpenseListState('expenses.list.error', 'error', 'The expense list could not be loaded.', 'alert');
+            } else {
+                setExpenseListState('expenses.list.error', 'error', 'The expense list could not be loaded.', 'alert');
+            }
+            return;
+        }
+        if (financeLoadState === 'loaded') {
+            setDynamicText(status, 'expenses.state.updated', 'Updated just now');
+        }
     }
 
     function todayIso() {
@@ -186,33 +261,36 @@
         const periodDate = period.startDate
             ? new Date(`${period.startDate}T00:00:00Z`)
             : new Date();
-        const periodLabel = new Intl.DateTimeFormat('ar-EG', {
+        const periodLabel = window.TopGymI18n?.format?.('date', period.startDate || periodDate.toISOString(), {
             month: 'long',
             year: 'numeric'
-        }).format(periodDate);
+        }) || new Intl.DateTimeFormat('ar-EG', { month: 'long', year: 'numeric' }).format(periodDate);
         const subscriptions = data.subscriptions || {};
         const dayPasses = data.dayPasses || {};
         const expenses = data.expenses || {};
         const net = Number(data.net || 0);
 
+        setDynamicText($('monthlyFinancePeriod'), 'expenses.state.loading', 'Loading monthly finance…');
         $('monthlyFinancePeriod').textContent = periodLabel;
         $('monthlySubscriptionsTotal').textContent = money(subscriptions.total);
         if ($('monthlyDayPassesTotal')) $('monthlyDayPassesTotal').textContent = money(dayPasses.total);
         $('monthlyExpensesTotal').textContent = money(expenses.total);
         $('monthlyNetTotal').textContent = money(net);
         $('monthlyNetTotal').classList.toggle('negative', net < 0);
-        const actualCollectionHint = 'المبلغ المحصل فعليًا خلال الفترة';
-        $('monthlySubscriptionsMeta').textContent = `${Number(subscriptions.count || 0).toLocaleString('ar-EG')} عملية تحصيل · ${actualCollectionHint}`;
-        if ($('monthlyDayPassesMeta')) $('monthlyDayPassesMeta').textContent = dayPasses.count ? `${Number(dayPasses.count).toLocaleString('ar-EG')} حصة · تحصيل فعلي` : 'لا توجد حصص مسجلة';
-        $('monthlyExpensesMeta').textContent = expenses.count
-            ? `${Number(expenses.count).toLocaleString('ar-EG')} مصروف · مصروفات مسجلة خلال الفترة`
-            : 'لا توجد مصروفات مسجلة';
-        if ($('monthlyNetMeta')) $('monthlyNetMeta').textContent = Number(data.refunds || 0) > 0
-            ? 'التحصيل الفعلي − المصروفات − الاستردادات'
-            : 'التحصيل الفعلي − المصروفات';
-        $('monthlyFinanceStatus').textContent = 'محدث الآن';
+        const subscriptionCount = Number(subscriptions.count || 0);
+        const dayPassCount = Number(dayPasses.count || 0);
+        const expenseCount = Number(expenses.count || 0);
+        setDynamicText($('monthlySubscriptionsMeta'), 'expenses.summary.collectionCount', `${subscriptionCount.toLocaleString('ar-EG')} عملية تحصيل · المبلغ المحصل فعليًا خلال الفترة`, { count: subscriptionCount });
+        if ($('monthlyDayPassesMeta')) setDynamicText($('monthlyDayPassesMeta'), dayPassCount ? 'expenses.summary.dayPassCount' : 'expenses.summary.noDayPasses', dayPassCount ? `${dayPassCount.toLocaleString('ar-EG')} حصة · تحصيل فعلي` : 'لا توجد حصص مسجلة', { count: dayPassCount });
+        setDynamicText($('monthlyExpensesMeta'), expenseCount ? 'expenses.summary.expenseCount' : 'expenses.summary.noExpenses', expenseCount ? `${expenseCount.toLocaleString('ar-EG')} مصروف · مسجل خلال الفترة` : 'لا توجد مصروفات مسجلة', { count: expenseCount });
+        if ($('monthlyNetMeta')) setDynamicText($('monthlyNetMeta'), Number(data.refunds || 0) > 0 ? 'expenses.summary.netWithRefunds' : 'expenses.summary.net', Number(data.refunds || 0) > 0 ? 'التحصيل الفعلي − المصروفات − الاستردادات' : 'التحصيل الفعلي − المصروفات');
+        financeLoadState = 'loaded';
+        setDynamicText($('monthlyFinanceStatus'), 'expenses.state.updated', 'Updated just now');
 
-        if ($('monthlyFinanceSnapshotPeriod')) $('monthlyFinanceSnapshotPeriod').textContent = periodLabel;
+        if ($('monthlyFinanceSnapshotPeriod')) {
+            setDynamicText($('monthlyFinanceSnapshotPeriod'), 'expenses.state.loading', 'Loading monthly finance…');
+            $('monthlyFinanceSnapshotPeriod').textContent = periodLabel;
+        }
         if ($('monthlySubscriptionsSnapshotTotal')) $('monthlySubscriptionsSnapshotTotal').textContent = money(subscriptions.total);
         if ($('monthlyExpensesSnapshotTotal')) $('monthlyExpensesSnapshotTotal').textContent = money(expenses.total);
         if ($('monthlyNetSnapshotTotal')) {
@@ -221,26 +299,29 @@
         }
         const items = expenses.items || [];
         $('monthlyExpensesList').innerHTML = items.length
-            ? `<div class="monthly-expenses-list-head" aria-hidden="true"><span>البند والتاريخ</span><span>القيمة</span><span>الإجراءات</span></div>${items.map((item) => `<article class="monthly-expense-item"><div class="monthly-expense-copy"><strong title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong><span>${formatDate(item.expenseDate)}</span></div><span class="monthly-expense-amount">${money(item.amount)}</span></article>`).join('')}`
-            : '<span class="monthly-expenses-empty">لا توجد مصروفات مسجلة في الشهر الحالي.</span>';
+            ? `<div class="monthly-expenses-list-head" aria-hidden="true"><span>البند والتاريخ</span><span>القيمة</span><span>الإجراءات</span></div>${items.map((item) => `<article class="monthly-expense-item"><div class="monthly-expense-copy"><strong data-i18n-preserve title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</strong><span data-i18n-preserve>${formatDate(item.expenseDate)}</span></div><span class="monthly-expense-amount" data-i18n-preserve>${money(item.amount)}</span></article>`).join('')}`
+            : '';
+        if (!items.length) setExpenseListState('expenses.list.empty', 'empty', 'No expenses recorded this month.');
     }
 
     async function loadFinance() {
         if (!canReadFinance() || !isFinanceTabVisible()) return null;
         if (!$('monthlyFinanceCard')) return;
         if (financeRequest) return financeRequest;
-        $('monthlyFinanceStatus').textContent = 'جاري التحديث…';
+        financeLoadState = 'loading';
+        renderFinanceStatus();
         financeRequest = (async () => {
             try {
                 const response = window.topGymApi?.raw
                     ? await window.topGymApi.raw('/api/monthly-finance', { cache: 'no-store', headers: { Accept: 'application/json' } })
                     : await nativeFetch('/api/monthly-finance', { cache: 'no-store', headers: { Accept: 'application/json' } });
                 const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.error || 'تعذر تحميل الحسابات الشهرية.');
+                if (!response.ok) throw new Error(data.error || translate('expenses.state.loadError', 'Monthly finance could not be loaded.'));
                 renderFinance(data);
             } catch (error) {
-                $('monthlyFinanceStatus').textContent = 'تعذر التحديث';
-                $('monthlyExpensesList').innerHTML = `<span class="monthly-expenses-empty">${escapeHtml(error.message || 'تعذر تحميل الحسابات الشهرية.')}</span>`;
+                financeLoadState = 'error';
+                financeErrorKind = financeData ? 'refresh' : 'load';
+                renderFinanceStatus();
             } finally {
                 financeRequest = null;
             }
@@ -367,7 +448,16 @@
         });
         window.addEventListener('topgym:branch-context-changed', () => {
             financeData = null;
+            financeLoadState = 'idle';
             if (canReadFinance() && isFinanceTabVisible()) void loadFinance();
+        });
+        window.addEventListener('topgym:localechange', () => {
+            const previousState = financeLoadState;
+            const previousErrorKind = financeErrorKind;
+            if (financeData) renderFinance(financeData);
+            financeLoadState = previousState;
+            financeErrorKind = previousErrorKind;
+            renderFinanceStatus();
         });
     }
 

@@ -5,8 +5,10 @@
   const state = {
     catalog: null,
     paymentMethods: [],
+    history: [],
     loading: false,
     submitting: false,
+    feedbackTranslation: null,
     proofRecoveryRequestId: null,
     activationSeen: new Set(),
     requestScenario: null
@@ -44,60 +46,44 @@
   if (!elements.section || !elements.form) return;
 
   const today = () => new Date().toISOString().slice(0, 10);
+  const tr = (key, params) => window.TopGymI18n?.t?.(`memberPortal.subscription.${key}`, params) || key;
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-  const formatMoney = (value, currency = 'EGP') => `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${escapeHtml(currency)}`;
+  const locale = () => window.TopGymI18n?.get?.() === 'en' ? 'en-EG' : 'ar-EG';
+  const formatMoney = (value, currency = 'EGP') => window.TopGymI18n?.format?.('currency', number(value), { currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }) || `${number(value).toLocaleString(locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${escapeHtml(currency)}`;
   const formatDate = (value) => {
     if (!value) return '—';
     const raw = String(value).slice(0, 10);
     const parsed = new Date(`${raw}T00:00:00`);
-    return Number.isNaN(parsed.getTime()) ? escapeHtml(value) : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parsed);
+    return Number.isNaN(parsed.getTime()) ? escapeHtml(value) : (window.TopGymI18n?.format?.('date', raw, { day: '2-digit', month: '2-digit', year: 'numeric' }) || new Intl.DateTimeFormat(`${locale()}-u-ca-gregory`, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(parsed));
   };
-  const requestTypeLabel = (value) => ({ membership: 'اشتراك جديد', extension: 'تمديد العضوية', renewal: 'تجديد العضوية' }[value] || 'طلب عضوية');
-  const statusLabel = (value) => ({ pending: 'قيد المراجعة', approved: 'تم الاعتماد', rejected: 'مرفوض', cancelled: 'ملغي' }[value] || 'غير معروف');
-  const activationStoragePrefix = 'logicfit.portal.activation-seen.v1:';
-  const errorMessages = Object.freeze({
-    PAYMENT_PROOF_REQUIRED: 'أرفق إثبات الدفع قبل إرسال الطلب.',
-    PORTAL_SESSION_REQUIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
-    PORTAL_SESSION_EXPIRED: 'انتهت جلسة البوابة. أعد إدخال كود العضوية.',
-    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'لديك طلب اشتراك أو تمديد قيد المراجعة بالفعل. راجع حالته قبل إرسال طلب آخر.',
-    PAYMENT_METHOD_NOT_AVAILABLE: 'وسيلة الدفع المختارة لم تعد متاحة. حدّث البيانات وحاول مرة أخرى.',
-    MEMBERSHIP_PLAN_NOT_AVAILABLE: 'الباقة المختارة غير متاحة حاليًا.',
-    MEMBERSHIP_TYPE_NOT_AVAILABLE: 'نوع العضوية المختار غير متاح حاليًا.',
-    PAYMENT_PROOF_TOO_LARGE: 'حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.',
-    INVALID_PAYMENT_PROOF_TYPE: 'نوع الملف غير مسموح. استخدم صورة أو ملف PDF.',
-    PAYMENT_PROOF_SIGNATURE_MISMATCH: 'محتوى الملف لا يطابق نوعه المعلن.',
-    OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
-    MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.',
-    MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'تعذر الوصول إلى تخزين إثباتات الدفع حاليًا. حاول مرة أخرى لاحقًا.',
-    MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE: 'تعذر تأكيد حفظ طلب العضوية حاليًا. حدّث سجل الطلبات أولًا قبل إعادة المحاولة حتى لا يتكرر الطلب.',
-    MEMBER_SUBSCRIPTION_REQUEST_NOT_FOUND: 'طلب العضوية غير موجود أو لم يعد متاحًا. حدّث سجل الطلبات وحاول مرة أخرى.',
-    MEMBER_SUBSCRIPTION_REQUEST_LOCKED: 'تمت مراجعة هذا الطلب بالفعل. حدّث سجل الطلبات لمعرفة حالته الحالية.',
-    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED: 'تمت مراجعة هذا الطلب بالفعل. حدّث سجل الطلبات لمعرفة حالته الحالية.',
-    PORTAL_SESSION_MEMBER_INVALID: 'انتهت صلاحية جلسة البوابة. أعد إدخال كود العضوية ثم حاول مرة أخرى.',
-    MEMBERSHIP_SELECTION_REQUIRED: 'اختر الباقة ونوع العضوية قبل إرسال الطلب.',
-    PAYMENT_METHOD_REQUIRED: 'اختر وسيلة الدفع التي استخدمتها قبل إرسال الطلب.',
-    PAYMENT_DATE_REQUIRED: 'حدد تاريخ التحصيل الفعلي قبل إرسال الطلب.',
-    PAYMENT_DATE_IN_FUTURE: 'تاريخ التحصيل لا يمكن أن يكون في المستقبل.',
-    INVALID_PAYMENT_PROOF_SUBMISSION: 'تعذر قراءة إثبات الدفع. اختر ملفًا صحيحًا من الأنواع المسموحة ثم حاول مرة أخرى.',
-    MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED: 'نوع الطلب المختار غير متاح حاليًا.',
-    REVIEW_NOTES_REQUIRED: 'اكتب سبب الرفض قبل تأكيد رفض الطلب.',
-    PAYMENT_PROOF_UNAVAILABLE: 'إثبات الدفع غير متاح حاليًا. أعد رفعه أو حاول مرة أخرى لاحقًا.',
-    PAYMENT_PROOF_INTEGRITY_FAILED: 'تعذر التحقق من سلامة إثبات الدفع. أعد رفع الملف الأصلي.',
-    MEMBER_RENEWAL_REQUIRES_EXISTING: 'لا يمكن تقديم طلب تجديد قبل وجود عضوية سابقة. اختر اشتراكًا جديدًا إذا كانت هذه أول عضوية.',
-    MEMBERSHIP_FREEZE_ACTIVE: 'استأنف العضوية أولًا قبل تقديم طلب التجديد.',
-    MEMBERSHIP_START_OVERLAPS_CURRENT: 'تداخلت بداية الطلب مع العضوية الحالية. سيحوّل النظام العملية إلى «تمديد العضوية» لتبدأ بعد نهايتها.',
-    MEMBERSHIP_CURRENT_DATES_INVALID: 'تواريخ العضوية الحالية غير صالحة. تواصل مع إدارة الجيم لتحديثها.',
-    MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID: 'بيانات مدة العضوية غير صالحة. حدّث الصفحة وحاول مرة أخرى.',
-    STORAGE_NOT_CONFIGURED: 'رفع إثبات الدفع غير متاح حاليًا لأن التخزين الخاص غير مهيأ.'
+  const requestTypeLabel = (value) => ({ membership: tr('new'), extension: tr('extension'), renewal: tr('renewal') }[value] || tr('request'));
+  const statusLabel = (value) => tr(`status.${['pending', 'approved', 'rejected', 'cancelled'].includes(value) ? value : 'unknown'}`);
+  const errorTranslationKeys = Object.freeze({
+    PAYMENT_PROOF_REQUIRED: 'paymentProofRequired', PORTAL_SESSION_REQUIRED: 'portalSessionRequired', PORTAL_SESSION_EXPIRED: 'portalSessionExpired',
+    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'requestAlreadyPending', PAYMENT_METHOD_NOT_AVAILABLE: 'paymentMethodUnavailable',
+    MEMBERSHIP_PLAN_NOT_AVAILABLE: 'planUnavailable', MEMBERSHIP_TYPE_NOT_AVAILABLE: 'membershipTypeUnavailable', PAYMENT_PROOF_TOO_LARGE: 'paymentProofTooLarge',
+    INVALID_PAYMENT_PROOF_TYPE: 'invalidPaymentProofType', PAYMENT_PROOF_SIGNATURE_MISMATCH: 'paymentProofSignatureMismatch',
+    OBJECT_STORAGE_PROVIDER_NOT_CONFIGURED: 'paymentProofStorageNotConfigured', MEMBER_PAYMENT_PROOF_STORAGE_NOT_CONFIGURED: 'paymentProofStorageNotConfigured',
+    MEMBER_PAYMENT_PROOF_STORAGE_UNAVAILABLE: 'paymentProofStorageUnavailable', MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE: 'requestSaveUnconfirmed',
+    MEMBER_SUBSCRIPTION_REQUEST_NOT_FOUND: 'requestNotFound', MEMBER_SUBSCRIPTION_REQUEST_LOCKED: 'requestAlreadyReviewed',
+    MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED: 'requestAlreadyReviewed', PORTAL_SESSION_MEMBER_INVALID: 'portalSessionMemberInvalid',
+    MEMBERSHIP_SELECTION_REQUIRED: 'membershipSelectionRequired', PAYMENT_METHOD_REQUIRED: 'paymentMethodRequired', PAYMENT_DATE_REQUIRED: 'paymentDateRequired',
+    PAYMENT_DATE_IN_FUTURE: 'paymentDateInFuture', INVALID_PAYMENT_PROOF_SUBMISSION: 'invalidPaymentProofSubmission',
+    MEMBER_SUBSCRIPTION_REQUEST_TYPE_UNSUPPORTED: 'requestTypeUnsupported', REVIEW_NOTES_REQUIRED: 'reviewNotesRequired',
+    PAYMENT_PROOF_UNAVAILABLE: 'paymentProofUnavailable', PAYMENT_PROOF_INTEGRITY_FAILED: 'paymentProofIntegrityFailed',
+    MEMBER_RENEWAL_REQUIRES_EXISTING: 'renewalRequiresExisting', MEMBERSHIP_FREEZE_ACTIVE: 'membershipFreezeActive',
+    MEMBERSHIP_START_OVERLAPS_CURRENT: 'membershipStartOverlapsCurrent', MEMBERSHIP_CURRENT_DATES_INVALID: 'membershipCurrentDatesInvalid',
+    MEMBERSHIP_RENEWAL_SNAPSHOT_INVALID: 'membershipRenewalSnapshotInvalid', STORAGE_NOT_CONFIGURED: 'paymentProofStorageNotConfigured'
   });
+  const activationStoragePrefix = 'logicfit.portal.activation-seen.v1:';
 
   function safeError(payload, fallback, statusCode = 0) {
     const code = String(payload?.code || '').trim();
     const serverMessage = typeof payload?.error === 'string'
       ? payload.error.replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, 300)
       : '';
-    const message = errorMessages[code]
+    const message = (errorTranslationKeys[code] ? tr(`errors.${errorTranslationKeys[code]}`) : '')
       || (statusCode >= 400 && statusCode < 500 ? serverMessage : '')
       || fallback;
     const error = new Error(message || fallback);
@@ -106,12 +92,12 @@
     return error;
   }
 
-  async function requestJson(path, options = {}, fallback = 'تعذر تنفيذ الطلب. حاول مرة أخرى.') {
+  async function requestJson(path, options = {}, fallback = tr('requestFailed')) {
     let response;
     try {
       response = await fetch(path, { credentials: 'same-origin', ...options });
     } catch (_) {
-      const error = new Error('تعذر الاتصال بالخدمة حاليًا. تحقق من الاتصال وحاول مرة أخرى.');
+      const error = new Error(tr('networkError'));
       error.code = 'NETWORK_ERROR';
       throw error;
     }
@@ -120,11 +106,16 @@
     return payload;
   }
 
-  function setFeedback(message = '', type = '') {
+  function setFeedback(message = '', type = '', translation = null) {
     if (!elements.feedback) return;
-    elements.feedback.textContent = message;
+    state.feedbackTranslation = translation;
+    elements.feedback.textContent = translation ? tr(translation.key, translation.params) : message;
     elements.feedback.className = `portal-subscription-feedback${type ? ` ${type}` : ''}`;
-    elements.feedback.hidden = !message;
+    elements.feedback.hidden = !message && !translation;
+  }
+
+  function setFeedbackKey(key, type = '', params) {
+    setFeedback('', type, { key, params });
   }
 
   function activationKey(requestId) {
@@ -158,17 +149,17 @@
       .sort((first, second) => new Date(second.reviewedAt || second.updatedAt || 0).getTime() - new Date(first.reviewedAt || first.updatedAt || 0).getTime())[0];
     if (!approved || activationWasSeen(approved.id)) return;
     const membership = approved.membership || {};
-    const plan = [membership.plan, membership.type].filter(Boolean).join(' · ') || 'عضويتك الجديدة';
+    const plan = [membership.plan, membership.type].filter(Boolean).join(' · ') || tr('newMembership');
     const start = formatDate(membership.startDate);
     const end = formatDate(membership.endDate);
-    if (elements.activationMessage) elements.activationMessage.textContent = `${plan} — من ${start} حتى ${end}.`;
+    if (elements.activationMessage) elements.activationMessage.textContent = tr('activationDetails', { plan, start, end });
     markActivationSeen(approved.id);
     elements.activation.hidden = false;
     elements.activation.classList.remove('is-visible');
     window.requestAnimationFrame(() => elements.activation?.classList.add('is-visible'));
   }
 
-  function setBusy(button, busy, loadingText = 'جاري إرسال الطلب...') {
+  function setBusy(button, busy, loadingText = tr('sendingRequest')) {
     if (!button) return;
     if (window.topGymFeedback) {
       if (busy) window.topGymFeedback.start(button, { loadingText });
@@ -195,31 +186,25 @@
         option.hidden = option.value !== requestType;
       });
     }
-    const hint = elements.scenarioHint;
-    if (hint) {
-      hint.textContent = operation === 'blocked'
-        ? 'عضويتك مجمدة حاليًا. استأنفها من إدارة الجيم قبل طلب التمديد أو التجديد.'
-        : operation === 'extension'
-          ? 'تم اختيار تمديد العضوية تلقائيًا؛ ستبدأ المدة الجديدة بعد نهاية عضويتك الحالية.'
-          : operation === 'renewal'
-            ? 'تم اختيار تجديد العضوية تلقائيًا؛ ستبدأ من اليوم لأن العضوية الحالية منتهية.'
-            : 'تم اختيار الاشتراك الجديد؛ حدد تاريخ البداية المناسب لك.';
-      hint.classList.toggle('is-blocked', operation === 'blocked');
-    }
+    syncScenarioHint();
     syncRequestTypePresentation();
     syncSubmitState();
+  }
+
+  function syncScenarioHint() {
+    const hint = elements.scenarioHint;
+    if (!hint || !state.requestScenario) return;
+    const { operation } = state.requestScenario;
+    hint.textContent = tr(operation === 'blocked' ? 'frozenHint' : operation === 'extension' ? 'extensionScenario' : operation === 'renewal' ? 'renewalScenario' : 'newScenario');
+    hint.classList.toggle('is-blocked', operation === 'blocked');
   }
 
   function syncRequestTypePresentation() {
     const requestType = state.requestScenario?.requestType || elements.requestType?.value || 'membership';
     const isContinuation = ['extension', 'renewal'].includes(requestType);
-    if (elements.startDateLabel) elements.startDateLabel.textContent = requestType === 'extension' ? 'تاريخ بدء التمديد' : requestType === 'renewal' ? 'تاريخ بدء التجديد' : 'تاريخ البداية';
+    if (elements.startDateLabel) elements.startDateLabel.textContent = tr(requestType === 'extension' ? 'startExtension' : requestType === 'renewal' ? 'startRenewal' : 'startDate');
     if (elements.startDateHint) {
-      elements.startDateHint.textContent = requestType === 'extension'
-        ? 'يحدده النظام تلقائيًا ليبدأ بعد نهاية العضوية الحالية.'
-        : requestType === 'renewal'
-          ? 'يحدده النظام تلقائيًا من اليوم لأن العضوية الحالية منتهية.'
-        : 'يبدأ الاشتراك الجديد من التاريخ الذي تختاره.';
+      elements.startDateHint.textContent = tr(requestType === 'extension' ? 'extensionHint' : requestType === 'renewal' ? 'renewalHint' : 'newStartHint');
     }
     if (elements.startDate) {
       elements.startDate.disabled = isContinuation;
@@ -253,7 +238,7 @@
     const plans = state.catalog?.plans || [];
     elements.plan.innerHTML = plans.length
       ? plans.map((item) => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.label)}</option>`).join('')
-      : '<option value="">لا توجد باقات متاحة حاليًا</option>';
+      : `<option value="">${escapeHtml(tr('noPlans'))}</option>`;
     elements.plan.disabled = !plans.length;
     elements.plan.value = plans.some((item) => item.code === previous) ? previous : (plans[0]?.code || '');
   }
@@ -264,7 +249,7 @@
     const types = state.catalog?.types || [];
     elements.type.innerHTML = types.length
       ? types.map((item) => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.label)}</option>`).join('')
-      : '<option value="">لا توجد أنواع عضوية متاحة</option>';
+      : `<option value="">${escapeHtml(tr('noTypes'))}</option>`;
     elements.type.disabled = !types.length;
     elements.type.value = types.some((item) => item.code === previous) ? previous : (types[0]?.code || '');
   }
@@ -274,7 +259,7 @@
     const methods = state.paymentMethods;
     if (!methods.length) {
       elements.method.value = '';
-      elements.methodList.innerHTML = '<div class="portal-subscription-state">لم يفعّل هذا الجيم وسيلة دفع إلكترونية حاليًا. يجب على Owner إضافة وسيلة دفع من إعدادات هوية الجيم ثم نشر الهوية، وبعدها أعد تحميل الصفحة.</div>';
+      elements.methodList.innerHTML = `<div class="portal-subscription-state">${escapeHtml(tr('noPaymentMethods'))}</div>`;
       syncSubmitState();
       return;
     }
@@ -285,10 +270,10 @@
       <div class="portal-payment-method-choice">
         <label class="portal-payment-method-row">
           <input type="radio" name="portalPaymentMethod" value="${escapeHtml(item.id)}" ${String(item.id) === selected ? 'checked' : ''}>
-          <span class="portal-payment-method-copy"><strong>${escapeHtml(item.name || 'وسيلة دفع')}</strong>${item.recipientName ? `<small>${escapeHtml(item.recipientName)}</small>` : ''}${item.instructions ? `<small>${escapeHtml(item.instructions)}</small>` : ''}</span>
+          <span class="portal-payment-method-copy"><strong>${escapeHtml(item.name || tr('paymentMethod'))}</strong>${item.recipientName ? `<small>${escapeHtml(item.recipientName)}</small>` : ''}${item.instructions ? `<small>${escapeHtml(item.instructions)}</small>` : ''}</span>
           <span class="portal-payment-method-account" dir="ltr">${escapeHtml(item.accountReference || '—')}</span>
         </label>
-        <button class="btn btn-light btn-small portal-copy-payment" type="button" data-portal-copy-payment="${escapeHtml(item.id)}">نسخ رقم الحساب</button>
+        <button class="btn btn-light btn-small portal-copy-payment" type="button" data-portal-copy-payment="${escapeHtml(item.id)}">${escapeHtml(tr('copyAccount'))}</button>
       </div>`).join('');
     syncSubmitState();
   }
@@ -299,10 +284,24 @@
     const amount = plan && type ? state.catalog?.prices?.[plan.code]?.[type.code] : null;
     if (elements.summaryMembership) elements.summaryMembership.textContent = plan && type ? `${plan.label} · ${type.label}` : '—';
     if (elements.summaryStart) elements.summaryStart.textContent = ['extension', 'renewal'].includes(elements.requestType?.value)
-      ? 'يحدده النظام تلقائيًا'
+      ? tr('systemAfterVerify')
       : formatDate(elements.startDate?.value);
     if (elements.summaryPaymentDate) elements.summaryPaymentDate.textContent = formatDate(elements.paymentDate?.value);
-    if (elements.summaryAmount) elements.summaryAmount.innerHTML = amount == null ? 'سيحدده النظام بعد التحقق' : formatMoney(amount, state.catalog?.currency || 'EGP');
+    if (elements.summaryAmount) elements.summaryAmount.innerHTML = amount == null ? escapeHtml(tr('systemAfterVerify')) : formatMoney(amount, state.catalog?.currency || 'EGP');
+  }
+
+  function updateTenantPaymentCopy() {
+    const target = document.querySelector('#portalPaymentMethodsTitle')?.parentElement?.querySelector('p');
+    if (!target) return;
+    const brand = target.querySelector('[data-brand-text="brandName"]')?.textContent?.trim()
+      || window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
+    const marker = '__TENANT_BRAND__';
+    const localized = tr('currentGymBrand', { brand: marker });
+    const [before, after = ''] = localized.split(marker);
+    const brandNode = document.createElement('strong');
+    brandNode.setAttribute('data-brand-text', 'brandName');
+    brandNode.textContent = brand;
+    target.replaceChildren(document.createTextNode(before), brandNode, document.createTextNode(after));
   }
 
   function syncSubmitState() {
@@ -310,16 +309,17 @@
     const recoveryRequestId = Number(state.proofRecoveryRequestId);
     const isProofRecovery = Number.isInteger(recoveryRequestId) && recoveryRequestId > 0;
     const label = elements.submit.querySelector('span:not(.portal-spinner)');
-    if (label) label.textContent = isProofRecovery ? 'رفع إثبات الدفع' : 'إرسال طلب التفعيل';
+    if (label) label.textContent = tr(isProofRecovery ? 'uploadProof' : 'sendRequest');
     const scenarioBlocked = state.requestScenario?.resolved && state.requestScenario.canSubmit === false;
     elements.submit.disabled = state.submitting || scenarioBlocked || (!isProofRecovery && (!state.catalog?.plans?.length || !state.catalog?.types?.length || !state.paymentMethods.length));
   }
 
-  function renderHistory(items = []) {
+  function renderHistory(items = state.history, { localeRefresh = false } = {}) {
     if (!elements.history) return;
+    state.history = Array.isArray(items) ? items : [];
     if (!items.length) {
       hideActivation();
-      elements.history.innerHTML = '<div class="portal-subscription-state">لا توجد طلبات سابقة لهذا العضو.</div>';
+      elements.history.innerHTML = `<div class="portal-subscription-state">${escapeHtml(tr('noMemberRequests'))}</div>`;
       return;
     }
     elements.history.innerHTML = items.map((item) => {
@@ -327,44 +327,44 @@
       const pricing = item.pricing || {};
       const status = String(item.status || '').toLowerCase();
       const proofLabel = status === 'rejected'
-        ? 'تم رفض الطلب'
+        ? statusLabel('rejected')
         : status === 'cancelled'
-          ? 'تم إلغاء الطلب'
-          : item.proof?.verified
-            ? 'تم إرفاق إثبات الدفع والتحقق منه'
-            : 'بانتظار إثبات الدفع';
+          ? statusLabel('cancelled')
+          : item.proof?.verified ? tr('attachProof') : tr('waitingProof');
       const rejectionReason = String(item.reviewNotes ?? item.review_notes ?? '').trim();
       const reviewReason = status === 'rejected'
-        ? `<div class="portal-request-history-review" role="note"><strong>سبب الرفض</strong><span>${escapeHtml(rejectionReason || 'لم يتم تسجيل سبب إضافي.')}</span></div>`
+        ? `<div class="portal-request-history-review" role="note"><strong>${escapeHtml(tr('rejectionReason'))}</strong><span>${escapeHtml(rejectionReason || tr('noRejectionReason'))}</span></div>`
         : '';
       const proofRecovery = status === 'pending' && !item.proof?.verified
-        ? `<button class="btn btn-light btn-small portal-proof-retry" type="button" data-portal-proof-retry="${escapeHtml(item.id)}">رفع الإثبات</button>`
+        ? `<button class="btn btn-light btn-small portal-proof-retry" type="button" data-portal-proof-retry="${escapeHtml(item.id)}">${escapeHtml(tr('uploadProof'))}</button>`
         : '';
       return `<article class="portal-request-history-row">
-        <div class="portal-request-history-copy"><strong>طلب #${escapeHtml(item.id)} · ${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || 'عضوية')}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${proofLabel}</small>${reviewReason}</div>
+        <div class="portal-request-history-copy"><strong>${escapeHtml(tr('requestId', { id: item.id }))} · ${escapeHtml(requestTypeLabel(item.requestType))} · ${escapeHtml(membership.type || tr('membership'))}</strong><small>${formatDate(membership.startDate)} · ${formatMoney(pricing.amountDue, pricing.currency || 'EGP')} · ${escapeHtml(proofLabel)}</small>${reviewReason}</div>
         <div class="portal-request-history-actions"><span class="portal-request-history-status ${escapeHtml(status)}">${escapeHtml(statusLabel(status))}</span>${proofRecovery}</div>
       </article>`;
     }).join('');
-    showActivationFor(items);
+    if (!localeRefresh) showActivationFor(items);
   }
 
   async function loadHistory() {
-    const result = await requestJson('/api/member-portal/subscription-requests?page=1&pageSize=10', {}, 'تعذر تحميل سجل طلبات العضوية.');
-    renderHistory(result.requests || []);
+    const result = await requestJson('/api/member-portal/subscription-requests?page=1&pageSize=10', {}, tr('historyLoadFailed'));
+    state.history = result.requests || [];
+    renderHistory(state.history);
   }
 
   async function load() {
     if (state.loading) return;
     state.loading = true;
-    setFeedback('جاري تحميل الباقات ووسائل الدفع...', '');
+    setFeedbackKey('loading');
     try {
       const [catalog, methods, history] = await Promise.all([
-        requestJson('/api/member-portal/membership-catalog', {}, 'تعذر تحميل باقات العضوية.').then((result) => result),
-        requestJson('/api/member-portal/payment-methods', {}, 'تعذر تحميل وسائل الدفع الخاصة بالجيم.'),
-        requestJson('/api/member-portal/subscription-requests?page=1&pageSize=10', {}, 'تعذر تحميل سجل طلبات العضوية.')
+        requestJson('/api/member-portal/membership-catalog', {}, tr('plansLoadFailed')).then((result) => result),
+        requestJson('/api/member-portal/payment-methods', {}, tr('paymentMethodsLoadFailed')),
+        requestJson('/api/member-portal/subscription-requests?page=1&pageSize=10', {}, tr('historyLoadFailed'))
       ]);
       state.catalog = catalog;
       state.paymentMethods = Array.isArray(methods.paymentMethods) ? methods.paymentMethods : [];
+      state.history = history.requests || [];
       renderPlans();
       renderTypes();
       renderPaymentMethods();
@@ -383,11 +383,12 @@
       }
       syncRequestTypePresentation();
       updateSummary();
-      renderHistory(history.requests || []);
+      renderHistory(state.history);
       setFeedback('', '');
     } catch (error) {
-      setFeedback(error.message || 'تعذر تحميل بيانات الاشتراك.', 'error');
-      if (elements.history) elements.history.innerHTML = '<div class="portal-subscription-state">تعذر تحميل الطلبات. حاول تحديث الصفحة.</div>';
+      if (error.code && errorTranslationKeys[error.code]) setFeedbackKey(`errors.${errorTranslationKeys[error.code]}`, 'error');
+      else setFeedback(error.message || tr('subscriptionLoadFailed'), 'error');
+      if (elements.history) elements.history.innerHTML = `<div class="portal-subscription-state">${escapeHtml(tr('requestsLoadFailed'))}</div>`;
     } finally {
       state.loading = false;
       syncSubmitState();
@@ -408,12 +409,12 @@
         body: await file.arrayBuffer()
       });
     } catch (_) {
-      const error = new Error('تعذر الاتصال بالخدمة أثناء رفع إثبات الدفع. تحقق من الاتصال وحاول مرة أخرى.');
+      const error = new Error(tr('proofUploadNetworkError'));
       error.code = 'NETWORK_ERROR';
       throw error;
     }
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw safeError(payload, 'تعذر رفع إثبات الدفع.', response.status);
+    if (!response.ok) throw safeError(payload, tr('proofUploadFailed'), response.status);
     return payload;
   }
 
@@ -454,15 +455,15 @@
     if (!method?.accountReference) return;
     try {
       await copyText(method.accountReference);
-      setFeedback('تم نسخ رقم الحساب. أرفق إثبات الدفع بعد إتمام التحويل.', 'success');
+      setFeedbackKey('copySuccess', 'success');
     } catch (_) {
-      setFeedback('تعذر النسخ تلقائيًا. يمكنك تحديد رقم الحساب ونسخه يدويًا.', 'error');
+      setFeedbackKey('copyFailure', 'error');
     }
   });
   elements.proof?.addEventListener('change', () => {
     const file = elements.proof.files?.[0];
-    if (elements.proofName) elements.proofName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)}MB` : 'اختر صورة أو ملف إثبات التحويل — الحد الأقصى 4MB';
-    if (file && state.proofRecoveryRequestId) setFeedback('تم اختيار الملف. اضغط «رفع إثبات الدفع» لإكمال نفس الطلب.', '');
+    if (elements.proofName) elements.proofName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)}MB` : tr('proofHelp');
+    if (file && state.proofRecoveryRequestId) setFeedbackKey('proofSelectedForRetry');
     syncSubmitState();
   });
   elements.history?.addEventListener('click', (event) => {
@@ -471,12 +472,12 @@
     if (!trigger || !Number.isInteger(requestId) || requestId <= 0 || state.submitting) return;
     state.proofRecoveryRequestId = requestId;
     syncSubmitState();
-    setFeedback('اختر إثبات الدفع للطلب المحدد. لن يتم إنشاء طلب جديد.', '');
+    setFeedbackKey('selectProofForRetry');
     elements.proof?.click();
   });
   elements.refresh?.addEventListener('click', async () => {
-    if (window.topGymFeedback) window.topGymFeedback.start(elements.refresh, { loadingText: 'جاري تحديث الطلبات...' });
-    try { await loadHistory(); } catch (error) { setFeedback(error.message || 'تعذر تحديث الطلبات.', 'error'); }
+    if (window.topGymFeedback) window.topGymFeedback.start(elements.refresh, { loadingText: tr('loadingRequests') });
+    try { await loadHistory(); } catch (error) { setFeedback(error.message || tr('historyLoadFailed'), 'error'); }
     finally { window.topGymFeedback?.stop?.(elements.refresh); }
   });
   elements.activationDismiss?.addEventListener('click', () => {
@@ -489,16 +490,16 @@
     const recoveryRequestId = Number(state.proofRecoveryRequestId);
     const isProofRecovery = Number.isInteger(recoveryRequestId) && recoveryRequestId > 0;
     const file = elements.proof.files?.[0];
-    if (!file) { setFeedback('اختر إثبات الدفع أولًا.', 'error'); return; }
-    if (file.size > 4 * 1024 * 1024) { setFeedback('حجم إثبات الدفع أكبر من الحد المسموح وهو 4MB.', 'error'); return; }
-    if (!isProofRecovery && !selectedMethod()) { setFeedback('اختر وسيلة الدفع التي استخدمتها.', 'error'); return; }
-    if (!isProofRecovery && !elements.paymentDate?.value) { setFeedback('حدد تاريخ التحصيل الفعلي.', 'error'); elements.paymentDate?.focus(); return; }
+    if (!file) { setFeedbackKey('proofRequired', 'error'); return; }
+    if (file.size > 4 * 1024 * 1024) { setFeedbackKey('paymentProofTooLarge', 'error'); return; }
+    if (!isProofRecovery && !selectedMethod()) { setFeedbackKey('paymentMethodRequired', 'error'); return; }
+    if (!isProofRecovery && !elements.paymentDate?.value) { setFeedbackKey('paymentDateRequired', 'error'); elements.paymentDate?.focus(); return; }
     const isContinuation = ['extension', 'renewal'].includes(elements.requestType.value);
-    if (!isProofRecovery && !isContinuation && !elements.startDate.value) { setFeedback('حدد تاريخ بداية العضوية.', 'error'); elements.startDate.focus(); return; }
+    if (!isProofRecovery && !isContinuation && !elements.startDate.value) { setFeedbackKey('membershipStartDateRequired', 'error'); elements.startDate.focus(); return; }
     state.submitting = true;
     syncSubmitState();
     setFeedback('', '');
-    setBusy(elements.submit, true, isProofRecovery ? 'جاري رفع إثبات الدفع...' : 'جاري رفع الإثبات والتحقق منه...');
+    setBusy(elements.submit, true, tr(isProofRecovery ? 'uploadingProof' : 'uploadingAndVerifyingProof'));
     let requestId = isProofRecovery ? recoveryRequestId : null;
     let proofUploaded = false;
     try {
@@ -516,20 +517,20 @@
           method: 'POST',
           headers: { 'Idempotency-Key': randomIdempotencyKey() },
           body: formData
-        }, 'تعذر إرسال طلب العضوية الآن. تحقق من البيانات وإثبات الدفع، وحدّث سجل الطلبات قبل إعادة المحاولة.');
+        }, tr('requestSubmitFailed'));
         requestId = created.request?.id;
-        if (!requestId) throw new Error('تعذر تحديد طلب العضوية بعد إنشائه.');
+        if (!requestId) throw new Error(tr('createdRequestIdMissing'));
       }
-      if (isProofRecovery) setFeedback('جاري رفع إثبات الدفع والتحقق منه...', '');
+      if (isProofRecovery) setFeedbackKey('uploadingAndVerifyingProof');
       if (isProofRecovery) await uploadProof(requestId, file);
       proofUploaded = true;
       state.proofRecoveryRequestId = null;
       if (isProofRecovery) {
-        setFeedback('تم رفع إثبات الدفع بنجاح. سيظهر الطلب للمراجعة الآن.', 'success');
+        setFeedbackKey('proofUploadSuccess', 'success');
         elements.proof.value = '';
-        if (elements.proofName) elements.proofName.textContent = 'اختر صورة أو ملف إثبات التحويل — الحد الأقصى 4MB';
+        if (elements.proofName) elements.proofName.textContent = tr('proofHelp');
       } else {
-        setFeedback('تم استلام طلبك بنجاح. ستظهر حالته هنا بعد مراجعة إدارة الجيم.', 'success');
+        setFeedbackKey('requestSubmitSuccess', 'success');
         elements.form.reset();
         elements.startDate.value = today();
         elements.startDate.min = today();
@@ -544,10 +545,13 @@
       await loadHistory();
     } catch (error) {
       if (requestId && !proofUploaded) state.proofRecoveryRequestId = requestId;
-      const message = requestId && !proofUploaded
-        ? `${error.message || 'تعذر رفع إثبات الدفع.'} تم الاحتفاظ بالطلب الحالي؛ أعد اختيار الملف واضغط «رفع إثبات الدفع» دون إنشاء طلب جديد.`
-        : (error.message || 'تعذر إرسال الطلب. حاول مرة أخرى.');
-      setFeedback(message, 'error');
+      if (requestId && !proofUploaded) {
+        setFeedbackKey('proofRetryFailed', 'error', { error: error.message || tr('proofUploadFailed') });
+      } else if (error.code && errorTranslationKeys[error.code]) {
+        setFeedbackKey(`errors.${errorTranslationKeys[error.code]}`, 'error');
+      } else {
+        setFeedback(error.message || tr('requestSubmitFailed'), 'error');
+      }
     } finally {
       state.submitting = false;
       setBusy(elements.submit, false);
@@ -565,6 +569,30 @@
       return;
     }
     applyRequestScenario(event.detail || {});
+  });
+
+  window.addEventListener('topgym:localechange', () => {
+    syncScenarioHint();
+    if (state.feedbackTranslation && elements.feedback) {
+      elements.feedback.textContent = tr(state.feedbackTranslation.key, state.feedbackTranslation.params);
+    }
+    if (!state.catalog || state.loading) {
+      window.TopGymI18n?.annotateText?.(elements.section, 'memberPortal.');
+      window.TopGymI18n?.apply?.(elements.section);
+      return;
+    }
+    updateTenantPaymentCopy();
+    renderPlans();
+    renderTypes();
+    renderPaymentMethods();
+    syncRequestTypePresentation();
+    updateSummary();
+    renderHistory(state.history, { localeRefresh: true });
+    if (elements.proofName && !elements.proof?.files?.length) {
+      elements.proofName.textContent = tr('proofHelp');
+    }
+    window.TopGymI18n?.annotateText?.(elements.section, 'memberPortal.');
+    window.TopGymI18n?.apply?.(elements.section);
   });
 
   syncRequestTypePresentation();

@@ -138,8 +138,8 @@
 .phone-country-trigger:hover,
 .phone-country-trigger:focus-visible,
 .phone-country-trigger[aria-expanded="true"] {
-  border-color: var(--color-primary, #2563eb);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #2563eb) 12%, transparent);
+  border-color: var(--color-primary, #0070f3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #0070f3) 12%, transparent);
 }
 
 .phone-country-native-select {
@@ -167,10 +167,6 @@
   border-radius: 0.85rem;
   background: var(--color-surface, #fff);
   box-shadow: 0 14px 32px rgb(15 23 42 / 16%);
-}
-
-.phone-country-menu[hidden] {
-  display: none !important;
 }
 
 .phone-country-search {
@@ -210,7 +206,7 @@
 
 .phone-country-option:hover,
 .phone-country-option[aria-selected="true"] {
-  background: color-mix(in srgb, var(--color-primary, #2563eb) 10%, transparent);
+  background: color-mix(in srgb, var(--color-primary, #0070f3) 10%, transparent);
 }
 
 .phone-country-option-code {
@@ -251,8 +247,8 @@
 }
 
 .phone-number-control:focus-within {
-  border-color: var(--color-primary, #2563eb);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #2563eb) 12%, transparent);
+  border-color: var(--color-primary, #0070f3);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary, #0070f3) 12%, transparent);
 }
 
 .phone-number-control.is-invalid {

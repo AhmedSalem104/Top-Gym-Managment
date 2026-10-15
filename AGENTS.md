@@ -146,3 +146,20 @@ MOBILE IMPACT: NONE / UPDATED
 MOBILE BLUEPRINT: PASS / N/A
 UPDATED MOBILE DOCS: [files]
 ```
+
+## LOGIC FIT DESIGN SYSTEM V2 — MANDATORY UI RULES
+
+Logic Fit Design System V2 is the only approved visual design system. All future UI work must reuse its canonical tokens, components and patterns. Creating parallel design systems, legacy compatibility styling, arbitrary overrides, or duplicate visual component implementations is prohibited unless explicitly authorized. Update the owning component instead of introducing a new visual layer.
+
+- V2 identity is an original Geist/Vercel-inspired Logic Fit interface with Azure Blue `#0070F3`, Tajawal for Arabic, Geist Sans for English, one Lucide-compatible outline icon source, responsive Light/Dark themes, Arabic RTL and English LTR.
+- The canonical specification is [`docs/LOGIC_FIT_V2_DESIGN_SYSTEM.md`](docs/LOGIC_FIT_V2_DESIGN_SYSTEM.md). Read it before implementing or reviewing UI.
+- Every shared primitive has one canonical source. Reuse and extend that owner; do not create parallel Button, Table, Card, Modal, Alert, Dropdown, Navigation or token implementations.
+- CSS ownership lives in existing canonical component files and `public/css/tokens.css`. Do not add a global stylesheet, foundation layer, fix/override file or compatibility layer to mask a defect. Page CSS is allowed only for genuine feature composition; print CSS is allowed for print-only behavior.
+- Colors, semantic states, spacing, typography, borders, shadows, radii, elevations, icon sizes and control sizes must use the central tokens. Hardcoded values are permitted only for genuine content-specific/data visualization/brand artwork values that do not have a semantic token.
+- Do not use unnecessary `!important`, specificity escalation or cascade-order fixes. Never edit generated CSS/JS assets directly; edit their canonical sources and use the established build pipeline.
+- Check every UI change on Desktop, Tablet and Mobile. Mobile is an intentional composition, not a scaled desktop layout. Verify overflow, touch targets and safe areas.
+- Every new user-facing string must have Arabic and English presentation. New and modified components must support RTL and LTR using logical CSS properties; preserve machine values, API/domain codes and numeric/email/phone direction.
+- Visual changes must not alter APIs, routes, workflows, auth, permissions, data contracts, tenant/branch scope, or business logic. Preserve DOM IDs, data attributes and event hooks unless equivalence is demonstrated by tests.
+- Component changes require appropriate functional, visual, responsive, keyboard/accessibility and theme verification. Do not claim a screen or print output was verified without an actual browser/print artifact.
+- Before removing historical styling, map its consumers, migrate them, verify them, then remove only obsolete visual declarations. Never delete functional selectors, DOM hooks, generated source, or files with unknown consumers.
+- All Codex agents and delegated specialists must read these V2 rules and the canonical design specification before making UI changes. Parallel agents must have disjoint file ownership; the Lead integrates and reviews all changes.

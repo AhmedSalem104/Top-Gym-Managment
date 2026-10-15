@@ -39,7 +39,7 @@ test('membership types exposes delete action and removes an unused custom type a
         return json(route, {});
     });
 
-    await page.goto('/#management', { waitUntil: 'networkidle' });
+    await page.goto('/index.html#management', { waitUntil: 'networkidle' });
     await expect(page.locator('#managementSection')).toBeVisible();
     await page.locator('[data-open-dialog-button="membershipTypesButton"]').click();
 

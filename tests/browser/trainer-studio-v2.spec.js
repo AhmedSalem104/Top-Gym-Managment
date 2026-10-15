@@ -161,6 +161,8 @@ test('every exposed Trainer Studio route resolves to a supported surface', async
         if (route === 'goals') {
             await page.locator('[data-studio-open-goal-editor]').click();
             await expect(page.locator('[data-studio-goal-form]')).toBeVisible();
+            expect(await page.locator('[data-studio-goal-form] [name="goalType"] option').evaluateAll((options) => options.map((option) => option.value)))
+                .toEqual(['weight_loss', 'muscle_gain', 'strength', 'fitness', 'performance', 'custom']);
             await page.locator('[data-studio-cancel-goal-editor]').click();
         }
         if (route === 'templates') {

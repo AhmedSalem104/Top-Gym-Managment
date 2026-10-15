@@ -5,32 +5,81 @@
 
     const $ = (id) => document.getElementById(id);
     const filtersForm = $('memberFeedbackFilters');
+    const section = $('feedbackSection');
     const listElement = $('memberFeedbackList');
     const metaElement = $('memberFeedbackMeta');
     const paginationElement = $('memberFeedbackPagination');
-    const typeLabels = {
-        general: 'رأي عام',
-        problem: 'مشكلة',
-        complaint: 'شكوى',
-        suggestion: 'اقتراح',
-        feature_request: 'إضافة يحتاجها الجيم'
+    const state = { page: 1, pageSize: 10, controller: null, loading: false, view: 'loading', items: [], pagination: null };
+    const fallbackText = {
+        'feedback.value.unavailable': '—',
+        'feedback.error.description': 'حدثت مشكلة أثناء تحميل التقييمات. حاول مرة أخرى.'
     };
-    const state = { page: 1, pageSize: 10, controller: null, loading: false };
+    const t = (key, params) => window.TopGymI18n?.t?.(key, params) ?? fallbackText[key] ?? key;
+    const locale = () => window.TopGymI18n?.get?.() === 'en' ? 'en' : 'ar';
     const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
-    const typeLabel = (value) => value === 'feature_request' ? `إضافة يحتاجها ${brandName()}` : typeLabels[value] || value || '—';
-
-    const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+    const typeKeys = Object.freeze({
+        general: 'feedback.type.general',
+        problem: 'feedback.type.problem',
+        complaint: 'feedback.type.complaint',
+        suggestion: 'feedback.type.suggestion',
+        feature_request: 'feedback.type.featureRequest'
+    });
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>\'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
-    const formatNumber = (value) => Number(value || 0).toLocaleString('ar-EG');
+    const formatNumber = (value) => window.TopGymI18n?.format?.('number', Number(value || 0)) ?? String(Number(value || 0));
     const formatDateTime = (value) => {
-        if (!value) return '—';
+        if (!value) return t('feedback.value.unavailable');
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return window.TopGymI18n?.format?.('time', date.toISOString(), { dateStyle: 'medium', timeStyle: 'short' })
+            || new Intl.DateTimeFormat(locale() === 'en' ? 'en-EG' : 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
     };
+    const setText = (element, key, params) => { if (element) element.textContent = t(key, params); };
+    const setLabel = (id, key) => {
+        const label = section?.querySelector(`label:has(#${id})`);
+        if (!label) return;
+        const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.nodeValue.trim());
+        if (textNode) textNode.nodeValue = ` ${t(key)} `;
+    };
+
+    function applyStaticTranslations() {
+        if (!section) return;
+        setText(section.querySelector('.member-feedback-kicker'), 'feedback.kicker');
+        setText($('memberFeedbackTitle'), 'feedback.title');
+        setText(section.querySelector('[data-brand-template="feedbackDescription"]'), 'feedback.description');
+        setText($('memberFeedbackRefresh'), 'feedback.refresh');
+        setLabel('memberFeedbackRatingFilter', 'feedback.filter.rating');
+        setLabel('memberFeedbackTypeFilter', 'feedback.filter.type');
+        setLabel('memberFeedbackFromFilter', 'feedback.filter.from');
+        setLabel('memberFeedbackToFilter', 'feedback.filter.to');
+        setLabel('memberFeedbackSearch', 'feedback.filter.search');
+        setText($('memberFeedbackReset'), 'feedback.reset');
+        const search = $('memberFeedbackSearch');
+        if (search) search.placeholder = t('feedback.filter.search.placeholder');
+
+        const ratingOptions = $('memberFeedbackRatingFilter')?.options;
+        if (ratingOptions?.length) {
+            ratingOptions[0].textContent = t('feedback.filter.rating.all');
+            ratingOptions[1].textContent = t('feedback.filter.rating.stars', { count: '5' });
+            ratingOptions[2].textContent = t('feedback.filter.rating.stars', { count: '4' });
+            ratingOptions[3].textContent = t('feedback.filter.rating.stars', { count: '3' });
+            ratingOptions[4].textContent = t('feedback.filter.rating.two');
+            ratingOptions[5].textContent = t('feedback.filter.rating.one');
+        }
+        const typeOptions = $('memberFeedbackTypeFilter')?.options;
+        if (typeOptions?.length) {
+            typeOptions[0].textContent = t('feedback.filter.type.all');
+            for (let index = 1; index < typeOptions.length; index += 1) {
+                const option = typeOptions[index];
+                const key = typeKeys[option.value];
+                if (key) option.textContent = t(key, { brand: brandName() });
+            }
+        }
+    }
 
     function stars(rating) {
-        const value = Number(rating || 0);
-        return `<span class="feedback-stars" aria-label="${value} من 5 نجوم">${Array.from({ length: 5 }, (_, index) => `<span class="${index < value ? 'is-filled' : ''}" aria-hidden="true">★</span>`).join('')}</span>`;
+        const value = Math.max(0, Math.min(5, Number(rating || 0)));
+        return `<span class="feedback-stars" aria-label="${escapeHtml(t('feedback.rating.aria', { count: formatNumber(value) }))}">${Array.from({ length: 5 }, (_, index) => `<span class="${index < value ? 'is-filled' : ''}" aria-hidden="true">★</span>`).join('')}</span>`;
     }
 
     function queryString() {
@@ -48,18 +97,22 @@
 
     function renderRows(items) {
         if (!items.length) {
-            listElement.innerHTML = '<div class="member-feedback-empty"><strong>لا توجد تقييمات مطابقة</strong><span>ستظهر آراء المشتركين هنا بعد إرسالها من بوابة العضوية.</span></div>';
+            listElement.innerHTML = `<div class="member-feedback-empty"><strong>${escapeHtml(t('feedback.empty.title'))}</strong><span>${escapeHtml(t('feedback.empty.description'))}</span></div>`;
             return;
         }
-        const rows = items.map((item) => `<tr>
-            <td><div class="feedback-member-cell"><strong>${escapeHtml(item.memberName || '—')}</strong><span class="feedback-phone" dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || '—')}</span></div></td>
-            <td>${stars(item.rating)}</td>
-            <td><span class="feedback-type feedback-type-${escapeHtml(item.noteType)}">${escapeHtml(typeLabel(item.noteType))}</span></td>
-            <td><p class="feedback-message-cell">${escapeHtml(item.message)}</p></td>
-            <td class="feedback-date" dir="ltr">${escapeHtml(formatDateTime(item.submittedAt))}</td>
-            <td><button class="btn btn-light btn-small feedback-details-button" type="button" data-feedback-action="details" data-member-id="${Number(item.memberId) || 0}">تفاصيل العضو</button></td>
-        </tr>`).join('');
-        listElement.innerHTML = `<div class="member-feedback-table-scroll"><table class="member-feedback-table"><thead><tr><th>المشترك</th><th>التقييم</th><th>نوع الملاحظة</th><th>الرأي أو المشكلة</th><th>تاريخ الإرسال</th><th>الإجراء</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        const rows = items.map((item) => {
+            const typeKey = typeKeys[item.noteType];
+            const label = typeKey ? t(typeKey, { brand: brandName() }) : t('feedback.value.unavailable');
+            return `<tr>
+                <td><div class="feedback-member-cell"><strong>${escapeHtml(item.memberName || t('feedback.value.unavailable'))}</strong><span class="feedback-phone" dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || t('feedback.value.unavailable'))}</span></div></td>
+                <td>${stars(item.rating)}</td>
+                <td><span class="feedback-type feedback-type-${escapeHtml(item.noteType)}">${escapeHtml(label)}</span></td>
+                <td><p class="feedback-message-cell">${escapeHtml(item.message)}</p></td>
+                <td class="feedback-date" dir="ltr">${escapeHtml(formatDateTime(item.submittedAt))}</td>
+                <td><button class="btn btn-light btn-small feedback-details-button" type="button" data-feedback-action="details" data-member-id="${Number(item.memberId) || 0}">${escapeHtml(t('feedback.action.memberDetails'))}</button></td>
+            </tr>`;
+        }).join('');
+        listElement.innerHTML = `<div class="member-feedback-table-scroll"><table class="member-feedback-table"><thead><tr><th>${escapeHtml(t('feedback.table.member'))}</th><th>${escapeHtml(t('feedback.table.rating'))}</th><th>${escapeHtml(t('feedback.table.type'))}</th><th>${escapeHtml(t('feedback.table.message'))}</th><th>${escapeHtml(t('feedback.table.date'))}</th><th>${escapeHtml(t('feedback.table.action'))}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     function renderPagination(pagination = {}) {
@@ -76,25 +129,47 @@
         const from = total ? ((page - 1) * pageSize) + 1 : 0;
         const to = Math.min(total, page * pageSize);
         paginationElement.hidden = false;
-        paginationElement.innerHTML = `<span>عرض ${formatNumber(from)}–${formatNumber(to)} من ${formatNumber(total)} تقييم</span><div class="feedback-pagination-actions"><button class="btn btn-light btn-small" type="button" data-feedback-page="prev" ${pagination.hasPrevious ? '' : 'disabled'}>السابق</button><strong>صفحة ${formatNumber(page)} من ${formatNumber(totalPages)}</strong><button class="btn btn-light btn-small" type="button" data-feedback-page="next" ${pagination.hasNext ? '' : 'disabled'}>التالي</button></div>`;
+        paginationElement.innerHTML = `<span>${escapeHtml(t('feedback.pagination.range', { from: formatNumber(from), to: formatNumber(to), total: formatNumber(total) }))}</span><div class="feedback-pagination-actions"><button class="btn btn-light btn-small" type="button" data-feedback-page="prev" ${pagination.hasPrevious ? '' : 'disabled'}>${escapeHtml(t('feedback.pagination.previous'))}</button><strong>${escapeHtml(t('feedback.pagination.page', { page: formatNumber(page), pages: formatNumber(totalPages) }))}</strong><button class="btn btn-light btn-small" type="button" data-feedback-page="next" ${pagination.hasNext ? '' : 'disabled'}>${escapeHtml(t('feedback.pagination.next'))}</button></div>`;
+    }
+
+    function renderLoading() {
+        if (!listElement) return;
+        listElement.innerHTML = `<div class="member-feedback-loading"><span class="loading"></span><span>${escapeHtml(t('feedback.loading'))}</span></div>`;
+    }
+
+    function renderError() {
+        if (!listElement) return;
+        listElement.innerHTML = `<div class="member-feedback-error"><strong>${escapeHtml(t('feedback.error.title'))}</strong><span>${escapeHtml(t('feedback.error.description'))}</span><button class="btn btn-light btn-small" type="button" data-feedback-action="retry">${escapeHtml(t('feedback.retry'))}</button></div>`;
+        if (paginationElement) paginationElement.hidden = true;
+    }
+
+    function renderCurrentState() {
+        if (state.view === 'loading') renderLoading();
+        else if (state.view === 'error') renderError();
+        else {
+            renderRows(state.items);
+            renderPagination(state.pagination || {});
+            if (metaElement) setText(metaElement, 'feedback.meta.total', { count: formatNumber(state.pagination?.total || state.items.length) });
+        }
     }
 
     async function load() {
         if (!listElement || state.loading) return;
         state.loading = true;
+        state.view = 'loading';
         state.controller?.abort();
         state.controller = new AbortController();
-        listElement.innerHTML = '<div class="member-feedback-loading"><span class="loading"></span><span>جاري تحميل التقييمات…</span></div>';
+        renderCurrentState();
         try {
             const data = await window.topGymApi.request(`/api/member-feedback?${queryString()}`, { signal: state.controller.signal });
-            const items = Array.isArray(data.feedback) ? data.feedback : [];
-            renderRows(items);
-            renderPagination(data.pagination);
-            if (metaElement) metaElement.textContent = `إجمالي النتائج: ${formatNumber(data.pagination?.total || items.length)}`;
+            state.items = Array.isArray(data.feedback) ? data.feedback : [];
+            state.pagination = data.pagination || null;
+            state.view = 'results';
+            renderCurrentState();
         } catch (error) {
             if (error.name === 'AbortError') return;
-            listElement.innerHTML = `<div class="member-feedback-error"><strong>تعذر تحميل التقييمات</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span><button class="btn btn-light btn-small" type="button" data-feedback-action="retry">إعادة المحاولة</button></div>`;
-            if (paginationElement) paginationElement.hidden = true;
+            state.view = 'error';
+            renderCurrentState();
         } finally {
             state.loading = false;
         }
@@ -106,6 +181,8 @@
         void load();
     }
 
+    applyStaticTranslations();
+    renderCurrentState();
     filtersForm?.addEventListener('submit', (event) => {
         event.preventDefault();
         state.page = 1;
@@ -134,10 +211,15 @@
         }
     });
     window.topGymFeedbackRefresh = load;
+    window.addEventListener('topgym:localechange', () => {
+        applyStaticTranslations();
+        renderCurrentState();
+    });
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'feedback') void load();
     });
     window.addEventListener('topgym:brandingchange', () => {
+        applyStaticTranslations();
         if (document.querySelector('[data-page-tab="feedback"]')?.classList.contains('active')) void load();
     });
 })();

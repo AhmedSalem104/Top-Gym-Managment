@@ -26,10 +26,7 @@ const cssLayers = [
     'pages/login.css',
     'responsive.css',
     'theme.css',
-    'components/ui-foundation.css',
-    'components/design-foundation.css',
     'components/navigation-shell.css',
-    'components/visual-redesign.css',
     'components/theme-toggle.css'
 ];
 
@@ -72,12 +69,13 @@ function buildLoginHtml(source, cssVersion) {
     const head = source.match(/<head>[\s\S]*?<\/head>/i)?.[0]
         ?.replace(/<link\s+rel="stylesheet"\s+href="\/css\/(?:main|app-shell)\.css[^>]*>/i, `<link rel="stylesheet" href="/css/login-entry.css?v=${cssVersion}">`);
     const bodyOpen = source.match(/<body\b[^>]*>/i)?.[0]
-        ?.replace('data-branding-entry="saas"', 'data-branding-entry="saas" data-auth-entry="login"');
+        ?.replace('data-branding-entry="saas"', 'data-branding-entry="saas" data-auth-entry="login"')
+        .replace(/\sfont-sans(?=[\s"])/u, '');
     if (!htmlOpen || !head || !bodyOpen) throw new Error('Unable to derive login document shell from public/index.html');
     const authCard = readAuthCard(source);
     const authFeatures = readAuthFeatures(source);
     const entryContent = [authCard, authFeatures].map((section) => section.split('\n').map((line) => `            ${line}`).join('\n')).join('\n');
-    return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${entryContent}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
+    return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${entryContent}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/core/i18n.js?v=4"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
 }
 
 const source = fs.readFileSync(indexPath, 'utf8');

@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test('Platform Admin pagination uses the central compact variant without page geometry overrides', async ({ page }) => {
+test('Platform Admin pagination uses the central compact variant without page geometry overrides', async ({ page }, testInfo) => {
     await page.route('**/api/**', async (route) => {
         const pathname = new URL(route.request().url()).pathname;
         const payload = pathname === '/api/auth/session'
@@ -10,6 +10,9 @@ test('Platform Admin pagination uses the central compact variant without page ge
     });
     await page.goto('/platform-admin.html#gyms', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#platformAdminApp')).toBeVisible();
+    // The mobile project is normally narrow: check the shared table's scroll
+    // contract at desktop width before exercising its responsive states.
+    await page.setViewportSize({ width: 1440, height: 900 });
 
     const sharedComponents = await page.evaluate(() => {
         const button = document.querySelector('.platform-btn');
@@ -51,5 +54,19 @@ test('Platform Admin pagination uses the central compact variant without page ge
                 && Array.from(element.querySelectorAll('button')).every((button) => button.getBoundingClientRect().height >= 38);
         });
         expect(fits, `pagination remains usable at ${width}px`).toBe(true);
+    }
+
+    if (['desktop', 'mobile320-light'].includes(testInfo.project.name)) {
+        const width = testInfo.project.name === 'desktop' ? 1440 : 320;
+        await page.setViewportSize({ width, height: 900 });
+        for (const theme of ['light', 'dark']) {
+            const currentTheme = await page.locator('html').getAttribute('data-theme');
+            if (currentTheme !== theme) await page.locator('#platformThemeToggle').click();
+            await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+            await page.screenshot({
+                path: testInfo.outputPath(`platform-admin-pagination-${width}-${theme}.png`),
+                fullPage: false
+            });
+        }
     }
 });

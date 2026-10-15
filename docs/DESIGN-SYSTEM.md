@@ -15,7 +15,6 @@ main.source.css
   -> pages/*
   -> responsive.css
   -> theme.css
-  -> ui-foundation.css
   -> navigation-shell.css (canonical Gym App shell)
   -> print.css
   -> build output: main.css (one browser request)
@@ -123,14 +122,14 @@ it. Below 1200px the rail becomes a labelled drawer with a backdrop and body
 scroll lock. This preserves the existing `page-tabs.js` behavior and only
 changes presentation.
 
-## Platform-wide UI foundation
+## Canonical ownership
 
-The current shared foundation is loaded last from
-`public/css/components/ui-foundation.css`. It does not introduce a second
-palette or a component framework. It reinforces the existing token graph for
-focus rings, touch targets, surface hierarchy, input sizing, contained table
-scrolling, dialog bounds, safe-area spacing and reduced motion across the Gym
-Application, Platform Admin, Member Portal and Register Gym surfaces.
+Shared primitives are owned by their canonical component stylesheets; each
+standalone product surface owns its page composition in `pages/`. The retired
+`ui-foundation.css` must not be recreated as a late global override layer.
+Responsive and modal behavior remain with `responsive.css` and the canonical
+modal owners. Accessibility and interaction contracts belong to the owning
+component or page stylesheet.
 
 The interaction contract is implemented by `public/js/ui-feedback.js` and the
 compatibility bridge in `public/js/button-loading.js`:

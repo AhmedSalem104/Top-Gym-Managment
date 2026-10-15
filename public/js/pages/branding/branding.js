@@ -22,7 +22,10 @@
         previewTheme: 'light',
         previewSize: 'desktop',
         activeSection: 'identity',
-        pendingPublish: false
+        pendingPublish: false,
+        serverValidation: null,
+        statusKey: 'status.published',
+        statusParams: { brand: 'Logic Fit' }
     };
 
     const IDENTITY_FIELDS = {
@@ -67,29 +70,16 @@
         brandingActiveStyle: 'activeStyle'
     };
     const TOKEN_DEFINITIONS = [
-        ['primary', 'Primary'], ['primaryHover', 'Primary Hover'], ['primaryActive', 'Primary Active'], ['onPrimary', 'نص الزر الأساسي'],
-        ['secondary', 'Secondary'], ['accent', 'Accent'], ['background', 'خلفية التطبيق'], ['surface', 'Surface'], ['surfaceSecondary', 'سطح ثانوي'],
-        ['card', 'خلفية البطاقات'], ['cardHover', 'بطاقة عند المرور'], ['elevated', 'عنصر مرتفع'], ['sidebar', 'القائمة الجانبية'], ['header', 'الشريط العلوي'],
-        ['textPrimary', 'النص الأساسي'], ['textSecondary', 'النص الثانوي'], ['textMuted', 'النص الهادئ'], ['textDisabled', 'النص المعطل'],
-        ['border', 'الحدود الأساسية'], ['borderSecondary', 'الحدود الهادئة'], ['borderHover', 'الحد عند المرور'], ['inputBackground', 'خلفية الحقول'],
-        ['tableHeader', 'رأس الجدول'], ['scrollbarTrack', 'مسار التمرير'], ['scrollbarThumb', 'مقبض التمرير'], ['success', 'Success'],
-        ['warning', 'Warning'], ['danger', 'Danger'], ['info', 'Info']
+        'primary', 'primaryHover', 'primaryActive', 'onPrimary', 'secondary', 'accent', 'background', 'surface', 'surfaceSecondary',
+        'card', 'cardHover', 'elevated', 'sidebar', 'header', 'textPrimary', 'textSecondary', 'textMuted', 'textDisabled',
+        'border', 'borderSecondary', 'borderHover', 'inputBackground', 'tableHeader', 'scrollbarTrack', 'scrollbarThumb', 'success', 'warning', 'danger', 'info'
     ];
     const ASSET_DEFINITIONS = [
-        ['primaryLogo', 'الشعار الأساسي', 'يظهر في الشريط العلوي والتقارير.'],
-        ['horizontalLogo', 'الشعار الأفقي', 'نسخة كاملة للاستخدام في شاشة الدخول والمستندات.'],
-        ['lightLogo', 'شعار الخلفية الداكنة', 'نسخة فاتحة للاستخدام فوق الأسطح الداكنة.'],
-        ['darkLogo', 'شعار الخلفية الفاتحة', 'نسخة داكنة للاستخدام فوق الأسطح الفاتحة.'],
-        ['compactLogo', 'الشعار المختصر', 'للـSidebar المغلق والأحجام الصغيرة.'],
-        ['favicon', 'Favicon', 'أيقونة التبويب والمتصفح.'],
-        ['appIcon', 'App Icon', 'أيقونة التطبيق عند التثبيت.'],
-        ['loginBackground', 'خلفية تسجيل الدخول', 'صورة اختيارية لخلفية شاشة الدخول.'],
-        ['loginIllustration', 'توضيح تسجيل الدخول', 'صورة اختيارية بجانب نموذج الدخول.'],
-        ['defaultAvatar', 'الصورة الافتراضية', 'صورة بديلة للمشترك عند عدم وجود صورة.'],
-        ['printLogo', 'شعار الطباعة', 'نسخة واضحة للمستندات وملفات PDF.'],
-        ['watermark', 'Watermark', 'علامة مائية اختيارية للمستندات.']
+        ['primaryLogo', 'primaryLogo'], ['horizontalLogo', 'horizontalLogo'], ['lightLogo', 'lightLogo'], ['darkLogo', 'darkLogo'],
+        ['compactLogo', 'compactLogo'], ['favicon', 'favicon'], ['appIcon', 'appIcon'], ['loginBackground', 'loginBackground'],
+        ['loginIllustration', 'loginIllustration'], ['defaultAvatar', 'defaultAvatar'], ['printLogo', 'printLogo'], ['watermark', 'watermark']
     ];
-    const AUDIT_LABELS = { draft_saved: 'حفظ مسودة', published: 'نشر الهوية', reset: 'استعادة الافتراضي', asset_uploaded: 'رفع أصل', asset_removed: 'إزالة أصل' };
+    const AUDIT_LABEL_KEYS = { draft_saved: 'saved', published: 'published', reset: 'reset', asset_uploaded: 'uploaded', asset_removed: 'removed' };
     const DEFAULT_LOGO_URL = '/assets/logic-fit-app-icon.svg?v=2';
     const DEFAULT_ASSET_URLS = {
         primaryLogo: '/assets/logic-fit-logo-horizontal.svg?v=1',
@@ -141,7 +131,186 @@
         return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     }
 
-    function showToast(icon, title, text = '') {
+    function brandingText(key, params) {
+        return window.TopGymI18n?.t?.(`branding.${key}`, params) || '';
+    }
+
+    function locale() {
+        return window.TopGymI18n?.get?.() || document.documentElement.lang?.toLowerCase().startsWith('en') && 'en' || 'ar';
+    }
+
+    function setNodeText(element, key, params) {
+        const value = brandingText(key, params);
+        if (element && value) element.textContent = value;
+    }
+
+    function setControlLabel(id, key) {
+        const control = $(id);
+        const label = control?.closest('label') || (control?.id ? page.querySelector(`label[for="${CSS.escape(control.id)}"]`) : null);
+        if (!label) return;
+        const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.nodeValue.trim());
+        if (textNode) {
+            let value = brandingText(key);
+            if (/\s\*$/.test(textNode.nodeValue) && !/\s\*$/.test(value)) value += ' *';
+            textNode.nodeValue = value;
+        }
+        else label.insertBefore(document.createTextNode(brandingText(key)), label.firstChild);
+    }
+
+    function setOptionLabels(id, valueKeys) {
+        const select = $(id);
+        if (!select) return;
+        [...select.options].forEach((option) => {
+            const key = valueKeys[option.value];
+            if (key) option.textContent = brandingText(key);
+        });
+    }
+
+    function applyBrandingLocale() {
+        if (!window.TopGymI18n?.t) return;
+        const setText = (selector, key) => {
+            const element = page.querySelector(selector);
+            const value = brandingText(key);
+            if (element && value) element.textContent = value;
+        };
+        setText('.branding-page-head .branding-eyebrow', 'page.eyebrow');
+        setText('#brandingPageTitle', 'page.title');
+        setText('.branding-page-head p', 'page.description');
+        const panelTitles = {
+            identity: 'identity', assets: 'assets', light: 'light', dark: 'dark', typography: 'typography',
+            login: 'login', interface: 'interface', documents: 'documents'
+        };
+        Object.entries(panelTitles).forEach(([panelName, key]) => {
+            const panel = page.querySelector(`[data-branding-panel="${panelName}"]`);
+            if (panel) {
+                setNodeText(panel.querySelector('.branding-section-head h3'), `panel.${key}.title`);
+                setNodeText(panel.querySelector('.branding-section-head .branding-eyebrow'), `panel.${key}.eyebrow`);
+            }
+        });
+        setNodeText($('brandingPaymentMethodsTitle'), 'payments.title');
+        setNodeText($('brandingPreviewTitle'), 'preview.title');
+        setNodeText($('brandingAuditTitle'), 'audit.title');
+        setNodeText(page.querySelector('[data-branding-panel="identity"] > .branding-section-head p'), 'identity.description');
+        setNodeText(page.querySelector('[data-branding-panel="identity"] .branding-payment-panel-head .branding-eyebrow'), 'payments.eyebrow');
+        setNodeText(page.querySelector('[data-branding-panel="identity"] .branding-payment-panel-actions [data-page-tab-link="member-payment-methods"]'), 'payments.open');
+        setNodeText(page.querySelector('[data-branding-panel="identity"] .branding-inline-note span'), 'identity.defaultsNote');
+        setNodeText(page.querySelector('[data-branding-panel="assets"] .branding-section-head p'), 'assets.description');
+        setNodeText(page.querySelector('[data-branding-panel="assets"] > .branding-hint'), 'assets.limit');
+        setNodeText(page.querySelector('[data-branding-panel="light"] .branding-section-head p'), 'theme.light.description');
+        setNodeText(page.querySelector('[data-branding-panel="dark"] .branding-section-head p'), 'theme.dark.description');
+        setNodeText(page.querySelector('[data-branding-panel="typography"] .branding-section-head p'), 'typography.description');
+        setNodeText(page.querySelector('[data-branding-panel="typography"] > .branding-hint'), 'typography.fallback');
+        setNodeText(page.querySelector('[data-branding-panel="login"] .branding-section-head p'), 'login.description');
+        setNodeText(page.querySelector('[data-branding-panel="login"] .branding-inline-note span'), 'login.note');
+        setNodeText(page.querySelector('[data-branding-panel="interface"] .branding-section-head p'), 'interface.description');
+        setNodeText(page.querySelector('[data-branding-panel="interface"] .branding-inline-note span'), 'interface.note');
+        setNodeText(page.querySelector('[data-branding-panel="documents"] .branding-section-head p'), 'documents.description');
+        setNodeText(page.querySelector('[data-branding-panel="documents"] .branding-inline-note span'), 'documents.note');
+        setNodeText(page.querySelector('.branding-preview-head .branding-preview-kicker'), 'preview.kicker');
+        setNodeText(page.querySelector('.branding-preview-head p'), 'preview.description');
+        setNodeText(page.querySelector('.branding-audit-card .branding-section-head p'), 'audit.description');
+        setNodeText(page.querySelector('.branding-audit-card .branding-eyebrow'), 'audit.kicker');
+
+        const fieldKeys = {
+            ...Object.fromEntries(Object.keys(IDENTITY_FIELDS).map((id) => [id, `identity.label.${IDENTITY_FIELDS[id] === 'brandName' ? 'brand' : IDENTITY_FIELDS[id] === 'englishBrandName' ? 'english' : IDENTITY_FIELDS[id] === 'shortName' ? 'short' : IDENTITY_FIELDS[id] === 'companyName' ? 'company' : IDENTITY_FIELDS[id] === 'welcomeTitle' ? 'welcomeTitle' : IDENTITY_FIELDS[id] === 'welcomeSubtitle' ? 'welcomeSubtitle' : IDENTITY_FIELDS[id] === 'copyrightText' ? 'copyright' : 'description'}`])),
+            brandingDocumentPhone: 'documents.phone', brandingDocumentEmail: 'documents.email', brandingDocumentAddress: 'documents.address',
+            brandingDocumentWebsite: 'documents.website', brandingDocumentFooter: 'documents.footer', brandingDocumentWatermark: 'documents.watermark',
+            brandingDocumentSignature: 'documents.signature', brandingDocumentStamp: 'documents.stamp', brandingBodyFont: 'typography.body',
+            brandingHeadingFont: 'typography.heading', brandingBaseFontSize: 'typography.size', brandingHeadingWeight: 'typography.weight',
+            brandingLoginBackgroundColor: 'login.background', brandingLoginGradientStart: 'login.gradientStart', brandingLoginGradientEnd: 'login.gradientEnd',
+            brandingLoginOverlay: 'login.overlay', brandingRadius: 'interface.radius', brandingCardStyle: 'interface.cards', brandingShadow: 'interface.shadows',
+            brandingSidebarStyle: 'interface.sidebar', brandingActiveStyle: 'interface.active'
+        };
+        Object.entries(fieldKeys).forEach(([id, key]) => setControlLabel(id, key));
+        setNodeText($('brandingLoginShowIllustration')?.closest('label')?.querySelector('span'), 'login.showIllustration');
+        setNodeText($('brandingLoginShowBrandCopy')?.closest('label')?.querySelector('span'), 'login.showCopy');
+        setOptionLabels('brandingHeadingWeight', { 600: 'typography.weight.medium', 700: 'typography.weight.bold', 800: 'typography.weight.extraBold' });
+        setOptionLabels('brandingShadow', { none: 'interface.shadow.none', soft: 'interface.shadow.soft', medium: 'interface.shadow.medium' });
+        setOptionLabels('brandingRadius', { sharp: 'interface.radius.sharp', small: 'interface.radius.small', medium: 'interface.radius.medium', large: 'interface.radius.large' });
+        setOptionLabels('brandingCardStyle', { flat: 'interface.cards.flat', border: 'interface.cards.border', 'soft-shadow': 'interface.cards.softShadow' });
+        setOptionLabels('brandingSidebarStyle', { brand: 'interface.sidebar.brand', light: 'interface.sidebar.light', dark: 'interface.sidebar.dark', auto: 'interface.sidebar.auto' });
+        setOptionLabels('brandingActiveStyle', { background: 'interface.active.background', indicator: 'interface.active.indicator', pill: 'interface.active.pill' });
+
+        setNodeText(page.querySelector('[data-branding-panel="identity"] .branding-payment-panel-head p'), 'payments.description');
+        setNodeText(page.querySelector('[data-branding-panel="identity"] .branding-payment-panel > .branding-hint'), 'payments.notice');
+        const editor = page.querySelector('.branding-editor-card');
+        const editorLabel = brandingText('editor.aria');
+        if (editor && editorLabel) editor.setAttribute('aria-label', editorLabel);
+        const sectionNav = page.querySelector('.branding-editor-nav');
+        const sectionNavLabel = brandingText('editor.sections.aria');
+        if (sectionNav && sectionNavLabel) sectionNav.setAttribute('aria-label', sectionNavLabel);
+
+        const sectionKeys = {
+            identity: 'section.identity', assets: 'section.assets', light: 'section.light', dark: 'section.dark',
+            typography: 'section.typography', login: 'section.login', interface: 'section.interface', documents: 'section.documents'
+        };
+        page.querySelectorAll('[data-branding-section]').forEach((button) => {
+            const label = button.querySelector('span');
+            const value = brandingText(sectionKeys[button.dataset.brandingSection]);
+            if (label && value) {
+                label.textContent = value;
+                button.setAttribute('aria-label', value);
+                button.title = value;
+            }
+        });
+
+        const actionLabels = {
+            brandingDiscardButton: 'actions.discard', brandingResetButton: 'actions.reset',
+            brandingSaveDraftButton: 'actions.save', brandingPublishButton: 'actions.publish'
+        };
+        Object.entries(actionLabels).forEach(([id, key]) => {
+            const button = $(id);
+            const busyKey = button?.dataset.brandingBusyLabelKey;
+            const value = brandingText(busyKey || key);
+            if (button && value) {
+                button.textContent = value;
+                button.setAttribute('aria-label', value);
+                button.title = value;
+            }
+        });
+        const addPayment = $('brandingAddPaymentMethod');
+        if (addPayment) {
+            addPayment.textContent = brandingText('payments.add');
+            addPayment.setAttribute('aria-label', brandingText('payments.add'));
+            addPayment.title = brandingText('payments.add');
+        }
+        const titleKey = state.dirty ? 'actions.title.dirty' : state.pendingPublish ? 'actions.title.pending' : 'actions.title.clean';
+        const hintKey = state.dirty || state.pendingPublish ? 'actions.hint.dirty' : 'actions.hint.clean';
+        const actionTitle = $('brandingActionTitle');
+        const actionHint = $('brandingActionHint');
+        if (actionTitle) actionTitle.textContent = brandingText(titleKey) || actionTitle.textContent;
+        if (actionHint) actionHint.textContent = brandingText(hintKey) || actionHint.textContent;
+        const previewThemeGroup = page.querySelector('.branding-preview-toolbar .branding-preview-switch:first-child');
+        const previewSizeGroup = page.querySelector('.branding-preview-toolbar .branding-preview-switch:nth-child(2)');
+        if (previewThemeGroup) previewThemeGroup.setAttribute('aria-label', brandingText('preview.theme.aria'));
+        if (previewSizeGroup) previewSizeGroup.setAttribute('aria-label', brandingText('preview.size.aria'));
+        setText('[data-branding-preview-theme="light"]', 'preview.theme.light');
+        setText('[data-branding-preview-theme="dark"]', 'preview.theme.dark');
+        setText('[data-branding-preview-size="desktop"]', 'preview.size.desktop');
+        setText('[data-branding-preview-size="mobile"]', 'preview.size.mobile');
+        page.querySelectorAll('[data-branding-preview-theme], [data-branding-preview-size]').forEach((button) => {
+            const key = button.dataset.brandingPreviewTheme
+                ? `preview.theme.${button.dataset.brandingPreviewTheme}`
+                : `preview.size.${button.dataset.brandingPreviewSize}`;
+            const label = brandingText(key);
+            button.setAttribute('aria-label', label);
+            button.title = label;
+        });
+
+        renderPaymentMethods();
+        renderAssets();
+        renderTokens('light');
+        renderTokens('dark');
+        renderValidation(state.serverValidation);
+        renderAudit();
+        updateVersionMeta();
+        renderPreview();
+        setStatus(state.statusKey, state.statusParams, state.dirty || state.pendingPublish);
+    }
+
+    function showToast(icon, titleKey, detailKey = '') {
+        const title = brandingText(titleKey) || titleKey;
+        const text = brandingText(detailKey);
         if (window.Swal) {
             window.Swal.fire({ toast: true, position: 'top-start', icon, title, text, showConfirmButton: false, timer: icon === 'error' ? 5200 : 3400, timerProgressBar: true, customClass: { popup: 'top-gym-alert top-gym-toast' } });
             return;
@@ -150,33 +319,37 @@
         if (status) status.textContent = text ? `${title} · ${text}` : title;
     }
 
-    function setStatus(message, dirty = state.dirty) {
+    function setStatus(key, params = {}, dirty = state.dirty) {
+        state.statusKey = key;
+        state.statusParams = params;
         const status = $('brandingStatusCopy');
         const actionTitle = $('brandingActionTitle');
         const actionHint = $('brandingActionHint');
         if (status) {
-            status.textContent = message;
+            status.textContent = brandingText(key, params) || key;
             status.classList.toggle('is-dirty', dirty);
         }
-        if (actionTitle) actionTitle.textContent = state.dirty ? 'لديك تغييرات غير محفوظة' : state.pendingPublish ? 'مسودة محفوظة ولم تُنشر' : 'لا توجد تغييرات غير محفوظة';
-        if (actionHint) actionHint.textContent = state.dirty || state.pendingPublish ? 'راجع المعاينة، ثم انشر الهوية لتطبيقها على كامل المنصة.' : 'التعديلات الحالية مطابقة للهوية المنشورة.';
+        const titleKey = state.dirty ? 'actions.title.dirty' : state.pendingPublish ? 'actions.title.pending' : 'actions.title.clean';
+        const hintKey = state.dirty || state.pendingPublish ? 'actions.hint.dirty' : 'actions.hint.clean';
+        if (actionTitle) actionTitle.textContent = brandingText(titleKey) || actionTitle.textContent;
+        if (actionHint) actionHint.textContent = brandingText(hintKey) || actionHint.textContent;
     }
 
-    function setBusy(button, busy, label) {
+    function setBusy(button, busy, labelKey) {
         if (!button) return;
         button.disabled = busy;
         if (busy) {
-            button.dataset.brandingOriginalLabel = button.textContent;
-            button.textContent = label;
-        } else if (button.dataset.brandingOriginalLabel) {
-            button.textContent = button.dataset.brandingOriginalLabel;
-            delete button.dataset.brandingOriginalLabel;
+            button.dataset.brandingBusyLabelKey = labelKey;
+            button.textContent = brandingText(labelKey);
+        } else if (button.dataset.brandingBusyLabelKey) {
+            delete button.dataset.brandingBusyLabelKey;
+            applyBrandingLocale();
         }
     }
 
-    function markDirty(message = 'مسودة الهوية بها تغييرات جديدة') {
+    function markDirty(key = 'status.changed', params = {}) {
         state.dirty = true;
-        setStatus(message, true);
+        setStatus(key, params, true);
         renderValidation();
         renderPreview();
     }
@@ -200,24 +373,29 @@
         if (!container) return;
         const methods = paymentMethods();
         if (!methods.length) {
-            container.innerHTML = '<div class="branding-payment-empty"><strong>لا توجد وسائل دفع مضافة</strong><span>أضف وسيلة دفع ليتمكن العضو من معرفة بيانات التحويل الخاصة بهذا الجيم.</span></div>';
+            container.innerHTML = `<div class="branding-payment-empty"><strong>${escapeHtml(brandingText('payment.empty.title'))}</strong><span>${escapeHtml(brandingText('payment.empty.body'))}</span></div>`;
             return;
         }
         container.innerHTML = methods.map((method, index) => {
             const value = (key) => escapeHtml(method?.[key] ?? '');
             const checked = method?.isActive !== false ? ' checked' : '';
+            const number = window.TopGymI18n?.format?.('number', index + 1) ?? index + 1;
+            const removeLabel = brandingText('payment.remove');
             return `<article class="branding-payment-row" data-branding-payment-row="${index}">
-                <div class="branding-payment-row-head"><strong>وسيلة دفع ${index + 1}</strong><button class="btn btn-danger btn-small" type="button" data-branding-payment-remove="${index}">إزالة</button></div>
+                <div class="branding-payment-row-head"><strong>${escapeHtml(brandingText('payment.method', { count: number }))}</strong><button class="btn btn-danger btn-small" type="button" data-branding-payment-remove="${index}" aria-label="${escapeHtml(removeLabel)}" title="${escapeHtml(removeLabel)}">${escapeHtml(removeLabel)}</button></div>
                 <div class="branding-payment-fields">
-                    <div class="field"><label>اسم الوسيلة <span aria-hidden="true">*</span><input data-branding-payment-field="name" data-branding-payment-index="${index}" value="${value('name')}" maxlength="120" required placeholder="Vodafone Cash"></label></div>
-                    <div class="field"><label>الرقم أو الحساب <span aria-hidden="true">*</span><input data-branding-payment-field="accountReference" data-branding-payment-index="${index}" value="${value('accountReference')}" maxlength="160" dir="ltr" required placeholder="رقم الهاتف أو الحساب"></label></div>
-                    <div class="field"><label>اسم المستلم<input data-branding-payment-field="recipientName" data-branding-payment-index="${index}" value="${value('recipientName')}" maxlength="160"></label></div>
-                    <div class="field"><label>ترتيب الظهور<input data-branding-payment-field="sortOrder" data-branding-payment-index="${index}" value="${value('sortOrder')}" type="number" min="0" max="999" step="1"></label></div>
-                    <div class="field field-full"><label>تعليمات الدفع<textarea data-branding-payment-field="instructions" data-branding-payment-index="${index}" maxlength="1000" rows="2" placeholder="تعليمات مختصرة للعضو">${value('instructions')}</textarea></label></div>
+                    <div class="field"><label>${escapeHtml(brandingText('payment.name'))} <span aria-hidden="true">*</span><input data-branding-payment-field="name" data-branding-payment-index="${index}" value="${value('name')}" maxlength="120" required placeholder="${escapeHtml(brandingText('payment.name.placeholder'))}"></label></div>
+                    <div class="field"><label>${escapeHtml(brandingText('payment.reference'))} <span aria-hidden="true">*</span><input data-branding-payment-field="accountReference" data-branding-payment-index="${index}" value="${value('accountReference')}" maxlength="160" dir="ltr" required placeholder="${escapeHtml(brandingText('payment.reference.placeholder'))}"></label></div>
+                    <div class="field"><label>${escapeHtml(brandingText('payment.recipient'))}<input data-branding-payment-field="recipientName" data-branding-payment-index="${index}" value="${value('recipientName')}" maxlength="160"></label></div>
+                    <div class="field"><label>${escapeHtml(brandingText('payment.sortOrder'))}<input data-branding-payment-field="sortOrder" data-branding-payment-index="${index}" value="${value('sortOrder')}" type="number" min="0" max="999" step="1"></label></div>
+                    <div class="field field-full"><label>${escapeHtml(brandingText('payment.instructions'))}<textarea data-branding-payment-field="instructions" data-branding-payment-index="${index}" maxlength="1000" rows="2" placeholder="${escapeHtml(brandingText('payment.instructions.placeholder'))}"></textarea></label></div>
                 </div>
-                <label class="checkbox-field branding-payment-active"><input type="checkbox" data-branding-payment-field="isActive" data-branding-payment-index="${index}"${checked}><span>عرض هذه الوسيلة للعضو</span></label>
+                <label class="checkbox-field branding-payment-active"><input type="checkbox" data-branding-payment-field="isActive" data-branding-payment-index="${index}"${checked}><span>${escapeHtml(brandingText('payment.active'))}</span></label>
             </article>`;
         }).join('');
+        [...container.querySelectorAll('[data-branding-payment-field="instructions"]')].forEach((field, index) => {
+            field.value = methods[index]?.instructions ?? '';
+        });
     }
 
     function renderForm() {
@@ -255,39 +433,44 @@
         return (Math.max(firstLuminance, secondLuminance) + 0.05) / (Math.min(firstLuminance, secondLuminance) + 0.05);
     }
 
-    function renderValidation(serverValidation = null) {
+    function renderValidation(serverValidation = state.serverValidation) {
         const box = $('brandingValidation');
         if (!box) return;
+        state.serverValidation = serverValidation;
         const current = config();
         const errors = [];
         const warnings = [];
-        if (!String(current.identity?.brandName || '').trim()) errors.push('اسم العلامة التجارية مطلوب.');
+        if (!String(current.identity?.brandName || '').trim()) errors.push(brandingText('validation.brandRequired'));
         ['light', 'dark'].forEach((themeName) => {
             const theme = current.themes?.[themeName] || {};
-            if (contrast(theme.textPrimary, theme.background) < 4.5) errors.push(`تباين النص الأساسي في وضع ${themeName === 'light' ? 'Light' : 'Dark'} أقل من WCAG AA.`);
-            if (contrast(theme.onPrimary, theme.primary) < 4.5) errors.push(`تباين نص الزر الأساسي في وضع ${themeName === 'light' ? 'Light' : 'Dark'} غير كافٍ.`);
-            if (contrast(theme.textSecondary, theme.background) < 3) warnings.push(`النص الثانوي في وضع ${themeName === 'light' ? 'Light' : 'Dark'} منخفض التباين.`);
+            const localizedTheme = brandingText(`theme.${themeName}.name`);
+            if (contrast(theme.textPrimary, theme.background) < 4.5) errors.push(brandingText('validation.textContrast', { theme: localizedTheme }));
+            if (contrast(theme.onPrimary, theme.primary) < 4.5) errors.push(brandingText('validation.primaryContrast', { theme: localizedTheme }));
+            if (contrast(theme.textSecondary, theme.background) < 3) warnings.push(brandingText('validation.secondaryContrast', { theme: localizedTheme }));
         });
         (serverValidation?.errors || []).forEach((item) => { if (!errors.includes(item.message)) errors.push(item.message); });
         (serverValidation?.warnings || []).forEach((item) => { if (!warnings.includes(item.message)) warnings.push(item.message); });
         if (!errors.length && !warnings.length) {
             box.hidden = false;
             box.className = 'branding-validation is-success';
-            box.innerHTML = '<strong>الهوية جاهزة للنشر</strong><span>تم فحص الاسم والتباين والقيم الأساسية بنجاح.</span>';
+            box.innerHTML = `<strong>${escapeHtml(brandingText('validation.ready.title'))}</strong><span>${escapeHtml(brandingText('validation.ready.body'))}</span>`;
             return;
         }
         box.hidden = false;
         box.className = `branding-validation ${errors.length ? 'is-error' : 'is-warning'}`;
-        box.innerHTML = `${errors.length ? `<strong>يجب إصلاح ${errors.length} مشكلة قبل النشر</strong><ul>${errors.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}${warnings.length ? `<strong>ملاحظات الوصول والوضوح</strong><ul>${warnings.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}`;
+        const count = window.TopGymI18n?.format?.('number', errors.length) ?? errors.length;
+        box.innerHTML = `${errors.length ? `<strong>${escapeHtml(brandingText('validation.errors', { count }))}</strong><ul>${errors.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}${warnings.length ? `<strong>${escapeHtml(brandingText('validation.warnings'))}</strong><ul>${warnings.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}`;
     }
 
     function renderTokens(themeName) {
         const container = $(`branding${themeName[0].toUpperCase()}${themeName.slice(1)}Tokens`);
         if (!container) return;
         const theme = config().themes?.[themeName] || {};
-        container.innerHTML = TOKEN_DEFINITIONS.map(([key, label]) => {
+        container.innerHTML = TOKEN_DEFINITIONS.map((key) => {
             const value = /^#[\da-f]{6}$/i.test(String(theme[key] || '')) ? theme[key] : '#000000';
-            return `<div class="branding-color-field"><label for="branding-${themeName}-${key}">${escapeHtml(label)}<code>${escapeHtml(key)}</code></label><div class="branding-color-control"><input id="branding-${themeName}-${key}" type="color" value="${value}" data-branding-color="${themeName}" data-branding-token="${key}" aria-label="${escapeHtml(label)}"><input type="text" value="${escapeHtml(value)}" maxlength="7" inputmode="text" dir="ltr" data-branding-color-text="${themeName}" data-branding-token="${key}" aria-label="قيمة ${escapeHtml(label)} بصيغة HEX"></div></div>`;
+            const label = brandingText(`tokens.${key}`);
+            const colorLabel = brandingText('tokens.hexValue', { label });
+            return `<div class="branding-color-field"><label for="branding-${themeName}-${key}">${escapeHtml(label)}<code>${escapeHtml(key)}</code></label><div class="branding-color-control"><input id="branding-${themeName}-${key}" type="color" value="${value}" data-branding-color="${themeName}" data-branding-token="${key}" aria-label="${escapeHtml(label)}"><input type="text" value="${escapeHtml(value)}" maxlength="7" inputmode="text" dir="ltr" data-branding-color-text="${themeName}" data-branding-token="${key}" aria-label="${escapeHtml(colorLabel)}"></div></div>`;
         }).join('');
     }
 
@@ -295,11 +478,17 @@
         const container = $('brandingAssetGrid');
         if (!container) return;
         const current = config();
-        container.innerHTML = ASSET_DEFINITIONS.map(([key, label, hint]) => {
+        container.innerHTML = ASSET_DEFINITIONS.map(([key, labelKey]) => {
             const asset = current.assets?.[key];
             const url = asset?.url || DEFAULT_ASSET_URLS[key] || '';
-            const preview = url ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy" decoding="async">` : `<span>${escapeHtml(current.identity?.shortName?.trim()?.charAt(0) || 'ج')}</span>`;
-            return `<article class="branding-asset-card"><div class="branding-asset-preview ${url ? 'has-asset' : ''}">${preview}</div><div class="branding-asset-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(hint)}</small>${asset ? `<em>${escapeHtml(asset.fileName || 'تم الرفع')} · ${Number(asset.width || 0)}×${Number(asset.height || 0)}</em>` : '<em>يستخدم الافتراضي حاليًا</em>'}</div><div class="branding-asset-actions"><input id="branding-file-${key}" type="file" accept="image/*" data-branding-file="${key}" hidden><label class="btn btn-light btn-small" for="branding-file-${key}">رفع / استبدال</label>${asset ? `<button class="btn btn-danger btn-small" type="button" data-branding-remove="${key}">إزالة</button>` : ''}</div></article>`;
+            const label = brandingText(`asset.${labelKey}`);
+            const hint = brandingText(`asset.${labelKey}.hint`);
+            const preview = url ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy" decoding="async">` : `<span>${escapeHtml(current.identity?.shortName?.trim()?.charAt(0) || brandingText('asset.preview.initialFallback'))}</span>`;
+            const uploaded = brandingText('asset.uploaded');
+            const defaultState = brandingText('asset.defaultActive');
+            const upload = brandingText('asset.upload');
+            const remove = brandingText('asset.remove');
+            return `<article class="branding-asset-card"><div class="branding-asset-preview ${url ? 'has-asset' : ''}">${preview}</div><div class="branding-asset-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(hint)}</small>${asset ? `<em>${escapeHtml(asset.fileName || uploaded)} · ${Number(asset.width || 0)}×${Number(asset.height || 0)}</em>` : `<em>${escapeHtml(defaultState)}</em>`}</div><div class="branding-asset-actions"><input id="branding-file-${key}" type="file" accept="image/*" data-branding-file="${key}" hidden><button class="btn btn-light btn-small" type="button" data-branding-file-trigger="${key}">${escapeHtml(upload)}</button>${asset ? `<button class="btn btn-danger btn-small" type="button" data-branding-remove="${key}" aria-label="${escapeHtml(remove)}" title="${escapeHtml(remove)}">${escapeHtml(remove)}</button>` : ''}</div></article>`;
         }).join('');
     }
 
@@ -316,8 +505,15 @@
     function renderAudit() {
         const container = $('brandingAuditList');
         if (!container) return;
-        const rows = (state.audit || []).map((item) => `<div class="branding-audit-row"><strong>${escapeHtml(AUDIT_LABELS[item.action] || item.action || 'عملية')}</strong><span>${escapeHtml(item.createdAt ? new Date(item.createdAt).toLocaleString('ar-EG') : '—')} · ${item.actorUserId ? `حساب #${escapeHtml(item.actorUserId)}` : 'النظام'}</span><small>${escapeHtml(item.details || `الإصدار ${item.version || '—'}`)}</small></div>`).join('');
-        container.innerHTML = rows || '<p class="branding-hint">لا توجد عمليات مسجلة بعد.</p>';
+        const rows = (state.audit || []).map((item) => {
+            const actionKey = AUDIT_LABEL_KEYS[item.action];
+            const action = actionKey ? brandingText(`audit.${actionKey}`) : brandingText('audit.operation');
+            const date = item.createdAt ? new Date(item.createdAt).toLocaleString(locale() === 'en' ? 'en' : 'ar-EG') : brandingText('audit.dash');
+            const actor = item.actorUserId ? brandingText('audit.account', { id: item.actorUserId }) : brandingText('audit.system');
+            const detail = item.details || (item.version ? brandingText('audit.version', { version: item.version }) : '');
+            return `<div class="branding-audit-row"><strong>${escapeHtml(action)}</strong><span>${escapeHtml(date)} · ${escapeHtml(actor)}</span><small>${escapeHtml(detail)}</small></div>`;
+        }).join('');
+        container.innerHTML = rows || `<p class="branding-hint">${escapeHtml(brandingText('audit.empty'))}</p>`;
     }
 
     function renderPreview() {
@@ -332,7 +528,44 @@
         const name = $('brandingPreviewName');
         const welcome = $('brandingPreviewWelcome');
         if (name) name.textContent = current.identity?.brandName || 'Logic Fit';
-        if (welcome) welcome.textContent = current.identity?.welcomeSubtitle || 'إدارة أذكى لجيم أقوى.';
+        if (welcome) welcome.textContent = current.identity?.welcomeSubtitle || brandingText('preview.welcomeFallback');
+        const previewText = (selector, key) => setNodeText(frame.querySelector(selector), key);
+        [
+            ['.branding-preview-sidebar .branding-preview-nav-item:nth-of-type(1)', 'preview.nav.home'],
+            ['.branding-preview-sidebar .branding-preview-nav-item:nth-of-type(2)', 'preview.nav.members'],
+            ['.branding-preview-sidebar .branding-preview-nav-item:nth-of-type(3)', 'preview.nav.reports']
+        ].forEach(([selector, key]) => previewText(selector, key));
+        ['preview.metric.members', 'preview.metric.attendance', 'preview.metric.revenue'].forEach((key, index) => setNodeText(frame.querySelectorAll('.branding-preview-kpi span')[index], key));
+        setNodeText(frame.querySelector('.branding-preview-card-sample header strong'), 'preview.sample.card');
+        setNodeText(frame.querySelector('.branding-preview-card-sample header span'), 'preview.sample.today');
+        setNodeText(frame.querySelector('.branding-preview-controls .branding-preview-button'), 'preview.sample.action');
+        const previewInput = frame.querySelector('.branding-preview-input');
+        if (previewInput) {
+            const searchLabel = brandingText('preview.sample.search');
+            previewInput.placeholder = searchLabel;
+            if (searchLabel) previewInput.setAttribute('aria-label', searchLabel);
+        }
+        const rows = frame.querySelectorAll('.branding-preview-table-wrap tbody tr');
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll('td');
+            setNodeText(cells[0], `preview.sample.${index ? 'memberTwo' : 'memberOne'}`);
+            setNodeText(cells[1]?.querySelector('.branding-preview-badge'), 'preview.sample.status');
+            setNodeText(cells[2], `preview.sample.${index ? 'edit' : 'view'}`);
+        });
+        setNodeText(frame.querySelector('.branding-preview-modal > strong'), 'preview.sample.modal');
+        setNodeText(frame.querySelector('.branding-preview-modal > p'), 'preview.sample.modalBody');
+        setNodeText(frame.querySelector('.branding-preview-modal > .branding-preview-button'), 'preview.sample.confirm');
+        const headers = frame.querySelectorAll('.branding-preview-table-wrap thead th');
+        ['preview.table.member', 'preview.table.status', 'preview.table.action'].forEach((key, index) => setNodeText(headers[index], key));
+        frame.querySelectorAll('.branding-preview-kpi strong').forEach((element, index) => {
+            if (index === 2) {
+                element.textContent = brandingText('preview.metric.revenueValue');
+                return;
+            }
+            const numericText = String(element.textContent).replace(/[٠-٩]/gu, (digit) => String(digit.charCodeAt(0) - 0x0660));
+            const numericValue = Number(numericText.replace(/[^\d.]/g, ''));
+            if (Number.isFinite(numericValue) && numericValue) element.textContent = window.TopGymI18n?.format?.('number', numericValue) ?? String(numericValue);
+        });
         const logoShell = document.querySelector('[data-branding-preview-logo]');
         const logo = current.assets?.primaryLogo?.url || current.assets?.horizontalLogo?.url || current.assets?.compactLogo?.url || DEFAULT_LOGO_URL;
         if (logoShell) {
@@ -346,11 +579,15 @@
     function updateVersionMeta() {
         const element = $('brandingVersionMeta');
         if (!element) return;
-        const publishedAt = state.metadata?.publishedAt ? new Date(state.metadata.publishedAt).toLocaleString('ar-EG') : 'غير منشورة بعد';
-        element.textContent = `v${state.version} · ${publishedAt}`;
+        const publishedAt = state.metadata?.publishedAt
+            ? new Date(state.metadata.publishedAt).toLocaleString(locale() === 'en' ? 'en' : 'ar-EG')
+            : brandingText('version.unpublished');
+        const version = window.TopGymI18n?.format?.('number', state.version) ?? state.version;
+        element.textContent = `v${version}${brandingText('version.separator')}${publishedAt}`;
     }
 
     function renderAll(serverValidation = null) {
+        state.serverValidation = serverValidation;
         renderForm();
         renderAssets();
         renderTokens('light');
@@ -359,12 +596,14 @@
         renderAudit();
         updateVersionMeta();
         renderPreview();
-        setStatus(state.dirty ? 'مسودة الهوية بها تغييرات جديدة' : state.pendingPublish ? `مسودة محفوظة: ${config().identity?.brandName || 'Logic Fit'}` : `الهوية المنشورة: ${config().identity?.brandName || 'Logic Fit'}`, state.dirty || state.pendingPublish);
+        if (state.dirty) setStatus('status.changed', {}, true);
+        else if (state.pendingPublish) setStatus('status.draft', { brand: config().identity?.brandName || 'Logic Fit' }, true);
+        else setStatus('status.published', { brand: config().identity?.brandName || 'Logic Fit' }, false);
     }
 
     async function readError(response) {
         const data = await response.json().catch(() => ({}));
-        return new Error(data.error || 'تعذر تنفيذ العملية.');
+        return new Error(data.error || brandingText('error.operation'));
     }
 
     async function loadSettings() {
@@ -383,8 +622,8 @@
             renderAll(result.validation || null);
             return true;
         } catch (error) {
-            showToast('error', 'تعذر تحميل إعدادات الهوية', error.message || 'حاول مرة أخرى.');
-            setStatus('تعذر تحميل إعدادات الهوية — تم الاحتفاظ بالافتراضي الآمن', false);
+            showToast('error', 'error.load', 'error.retry');
+            setStatus('error.loadDetail', {}, false);
             return false;
         }
     }
@@ -422,7 +661,7 @@
     function addPaymentMethod() {
         const methods = paymentMethods();
         methods.push({ id: '', name: '', accountReference: '', recipientName: '', instructions: '', isActive: true, sortOrder: methods.length });
-        markDirty('مسودة الهوية — تمت إضافة وسيلة دفع');
+        markDirty('status.addedPayment');
         renderPaymentMethods();
         document.querySelector('[data-branding-payment-field="name"][data-branding-payment-index="' + (methods.length - 1) + '"]')?.focus();
     }
@@ -431,7 +670,7 @@
         const methods = paymentMethods();
         if (!Number.isInteger(index) || index < 0 || index >= methods.length) return;
         methods.splice(index, 1);
-        markDirty('مسودة الهوية — تمت إزالة وسيلة دفع');
+        markDirty('status.removedPayment');
         renderPaymentMethods();
     }
 
@@ -484,7 +723,7 @@
     async function uploadAsset(file, key) {
         if (!file || state.busy) return;
         if (file.size > 2 * 1024 * 1024) {
-            showToast('error', 'حجم الملف كبير', 'الحد الأقصى لأصل الهوية هو 2MB.');
+            showToast('error', 'error.fileSize', 'error.fileLimit');
             return;
         }
         state.busy = true;
@@ -505,11 +744,12 @@
             if (!response.ok) throw await readError(response);
             const result = await response.json();
             state.draft.assets[key] = result.asset;
-            markDirty(`تم رفع ${ASSET_DEFINITIONS.find(([assetKey]) => assetKey === key)?.[1] || 'الأصل'} — يجب حفظ المسودة`);
+            const assetLabel = brandingText(`asset.${key}`) || brandingText('audit.operation');
+            markDirty('status.savedAsset', { asset: assetLabel });
             renderAssets();
-            showToast('success', 'تم رفع الأصل', 'سيظهر في المعاينة الآن، ويظل غير منشور حتى تنشر الهوية.');
-        } catch (error) {
-            showToast('error', 'تعذر رفع الأصل', error.message || 'حاول مرة أخرى.');
+            showToast('success', 'success.assetUploaded', 'success.assetUploadedDetail');
+        } catch {
+            showToast('error', 'error.assetUpload', 'error.retry');
         } finally {
             state.busy = false;
         }
@@ -519,19 +759,19 @@
         if (state.busy) return;
         let confirmed = true;
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'إزالة أصل الهوية؟', text: 'سيعود النظام إلى الأصل الافتراضي بعد النشر.', showCancelButton: true, confirmButtonText: 'إزالة', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: brandingText('confirm.removeAsset.title'), text: brandingText('confirm.removeAsset.body'), showCancelButton: true, confirmButtonText: brandingText('confirm.removeAsset.confirm'), cancelButtonText: brandingText('confirm.removeAsset.cancel'), buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
             confirmed = result.isConfirmed;
-        } else confirmed = window.confirm('إزالة أصل الهوية والعودة إلى الافتراضي؟');
+        } else confirmed = window.confirm(brandingText('confirm.removeAsset.fallback'));
         if (!confirmed) return;
         state.busy = true;
         try {
             const result = await window.topGymAuth.api(`/api/branding/assets/${encodeURIComponent(key)}`, { method: 'DELETE' });
             if (state.draft.assets) state.draft.assets[key] = null;
-            markDirty('تمت إزالة الأصل — احفظ المسودة أو انشر الهوية');
+            markDirty('status.removedAsset');
             renderAssets();
-            showToast('success', 'تمت إزالة الأصل', result?.key ? 'تمت العودة إلى الافتراضي في المعاينة.' : 'تمت العملية.');
-        } catch (error) {
-            showToast('error', 'تعذر إزالة الأصل', error.message || 'حاول مرة أخرى.');
+            showToast('success', 'success.assetRemoved', result?.key ? 'success.assetRestored' : 'success.done');
+        } catch {
+            showToast('error', 'error.assetRemove', 'error.retry');
         } finally {
             state.busy = false;
         }
@@ -543,11 +783,11 @@
         const phoneValidation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
         if (phoneValidation && !phoneValidation.valid) {
             phoneInput?.focus();
-            showToast('error', 'رقم الهاتف غير صحيح', phoneValidation.message);
+            showToast('error', 'error.phone');
             return false;
         }
         state.busy = true;
-        setBusy(button, true, 'جاري الحفظ…');
+        setBusy(button, true, 'loading.save');
         try {
             const result = await window.topGymAuth.api('/api/branding/draft', { method: 'PUT', body: JSON.stringify({ config: state.draft }) });
             state.draft = merge(fallback, result.draft || state.draft);
@@ -559,10 +799,10 @@
             state.dirty = false;
             state.pendingPublish = draftsDiffer();
             renderAll(result.validation || null);
-            showToast('success', 'تم حفظ التعديلات', 'تم حفظ الهوية كمسودة ولم يتم نشرها بعد.');
+            showToast('success', 'success.saved', 'success.savedDetail');
             return true;
-        } catch (error) {
-            showToast('error', 'تعذر حفظ المسودة', error.message || 'تحقق من الألوان والبيانات.');
+        } catch {
+            showToast('error', 'error.save', 'error.saveDetail');
             return false;
         } finally {
             state.busy = false;
@@ -573,7 +813,7 @@
     async function publish(button = $('brandingPublishButton')) {
         if (state.busy || !state.draft) return;
         state.busy = true;
-        setBusy(button, true, 'جاري النشر…');
+        setBusy(button, true, 'loading.publish');
         try {
             if (state.dirty) {
                 state.busy = false;
@@ -592,9 +832,9 @@
             state.pendingPublish = false;
             renderAll(result.validation || null);
             window.topGymBranding?.refresh?.();
-            showToast('success', 'تم نشر الهوية بنجاح', 'تم تطبيقها على لوحة الإدارة وبوابة المشترك والطباعة.');
-        } catch (error) {
-            showToast('error', 'تعذر نشر الهوية', error.message || 'أصلح أخطاء التباين ثم حاول مرة أخرى.');
+            showToast('success', 'success.published', 'success.publishedDetail');
+        } catch {
+            showToast('error', 'error.publish', 'error.publishDetail');
         } finally {
             state.busy = false;
             setBusy(button, false);
@@ -604,20 +844,20 @@
     async function discard() {
         if (!state.originalDraft || state.busy) return;
         const loaded = await loadSettings();
-        if (loaded) showToast('info', 'تم إلغاء التعديلات', 'عادت الشاشة إلى آخر مسودة محفوظة.');
+        if (loaded) showToast('info', 'success.discarded', 'success.discardedDetail');
     }
 
     async function resetToDefault() {
         if (state.busy) return;
         let confirmed = false;
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'استعادة الهوية الافتراضية؟', html: '<p>سيتم استبدال المسودة الحالية بهوية «Logic Fit» وحذف أصول المسودة. لن تتغير الهوية المنشورة إلا بعد الضغط على «نشر الهوية».</p>', showCancelButton: true, confirmButtonText: 'استعادة «Logic Fit»', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: brandingText('confirm.reset.title'), html: `<p>${escapeHtml(brandingText('confirm.reset.body'))}</p>`, showCancelButton: true, confirmButtonText: brandingText('confirm.reset.confirm'), cancelButtonText: brandingText('confirm.cancel'), buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
             confirmed = result.isConfirmed;
-        } else confirmed = window.confirm('استعادة الهوية الافتراضية «Logic Fit»؟');
+        } else confirmed = window.confirm(brandingText('confirm.reset.fallback'));
         if (!confirmed) return;
         const button = $('brandingResetButton');
         state.busy = true;
-        setBusy(button, true, 'جاري الاستعادة…');
+        setBusy(button, true, 'loading.resetting');
         try {
             const result = await window.topGymAuth.api('/api/branding/reset', { method: 'POST', body: JSON.stringify({}) });
             state.draft = merge(fallback, result.draft || fallback);
@@ -629,10 +869,10 @@
             state.dirty = true;
             state.pendingPublish = true;
             renderAll(result.validation || null);
-            setStatus('تمت استعادة «Logic Fit» كمسودة — انشرها لتطبيقها', true);
-            showToast('success', 'تمت استعادة الافتراضي', 'يمكنك مراجعة المعاينة قبل النشر.');
-        } catch (error) {
-            showToast('error', 'تعذر استعادة الهوية', error.message || 'حاول مرة أخرى.');
+            setStatus('status.resetDraft', {}, true);
+            showToast('success', 'success.reset', 'success.resetDetail');
+        } catch {
+            showToast('error', 'error.reset', 'error.retry');
         } finally {
             state.busy = false;
             setBusy(button, false);
@@ -642,9 +882,9 @@
     async function confirmLeave() {
         if (!state.dirty) return true;
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: 'لديك تغييرات غير محفوظة', text: 'هل تريد مغادرة شاشة تخصيص الهوية دون حفظ التعديلات الحالية؟', showCancelButton: true, confirmButtonText: 'تجاهل التعديلات', cancelButtonText: 'البقاء', buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', icon: 'warning', title: brandingText('confirm.leave.title'), text: brandingText('confirm.leave.body'), showCancelButton: true, confirmButtonText: brandingText('confirm.leave.discard'), cancelButtonText: brandingText('confirm.leave.stay'), buttonsStyling: false, customClass: { popup: 'top-gym-alert', confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' } });
             if (!result.isConfirmed) return false;
-        } else if (!window.confirm('لديك تغييرات غير محفوظة. هل تريد مغادرة الشاشة؟')) return false;
+        } else if (!window.confirm(brandingText('confirm.leave.fallback'))) return false;
         await discard();
         return true;
     }
@@ -668,6 +908,12 @@
             else handleFormChange(target);
         });
         page.addEventListener('click', (event) => {
+            const fileTrigger = event.target.closest('[data-branding-file-trigger]');
+            if (fileTrigger) {
+                event.preventDefault();
+                $(`branding-file-${fileTrigger.dataset.brandingFileTrigger}`)?.click();
+                return;
+            }
             const addPaymentButton = event.target.closest('#brandingAddPaymentMethod');
             if (addPaymentButton) { addPaymentMethod(); return; }
             const removePaymentButton = event.target.closest('[data-branding-payment-remove]');
@@ -695,9 +941,12 @@
 
     async function init() {
         if (state.initialized || !window.topGymAuth?.isOwner?.()) return;
+        applyBrandingLocale();
         bind();
         await loadSettings();
     }
+
+    window.addEventListener('topgym:localechange', applyBrandingLocale);
 
     window.topGymBrandingEditor = Object.freeze({
         hasUnsaved: () => state.dirty,

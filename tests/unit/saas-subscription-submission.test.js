@@ -139,7 +139,7 @@ test('subscription submit and proof routes remain owner-authenticated and proof 
     assert.match(ui, /state\.submitting/);
     const shell = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
     assert.match(shell, /id="saasSubscriptionSubmit"/);
-    assert.match(shell, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(shell, /\/js\/ui-feedback\.js\?v=4/);
     assert.match(ui, /subscription-requests\/submit/);
     assert.match(ui, /contentType\.startsWith\('image\/'\) \|\| contentType === 'application\/pdf'/);
     assert.match(ui, /dialog\.close\(\)/);

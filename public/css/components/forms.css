@@ -13,7 +13,7 @@ label.form-label {
   display: grid;
   gap: var(--space-2);
   color: var(--color-text-soft);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-body);
   font-weight: var(--weight-semibold);
   line-height: 1.55;
 }
@@ -85,9 +85,9 @@ label.form-label {
 
 .file-upload-control-trigger {
   min-width: 104px;
-  min-height: 44px;
+  min-height: var(--control-height-large);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   color: var(--color-primary);
   font: inherit;
@@ -112,14 +112,14 @@ textarea,
 .filter-input {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
+  min-height: var(--control-height-large);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   outline: 0;
   background: var(--color-surface);
   color: var(--color-text);
   caret-color: var(--color-primary);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-body);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
@@ -128,7 +128,7 @@ select,
 .form-control,
 .search-input,
 .filter-input {
-  padding: 0 var(--space-3);
+  padding-inline: var(--space-3);
 }
 
 textarea {
@@ -155,8 +155,8 @@ textarea:focus,
 .form-control:focus,
 .search-input:focus,
 .filter-input:focus {
-  border-color: var(--color-primary);
-  box-shadow: var(--focus-ring);
+  border-color: var(--brand-primary);
+  box-shadow: var(--brand-focus-ring);
 }
 
 /* The shared primitive owns the visible keyboard focus treatment. Feature
@@ -164,9 +164,21 @@ textarea:focus,
 body input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 body select:focus-visible,
 body textarea:focus-visible {
-  outline: 2px solid var(--rf-accent);
+  outline: 2px solid var(--brand-primary);
   outline-offset: 3px;
-  box-shadow: var(--rf-shadow-focus);
+  box-shadow: var(--brand-focus-ring);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):disabled,
+select:disabled,
+textarea:disabled,
+.form-control:disabled,
+.search-input:disabled,
+.filter-input:disabled {
+  border-color: var(--border-secondary);
+  background: var(--color-surface-muted);
+  color: var(--text-disabled);
+  cursor: not-allowed;
 }
 
 input[aria-invalid="true"],
@@ -200,9 +212,10 @@ textarea[aria-invalid="true"],
 
 .form-help,
 .helper-text,
-.field-hint {
-  color: var(--rf-muted);
-  font-size: .7rem;
+.field-hint,
+.auth-helper {
+  color: var(--color-text-muted);
+  font-size: var(--font-2xs);
   line-height: 1.65;
 }
 
@@ -283,39 +296,39 @@ input[type="radio"] {
    Feature files own placement and width; this component owns the control. */
 body .store-form-grid label,
 body .platform-field {
-  gap: 7px;
-  color: var(--rf-ink-soft);
-  font-size: .77rem;
-  font-weight: 800;
+  gap: var(--space-2);
+  color: var(--color-text-soft);
+  font-size: var(--font-size-secondary);
+  font-weight: var(--weight-semibold);
 }
 
 body .members-search-field,
 body .store-search-field,
 body .platform-global-search,
 body .platform-search-field {
-  min-height: 44px;
-  border: 1px solid var(--rf-line);
-  border-radius: var(--rf-radius-control);
-  background: var(--rf-surface-raised);
-  color: var(--rf-ink);
-  box-shadow: inset 0 1px 1px rgb(11 23 41 / .025);
-  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  min-height: var(--control-height-large);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  box-shadow: none;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 body .members-search-field:hover,
 body .store-search-field:hover,
 body .platform-global-search:hover,
 body .platform-search-field:hover {
-  border-color: color-mix(in srgb, var(--rf-accent) 45%, var(--rf-line));
+  border-color: var(--border-hover);
 }
 
 body .members-search-field:focus-within,
 body .store-search-field:focus-within,
 body .platform-global-search:focus-within,
 body .platform-search-field:focus-within {
-  border-color: var(--rf-accent);
-  background: var(--rf-surface-raised);
-  box-shadow: var(--rf-shadow-focus);
+  border-color: var(--brand-primary);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--brand-focus-ring);
   outline: 0;
 }
 

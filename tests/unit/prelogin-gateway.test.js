@@ -19,20 +19,26 @@ test('minimal login keeps only the real auth hooks and theme control', () => {
     assert.match(markup, /data-theme-toggle/iu);
 });
 
-test('minimal login suppresses marketing composition without touching auth behavior', () => {
+test('V2 login keeps the compact card, places features below it, and suppresses retired marketing surfaces', () => {
+    const markup = read('public/index.html');
     const styles = read('public/css/pages/login.css');
+    const cardEnd = markup.indexOf('<!-- AUTH_ENTRY_CARD_END -->');
+    const featuresStart = markup.indexOf('<!-- AUTH_ENTRY_FEATURES_START -->');
 
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-hero[\s\S]*display: none !important/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.saas-entry-card[\s\S]*display: none !important/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-security[\s\S]*display: none !important/u);
-    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-card\[hidden\][\s\S]*display: none !important/u);
+    assert.ok(cardEnd >= 0 && featuresStart > cardEnd, 'the three feature cards must follow the login card in the existing markup');
+    assert.match(markup, /class="auth-reference-features"/u);
+    assert.doesNotMatch(markup, /class="auth-reference-hero(?:\s|["'])/u, 'the retired split hero must not return to the Login DOM');
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.saas-entry-card,[\s\S]*?display: none;/u);
+    assert.match(styles, /\.auth-screen\[data-auth-stage="login"\] \.auth-reference-security[\s\S]*?display: none;/u);
+    assert.match(read('public/css/reset.css'), /\[hidden\]\s*\{\s*display:\s*none\s*!important;/u,
+        'native hidden state remains owned by the shared reset');
     assert.match(styles, /@media \(max-width: 560px\)[\s\S]*\.auth-screen\[data-auth-stage="login"\] \.auth-form-panel/u);
     assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.auth-screen\[data-auth-stage="login"\]/u);
 });
 
 test('login remains keyboard and mobile friendly', () => {
     const markup = read('public/index.html');
-    const styles = read('public/css/components/theme-toggle.css');
+    const styles = read('public/css/components/login-theme-toggle.css');
     const loginStyles = read('public/css/pages/login.css');
 
     assert.match(markup, /<label for="loginEmail">/u);

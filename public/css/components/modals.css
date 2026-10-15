@@ -285,6 +285,15 @@ body .swal2-content {
   line-height: 1.7;
 }
 
+body .swal2-popup.top-gym-alert .swal2-input,
+body .swal2-popup.top-gym-alert .swal2-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: 0;
+}
+
 body .swal2-actions {
   display: flex;
   align-items: center;

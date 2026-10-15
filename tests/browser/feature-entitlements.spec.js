@@ -212,15 +212,16 @@ test('branch switching keeps the selected branch membership, including expired h
         return json(route, {});
     });
 
+    const memberRecord = (id) => page.locator(`#membersList tr[data-member-id="${id}"], #membersList .members-mobile-card[data-member-id="${id}"]`).first();
     await page.goto('/?branchScope=qa#members', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toBeVisible();
-    await expect(page.locator('#membersList tr[data-member-id="501"]')).toBeVisible();
+    await expect(memberRecord(501)).toBeVisible();
     await expect(page.locator('#membersPagination')).toBeVisible();
 
     await page.locator('#branchContextSelect').selectOption('2');
-    await expect(page.locator('#membersList tr[data-member-id="502"]')).toBeVisible();
-    await expect(page.locator('#membersList tr[data-member-id="502"] .badge.expired')).toBeVisible();
-    await expect(page.locator('#membersList tr[data-member-id="502"]')).not.toContainText('بدون اشتراك');
+    await expect(memberRecord(502)).toBeVisible();
+    await expect(memberRecord(502).locator('.status-badge-with-icon')).toBeVisible();
+    await expect(memberRecord(502)).not.toContainText('بدون اشتراك');
     await expect(page.locator('#membersPagination')).toBeVisible();
     await expect.poll(() => requests.at(-1)).toBe(2);
 });
@@ -258,6 +259,9 @@ test('Gym branch core entitlement exposes the configured limit and blocks creati
         await closeMobileNavigation(page, testInfo);
         await expect(page.locator('#branchesLimitValue')).toHaveText(expectedLimit == null ? '—' : new Intl.NumberFormat('ar-EG').format(expectedLimit));
         if (code === 'starter') {
+            await expect(page.locator('#branchesList .branch-list-item').first()).toBeVisible();
+            await expect(page.locator('#branchesList')).toContainText('Main Branch');
+            await page.screenshot({ path: testInfo.outputPath('branches-v2.png'), fullPage: true });
             await page.locator('#branchCreateOpen').click();
             await page.locator('#branchCodeInput').fill('second-branch');
             await page.locator('#branchNameInput').fill('Second Branch');
@@ -269,7 +273,7 @@ test('Gym branch core entitlement exposes the configured limit and blocks creati
     }
 });
 
-test('Gym Owner can remove a non-main branch through the safe archive action', async ({ page }) => {
+test('Gym Owner can archive a non-main branch through the safe archive action', async ({ page }) => {
     let archived = false;
     const archiveRequests = [];
     await page.route('**/api/**', async (route) => {
@@ -293,13 +297,13 @@ test('Gym Owner can remove a non-main branch through the safe archive action', a
     });
 
     await page.goto('/?branchDelete=qa#branches', { waitUntil: 'networkidle' });
-    const deleteButton = page.locator('[data-branch-archive="2"]');
-    await expect(deleteButton).toBeVisible();
-    await expect(deleteButton).toHaveClass(/btn-danger/u);
-    await expect(deleteButton).toHaveText('حذف الفرع');
+    const archiveButton = page.locator('[data-branch-archive="2"]');
+    await expect(archiveButton).toBeVisible();
+    await expect(archiveButton).toHaveClass(/btn-light/u);
+    await expect(archiveButton).toHaveText('أرشفة الفرع');
 
     page.once('dialog', (dialog) => dialog.accept());
-    await deleteButton.click();
+    await archiveButton.click();
     await expect.poll(() => archiveRequests.length).toBe(1);
     await expect(page.locator('[data-branch-archive="2"]')).toHaveCount(0);
 });

@@ -8,10 +8,10 @@
     let activeTabName = null;
 
     const navigationGroups = [
-        { key: 'workspace', label: '\u0645\u0633\u0627\u062d\u0629 \u0627\u0644\u0639\u0645\u0644', tabs: ['dashboard', 'members', 'attendance', 'reports'] },
-        { key: 'location', label: '\u0627\u0644\u0641\u0631\u0648\u0639 \u0648\u0627\u0644\u0623\u0642\u0633\u0627\u0645', tabs: ['branches'] },
-        { key: 'operations', label: '\u0627\u0644\u062a\u0634\u063a\u064a\u0644', tabs: ['trainees', 'library', 'store', 'intelligence', 'feedback'] },
-        { key: 'management', label: '\u0627\u0644\u0625\u062f\u0627\u0631\u0629', tabs: ['management', 'branding', 'member-payment-methods', 'permissions', 'expenses', 'member-subscription-requests', 'portal-analytics', 'saas-billing', 'backup-history'] }
+        { key: 'workspace', labelKey: 'nav.group.workspace', tabs: ['dashboard', 'members', 'attendance', 'reports'] },
+        { key: 'location', labelKey: 'nav.group.location', tabs: ['branches'] },
+        { key: 'operations', labelKey: 'nav.group.operations', tabs: ['trainees', 'library', 'store', 'intelligence', 'feedback'] },
+        { key: 'management', labelKey: 'nav.group.management', tabs: ['management', 'branding', 'member-payment-methods', 'permissions', 'expenses', 'member-subscription-requests', 'portal-analytics', 'saas-billing', 'backup-history'] }
     ];
 
     function ensureNavigationSections() {
@@ -27,8 +27,11 @@
                 label = document.createElement('div');
                 label.className = 'sidebar-section-label';
                 label.dataset.navGroupLabel = group.key;
-                label.innerHTML = `<span>${escapeHtml(group.label)}</span>`;
+                label.innerHTML = `<span>${escapeHtml(window.TopGymI18n?.t(group.labelKey) || group.labelKey)}</span>`;
                 firstTab.before(label);
+            } else {
+                const text = label.querySelector('span') || label;
+                text.textContent = window.TopGymI18n?.t(group.labelKey) || group.labelKey;
             }
 
             group.tabs.forEach((tabName) => {
@@ -55,6 +58,7 @@
 
     ensureBackupHistoryTab();
     ensureNavigationSections();
+    window.TopGymI18n?.applyShell();
     // Platform Admin has its own application at /platform-admin. Remove the
     // legacy in-shell entry so gym users never see a second control plane.
     document.querySelector('[data-page-tab="platform"]')?.remove();
@@ -408,9 +412,17 @@
         if (current) current.textContent = label;
         const toggle = document.getElementById('mobileNavToggle');
         if (toggle && !document.querySelector('.app-shell.mobile-nav-open')) {
-            toggle.setAttribute('title', `${'\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629'}: ${label}`);
+            toggle.setAttribute('title', `${window.TopGymI18n?.t('shell.menu') || '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629'}: ${label}`);
         }
     }
+
+    window.addEventListener('topgym:localechange', () => {
+        window.TopGymI18n?.applyShell();
+        const rail = document.getElementById('pageTabs');
+        syncSidebarTooltips(rail);
+        const active = rail?.querySelector('[data-page-tab][aria-selected="true"]');
+        if (active?.dataset.pageTab) syncMobileNavigationContext(active.dataset.pageTab);
+    });
 
     function normalizeTab(name) {
         if (!validTabs.has(name)) return 'dashboard';

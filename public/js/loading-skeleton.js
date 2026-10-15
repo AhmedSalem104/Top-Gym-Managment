@@ -5,6 +5,12 @@
 
     const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || min));
     const safeClassName = (value) => String(value || '').replace(/[^a-z0-9_-]/gi, '');
+    const escapeAttribute = (value) => String(value || '').replace(/[&"<>]/g, (character) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[character]));
+    const loadingLabel = (name, fallback) => {
+        const key = `common.loading.${name}`;
+        const translated = window.TopGymI18n?.t?.(key);
+        return escapeAttribute(translated && translated !== key ? translated : fallback);
+    };
     const blocks = (count, className = 'skeleton-line') => Array.from({ length: clamp(count, 1, 12) }, () => `<span class="skeleton-block ${safeClassName(className)}" aria-hidden="true"></span>`).join('');
 
     function table({ rows = 5, columns = 4, className = '' } = {}) {
@@ -13,52 +19,52 @@
         const classes = ['skeleton-table', safeClassName(className)].filter(Boolean).join(' ');
         const style = `--skeleton-columns: repeat(${columnCount}, minmax(0, 1fr));`;
         const row = `<div class="skeleton-table-row">${blocks(columnCount, 'skeleton-table-cell')}</div>`;
-        return `<div class="${classes}" style="${style}" role="status" aria-label="جاري تحميل البيانات"><div class="skeleton-table-head">${blocks(columnCount, 'skeleton-table-cell is-head')}</div>${row.repeat(rowCount)}</div>`;
+        return `<div class="${classes}" style="${style}" role="status" aria-label="${loadingLabel('data', 'جارٍ تحميل البيانات')}"><div class="skeleton-table-head">${blocks(columnCount, 'skeleton-table-cell is-head')}</div>${row.repeat(rowCount)}</div>`;
     }
 
     function list({ rows = 4, className = '' } = {}) {
         const rowCount = clamp(rows, 1, 12);
         const classes = ['skeleton-list', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="جاري تحميل البيانات">${Array.from({ length: rowCount }, () => `<div class="skeleton-list-row"><span class="skeleton-block skeleton-avatar" aria-hidden="true"></span><span class="skeleton-list-copy">${blocks(2)}</span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>`).join('')}</div>`;
+        return `<div class="${classes}" role="status" aria-label="${loadingLabel('data', 'جارٍ تحميل البيانات')}">${Array.from({ length: rowCount }, () => `<div class="skeleton-list-row"><span class="skeleton-block skeleton-avatar" aria-hidden="true"></span><span class="skeleton-list-copy">${blocks(2)}</span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>`).join('')}</div>`;
     }
 
     function cards({ count = 4, className = '' } = {}) {
         const cardCount = clamp(count, 1, 12);
         const classes = ['skeleton-cards', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="جاري تحميل المؤشرات">${Array.from({ length: cardCount }, () => `<div class="skeleton-card"><div class="skeleton-card-head"><span class="skeleton-block skeleton-title" aria-hidden="true"></span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>${blocks(2)}</div>`).join('')}</div>`;
+        return `<div class="${classes}" role="status" aria-label="${loadingLabel('indicators', 'جارٍ تحميل المؤشرات')}">${Array.from({ length: cardCount }, () => `<div class="skeleton-card"><div class="skeleton-card-head"><span class="skeleton-block skeleton-title" aria-hidden="true"></span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>${blocks(2)}</div>`).join('')}</div>`;
     }
 
     function text({ lines = 2, className = '' } = {}) {
         const lineCount = clamp(lines, 1, 8);
         const classes = ['skeleton-text', safeClassName(className)].filter(Boolean).join(' ');
-        return `<span class="${classes}" role="status" aria-label="Loading text">${blocks(lineCount)}</span>`;
+        return `<span class="${classes}" role="status" aria-label="${loadingLabel('text', 'جارٍ تحميل النص')}">${blocks(lineCount)}</span>`;
     }
 
     function avatar({ size = 'md', className = '' } = {}) {
         const normalizedSize = ['sm', 'md', 'lg'].includes(size) ? size : 'md';
         const classes = ['skeleton-avatar', `skeleton-avatar-${normalizedSize}`, safeClassName(className)].filter(Boolean).join(' ');
-        return `<span class="skeleton-block ${classes}" role="status" aria-label="Loading avatar" aria-hidden="true"></span>`;
+        return `<span class="skeleton-block ${classes}" role="status" aria-label="${loadingLabel('avatar', 'جارٍ تحميل الصورة الشخصية')}" aria-hidden="true"></span>`;
     }
 
     function kpi({ className = '' } = {}) {
         const classes = ['skeleton-kpi', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="Loading metric"><span class="skeleton-block skeleton-kpi-label" aria-hidden="true"></span><span class="skeleton-block skeleton-kpi-value" aria-hidden="true"></span></div>`;
+        return `<div class="${classes}" role="status" aria-label="${loadingLabel('metric', 'جارٍ تحميل المؤشر')}"><span class="skeleton-block skeleton-kpi-label" aria-hidden="true"></span><span class="skeleton-block skeleton-kpi-value" aria-hidden="true"></span></div>`;
     }
 
     function chart({ className = '' } = {}) {
         const classes = ['skeleton-chart', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="Loading chart"><span class="skeleton-chart-grid" aria-hidden="true"></span><span class="skeleton-chart-line" aria-hidden="true"></span></div>`;
+        return `<div class="${classes}" role="status" aria-label="${loadingLabel('chart', 'جارٍ تحميل الرسم البياني')}"><span class="skeleton-chart-grid" aria-hidden="true"></span><span class="skeleton-chart-line" aria-hidden="true"></span></div>`;
     }
 
     function form({ fields = 3, className = '' } = {}) {
         const fieldCount = clamp(fields, 1, 8);
         const classes = ['skeleton-form', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="Loading form">${Array.from({ length: fieldCount }, () => `<div class="skeleton-form-field"><span class="skeleton-block skeleton-form-label" aria-hidden="true"></span><span class="skeleton-block skeleton-form-control" aria-hidden="true"></span></div>`).join('')}</div>`;
+        return `<div class="${classes}" role="status" aria-label="${loadingLabel('form', 'جارٍ تحميل النموذج')}">${Array.from({ length: fieldCount }, () => `<div class="skeleton-form-field"><span class="skeleton-block skeleton-form-label" aria-hidden="true"></span><span class="skeleton-block skeleton-form-control" aria-hidden="true"></span></div>`).join('')}</div>`;
     }
 
     function select({ className = '' } = {}) {
         const classes = ['skeleton-select', safeClassName(className)].filter(Boolean).join(' ');
-        return `<span class="skeleton-block ${classes}" role="status" aria-label="Loading select" aria-hidden="true"></span>`;
+        return `<span class="skeleton-block ${classes}" role="status" aria-label="${loadingLabel('select', 'جارٍ تحميل الخيارات')}" aria-hidden="true"></span>`;
     }
 
     function start(host, markup, { preserve = false } = {}) {
@@ -111,6 +117,26 @@
     }
 
     window.topGymSkeleton = Object.freeze({ avatar, cards, chart, error, form, hydrate, kpi, list, ready, refresh, select, start, table, text });
+
+    const localizedSkeletonLabels = [
+        ['.skeleton-table[role="status"]', 'data'],
+        ['.skeleton-list[role="status"]', 'data'],
+        ['.skeleton-cards[role="status"]', 'indicators'],
+        ['.skeleton-text[role="status"]', 'text'],
+        ['.skeleton-avatar[role="status"]', 'avatar'],
+        ['.skeleton-kpi[role="status"]', 'metric'],
+        ['.skeleton-chart[role="status"]', 'chart'],
+        ['.skeleton-form[role="status"]', 'form'],
+        ['.skeleton-select[role="status"]', 'select']
+    ];
+    window.addEventListener('topgym:localechange', () => {
+        localizedSkeletonLabels.forEach(([selector, name]) => {
+            const key = `common.loading.${name}`;
+            const translated = window.TopGymI18n?.t?.(key);
+            if (!translated || translated === key) return;
+            document.querySelectorAll(selector).forEach((element) => element.setAttribute('aria-label', translated));
+        });
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         hydrate();

@@ -10,6 +10,7 @@ const serviceSource = fs.readFileSync(path.join(root, 'src/services/member-servi
 const detailsUiSource = fs.readFileSync(path.join(root, 'public/js/member-details-ui.js'), 'utf8');
 const printSource = fs.readFileSync(path.join(root, 'public/js/integrations/print-enhancements.js'), 'utf8');
 const printCss = fs.readFileSync(path.join(root, 'public/css/pages/memberships.css'), 'utf8');
+const printDocumentCss = fs.readFileSync(path.join(root, 'public/css/print.css'), 'utf8');
 
 test('member details read membership branch and section scope tenant-safely', () => {
     const detailsStart = serviceSource.indexOf('async function getMemberDetails');
@@ -55,4 +56,13 @@ test('details and print surfaces render branch, section, and portal access infor
     assert.match(printSource, /scopeNames\(membershipScope\.sections\)/u);
     assert.match(printSource, /membershipCodePortalUrl/u);
     assert.match(printCss, /member-scope-grid/u);
+});
+
+test('full member print uses scoped pagination and readable history layout', () => {
+    assert.match(printSource, /mode === 'full' \? ' print-member-full' : ''/u);
+    assert.match(printDocumentCss, /\.print-member-full \.print-section\s*\{[^}]*break-inside:\s*auto;[^}]*page-break-inside:\s*auto;/u);
+    assert.match(printDocumentCss, /\.print-member-full \.print-section-title\s*\{[^}]*break-after:\s*avoid-page;/u);
+    assert.match(printDocumentCss, /\.print-member-full \.print-info-grid\s*\{[^}]*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u);
+    assert.match(printDocumentCss, /@page\s+member-ledger\s*\{[^}]*size:\s*A4\s+landscape;/u);
+    assert.match(printDocumentCss, /\.print-member-full \.print-table\s*\{[^}]*table-layout:\s*fixed;[^}]*font-size:\s*10pt;/u);
 });

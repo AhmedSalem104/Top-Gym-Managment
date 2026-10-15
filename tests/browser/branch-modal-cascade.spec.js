@@ -32,12 +32,11 @@ async function mountBranchDialog(page) {
 }
 
 async function waitForStableTypography(page) {
-    await page.waitForFunction(() => {
-        const fontStylesheet = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-            .find((link) => link.href.includes('fonts.googleapis.com/css2?family=Cairo'));
-        return Boolean(fontStylesheet?.sheet);
+    await page.evaluate(async () => {
+        await document.fonts.load('14px Tajawal');
+        await document.fonts.ready;
     });
-    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(() => document.fonts.check('14px Tajawal'));
 }
 
 async function signature(page) {

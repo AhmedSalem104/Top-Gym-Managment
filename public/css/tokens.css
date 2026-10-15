@@ -16,11 +16,21 @@
   --border-primary: #d9e2ef;
   --border-secondary: #e7edf5;
   --border-hover: #b9d1f8;
-  --primary: #1769e8;
-  --primary-hover: #0f56c9;
-  --primary-active: #0d47a1;
-  --primary-soft: rgb(23 105 232 / 0.1);
-  --primary-border: rgb(23 105 232 / 0.24);
+  --azure-50: #eaf3ff;
+  --azure-100: #d6e8ff;
+  --azure-200: #add1ff;
+  --azure-300: #80b8ff;
+  --azure-400: #4c9aff;
+  --azure-500: #0070f3;
+  --azure-600: #0061dd;
+  --azure-700: #0052c7;
+  --azure-800: #003f99;
+  --azure-900: #002b66;
+  --primary: var(--azure-500);
+  --primary-hover: var(--azure-600);
+  --primary-active: var(--azure-700);
+  --primary-soft: rgb(0 112 243 / 0.1);
+  --primary-border: rgb(0 112 243 / 0.24);
 
   /* Text hierarchy. */
   --text-primary: #172033;
@@ -28,7 +38,7 @@
   --text-muted: #718096;
   --text-disabled: #98a3b5;
   --text-on-primary: #ffffff;
-  --text-primary-soft: #6d28d9;
+  --text-primary-soft: #0052c7;
   --success-text: #0f7a57;
   --danger-text: #b42323;
   --warning-text: #9b6410;
@@ -56,8 +66,8 @@
   --overlay: rgb(2 6 23 / 0.58);
   --shadow-card: 0 8px 24px rgb(15 23 42 / 0.06);
   --shadow-popup: 0 20px 50px rgb(15 23 42 / 0.2);
-  --shadow-primary: 0 8px 20px rgb(23 105 232 / 0.18);
-  --shadow-primary-strong: 0 8px 20px rgb(23 105 232 / 0.22);
+  --shadow-primary: 0 8px 20px rgb(0 112 243 / 0.18);
+  --shadow-primary-strong: 0 8px 20px rgb(0 112 243 / 0.22);
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.24);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.3);
 
@@ -86,7 +96,7 @@
   --nav-active-bg: var(--primary-soft);
   --nav-active-text: var(--primary);
   --nav-active-border: var(--primary-border);
-  --nav-active-shadow: 0 6px 16px rgb(23 105 232 / 0.12);
+  --nav-active-shadow: 0 4px 12px rgb(0 112 243 / 0.12);
 
   /* Sidebar roles. The navigation remains a dark anchor in both themes. */
   --sidebar-bg: var(--bg-sidebar);
@@ -98,7 +108,7 @@
   --sidebar-hover-bg: rgb(255 255 255 / 0.08);
   --sidebar-active-bg: var(--primary);
   --sidebar-active-text: var(--text-on-primary);
-  --sidebar-active-shadow: 0 10px 24px rgb(23 105 232 / 0.22);
+  --sidebar-active-shadow: 0 6px 16px rgb(0 112 243 / 0.18);
   --nav-context-branch-accent: var(--info);
   --nav-context-branch-surface: var(--info-soft);
   --nav-context-section-accent: var(--nav-context-cyan);
@@ -108,8 +118,8 @@
   --nav-action-blue-surface: var(--info-soft);
   --nav-action-cyan: var(--nav-context-cyan);
   --nav-action-cyan-surface: var(--nav-context-cyan-soft);
-  --sidebar-width-collapsed: 84px;
-  --sidebar-width-expanded: 292px;
+  --sidebar-width-collapsed: 64px;
+  --sidebar-width-expanded: 248px;
 
   /* Shared member-card and authentication aliases. */
   --color-page: var(--bg-app);
@@ -128,12 +138,14 @@
   --store-muted: var(--text-muted);
   --store-text: var(--text-primary);
 
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
   --radius-pill: 999px;
+  --radius-control: 8px;
+  --radius-card: 10px;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -141,6 +153,7 @@
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-page-stack: 22px;
   --space-7: 28px;
   --space-8: 32px;
   --space-9: 40px;
@@ -151,17 +164,20 @@
   --font-xs: 0.75rem;
   --font-2xs: 0.6875rem;
   --font-sm: 0.8125rem;
-  --font-md: 0.9375rem;
+  --font-md: 0.875rem;
   --font-lg: 1.0625rem;
-  --font-xl: 1.375rem;
+  --font-xl: 1.5rem;
   --font-2xl: 1.75rem;
   --font-3xl: 2.25rem;
-  /* Cairo is the single UI typeface. Numeric fields keep LTR direction and
-     tabular figures through typography rules, without switching font family. */
-  --font-body: "Cairo", "Tahoma", sans-serif;
-  --font-latin: "Cairo", "Tahoma", sans-serif;
+  /* V2 type roles. Latin data is isolated from the Arabic-first body face. */
+  --font-arabic: "Tajawal", "Tahoma", sans-serif;
+  --font-latin: "Geist Variable", "Geist Sans", Arial, sans-serif;
+  --font-body: var(--font-arabic);
   --font-heading: var(--font-body);
-  --brand-base-font-size: 16px;
+  --font-size-page-title: 24px;
+  --font-size-body: 14px;
+  --font-size-secondary: 13px;
+  --brand-base-font-size: var(--font-size-body);
   --brand-radius-base: var(--radius-lg);
   --brand-image-radius: 6px;
   --brand-surface-secondary: var(--bg-surface);
@@ -215,7 +231,14 @@
   --shadow-sm: 0 4px 14px rgb(15 23 42 / 0.05);
   --shadow-md: 0 10px 28px rgb(30 61 104 / 0.08);
   --shadow-lg: 0 18px 48px rgb(30 61 104 / 0.12);
-  --focus-ring: 0 0 0 3px rgb(23 105 232 / 0.18);
+  --focus-ring: 0 0 0 3px rgb(0 112 243 / 0.2);
+  --icon-size-compact: 16px;
+  --icon-size-navigation: 18px;
+  --icon-size-control: 20px;
+  --icon-size-prominent: 24px;
+  --control-height-small: 32px;
+  --control-height-medium: 40px;
+  --control-height-large: 44px;
 
   /* Shared UI foundation contract. These values are global semantic tokens,
      not implementation details of the foundation stylesheet. */
@@ -227,34 +250,13 @@
   --ui-elevation-hover: var(--shadow-sm);
 
   --anatomy-canvas-bg: #fafdff;
-  --anatomy-selection: #2563eb;
+  --anatomy-selection: var(--primary);
   --anatomy-key-light: #ffffff;
   --anatomy-fill-light: #9fc4ff;
   --anatomy-rim-light: #b8d5ff;
   /* QR modules require a high-contrast paper/ink pair for reliable scans. */
   --qr-ink: #0f172a;
   --qr-paper: #ffffff;
-
-  /* Visual redesign tokens. Components consume these semantic roles instead
-     of embedding a page-specific palette. */
-  --rf-page: #f4f7fb;
-  --rf-surface: #ffffff;
-  --rf-surface-raised: #ffffff;
-  --rf-surface-soft: #eef3f8;
-  --rf-ink: #0b1729;
-  --rf-ink-soft: #1d304a;
-  --rf-muted: #66758b;
-  --rf-line: #d9e3ee;
-  --rf-line-soft: #e9eff5;
-  --rf-accent: #1976f3;
-  --rf-accent-strong: #0758c9;
-  --rf-accent-soft: rgb(25 118 243 / .1);
-  --rf-teal: #12a99a;
-  --rf-shadow-sm: 0 5px 16px rgb(11 23 41 / .055);
-  --rf-shadow-md: 0 14px 34px rgb(11 23 41 / .09);
-  --rf-shadow-focus: 0 0 0 4px rgb(25 118 243 / .16);
-  --rf-radius-card: 18px;
-  --rf-radius-control: 11px;
 
   /* Trainer Studio V2 semantic roles. Kept in the canonical token graph so
      the Vanilla surface does not need a second, page-owned palette. */
@@ -264,10 +266,10 @@
   --studio-surface: #ffffff;
   --studio-surface-soft: #f4f7fb;
   --studio-navy: #102744;
-  --studio-brand: #1769e8;
-  --studio-brand-strong: #0f56c9;
-  --studio-brand-soft: rgb(23 105 232 / .1);
-  --studio-brand-border: rgb(23 105 232 / .24);
+  --studio-brand: var(--primary);
+  --studio-brand-strong: var(--primary-hover);
+  --studio-brand-soft: var(--primary-soft);
+  --studio-brand-border: var(--primary-border);
   --studio-accent: var(--studio-brand);
   --studio-accent-strong: var(--studio-brand-strong);
   --studio-warning: #bd7517;
@@ -281,9 +283,9 @@
   --builder-diet-border: rgb(15 159 110 / 0.25);
   --builder-diet-stage-bg: #f0fdfa;
   --builder-workout-accent: #1d4ed8;
-  --builder-workout-accent-strong: #2563eb;
-  --builder-workout-soft: rgb(37 99 235 / 0.1);
-  --builder-workout-border: rgb(37 99 235 / 0.25);
+  --builder-workout-accent-strong: var(--primary);
+  --builder-workout-soft: var(--primary-soft);
+  --builder-workout-border: var(--primary-border);
   --builder-workout-stage-bg: #f8fbff;
   --builder-accent: var(--builder-diet-accent);
   --builder-accent-strong: var(--builder-diet-accent-strong);
@@ -307,30 +309,29 @@
 html[data-theme="dark"],
 body[data-theme="dark"] {
   color-scheme: dark;
-  /* Dark Navy + Purple system. Keep enough surface separation to preserve
-     depth between the app canvas, cards and overlays. */
-  --bg-app: #070d16;
-  --bg-sidebar: #09111d;
-  --bg-header: #0c1421;
-  --bg-surface: #0f1826;
-  --bg-card: #111c2b;
-  --bg-card-hover: #162235;
-  --bg-elevated: #182437;
-  --bg-input: #0b1522;
-  --border-primary: #243247;
-  --border-secondary: #1b293b;
-  --border-hover: #35465e;
-  --primary: #7c3aed;
-  --primary-hover: #8b5cf6;
-  --primary-active: #6d28d9;
-  --primary-soft: rgb(124 58 237 / 0.14);
-  --primary-border: rgb(139 92 246 / 0.3);
+  /* Geist-like neutral surfaces; Azure remains the product primary. */
+  --bg-app: #09090b;
+  --bg-sidebar: #09090b;
+  --bg-header: #09090b;
+  --bg-surface: #111113;
+  --bg-card: #111113;
+  --bg-card-hover: #18181b;
+  --bg-elevated: #18181b;
+  --bg-input: #0c0c0e;
+  --border-primary: #27272a;
+  --border-secondary: #202023;
+  --border-hover: #3f3f46;
+  --primary: var(--azure-500);
+  --primary-hover: var(--azure-300);
+  --primary-active: var(--azure-400);
+  --primary-soft: rgb(0 112 243 / 0.18);
+  --primary-border: rgb(76 154 255 / 0.38);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-disabled: #64748b;
   --text-on-primary: #ffffff;
-  --text-primary-soft: #c4b5fd;
+  --text-primary-soft: #80b8ff;
   --success-text: #4ade80;
   --danger-text: #fb7185;
   --warning-text: #fbbf24;
@@ -355,8 +356,8 @@ body[data-theme="dark"] {
   --overlay: rgb(2 6 23 / 0.75);
   --shadow-card: 0 8px 24px rgb(0 0 0 / 0.18);
   --shadow-popup: 0 20px 50px rgb(0 0 0 / 0.4);
-  --shadow-primary: 0 8px 20px rgb(124 58 237 / 0.18);
-  --shadow-primary-strong: 0 8px 20px rgb(124 58 237 / 0.22);
+  --shadow-primary: 0 8px 20px rgb(0 112 243 / 0.18);
+  --shadow-primary-strong: 0 8px 20px rgb(0 112 243 / 0.22);
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.4);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.5);
 
@@ -382,19 +383,19 @@ body[data-theme="dark"] {
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --nav-active-bg: var(--primary-soft);
-  --nav-active-text: #c4b5fd;
+  --nav-active-text: #80b8ff;
   --nav-active-border: var(--primary-border);
-  --nav-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --nav-active-shadow: 0 4px 12px rgb(0 112 243 / 0.2);
   --sidebar-bg: var(--bg-sidebar);
   --sidebar-bg-deep: #070d16;
   --sidebar-text: #f8fafc;
   --sidebar-text-muted: #94a3b8;
   --sidebar-border: var(--border-primary);
   --sidebar-divider: var(--border-secondary);
-  --sidebar-hover-bg: rgb(124 58 237 / 0.1);
+  --sidebar-hover-bg: rgb(255 255 255 / 0.06);
   --sidebar-active-bg: var(--primary);
   --sidebar-active-text: #ffffff;
-  --sidebar-active-shadow: 0 8px 20px rgb(124 58 237 / 0.18);
+  --sidebar-active-shadow: 0 6px 16px rgb(0 112 243 / 0.24);
   --builder-diet-accent: var(--success);
   --builder-diet-accent-strong: var(--success);
   --builder-diet-soft: var(--success-soft);
@@ -419,7 +420,7 @@ body[data-theme="dark"] {
   --shadow-sm: 0 4px 14px rgb(0 0 0 / 0.18);
   --shadow-md: 0 10px 28px rgb(0 0 0 / 0.24);
   --shadow-lg: var(--shadow-popup);
-  --focus-ring: 0 0 0 3px rgb(124 58 237 / 0.18);
+  --focus-ring: 0 0 0 3px rgb(76 154 255 / 0.24);
   --anatomy-canvas-bg: #0b1522;
   --anatomy-selection: #a78bfa;
   --anatomy-key-light: #f8fafc;
@@ -427,22 +428,6 @@ body[data-theme="dark"] {
   --anatomy-rim-light: #7c3aed;
   --qr-ink: #0f172a;
   --qr-paper: #ffffff;
-  --rf-page: #070c15;
-  --rf-surface: #101a29;
-  --rf-surface-raised: #142135;
-  --rf-surface-soft: #0c1523;
-  --rf-ink: #f5f8fc;
-  --rf-ink-soft: #d6e0ee;
-  --rf-muted: #91a2b8;
-  --rf-line: #26374e;
-  --rf-line-soft: #1b2a3d;
-  --rf-accent: #5ca8ff;
-  --rf-accent-strong: #82bbff;
-  --rf-accent-soft: rgb(92 168 255 / .13);
-  --rf-teal: #42d3c5;
-  --rf-shadow-sm: 0 8px 22px rgb(0 0 0 / .18);
-  --rf-shadow-md: 0 18px 42px rgb(0 0 0 / .3);
-  --rf-shadow-focus: 0 0 0 4px rgb(92 168 255 / .2);
   --studio-ink: #edf6ff;
   --studio-muted: #9db0c4;
   --studio-line: #26394e;

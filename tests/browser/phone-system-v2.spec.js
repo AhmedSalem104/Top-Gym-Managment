@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 const { normalizePhoneForSearch } = require('../../src/services/phone-service');
 
 const catalog = {
@@ -380,8 +382,12 @@ test('attendance workspace stays compact and overflow-free at supported viewport
     expect(metrics.sectionBottom).toBeGreaterThan(metrics.tableTop);
     expect(metrics.actionDisplays.every((display) => display === 'none')).toBeTruthy();
 
+    const screenshot = await page.screenshot({ fullPage: true });
+    const evidenceDirectory = path.resolve(process.cwd(), 'qa/artifacts/attendance-v2');
+    await fs.mkdir(evidenceDirectory, { recursive: true });
+    await fs.writeFile(path.join(evidenceDirectory, `attendance-${testInfo.project.name}.png`), screenshot);
     await testInfo.attach(`attendance-${testInfo.project.name}.png`, {
-        body: await page.screenshot({ fullPage: true }),
+        body: screenshot,
         contentType: 'image/png'
     });
 });
@@ -423,8 +429,12 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
 
+    const screenshot = await page.screenshot({ fullPage: true });
+    const evidenceDirectory = path.resolve(process.cwd(), 'qa/artifacts/attendance-v2');
+    await fs.mkdir(evidenceDirectory, { recursive: true });
+    await fs.writeFile(path.join(evidenceDirectory, `attendance-1024-${testInfo.project.name}.png`), screenshot);
     await testInfo.attach('attendance-1024.png', {
-        body: await page.screenshot({ fullPage: true }),
+        body: screenshot,
         contentType: 'image/png'
     });
 });
@@ -532,7 +542,7 @@ test('attendance workspace keeps the identification and member summary as balanc
     }
 });
 
-test('attendance check-in keeps the existing API flow and gives immediate success feedback', async ({ page }) => {
+test('attendance check-in keeps the existing API flow and gives immediate success feedback', async ({ page }, testInfo) => {
     const database = await installLocalMemberApi(page);
     database.members.push({
         id: 6101,
@@ -545,6 +555,8 @@ test('attendance check-in keeps the existing API flow and gives immediate succes
     await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendancePhone').fill('01015819700');
     await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
+    await expect(page.locator('.attendance-member-context .attendance-member-empty')).toBeHidden();
+    await page.screenshot({ path: testInfo.outputPath('attendance-selected-member.png'), fullPage: true });
     const checkIn = page.locator('#attendanceCheckInButton');
     await expect(checkIn).toBeVisible();
     const request = page.waitForRequest((item) => item.url().endsWith('/api/attendance/check-in') && item.method() === 'POST');
@@ -570,12 +582,13 @@ test('attendance check-out is the single primary action for a member already ins
     await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendancePhone').fill('01015819701');
     await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
+    await expect(page.locator('.attendance-member-context .attendance-member-empty')).toBeHidden();
     await expect(page.locator('#attendanceCheckInButton')).toBeHidden();
     const checkOut = page.locator('#attendanceCheckOutButton');
     await expect(checkOut).toBeVisible();
-    const request = page.waitForRequest((item) => item.url().endsWith('/api/attendance/check-out') && item.method() === 'POST');
+    const response = page.waitForResponse((item) => item.url().endsWith('/api/attendance/check-out') && item.request().method() === 'POST');
     await checkOut.click();
-    await request;
+    expect((await response).status()).toBe(200);
     expect(database.attendanceRequests).toHaveLength(1);
     expect(database.attendanceRequests[0]).toMatchObject({ action: 'check-out', body: { phone: '+201015819701' } });
     await expect(page.locator('#toast')).toContainText('عضو حضور داخل الجيم');

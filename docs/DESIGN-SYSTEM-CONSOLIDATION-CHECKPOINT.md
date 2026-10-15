@@ -68,7 +68,7 @@ Latest checkpoint (2026-09-30, supersedes preceding checkpoint paragraphs): Batc
 Task-related modified/generated files include:
 
 - `public/css/app-shell.css`, `public/css/main.css` (generated)
-- `public/css/components/alerts.css`, `badges.css`, `cards.css`, `design-foundation.css`, `empty-states.css`, `forms.css`, `loading.css`, `modal-foundation.css`, `tables.css`, `tabs.css`, `ui-foundation.css`, `visual-redesign.css`
+- `public/css/components/alerts.css`, `badges.css`, `cards.css`, `empty-states.css`, `forms.css`, `loading.css`, `modal-foundation.css`, `tables.css`, `tabs.css`, `ui-foundation.css`, `visual-redesign.css`
 - `public/index.html`
 - `public/dialogs/backup.html`, `coaching.html`, `library.html` (Batch 8 verified)
 - `public/js/dialog-enhancements.js`, `public/css/pages/memberships.css` (Batches 15–16)
@@ -157,3 +157,93 @@ Verification: ownership/matcher 28/28; CSS build + 67-file style validation PASS
 ## Final user acceptance (2026-09-30)
 
 The user explicitly accepts the final visual verification as USER ACCEPTANCE and instructs that no additional Full Visual Regression, batch, audit, or design changes be performed. For task/release status, this acceptance supersedes the preceding `NOT VERIFIED` gate: Design System Consolidation is accepted as COMPLETE based on Batches 1–26, ownership 28/28, unit 600/600, browser 324 PASS / 44 SKIP / 0 FAIL / 0 FLAKY, CSS Build PASS, Style Check PASS, Diff Check PASS, and user visual acceptance. This records user acceptance; it does not change the historical fact that the dedicated Express-backed visual audit was not run. Commit this checkpoint with the consolidation changes; do not push or deploy.
+
+## Continuation checkpoint — Batch 27 (2026-10-11)
+
+The active Logic Fit V2 continuation explicitly requires project-wide completion; the historical 2026-09-30 acceptance above is retained as history and does not mark the current expanded migration/release objective complete.
+
+Moved generic page/section heading typography from `components/visual-redesign.css` to canonical `typography.css`, section divider/spacing to `layout.css`, and mobile section-heading stacking to `responsive.css`. Replaced legacy aliases and viewport-clamped/800-weight heading rules with approved V2 typography/spacing tokens. Added ownership assertions and corrected the stale Platform Admin test expectation to the new canonical owner. No application functionality or contracts changed.
+
+Verification on Node `v24.20.0`: `npm run build` PASS (71 CSS sources; pre-existing duplicate-token and `!important` warnings remain); full unit suite 651/651 PASS; ownership suite 34/34 PASS; `CI=1 npm run test:e2e -- tests/browser/navigation-responsive.spec.js --retries=0 --workers=1` 24/24 PASS across desktop/mobile/tablet-light/mobile320-light; `CI=1 npm run test:e2e -- tests/browser/members-popups.spec.js --retries=0 --workers=1` 37 PASS, 3 explicit skips, 0 FAIL / 40 scheduled. Inspected captured synthetic member details/form screenshots at desktop and mobile with no visible heading clipping or overlap. No commit, push, or Production deployment.
+
+Next safe candidate at the end of Batch 27: Navbar/page-tabs rules in `visual-redesign.css` competed with `navigation-shell.css`, `branch-context.css`, and `mobile-topbar.css`. Batch 28 moved the page-tab visual states to `navigation-shell.css`; topbar composition remains in the visual layer and must be reconciled with route/action visibility and import-order contracts before moving further rules. Do not remove the stylesheet wholesale. Continue full migration and regression; Batches 27–28 are source-ownership slices, not project completion.
+
+### Continuation checkpoint — Batch 28 (2026-10-11)
+
+Moved the application `.page-tabs` rail surface, hover/focus/active states, and active indicator color from `components/visual-redesign.css` to the canonical `components/navigation-shell.css` owner. Also removed the legacy visual layer's stale page-tab reduced-motion selectors; the navigation-shell already owns those transitions. Kept branch/section placement, topbar actions, existing `!important` rules, route hooks, and action visibility untouched. Added an ownership test to prevent the migrated rules returning to visual-redesign.
+
+Verification on Node `v24.20.0`: ownership suite **35/35 PASS**; `npm run build` PASS (CSS bundles regenerated; pre-existing duplicate-token and `!important` warnings remain); `CI=1 npm run test:e2e -- tests/browser/navigation-responsive.spec.js --retries=0 --workers=1` **24/24 PASS** across desktop, mobile, tablet-light and mobile320-light. Inspected actual synthetic browser captures at `qa/artifacts/playwright/navigation-responsive-resp-3614d-accessible-at-each-viewport-desktop/navigation-desktop.png` and `qa/artifacts/playwright/navigation-responsive-resp-3614d-accessible-at-each-viewport-mobile320-light/navigation-mobile-320.png`; no tab-rail overflow or overlap was observed. `git diff --check` PASS (Git reports existing LF-to-CRLF working-copy notices). No behavior/API/permission/data change; `MOBILE IMPACT: NONE` (CSS ownership/presentation only).
+
+This is a single Navbar source-ownership slice; the remaining topbar composition and overall project-wide V2 migration are incomplete. No commit, push, or Production deployment.
+
+### Continuation checkpoint — Batch 29 (2026-10-11)
+
+Removed the obsolete first branch-context positioning/decorative layer from `components/visual-redesign.css` (centered 430px/50px framed treatment, overridden tablet/mobile shell sizing, duplicate overflow and reduced-motion declarations). Cascade inspection showed the later current Navbar composition resets those declarations, while `branch-context.css` and `mobile-topbar.css` own the operational selector and mobile two-column fields. Preserved current desktop centering/layout rules and the explicit mobile layout. Added a targeted ownership/source guard.
+
+Verification on Node `v24.20.0`: build PASS (71 CSS files; pre-existing duplicate-token and `!important` warnings); full unit suite **653/653 PASS**; ownership subset **36/36 PASS**; navigation E2E **24/24 PASS** across Desktop, Mobile, Tablet-Light and Mobile-320-Light. Compared before/after screenshots generated by the same navigation test: Mobile-320 screenshot was pixel-identical; Desktop was 1440×2929 with 4,672 differing pixels (~0.11%), differences localized to the top edge/sparse upper image rather than the branch selector; route geometry/overflow assertions passed. `git diff --check` PASS with existing CRLF notices. No routes, IDs, permissions, APIs, data or business behavior changed (`MOBILE IMPACT: NONE`). No commit, push or deploy.
+
+Overall goal still incomplete: remaining Navbar action/composition rules, the rest of the screen inventory, full print/visual/accessibility verification and legacy source retirement remain open.
+
+### Continuation checkpoint — Batch 31 (2026-10-11)
+
+Retired `public/css/components/visual-redesign.css` after the remaining real declarations had canonical owners and consumer references were checked. Removed its imports from `main.source.css` and `app-shell.source.css`. The body canvas/text now use existing utility/theme token ownership; selected-text color is in the utility owner using V2 semantic tokens; top-level page stack spacing remains 22px through the new canonical `--space-page-stack` token in `tokens.css` and its placement rule in `layout.css`; reduced-motion remains owned by `responsive.css`. Rebuilt generated CSS only through `npm run build`. Updated ownership tests to assert the global layer file/imports are absent and preserved other negative-ownership checks with an explicit retired-file fallback. No DOM, JS, route, API, permission, business, or data behavior changed.
+
+Verification on Node `v24.20.0`: `npm run build` PASS (70 CSS sources validated; pre-existing duplicate-token and `!important` warnings remain); focused ownership/login/registration tests **41/41 PASS**; full unit suite **655/655 PASS**; targeted Playwright app-shell/navigation/login suite **72/72 PASS** (Desktop, Mobile, Tablet-Light, Mobile-320-Light); `git diff --check` PASS (line-ending notices only). Reviewed actual dashboard Desktop and Mobile screenshots plus Login Desktop capture; no body canvas regression/overflow observed. Navbar/theme/login and app-shell browser assertions passed. Source imports are clear. No commit, push, or Production deployment.
+
+This closes only the global `visual-redesign.css` layer. Historical E2E `380 PASS / 28 FAIL / 44 SKIPPED` still cannot be reconstructed because its case-level artifact and verified baseline SHA are absent; do not classify those failures. Other old/duplicate styles, all-route V2 acceptance, print families, accessibility/performance evidence, and release gates remain open.
+
+**Full post-fix rerun:** Node `v24.20.0`, `CI=1 npm run test:e2e -- --retries=0 --workers=1` — **427 passed / 53 skipped / 0 failed of 480**. It ran after correcting the Checkout test to synchronize on its response; subscribers responsive passed on the full rerun. The previous full run's 425/53/2 results are retained in the implementation report as the reason for the targeted investigation, not the final status.
+
+### Continuation checkpoint — Batch 32 (2026-10-11)
+
+Removed the shared-foundation `.platform-card` / `.platform-login-card` surface override from `ui-foundation.css`. The common Platform Admin cards continue to use the canonical Cards owner; the login card's border/shadow return to the explicit feature-owned values in `pages/platform-admin.css`. Moved `.platform-card .card-heading { min-width: 0 }` into that page owner so the page-specific layout hook remains. The `.platform-card` markup/class stays intact because `platform-admin.js` uses it to resolve the request table. No markup, APIs, routes, permission checks, or behavior changed.
+
+Verification on Node `v24.20.0`: build PASS (70 CSS files; duplicate-token and existing `!important` warnings remain); Design System ownership **39/39 PASS**; full unit **656/656 PASS**; Platform Admin login + pagination Playwright **4/4 PASS** at Desktop and Mobile-320-Light. Reviewed actual platform login and 1440px Platform Admin screenshots; the feature-owned login surface and page shell render with no clipping. `MOBILE IMPACT: NONE`; Blueprint N/A. The full 480-case E2E after the preceding stylesheet removal passed **427/480, 53 explicit skips, 0 failures** before this scoped CSS change; no new full-suite rerun after Batch 32 yet. No commit, push, or Production deployment.
+
+This is a Platform Admin card ownership slice only. Full route-by-route V2 migration, remaining foundation CSS, complete visual/print/accessibility/performance gates, and release remain incomplete.
+
+### Continuation checkpoint — Batch 33 (2026-10-11)
+
+Completed the bounded `ui-foundation.css` consumer migration. Moved shared page isolation/heading wrapping to Layout/Typography and page-specific shell, sizing, action, tap-highlight, mobile, safe-area, and file-picker presentation to the existing Platform Admin, Member Portal, and Register Gym stylesheet owners. Removed `ui-foundation.css` and its references from both source bundles and the isolated login bundle builder; regenerated through the normal build. The full cascade was checked before transfer so effective Platform Admin and registration widths/paddings were retained. No DOM/JS hooks, APIs, routes, permissions, auth, or business logic changed.
+
+Verification: Node `v24.20.0`; `npm run build` PASS (69 CSS source files; existing duplicate-token and `!important` warnings persist); full unit suite **658/658 PASS**; focused browser run **57 PASS, 3 declared skips, 0 FAIL / 60 scheduled**. Reviewed generated Playwright captures for Platform Admin at 1440px and 320px (Light, plus 1440px Dark) and the synthetic Member Portal two-page print PDF. `design-system-ownership.test.js` now guards against recreating this global late override file. **MOBILE IMPACT: NONE**; Blueprint N/A.
+
+This retires `ui-foundation.css` only; it does not establish all-screen V2 acceptance, zero duplicate tokens, complete print-family verification, or Production readiness. No commit/push/deploy.
+
+### Continuation checkpoint — responsive root-cause + complete static UI matrix (2026-10-11)
+
+- Repaired the static QA route/API fixture gaps and added an isolated static UI QA runner. The rerun covered 858 view/theme/viewport observations with 0 failures, 0 page/console errors and 0 failed responses; report: `qa/reports/logicfit-v2-batch40/complete-ui-qa.json`.
+- Confirmed and fixed the Member Portal overflow: generic global input width overrode the weak selector on the hidden payment-proof file field. The feature owner now explicitly constrains only that semantic file input. Fixed min-content overflow on the Platform forbidden-state card.
+- Node 24.20.0 build PASS; full unit suite 659/659 PASS; focused browser regression first had 3 local-server connection failures, then affected phone-system suite passed 12/12 on stable server. These failures were infrastructure-only, with no failing assertions.
+- Actual screenshots reviewed in `qa/artifacts/logicfit-v2-batch40/` at 390px (Member Portal, Platform Admin, Registration, Forbidden State) and Trainer Workspace 390/1440. Trainer capture is entitlement-gated synthetic structure only.
+- Historical 28 E2E failures remain non-classifiable because raw reports/traces/baseline SHA are absent. Existing CSS validator warnings about duplicate token definitions and `!important` remain open.
+- This is not complete project V2 acceptance; no commit, push or Production deployment.
+
+#### Print QA follow-up — short membership card
+
+- Added a synthetic browser test for the real member-row short membership print action. First run proved email and portal URL overflowed print info cells. Canonical `print.css` now allows long values to wrap within the grid item; all existing data remains present.
+- Node 24.20.0: short-membership print E2E **1/1 PASS**, one-page A4 PDF assertion passed, no API writes, generated PDF/PNG stored in `qa/artifacts/member-short-membership-print-final/`. The post-fix PNG was visually reviewed and the long values remain inside their cells.
+- This closes only the short-card output for a synthetic fixture; multilingual/long-data coverage for every print family and paper format remains open.
+
+#### Focused print regression — all selected viewport projects
+
+- Initial regression was **13 passed / 2 failed / 9 skipped** because the new test located only the desktop table row while Mobile and Mobile-320 render `.members-mobile-card`. The test now targets either existing presentation without changing the application.
+- Retest of the short membership print action: Desktop + Mobile 390 + Mobile 320 **3/3 PASS**. Full focused print suite across configured Desktop/Mobile/Tablet/Mobile-320 projects: **15 passed / 9 skipped / 0 failed / 24 scheduled**, Node `v24.20.0`.
+- Not a claim of exhaustive print coverage; all print families, locales, data extremes, and paper formats remain to be verified.
+- Node `v24.20.0` ownership test **43/43 PASS**; `git diff --check` completed without whitespace errors (only Git's LF-to-CRLF normalization warnings).
+- Read-only print-flow inventory found no extra active print family beyond the six focused specs. Payment-receipt and trainer-report printing are subflows of the covered member/coaching tests; CSV and backup exports are not print. A `printMember(..., 'new')` template branch without a confirmed UI caller remains unverified.
+- Full browser regression on Node `v24.20.0`: **431 passed / 53 skipped / 0 failed / 484 scheduled** over four configured projects (24.3 min); parsed `qa/reports/playwright.json` independently. This clean current run does not reconstruct the missing historical artifacts needed to classify the earlier 28 failures.
+- Skip reasons: 20 authenticated cases explicitly require unconfigured `QA_OWNER_*` credentials; the remaining 33 are declared per-project de-duplication for desktop-owned PDF/breakpoint/screenshot cases or dedicated responsive coverage. The credential-gated cases remain unverified.
+- Fixed the CSS ownership validator's false duplicate-token warning: generated `login-entry.css` was treated as a second token owner, and repeated declarations in the same file were counted multiple times. It now checks distinct source files, excludes generated CSS only from owner counting, and still validates generated syntax/variables. `npm run build` PASS (69 CSS files); source-level owners outside `tokens.css`: 0. Eleven source `!important` warnings remain after excluding the generated login bundle from the warning count; they were retained pending safe, declaration-specific migration evidence.
+- After adding a regression assertion for this validator, `npm run test:unit` **661/661 PASS**.
+- Raw CSS artifact sizes vs the previously documented baseline: app shell **−26,750 bytes (−6.71%)**, main bundle **−18,153 bytes (−1.79%)**, login entry **+9,856 bytes (+3.97%)**. No gzip or runtime performance benchmark was taken.
+
+**MOBILE IMPACT: NONE** — page CSS / QA harness only. **MOBILE BLUEPRINT: N/A**. **UPDATED MOBILE DOCS: []**.
+
+### Continuation checkpoint — Batch 30 (2026-10-11)
+
+Moved the remaining 507-line Navbar shell composition block from `components/visual-redesign.css` into the canonical `components/navigation-shell.css`, preserving the block's internal rule order and leaving `branch-context.css`/`mobile-topbar.css` later in the import cascade. The legacy visual file now owns no `.topbar-inner`, `.topbar-controls`, `.topbar-quick-actions`, or `.branch-context-shell` composition. Updated ownership assertions accordingly. Separately moved the shared ≤767px one-column form/content-grid reflow from `visual-redesign.css` to the responsive owner and added an ownership guard. No APIs, route hooks, permissions, event handlers, or business state changed.
+
+Verification on Node `v24.20.0`: `npm run build` PASS (71 CSS files validated; pre-existing duplicate-token and `!important` warnings remain); full unit suite **654/654 PASS**; source-ownership + sidebar suites **40/40 PASS**; navigation E2E **24/24 PASS** across Desktop, Mobile, Tablet-Light and Mobile-320-Light; member popup + subscriber responsive E2E **45 PASS, 3 declared skips, 0 FAIL / 48 scheduled**. Inspected actual Desktop dashboard-shell and Mobile-320 navigation screenshots; the row structure, branch/section context and rail remain rendered, and the E2E geometry/menu/keyboard checks passed. Screenshots: `qa/artifacts/playwright/navigation-responsive-resp-3614d-accessible-at-each-viewport-desktop/navigation-desktop.png`, `qa/artifacts/playwright/navigation-responsive-resp-3614d-accessible-at-each-viewport-mobile320-light/navigation-mobile-320.png`, and `qa/artifacts/playwright/subscribers-responsive-sub-ce287-ponsive-card-list-on-phones-mobile320-light/subscribers-mobile-390.png`.
+
+One stale sidebar unit assertion initially failed because it selected only the final textual mobile media block after adding Navbar rules; assertions now verify the owning stylesheet's drawer rules independent of media-block position. No behavior assertion was weakened. `git diff --check` remains to be run after this documentation update. No commit, push, or Production deployment. Project-wide V2, print QA, accessibility and release gates remain incomplete.

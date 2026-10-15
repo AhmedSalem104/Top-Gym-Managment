@@ -1,8 +1,9 @@
 .intelligence-section {
     display: grid;
     gap: var(--space-5);
-    padding: clamp(1rem, 2vw, 1.5rem);
-    background: linear-gradient(145deg, var(--bg-app) 0%, var(--primary-soft) 52%, var(--bg-card) 100%);
+    min-width: 0;
+    padding: clamp(var(--space-4), 2vw, var(--space-6));
+    background: var(--bg-app);
 }
 
 .intelligence-page-header,
@@ -15,27 +16,28 @@
 }
 
 .intelligence-page-header {
-    padding: clamp(1rem, 2vw, 1.5rem);
+    padding: clamp(var(--space-4), 2vw, var(--space-6));
     border: 1px solid var(--primary-border);
-    border-radius: 1.25rem;
-    background: radial-gradient(circle at 12% 12%, var(--primary-soft), transparent 32%), var(--bg-card);
-    box-shadow: var(--shadow-card);
+    border-radius: var(--radius-card);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-xs);
 }
 
 .intelligence-page-heading {
     display: flex;
     align-items: flex-start;
-    gap: .9rem;
+    min-width: 0;
+    gap: var(--space-4);
 }
 
 .intelligence-page-icon {
     display: grid;
     place-items: center;
-    width: 3rem;
-    height: 3rem;
-    flex: 0 0 3rem;
+    width: var(--ui-touch-target);
+    height: var(--ui-touch-target);
+    flex: 0 0 var(--ui-touch-target);
     color: var(--primary);
-    border-radius: 1rem;
+    border-radius: var(--radius-md);
     background: var(--primary-soft);
 }
 
@@ -46,20 +48,27 @@
     color: var(--text-primary);
 }
 
+.intelligence-page-heading h3 {
+    font-size: var(--font-size-page-title);
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+}
+
 .intelligence-page-heading p,
 .intelligence-card-head p,
 .intelligence-result-head p {
     margin: 0;
     color: var(--text-muted);
-    font-size: .88rem;
+    font-size: var(--font-size-body);
+    line-height: 1.6;
 }
 
 .intelligence-kicker,
 .intelligence-card-head > div > span,
 .intelligence-result-kicker {
     color: var(--primary);
-    font-size: .72rem;
-    font-weight: 800;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
     letter-spacing: .08em;
     text-transform: uppercase;
 }
@@ -67,7 +76,7 @@
 .intelligence-header-actions {
     display: flex;
     align-items: center;
-    gap: .65rem;
+    gap: var(--space-3);
     flex-wrap: wrap;
 }
 
@@ -76,14 +85,14 @@
 .intelligence-card-mark {
     display: inline-flex;
     align-items: center;
-    min-height: 1.8rem;
-    padding: .25rem .65rem;
+    min-height: var(--control-height-small);
+    padding: var(--space-1) var(--space-3);
     color: var(--primary-active);
     border: 1px solid var(--primary-border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--primary-soft);
-    font-size: .72rem;
-    font-weight: 800;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-semibold);
 }
 
 .intelligence-card-mark {
@@ -97,20 +106,20 @@
 .intelligence-stats-grid {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: .75rem;
+    gap: var(--space-3);
 }
 
 .intelligence-stat-card {
     position: relative;
     display: grid;
-    gap: .3rem;
-    min-height: 7.25rem;
-    padding: 1rem;
+    gap: var(--space-1);
+    min-height: 6rem;
+    padding: var(--space-4);
     overflow: hidden;
     border: 1px solid var(--border-primary);
-    border-radius: 1rem;
+    border-radius: var(--radius-card);
     background: var(--bg-card);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-xs);
 }
 
 .intelligence-stat-card::after {
@@ -126,9 +135,9 @@
 .intelligence-stat-card.danger::after { background: var(--danger); }
 .intelligence-stat-card.workout::after { background: var(--info); }
 .intelligence-stat-card.diet::after { background: var(--success); }
-.intelligence-stat-card > span { color: var(--text-muted); font-size: .78rem; }
-.intelligence-stat-card strong { color: var(--text-primary); font-size: 1.75rem; line-height: 1; }
-.intelligence-stat-card small { color: var(--text-disabled); font-size: .72rem; }
+.intelligence-stat-card > span { color: var(--text-muted); font-size: var(--font-sm); }
+.intelligence-stat-card strong { color: var(--text-primary); font-size: var(--font-2xl); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.intelligence-stat-card small { color: var(--text-muted); font-size: var(--font-xs); }
 
 .intelligence-dashboard-grid,
 .intelligence-plan-layout {
@@ -140,42 +149,47 @@
 /* The operational screen is intentionally ordered by action: urgent signals,
    retention follow-up, questions, then plan execution. */
 .intelligence-section > .intelligence-dashboard-grid { display: contents; }
-.intelligence-priorities-card { order: 1; border-color: var(--warning-border); box-shadow: var(--shadow-card); }
+.intelligence-priorities-card { order: 1; border-color: var(--warning-border); box-shadow: var(--shadow-xs); }
 .intelligence-stats-grid { order: 2; }
 .intelligence-churn-card { order: 3; }
 .intelligence-query-card { order: 4; }
 .intelligence-plans-card { order: 5; }
 .intelligence-card-mark-critical { color: var(--warning-text); border-color: var(--warning-border); background: var(--warning-soft); }
-.intelligence-card-head-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: .55rem; flex-wrap: wrap; }
+.intelligence-card-head-actions { display: flex; align-items: flex-start; justify-content: flex-end; gap: var(--space-2); flex-wrap: wrap; }
 
 .intelligence-card {
     min-width: 0;
-    padding: clamp(1rem, 2vw, 1.35rem);
+    padding: clamp(var(--space-4), 2vw, var(--space-5));
     border: 1px solid var(--border-primary);
-    border-radius: 1.15rem;
+    border-radius: var(--radius-card);
     background: var(--bg-card);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-xs);
 }
 
 .intelligence-card-head {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-4);
 }
 
-.intelligence-card-head h4 { font-size: 1.05rem; }
+.intelligence-card-head > div,
+.intelligence-result-head > div {
+    min-width: 0;
+}
+
+.intelligence-card-head h4 { font-size: var(--font-lg); }
 .intelligence-card-head p { margin-top: .35rem; max-width: 62ch; }
 
 .intelligence-priorities {
     display: grid;
-    gap: .65rem;
+    gap: var(--space-3);
 }
 
 .intelligence-priority {
     display: flex;
     align-items: center;
-    gap: .75rem;
-    padding: .75rem;
+    gap: var(--space-3);
+    padding: var(--space-3);
     border: 1px solid var(--border-primary);
-    border-radius: .85rem;
+    border-radius: var(--radius-md);
     background: var(--bg-card-hover);
 }
 
@@ -193,24 +207,24 @@
 .intelligence-priority.success .intelligence-priority-dot { background: var(--success); }
 .intelligence-priority strong,
 .intelligence-priority small { display: block; }
-.intelligence-priority strong { color: var(--text-secondary); font-size: .86rem; }
-.intelligence-priority small { margin-top: .15rem; color: var(--text-muted); font-size: .76rem; }
+.intelligence-priority strong { color: var(--text-secondary); font-size: var(--font-sm); }
+.intelligence-priority small { margin-top: var(--space-1); color: var(--text-muted); font-size: var(--font-xs); }
 
 .intelligence-query-form,
 .intelligence-refine-form,
 .intelligence-plan-form {
     display: grid;
-    gap: .8rem;
+    gap: var(--space-3);
 }
 
 .intelligence-query-form label,
 .intelligence-refine-form label,
 .intelligence-plan-form label {
     display: grid;
-    gap: .35rem;
+    gap: var(--space-1);
     color: var(--text-secondary);
-    font-size: .78rem;
-    font-weight: 700;
+    font-size: var(--font-size-body);
+    font-weight: var(--weight-bold);
 }
 
 .intelligence-query-form input,
@@ -221,111 +235,132 @@
 }
 
 .intelligence-answer {
-    margin-top: 1rem;
-    padding: .85rem;
+    margin-top: var(--space-4);
+    padding: var(--space-3);
     border: 1px solid var(--primary-border);
-    border-radius: .85rem;
+    border-radius: var(--radius-md);
     background: var(--primary-soft);
     white-space: pre-line;
 }
 
-.intelligence-answer-label { color: var(--primary); font-size: .72rem; font-weight: 800; }
-.intelligence-answer p { margin: .35rem 0 0; color: var(--text-secondary); font-size: .84rem; line-height: 1.8; }
+.intelligence-answer-label { color: var(--primary); font-size: var(--font-xs); font-weight: var(--weight-semibold); }
+.intelligence-answer p { margin: .35rem 0 0; color: var(--text-secondary); font-size: var(--font-size-body); line-height: 1.7; }
 
 .intelligence-prompt-list {
     display: flex;
     flex-wrap: wrap;
-    gap: .4rem;
-    margin-top: .8rem;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
 }
 
 .intelligence-prompt {
-    padding: .35rem .55rem;
+    min-height: var(--control-height-small);
+    padding: var(--space-2) var(--space-3);
     color: var(--primary-active);
     border: 1px solid var(--primary-border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--bg-card);
     cursor: pointer;
     font: inherit;
-    font-size: .72rem;
+    font-size: var(--font-xs);
+    transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.intelligence-churn-legend { display: flex; gap: .35rem; flex-wrap: wrap; }
+.intelligence-prompt:hover:not(:disabled) {
+    color: var(--primary-active);
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.intelligence-prompt:focus-visible,
+.intelligence-plan-type button:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+.intelligence-prompt:disabled,
+.intelligence-plan-type button:disabled {
+    cursor: not-allowed;
+    opacity: .6;
+}
+
+.intelligence-churn-legend { display: flex; gap: var(--space-1); flex-wrap: wrap; }
 .intelligence-churn-legend span,
-.intelligence-risk-badge { display: inline-flex; align-items: center; padding: .25rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 800; }
+.intelligence-risk-badge { display: inline-flex; align-items: center; padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); font-size: var(--font-xs); font-weight: var(--weight-semibold); }
 .risk-high, .intelligence-risk-badge.high { color: var(--danger-text); background: var(--danger-soft); }
 .risk-medium, .intelligence-risk-badge.medium { color: var(--warning-text); background: var(--warning-soft); }
 .risk-low, .intelligence-risk-badge.low { color: var(--success-text); background: var(--success-soft); }
 
-.intelligence-churn-table-wrap { overflow-x: auto; }
+.intelligence-churn-table-wrap { width: 100%; max-width: 100%; min-width: 0; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-color: var(--border-strong) transparent; scrollbar-width: thin; }
 .intelligence-table { width: 100%; min-width: 760px; border-collapse: collapse; }
-.intelligence-table th { padding: .65rem .55rem; color: var(--text-muted); background: var(--table-header-bg); font-size: .72rem; text-align: right; white-space: nowrap; }
-.intelligence-table td { padding: .72rem .55rem; border-top: 1px solid var(--border-secondary); color: var(--text-secondary); font-size: .78rem; vertical-align: middle; }
-.intelligence-table td small { color: var(--text-muted); }
-.intelligence-member-cell { display: flex; align-items: center; gap: .55rem; }
+.intelligence-table th { text-align: start; white-space: nowrap; }
+.intelligence-member-cell { display: flex; align-items: center; gap: var(--space-2); }
 .intelligence-member-cell strong, .intelligence-member-cell small { display: block; }
 .intelligence-member-cell strong { color: var(--text-primary); }
-.intelligence-member-avatar { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; color: var(--primary-active); border-radius: .7rem; background: var(--primary-soft); font-weight: 800; }
+.intelligence-member-avatar { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; color: var(--primary-active); border-radius: var(--radius-sm); background: var(--primary-soft); font-weight: var(--weight-semibold); }
 
 .intelligence-plan-type {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: .35rem;
-    padding: .3rem;
-    border-radius: .8rem;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border-radius: var(--radius-md);
     background: var(--bg-elevated);
 }
 
 .intelligence-plan-type button {
-    padding: .6rem;
+    min-height: var(--control-height-medium);
+    padding: var(--space-2) var(--space-3);
     color: var(--text-muted);
     border: 0;
-    border-radius: .6rem;
+    border-radius: var(--radius-sm);
     background: transparent;
     cursor: pointer;
     font: inherit;
-    font-size: .82rem;
-    font-weight: 800;
+    font-size: var(--font-size-body);
+    font-weight: var(--weight-semibold);
+    transition: color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.intelligence-plan-type button.is-active { color: var(--primary-active); background: var(--bg-card); box-shadow: var(--shadow-card); }
+.intelligence-plan-type button.is-active { color: var(--primary-active); background: var(--bg-card); box-shadow: var(--shadow-xs); }
 .intelligence-workout-fields,
-.intelligence-diet-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.intelligence-diet-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .intelligence-workout-fields label:last-child,
 .intelligence-diet-fields label:last-child { grid-column: 1 / -1; }
 .intelligence-generate-button { margin-top: .25rem; }
 
 .intelligence-plan-result {
-    min-height: 100%;
-    padding: 1rem;
+    min-width: 0;
+    padding: var(--space-4);
     border: 1px dashed var(--primary-border);
-    border-radius: 1rem;
-    background: linear-gradient(145deg, var(--primary-soft), var(--bg-card));
+    border-radius: var(--radius-card);
+    background: var(--bg-card);
 }
 
-.intelligence-empty-result { display: grid; place-items: center; align-content: center; min-height: 20rem; gap: .5rem; color: var(--text-muted); text-align: center; }
+.intelligence-empty-result { display: grid; place-items: center; align-content: center; min-height: 16rem; gap: var(--space-2); color: var(--text-muted); text-align: center; }
 .intelligence-empty-result span { color: var(--primary-hover); font-size: 2rem; }
 .intelligence-empty-result strong { color: var(--text-secondary); }
 .intelligence-empty-result small { color: var(--text-disabled); }
 .intelligence-result-head { align-items: flex-start; }
-.intelligence-result-head h4 { font-size: 1rem; }
-.intelligence-result-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .45rem; margin: 1rem 0; }
-.intelligence-result-metrics span { padding: .6rem; border-radius: .7rem; background: var(--bg-elevated); color: var(--text-muted); font-size: .7rem; text-align: center; }
-.intelligence-result-metrics b { display: block; color: var(--text-primary); font-size: .95rem; }
-.intelligence-plan-preview-list { display: grid; gap: .45rem; max-height: 14rem; overflow: auto; margin-bottom: 1rem; }
-.intelligence-plan-preview-list article { padding: .65rem .75rem; border: 1px solid var(--primary-border); border-radius: .7rem; background: var(--bg-elevated); }
+.intelligence-result-head h4 { font-size: var(--font-lg); }
+.intelligence-result-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); margin: var(--space-4) 0; }
+.intelligence-result-metrics span { min-width: 0; padding: var(--space-2); border-radius: var(--radius-sm); background: var(--bg-elevated); color: var(--text-secondary); font-size: var(--font-xs); text-align: center; }
+.intelligence-result-metrics b { display: block; color: var(--text-primary); font-size: var(--font-size-body); }
+.intelligence-plan-preview-list { display: grid; gap: var(--space-1); max-height: 14rem; overflow: auto; margin-block-end: var(--space-4); }
+.intelligence-plan-preview-list article { padding: var(--space-3); border: 1px solid var(--primary-border); border-radius: var(--radius-md); background: var(--bg-elevated); }
 .intelligence-plan-preview-list strong, .intelligence-plan-preview-list small { display: block; }
-.intelligence-plan-preview-list strong { color: var(--text-secondary); font-size: .8rem; }
-.intelligence-plan-preview-list small { margin-top: .2rem; color: var(--text-muted); line-height: 1.7; }
-.intelligence-result-notice { margin: .75rem 0; padding: .65rem .75rem; border-radius: .7rem; font-size: .76rem; }
+.intelligence-plan-preview-list strong { color: var(--text-secondary); font-size: var(--font-sm); }
+.intelligence-plan-preview-list small { margin-block-start: var(--space-1); color: var(--text-muted); line-height: 1.6; }
+.intelligence-result-notice { margin-block: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); font-size: var(--font-sm); }
 .intelligence-result-notice.warning { color: var(--warning-text); background: var(--warning-soft); border: 1px solid var(--warning-border); }
 .intelligence-result-notice.success { color: var(--success-text); background: var(--success-soft); border: 1px solid var(--success-border); }
-.intelligence-result-notice ul { margin: .35rem 0 0; padding-inline-start: 1.2rem; }
-.intelligence-refine-form { padding-top: .8rem; border-top: 1px solid var(--primary-border); }
-.intelligence-result-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .8rem; }
-.intelligence-human-review-note { display: block; margin-top: .65rem; color: var(--text-disabled); font-size: .7rem; }
-.intelligence-empty-line { padding: 1rem; color: var(--text-disabled); text-align: center; }
-.intelligence-message { padding: .7rem .85rem; border-radius: .75rem; font-size: .8rem; }
+.intelligence-result-notice ul { margin-block-start: var(--space-1); padding-inline-start: var(--space-4); }
+.intelligence-refine-form { padding-block-start: var(--space-3); border-block-start: 1px solid var(--primary-border); }
+.intelligence-result-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block-start: var(--space-3); }
+.intelligence-human-review-note { display: block; margin-block-start: var(--space-3); color: var(--text-muted); font-size: var(--font-xs); }
+.intelligence-empty-line { padding: var(--space-4); color: var(--text-disabled); text-align: center; }
+.intelligence-message { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--font-size-body); }
 .intelligence-message.error { color: var(--danger-text); background: var(--danger-soft); }
 .intelligence-message.warning { color: var(--warning-text); background: var(--warning-soft); }
 .intelligence-message.success { color: var(--success-text); background: var(--success-soft); }
@@ -342,14 +377,43 @@
     .intelligence-plan-layout { grid-template-columns: 1fr; }
     .intelligence-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .intelligence-header-actions { width: 100%; justify-content: space-between; }
+    .intelligence-prompt,
+    .intelligence-plan-type button { min-height: var(--ui-touch-target); }
+    body .intelligence-section .intelligence-table [data-intelligence-member] { min-height: var(--ui-touch-target); height: var(--ui-touch-target); }
+    .intelligence-query-form input,
+    .intelligence-refine-form textarea,
+    .intelligence-plan-form input,
+    .intelligence-plan-form select { min-height: var(--ui-touch-target); }
 }
 
 @media (max-width: 520px) {
-    .intelligence-section { padding: .75rem; }
+    .intelligence-section { padding: var(--space-3); }
     .intelligence-stats-grid,
+    .intelligence-result-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .intelligence-workout-fields,
-    .intelligence-diet-fields,
-    .intelligence-result-metrics { grid-template-columns: 1fr 1fr; }
+    .intelligence-diet-fields { grid-template-columns: minmax(0, 1fr); }
     .intelligence-workout-fields label:last-child,
     .intelligence-diet-fields label:last-child { grid-column: 1 / -1; }
+}
+
+/* The churn view compares six related columns. Keep it as a real table on
+   touch widths and confine horizontal scrolling to its own wrapper; the shared
+   responsive-card enhancer is intended for record tables, not this comparison. */
+@media (max-width: 767px) {
+    .intelligence-churn-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: auto;
+        direction: ltr;
+    }
+
+    .intelligence-churn-table-wrap > .intelligence-table {
+        display: table;
+        width: max-content;
+        min-width: 760px;
+        table-layout: auto;
+        direction: rtl;
+    }
 }

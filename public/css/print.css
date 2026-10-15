@@ -1,4 +1,9 @@
 @media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   :root {
     --color-bg: #fff;
     --color-surface: #fff;
@@ -73,6 +78,27 @@
     min-width: 0 !important;
     width: 100% !important;
     font-size: 10pt;
+    border-collapse: collapse;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr,
+  img,
+  .print-section,
+  .print-info-item,
+  .print-billing-item,
+  .print-system-kpi,
+  .print-system-info,
+  .print-system-reference {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   th,
@@ -113,21 +139,47 @@
   display: none;
 }
 
+@font-face {
+  font-family: "Logic Fit Print Arabic";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("../assets/fonts/tajawal-arabic-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Logic Fit Print Latin";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../assets/fonts/geist-latin-wght-normal.woff2") format("woff2-variations");
+}
+
 /* Standalone A4 document system. These rules are intentionally outside the
    print media query because html2pdf renders the document in the screen
    context before converting it to a PDF. */
 :root {
-  --print-brand-primary: #1769e8;
-  --print-brand-primary-hover: #0f56c9;
+  --print-brand-primary: #0070f3;
+  --print-brand-primary-hover: #0061dd;
   --print-brand-text: #172033;
   --print-brand-muted: #718096;
   --print-brand-border: #d9e2ef;
   --print-brand-surface: #f5f9ff;
   --print-brand-border-soft: #e7edf5;
+  --print-danger-text: #c53030;
+  --print-danger-surface: #fff5f5;
+  --print-danger-border: #f1c7c7;
 }
 
 @page {
   size: A4;
+  margin: 12mm;
+}
+
+/* Dense member histories are A4 landscape; identity and current membership
+   remain portrait. This gives the eight-column payment ledger usable widths. */
+@page member-ledger {
+  size: A4 landscape;
   margin: 12mm;
 }
 
@@ -140,10 +192,17 @@ body > .print-sheet,
   background: #fff;
   color: var(--print-brand-text);
   direction: rtl;
-  font-family: "Cairo", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
+  font-family: "Logic Fit Print Arabic", "Tajawal", Tahoma, Arial, sans-serif;
   font-size: 10pt;
   line-height: 1.65;
   text-rendering: optimizeLegibility;
+}
+
+.print-sheet :lang(en),
+.print-sheet [dir="ltr"],
+.print-sheet [data-numeric="true"] {
+  font-family: "Logic Fit Print Latin", "Geist Sans", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
 .print-sheet *,
@@ -230,8 +289,10 @@ body > .print-sheet,
 
 .print-section {
   margin: 0 0 15px;
-  break-inside: avoid;
-  page-break-inside: avoid;
+  /* Let long sections and tables continue on the next sheet instead of
+     moving the entire section and stranding the document header by itself. */
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .print-section-title {
@@ -242,6 +303,15 @@ body > .print-sheet,
   margin-bottom: 8px;
   border-bottom: 2px solid var(--print-brand-primary);
   padding-bottom: 5px;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+.print-system-reference-section {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .print-section-title h2,
@@ -339,11 +409,19 @@ body > .print-sheet,
 .print-system-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .print-system-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
+/* Member identity and subscription documents are portrait A4. Two columns
+   keep labels and values readable instead of squeezing each field into a
+   quarter of the printable width. */
+.print-sheet:has(.print-member-hero) .print-info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .print-info-item,
 .print-billing-item,
 .print-system-kpi,
 .print-system-info {
   display: grid;
+  min-width: 0;
   gap: 1px;
   border: 1px solid var(--print-brand-border-soft);
   border-radius: 7px;
@@ -363,9 +441,11 @@ body > .print-sheet,
 .print-billing-item strong,
 .print-system-kpi strong,
 .print-system-info strong {
+  min-width: 0;
   color: var(--print-brand-text);
   font-size: 9.5pt;
   font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
 .print-system-kpi {
@@ -387,15 +467,22 @@ body > .print-sheet,
   font-size: 7.5pt;
 }
 
-.print-billing-item.remaining,
-.print-receipt-amount {
-  border-color: #f1c7c7;
-  background: #fff5f5;
+.print-billing-item.remaining {
+  border-color: var(--print-danger-border);
+  background: var(--print-danger-surface);
 }
 
-.print-billing-item.remaining strong,
+.print-billing-item.remaining strong {
+  color: var(--print-danger-text);
+}
+
+.print-receipt-amount {
+  border-color: var(--print-brand-border);
+  background: var(--print-brand-surface);
+}
+
 .print-receipt-amount strong {
-  color: #c53030;
+  color: var(--print-brand-primary);
 }
 
 .print-system-overview-grid {
@@ -416,6 +503,92 @@ body > .print-sheet,
   overflow: visible;
 }
 
+/* Full member profiles contain several unbounded histories. Keep each section
+   flowing across pages while keeping its heading with the first row; other
+   short standalone print documents retain the compact, unbroken section rule. */
+.print-member-full .print-section {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.print-member-full .print-section-title {
+  break-after: avoid-page;
+  page-break-after: avoid;
+}
+
+.print-member-full > .print-section:nth-of-type(3) {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-member-full > .print-section:nth-of-type(n + 4) {
+  page: member-ledger;
+}
+
+.print-member-full > .print-footer {
+  page: member-ledger;
+}
+
+.print-member-full .print-info-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.print-member-full .print-info-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+}
+
+.print-member-full .print-table {
+  table-layout: fixed;
+  font-size: 10pt;
+}
+
+.print-member-full .print-table th,
+.print-member-full .print-table td {
+  padding: 6px 8px;
+  overflow-wrap: anywhere;
+}
+
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(1),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(1) { width: 12%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(2),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(2) { width: 15%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(3),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(3) { width: 10%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(4),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(4) { width: 13%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(5),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(5) { width: 10%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(6),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(6) { width: 10%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(7),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(7) { width: 10%; }
+.print-member-full > .print-section:nth-of-type(4) .print-table th:nth-child(8),
+.print-member-full > .print-section:nth-of-type(4) .print-table td:nth-child(8) { width: 20%; }
+
+.print-member-full .print-payment-summary,
+.print-member-full .print-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-member-full .print-table tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-member-full .print-table-sub {
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.print-member-full .print-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .print-table {
   width: 100%;
   border-collapse: collapse;
@@ -424,8 +597,8 @@ body > .print-sheet,
 }
 
 .print-table th {
-  border: 1px solid #17304f;
-  background: #17304f;
+  border: 1px solid var(--print-brand-primary);
+  background: var(--print-brand-primary);
   color: #fff;
   padding: 6px;
   font-weight: 700;
@@ -475,7 +648,7 @@ body > .print-sheet,
 .print-system-total strong { color: var(--print-brand-primary); font-size: 10pt; }
 .print-notes { color: #475569; }
 .print-notes strong,
-.print-system-callout b { color: #17304f; }
+.print-system-callout b { color: var(--print-brand-text); }
 .print-system-callout p { margin: 4px 0 0; }
 
 .print-system-distribution { display: grid; gap: 6px; }
@@ -490,7 +663,7 @@ body > .print-sheet,
 .print-system-reference-meta { color: var(--print-brand-muted); font-size: 7.5pt; }
 .print-system-reference-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 7px; }
 .print-system-reference-columns > div { color: #475569; font-size: 7.5pt; }
-.print-system-reference-columns b { display: block; color: #17304f; margin-bottom: 2px; }
+.print-system-reference-columns b { display: block; color: var(--print-brand-text); margin-bottom: 2px; }
 .print-system-list { margin: 0; padding: 0 14px 0 0; }
 .print-system-list li { margin: 2px 0; }
 .print-system-muted,
@@ -526,7 +699,7 @@ body > .print-sheet,
 .print-footer-management strong { color: var(--print-brand-text); }
 .print-signature { min-width: 120px; border-top: 1px solid var(--print-brand-muted); padding-top: 4px; text-align: center; }
 .print-loading,
-.print-error { padding: 40px; color: #17304f; font-family: Cairo, Tahoma, sans-serif; text-align: center; }
+.print-error { padding: 40px; color: var(--print-brand-text); font-family: "Logic Fit Print Arabic", "Tajawal", Tahoma, sans-serif; text-align: center; }
 
 @media (max-width: 700px) {
   body > .print-sheet,
@@ -544,4 +717,63 @@ body > .print-sheet,
   .print-system-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .print-system-info-grid,
   .print-system-reference-columns { grid-template-columns: 1fr; }
+}
+
+/* A4 printable width is narrower than the physical sheet after @page margins.
+   In print media, let the page content box define the sheet width rather than
+   keeping the 190mm screen/PDF-preview canvas. */
+@media print {
+  body > .print-sheet,
+  .print-sheet {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  /* Keep the tail of short identity/membership documents with the document
+     instead of stranding a final note and signature on an otherwise blank A4. */
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-accent {
+    margin-block: 8px 10px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-section {
+    margin-block-end: 6px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-member-hero {
+    padding-block: 7px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-section-title {
+    margin-block-end: 4px;
+    padding-block-end: 3px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-info-grid,
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-billing-grid {
+    row-gap: 4px;
+    margin-block-start: 4px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-info-item,
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-billing-item {
+    padding-block: 4px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) .print-notes {
+    margin-block: 4px;
+  }
+
+  .print-sheet:has(.print-member-hero):not(.print-member-full) > .print-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    break-before: avoid-page;
+    page-break-before: avoid;
+  }
+
+  .portal-report-content .portal-financial-grid .portal-stat strong {
+    font-size: 10pt;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
 }

@@ -4,7 +4,7 @@
    layout can present every row as a readable card without changing APIs or
    the data-rendering code of individual screens. */
 (function initializeResponsiveTableCards() {
-    const SKIP_SELECTOR = '.print-table, [data-print-table]';
+    const SKIP_SELECTOR = '.print-table, [data-print-table], [data-responsive-cards="false"]';
 
     function normalizeLabel(value, index) {
         const label = String(value || '').replace(/\s+/g, ' ').trim();

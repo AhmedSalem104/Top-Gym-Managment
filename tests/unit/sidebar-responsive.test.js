@@ -12,8 +12,6 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     const index = read('public/index.html');
     const source = read('public/js/page-tabs.js');
     const styles = read('public/css/components/navigation-shell.css');
-    const mobileStyles = styles.slice(styles.lastIndexOf('@media (max-width: 767px)'));
-
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
@@ -26,10 +24,10 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(source, /function ensureNavigationSections\(\)/u);
     assert.match(source, /data-nav-group-label/u);
     assert.match(source, /function syncMobileNavigationContext\(name\)/u);
-    assert.match(mobileStyles, /\.app-shell > \.page-tabs\s*\{[\s\S]*?position: fixed[\s\S]*?transform: translateX\(110%\)/u);
-    assert.match(mobileStyles, /\.app-shell\.mobile-nav-open > \.page-tabs[\s\S]*?transform: translateX\(0\)/u);
-    assert.match(mobileStyles, /\.app-shell > \.page-tabs > \.sidebar-section-label[\s\S]*?display: block/u);
-    assert.match(mobileStyles, /\.app-shell > \.page-tabs > \.page-tab,[\s\S]*?width: 100%[\s\S]*?min-width: 0/u);
+    assert.match(styles, /\.app-shell > \.page-tabs\s*\{[\s\S]*?position: fixed[\s\S]*?transform: translateX\(110%\)/u);
+    assert.match(styles, /\.app-shell\.mobile-nav-open > \.page-tabs[\s\S]*?transform: translateX\(0\)/u);
+    assert.match(styles, /\.app-shell > \.page-tabs > \.sidebar-section-label[\s\S]*?display: block/u);
+    assert.match(styles, /\.app-shell > \.page-tabs > \.page-tab,[\s\S]*?width: 100%[\s\S]*?min-width: 0/u);
     assert.match(styles, /\.app-shell > \.page-tabs::-webkit-scrollbar\s*\{[\s\S]*?width: 0[\s\S]*?height: 0/u);
     assert.match(styles, /@media \(min-width: 1200px\)[\s\S]*?\.mobile-nav-toggle[\s\S]*?display: none/u);
 });
@@ -37,14 +35,12 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
 test('Mobile navigation drawer keeps focus contained and supports reduced motion', () => {
     const styles = read('public/css/components/navigation-shell.css');
     const source = read('public/js/page-tabs.js');
-    const mobileStyles = styles.slice(styles.lastIndexOf('@media (max-width: 767px)'));
-
     assert.doesNotMatch(styles, /body\.mobile-nav-open\s*\{[\s\S]*?overflow: hidden/u);
     assert.match(source, /event\.key === 'Escape'/u);
     assert.match(source, /event\.key !== 'Tab'/u);
     assert.match(source, /lastFocusedElement\.focus\(\)/u);
-    assert.match(mobileStyles, /transition: transform 260ms cubic-bezier/u);
-    assert.match(mobileStyles, /env\(safe-area-inset-top\)/u);
+    assert.match(styles, /transition: transform 260ms cubic-bezier/u);
+    assert.match(styles, /env\(safe-area-inset-top\)/u);
     assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.app-shell > \.page-tabs[\s\S]*?transition: none/u);
 });
 

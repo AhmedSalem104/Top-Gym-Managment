@@ -51,11 +51,16 @@
          ACTION_ICONS.refund = '<path d="M4 7h11a5 5 0 1 1 0 10H8"/><path d="m7 4-3 3 3 3"/><path d="M12 12h.01"/>';
          PAYMENT_TRANSACTION_LABELS.refund = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639';
          EVENT_LABELS.subscription_refunded = '\u0627\u0633\u062a\u0631\u062c\u0627\u0639 \u0627\u0634\u062a\u0631\u0627\u0643';
-         function refundActionButton(memberId) { const label = ACTION_LABELS.refund; return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button">${actionIcon('refund')}</button>`; }
+         function membersText(key, params = {}) { return window.TopGymI18n?.t?.(`members.${key}`, params) || params.fallback || key; }
+         function membersNumber(value) { return window.TopGymI18n?.format?.('number', Number(value || 0)) || Number(value || 0).toLocaleString('ar-EG'); }
+         function membersDate(value) { if (!value) return '—'; return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { dateStyle: 'medium' }) || formatDate(value); }
+         function membersCurrency(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value); }
+         function memberActionLabel(action) { const keys = { details: 'action.details', edit: 'action.edit', renew: 'action.renew', freeze: 'action.freeze', resume: 'action.resume', payment: 'action.payment', print: 'action.print', qr: 'action.qr', delete: 'action.delete', refund: 'action.refund' }; return keys[action] ? membersText(keys[action]) : ACTION_LABELS[action] || action; }
+         function refundActionButton(memberId) { const label = memberActionLabel('refund'); return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${escapeHtml(label)}" data-id="${memberId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" type="button">${actionIcon('refund')}</button>`; }
          const COACHING_ACTION_LABELS = { workout: '\u0625\u0646\u0634\u0627\u0621 \u0628\u0631\u0646\u0627\u0645\u062c \u062a\u062f\u0631\u064a\u0628', diet: '\u0625\u0646\u0634\u0627\u0621 \u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629' };
          const COACHING_ACTION_ICONS = { workout: '<path d="M6 8v8M18 8v8M3 11h18M8 5h8v14H8z"/>', diet: '<path d="M12 21c-4-2-7-5.5-7-10a5 5 0 0 1 7-4.6A5 5 0 0 1 19 11c0 4.5-3 7.8-7 10Z"/><path d="M12 7c0 4-2 6-5 7"/>' };
-         function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = ACTION_LABELS[action] || action; const requiredPermission = { details: 'members.read,memberships.read', edit: 'members.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print,members.read,memberships.read', qr: 'members.read,memberships.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${label}" data-id="${memberId}" aria-label="${label}" title="${label}" type="button" ${extra}>${actionIcon(action)}</button>`; }
-         function memberStatusBadge(status, label = STATUS_LABELS[status] || status) { const path = ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.inactive; return `<span class="badge ${escapeHtml(status || 'unknown')} status-badge-with-icon"><svg class="status-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(label)}</span></span>`; }
+         function actionButton(action, memberId, classes = 'btn btn-light btn-small', extra = '') { const label = memberActionLabel(action); const requiredPermission = { details: 'members.read,memberships.read', edit: 'members.update', renew: 'memberships.renew,payments.create', freeze: 'memberships.freeze', resume: 'memberships.freeze', payment: 'payments.create', print: 'members.print,members.read,memberships.read', qr: 'members.read,memberships.read', delete: 'members.delete' }[action] || ''; return `<button class="${classes} icon-action rounded-lg shadow-none transition-colors" data-action="${action}" data-required-permission="${requiredPermission}" data-label="${escapeHtml(label)}" data-id="${memberId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" type="button" ${extra}>${actionIcon(action)}</button>`; }
+         function memberStatusBadge(status, label) { const keys = { active: 'status.active', expiring_soon: 'status.expiringSoon', expired: 'status.expired', frozen: 'status.frozen', cancelled: 'status.cancelled' }; const resolved = label || (keys[status] ? membersText(keys[status]) : STATUS_LABELS[status] || status); const path = ALERT_ICON_PATHS[status] || ALERT_ICON_PATHS.inactive; return `<span class="badge ${escapeHtml(status || 'unknown')} status-badge-with-icon"><svg class="status-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg><span>${escapeHtml(resolved)}</span></span>`; }
          const DEFAULT_PRICING = { plans: { gym_only: { label: 'جيم فقط', monthlyPrice: 305, active: true, sortOrder: 1 }, gym_cardio: { label: 'جيم وكارديو', monthlyPrice: 400, active: true, sortOrder: 2 } }, types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 }, half_month: { label: 'نصف شهر', mode: 'days', durationValue: 15, priceMultiplier: .5, active: true, sortOrder: 2 }, quarterly: { label: 'ربع سنوية', mode: 'months', durationValue: 3, priceMultiplier: 3, active: true, sortOrder: 3 }, semiannual: { label: 'نصف سنوية', mode: 'months', durationValue: 6, priceMultiplier: 6, active: true, sortOrder: 4 }, annual: { label: 'سنوية', mode: 'months', durationValue: 12, priceMultiplier: 12, active: true, sortOrder: 5 } }, durations: { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 } };
          const state = { members: [], dashboard: null, saasSubscription: null, saasSubscriptionLoaded: false, pricing: DEFAULT_PRICING, pricingLoadedAt: 0, editing: null, dialogAction: null, dialogMember: null, endDateManual: false, membersPageSize: 5 };
         // Feature modules such as members pagination are loaded separately from
@@ -493,6 +498,256 @@
             return candidates.find((candidate) => candidate.plan || candidate.planName || candidate.startsAt || candidate.starts_at) || candidates[0] || {};
         }
 
+        function dashboardI18nText(key, params = {}) {
+            return window.TopGymI18n?.t?.(key, params) || params.fallback || key;
+        }
+
+        function dashboardNumber(value) {
+            return window.TopGymI18n?.format?.('number', value) || Number(value || 0).toLocaleString('ar-EG');
+        }
+
+        function dashboardCurrency(value) {
+            return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value);
+        }
+
+        function dashboardDate(value) {
+            if (!value) return '—';
+            return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { dateStyle: 'medium' }) || formatDate(value);
+        }
+
+        function dashboardAlertStatus(status) {
+            const key = ({ active: 'active', expiring_soon: 'expiring', expired: 'expired', frozen: 'frozen' })[status];
+            return key ? dashboardI18nText(`dashboard.alerts.status.${key}`) : (STATUS_LABELS[status] || status || dashboardI18nText('dashboard.alerts.status.unknown'));
+        }
+
+        function applyDashboardTranslations() {
+            const root = $('dashboardSection');
+            const i18n = window.TopGymI18n;
+            if (!root || !i18n) return;
+            i18n.annotateText(root, 'dashboard.');
+            const setAttribute = (selector, attribute, key) => {
+                const element = root.querySelector(selector);
+                if (element) element.setAttribute(attribute, i18n.t(key));
+            };
+            setAttribute('.dashboard-hero', 'aria-label', 'dashboard.aria.actions');
+            setAttribute('.dashboard-hero-meta', 'aria-label', 'dashboard.meta.secure');
+            setAttribute('.dashboard-hero-mini-stats', 'aria-label', 'dashboard.summary.subscription');
+            setAttribute('.overview-grid', 'aria-label', 'dashboard.memberships.aria');
+            setAttribute('.stats-grid', 'aria-label', 'dashboard.memberships.title');
+            setAttribute('.dashboard-day-pass-kpis', 'aria-label', 'dashboard.dayPasses.title');
+            setAttribute('.alerts-toolbar', 'aria-label', 'dashboard.alerts.aria');
+            const search = $('alertsSearch');
+            if (search) {
+                search.placeholder = i18n.t('dashboard.alerts.searchPlaceholder');
+                search.setAttribute('aria-label', i18n.t('dashboard.alerts.aria'));
+            }
+            root.querySelectorAll('.alert-card').forEach((card) => {
+                const kind = card.dataset.alertKind || 'membership';
+                const status = card.dataset.alertStatus || 'active';
+                const kindLabel = kind === 'debt'
+                    ? i18n.t('dashboard.alerts.kind.debt')
+                    : kind === 'inactive' ? i18n.t('dashboard.alerts.kind.inactive') : '';
+                const label = kindLabel || dashboardAlertStatus(status);
+                const statusElement = card.querySelector('.alert-status');
+                if (statusElement && statusElement.textContent !== label) statusElement.textContent = label;
+                const detail = card.querySelector('.alert-card-detail');
+                if (detail) {
+                    const dateValue = card.dataset.alertFreezeEnd || card.dataset.alertEnd || '';
+                    const detailText = kind === 'debt'
+                        ? i18n.t('dashboard.alerts.detail.debt', { amount: dashboardCurrency(card.dataset.alertRemaining) })
+                        : kind === 'inactive'
+                            ? (card.dataset.alertDays === '' ? i18n.t('dashboard.alerts.detail.neverVisited') : i18n.t('dashboard.alerts.detail.lastVisit', { count: Number(card.dataset.alertDays || 0) }))
+                            : status === 'frozen'
+                                ? i18n.t('dashboard.alerts.detail.frozenUntil', { date: dashboardDate(dateValue) })
+                                : status === 'expired'
+                                    ? i18n.t('dashboard.alerts.detail.expiredAt', { date: dashboardDate(dateValue) })
+                                    : i18n.t('dashboard.alerts.detail.expiresAt', { date: dashboardDate(dateValue) });
+                    if (detail.textContent !== detailText) detail.textContent = detailText;
+                }
+                const whatsapp = card.querySelector('.alert-whatsapp-button');
+                if (whatsapp) {
+                    const renewal = status === 'expired' && kind === 'membership';
+                    const title = i18n.t(renewal ? 'dashboard.alerts.whatsapp.renewal' : 'dashboard.alerts.whatsapp.manual');
+                    const hint = i18n.t(renewal ? 'dashboard.alerts.whatsapp.sendRenewal' : 'dashboard.alerts.whatsapp.contact');
+                    const strong = whatsapp.querySelector('strong');
+                    const small = whatsapp.querySelector('small');
+                    if (strong && strong.textContent !== title) strong.textContent = title;
+                    if (small && small.textContent !== hint) small.textContent = hint;
+                    const labelText = i18n.t('dashboard.alerts.whatsapp.send');
+                    whatsapp.title = labelText;
+                    whatsapp.setAttribute('aria-label', labelText);
+                }
+            });
+            const alerts = root.querySelectorAll('.alerts-list .alert-card');
+            const count = alerts.length;
+            const countBadge = $('alertsCount');
+            if (countBadge) {
+                const label = count ? i18n.t('dashboard.alerts.count', { count }) : i18n.t('dashboard.alerts.emptyCount');
+                if (countBadge.textContent !== label) countBadge.textContent = label;
+            }
+            const filterLabel = root.querySelector('.alerts-filter-button');
+            if (filterLabel) {
+                filterLabel.setAttribute('aria-label', i18n.t('dashboard.alerts.filter'));
+                const label = filterLabel.querySelector('span');
+                if (label && label.textContent !== i18n.t('dashboard.alerts.filterShort')) label.textContent = i18n.t('dashboard.alerts.filterShort');
+            }
+            const pagination = root.querySelector('.alerts-pagination');
+            if (pagination) {
+                pagination.setAttribute('aria-label', i18n.t('dashboard.alerts.pagination'));
+                const button = pagination.querySelector('.alerts-view-all');
+                if (button) {
+                    const expanded = button.getAttribute('aria-expanded') === 'true';
+                    const label = i18n.t(expanded ? 'dashboard.alerts.showLess' : 'dashboard.alerts.showAll', { count });
+                    if (button.textContent !== label) button.textContent = label;
+                }
+            }
+            const result = $('alertsSearchResult');
+            if (result) {
+                const query = String(search?.value || '').trim();
+                const visible = [...alerts].filter((card) => !card.hidden).length;
+                const label = query ? i18n.t('dashboard.alerts.resultCount', { visible, total: count }) : (count ? i18n.t('dashboard.alerts.count', { count }) : '');
+                if (result.textContent !== label) result.textContent = label;
+            }
+        }
+
+        function setupDashboardTranslations() {
+            const root = $('dashboardSection');
+            if (!root || root.dataset.localeObserverReady === 'true') return;
+            root.dataset.localeObserverReady = 'true';
+            const expenseObservedRoots = new WeakSet();
+            const prepareExpenseCount = (element) => {
+                const countMatch = element?.textContent.trim().match(/^([\d٠-٩۰-۹]+)\s+مصروف\s+·\s+مصروفات مسجلة خلال الفترة$/u);
+                if (!countMatch) return;
+                const normalizedCount = countMatch[1]
+                    .replace(/[٠-٩]/gu, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+                    .replace(/[۰-۹]/gu, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+                element.dataset.i18n = 'expenses.list.periodCount';
+                element.dataset.i18nParamCount = normalizedCount;
+            };
+            const applyExpenseLocaleKeys = (scope) => {
+                const i18n = window.TopGymI18n;
+                if (!i18n || !scope) return;
+                const mark = (element, key, attributes = []) => {
+                    if (!element) return;
+                    element.dataset.i18n = key;
+                    attributes.forEach((attribute) => {
+                        const dataName = attribute.split('-').map((part) => part[0].toUpperCase() + part.slice(1)).join('');
+                        element.dataset[`i18n${dataName}`] = key;
+                    });
+                };
+                if (scope.id === 'expensesSection') {
+                    mark(scope.querySelector('.expenses-tab-heading-copy > span'), 'expenses.eyebrow');
+                    mark(scope.querySelector('.expenses-tab-heading h3'), 'expenses.title');
+                    mark(scope.querySelector('.expenses-tab-heading p'), 'expenses.description');
+                    mark(scope.querySelector('#addExpenseFromTabButton'), 'expenses.add');
+                    const headers = scope.querySelectorAll('.monthly-expenses-list-head > span');
+                    mark(headers[0], 'expenses.list.heading');
+                    mark(headers[1], 'expenses.list.amount');
+                    mark(headers[2], 'expenses.list.actions');
+                    const meta = scope.querySelector('#monthlyExpensesMeta');
+                    if (meta) {
+                        const countMatch = meta.textContent.trim().match(/^([\d\u0660-\u0669\u06f0-\u06f9]+)/u);
+                        const count = countMatch?.[1].replace(/[\u0660-\u0669\u06f0-\u06f9]/gu, (digit) => {
+                            const codePoint = digit.codePointAt(0);
+                            return String(codePoint >= 0x06f0 ? codePoint - 0x06f0 : codePoint - 0x0660);
+                        });
+                        meta.dataset.i18n = count && Number(count) > 0 ? 'expenses.list.periodCount' : 'expenses.list.empty';
+                        if (count && Number(count) > 0) meta.dataset.i18nParamCount = count;
+                        else delete meta.dataset.i18nParamCount;
+                    }
+                    mark(scope.querySelector('.monthly-expenses-empty'), 'expenses.list.empty');
+                    scope.querySelectorAll('[data-expense-action]').forEach((button) => {
+                        const key = button.dataset.expenseAction === 'edit' ? 'expenses.action.edit' : 'expenses.action.delete';
+                        mark(button, key, ['title', 'aria-label']);
+                    });
+                } else if (scope.id === 'expenseDialog') {
+                    const editing = Boolean(scope.querySelector('#editingExpenseId')?.value);
+                    mark(scope.querySelector('#expenseDialogTitle'), editing ? 'expenses.dialog.edit.title' : 'expenses.dialog.add.title');
+                    mark(scope.querySelector('#expenseDialogDescription'), editing ? 'expenses.dialog.edit.description' : 'expenses.dialog.add.description');
+                    mark(scope.querySelector('#expenseSave'), editing ? 'expenses.action.saveEdit' : 'expenses.action.save');
+                }
+                i18n.apply(scope);
+            };
+            const localizeExpenseNode = (node) => {
+                if (!window.TopGymI18n || !node) return;
+                const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+                if (!element || !element.closest('#expensesSection, #expenseDialog')) return;
+                const scope = element.closest('#expensesSection') || element.closest('#expenseDialog');
+                applyExpenseLocaleKeys(scope);
+            };
+            const bindExpenseRoot = (element) => {
+                const i18n = window.TopGymI18n;
+                if (!i18n || !element || expenseObservedRoots.has(element)) return;
+                expenseObservedRoots.add(element);
+                applyExpenseLocaleKeys(element);
+                new MutationObserver((records) => {
+                    records.forEach((record) => record.addedNodes?.forEach(localizeExpenseNode));
+                }).observe(element, { childList: true, subtree: true });
+            };
+            const localizeExpenses = () => {
+                const screen = $('expensesSection');
+                const dialog = $('expenseDialog');
+                if (screen && !expenseObservedRoots.has(screen)) bindExpenseRoot(screen);
+                if (dialog && !expenseObservedRoots.has(dialog)) bindExpenseRoot(dialog);
+            };
+            const expenseHostObserver = new MutationObserver(localizeExpenses);
+            expenseHostObserver.observe(root, { childList: true, subtree: true });
+            window.addEventListener('topgym:localechange', () => {
+                localizeExpenses();
+                applyExpenseLocaleKeys($('expensesSection'));
+                applyExpenseLocaleKeys($('expenseDialog'));
+            });
+            localizeExpenses();
+            let scheduled = false;
+            const schedule = () => {
+                if (scheduled) return;
+                scheduled = true;
+                window.requestAnimationFrame(() => {
+                    scheduled = false;
+                    applyDashboardTranslations();
+                    localizeExpenses(root);
+                });
+            };
+            new MutationObserver(schedule).observe(root, { childList: true, subtree: true });
+            window.addEventListener('topgym:localechange', () => {
+                if (state.dashboard) renderDashboard();
+                applyDashboardTranslations();
+            });
+            applyDashboardTranslations();
+        }
+
+        function setupMemberTranslations() {
+            const roots = [ $('memberDialog'), $('detailsDialog') ].filter(Boolean);
+            if (!roots.length) return;
+            const i18n = window.TopGymI18n;
+            if (!i18n) return;
+            const localize = (root) => {
+                if (root.id === 'memberDialog') {
+                    const editing = Boolean($('memberId')?.value);
+                    const title = $('formTitle');
+                    const save = $('saveButton');
+                    const reset = $('resetButton');
+                    if (title) title.dataset.i18n = editing ? 'members.form.edit.title' : 'members.form.add.title';
+                    if (save) save.dataset.i18n = editing ? 'members.form.saveEdit' : 'members.form.save';
+                    if (reset) reset.dataset.i18n = editing ? 'members.form.clear' : 'members.form.cancel';
+                } else {
+                    // A member name is runtime data, not interface copy. Never
+                    // let exact-text annotation replace it with a UI label.
+                    const title = $('detailsTitle');
+                    if (title) title.dataset.i18nPreserve = 'true';
+                }
+                i18n.annotateText(root, 'members.');
+                i18n.apply(root);
+            };
+            roots.forEach((root) => {
+                if (root.dataset.memberLocaleObserverReady === 'true') return;
+                root.dataset.memberLocaleObserverReady = 'true';
+                localize(root);
+                new MutationObserver(() => localize(root)).observe(root, { childList: true, subtree: true });
+            });
+            window.addEventListener('topgym:localechange', () => roots.forEach(localize));
+        }
+
         function syncDashboardHeroStats() {
             document.querySelectorAll('[data-dashboard-hero-source]').forEach((card) => {
                 const source = document.getElementById(card.dataset.dashboardHeroSource);
@@ -500,7 +755,7 @@
                 if (!source || !value) return;
                 const raw = source.textContent.trim();
                 const number = Number(raw.replace(/[^\d.-]/g, ''));
-                value.textContent = raw && Number.isFinite(number) ? number.toLocaleString('en-US') : raw;
+                value.textContent = raw && Number.isFinite(number) ? dashboardNumber(number) : raw;
             });
             const subscription = dashboardSubscriptionValue();
             const plan = typeof subscription.plan === 'string' ? { name: subscription.plan } : (subscription.plan || {});
@@ -509,11 +764,11 @@
             const planValue = document.querySelector('[data-dashboard-hero-subscription="plan"] [data-dashboard-hero-value]');
             const dateValue = document.querySelector('[data-dashboard-hero-subscription="date"] [data-dashboard-hero-value]');
             if (planValue) planValue.textContent = planName;
-            if (dateValue) dateValue.textContent = subscriptionStart ? formatDate(subscriptionStart) : '—';
+            if (dateValue) dateValue.textContent = subscriptionStart ? dashboardDate(subscriptionStart) : '—';
         }
 
          function renderDashboard() {
-             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboard.stats.total || 0; $('statActive').textContent = dashboard.stats.active || 0; $('statExpiring').textContent = dashboard.stats.expiringSoon || 0; $('statExpired').textContent = dashboard.stats.expired || 0; $('statFrozen').textContent = dashboard.stats.frozen || 0; syncDashboardHeroStats();
+             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboardNumber(dashboard.stats.total || 0); $('statActive').textContent = dashboardNumber(dashboard.stats.active || 0); $('statExpiring').textContent = dashboardNumber(dashboard.stats.expiringSoon || 0); $('statExpired').textContent = dashboardNumber(dashboard.stats.expired || 0); $('statFrozen').textContent = dashboardNumber(dashboard.stats.frozen || 0); syncDashboardHeroStats();
              const store = dashboard.store;
              const storeSummary = $('dashboardStoreSummary');
              if (storeSummary) {
@@ -525,11 +780,11 @@
                  if (store) {
                      const summary = store.summary || {};
                      const profit = store.profit || {};
-                     $('dashboardStoreTodaySales').textContent = money(store.today?.revenue || store.todaySales || 0);
-                     $('dashboardStoreRevenue').textContent = money(summary.revenue || 0);
-                     $('dashboardStoreLowStock').textContent = Number((store.alerts?.lowStock || []).length).toLocaleString('ar-EG');
-                     $('dashboardStoreExpenses').textContent = money(profit.expenses || 0);
-                     $('dashboardStoreNetProfit').textContent = money(profit.netProfit || 0);
+                     $('dashboardStoreTodaySales').textContent = dashboardCurrency(store.today?.revenue || store.todaySales || 0);
+                     $('dashboardStoreRevenue').textContent = dashboardCurrency(summary.revenue || 0);
+                     $('dashboardStoreLowStock').textContent = dashboardNumber((store.alerts?.lowStock || []).length);
+                     $('dashboardStoreExpenses').textContent = dashboardCurrency(profit.expenses || 0);
+                     $('dashboardStoreNetProfit').textContent = dashboardCurrency(profit.netProfit || 0);
                      storeSummary.querySelectorAll('[data-store-profit-only]').forEach((element) => { element.hidden = !window.topGymAuth?.isOwner?.() && !window.topGymAuth?.hasPermission?.('store.profit.view'); });
                  }
              }
@@ -541,17 +796,17 @@
                 const kind = member.alertKind || 'membership';
                 const status = sub.status || 'active';
                 const detail = kind === 'debt'
-                    ? `متبقي على الحساب ${money(sub.amountRemaining)}`
+                    ? dashboardI18nText('dashboard.alerts.detail.debt', { amount: dashboardCurrency(sub.amountRemaining) })
                     : kind === 'inactive'
-                        ? (member.daysSinceLastVisit == null ? 'لم يسجل حضورًا من قبل' : `آخر حضور منذ ${member.daysSinceLastVisit} يومًا`)
+                        ? (member.daysSinceLastVisit == null ? dashboardI18nText('dashboard.alerts.detail.neverVisited') : dashboardI18nText('dashboard.alerts.detail.lastVisit', { count: Number(member.daysSinceLastVisit) }))
                         : status === 'frozen'
-                            ? `حتى ${formatDate(sub.freezeEnd)}`
+                            ? dashboardI18nText('dashboard.alerts.detail.frozenUntil', { date: dashboardDate(sub.freezeEnd) })
                             : status === 'expired'
-                                ? `انتهت في ${formatDate(sub.endDate)}`
-                                : `تنتهي في ${formatDate(sub.effectiveEndDate)}`;
-                const label = kind === 'debt' ? 'عليه مستحقات' : kind === 'inactive' ? 'غياب طويل' : (STATUS_LABELS[status] || status);
-                const whatsappTitle = status === 'expired' && kind === 'membership' ? 'رسالة تجديد' : 'واتساب يدوي';
-                const whatsappHint = status === 'expired' && kind === 'membership' ? 'إرسال رسالة التجديد' : 'تواصل الآن عبر واتساب';
+                                ? dashboardI18nText('dashboard.alerts.detail.expiredAt', { date: dashboardDate(sub.endDate) })
+                                : dashboardI18nText('dashboard.alerts.detail.expiresAt', { date: dashboardDate(sub.effectiveEndDate) });
+                const label = kind === 'debt' ? dashboardI18nText('dashboard.alerts.kind.debt') : kind === 'inactive' ? dashboardI18nText('dashboard.alerts.kind.inactive') : dashboardAlertStatus(status);
+                const whatsappTitle = dashboardI18nText(status === 'expired' && kind === 'membership' ? 'dashboard.alerts.whatsapp.renewal' : 'dashboard.alerts.whatsapp.manual');
+                const whatsappHint = dashboardI18nText(status === 'expired' && kind === 'membership' ? 'dashboard.alerts.whatsapp.sendRenewal' : 'dashboard.alerts.whatsapp.contact');
                 const alertContact = member.alertContact || null;
                 const alertKey = member.alertKey || '';
                 const alertAction = member.id
@@ -560,9 +815,10 @@
                 const phone = String(member.phone || '');
                 const phoneDisplay = displayPhone(phone, member.phoneCountry);
                 return `<article class="alert-card ${status}" data-alert-enhanced="true" data-alert-kind="${escapeHtml(kind)}" data-member-id="${escapeHtml(member.id || '')}" data-alert-name="${escapeHtml(member.fullName)}" data-alert-phone="${escapeHtml(phone)}" data-alert-phone-country="${escapeHtml(member.phoneCountry || '')}" data-alert-status="${escapeHtml(status)}" data-alert-end="${escapeHtml(sub.effectiveEndDate || sub.endDate || '')}" data-alert-freeze-end="${escapeHtml(sub.freezeEnd || '')}" data-alert-remaining="${escapeHtml(sub.amountRemaining ?? '')}" data-alert-days="${escapeHtml(member.daysSinceLastVisit ?? '')}" data-alert-key="${escapeHtml(alertKey)}">${alertIconMarkup(kind, status)}<div class="alert-card-body"><div class="alert-card-content"><div class="alert-card-head"><strong class="alert-card-name">${escapeHtml(member.fullName)}</strong></div><span class="alert-card-detail">${escapeHtml(detail)}</span><a class="alert-card-phone" href="tel:${escapeHtml(phone.replace(/\s+/g, ''))}">${escapeHtml(phoneDisplay)}</a></div><div class="alert-card-actions">${alertStatusMarkup(kind, status, label)}${alertContactMarkup(alertContact)}${alertAction}</div></div></article>`;
-            }).join('') : '<div class="empty">لا توجد تنبيهات اليوم.</div>';
+            }).join('') : `<div class="empty">${escapeHtml(dashboardI18nText('dashboard.alerts.empty'))}</div>`;
              window.topGymSkeleton?.ready($('alertsList'));
-             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = alerts.length.toLocaleString('ar-EG');
+             const headerAlertCount = $('headerAlertCount'); if (headerAlertCount) headerAlertCount.textContent = dashboardI18nText(alerts.length ? 'dashboard.alerts.count' : 'dashboard.alerts.emptyCount', { count: alerts.length });
+             applyDashboardTranslations();
         }
         function decorateMemberQuickActions() {
             const list = $('membersList');
@@ -660,7 +916,9 @@
         function memberPortalCodeMarkup(member) {
             if (!canViewPortalCode()) return '';
             const preview = member.membershipCode?.maskedCode;
-            return `<span class="table-sub member-code-preview">كود البوابة: ${preview ? `<b dir="ltr">${escapeHtml(preview)}</b>` : '<span>غير مُصدر</span>'}</span>`;
+            if (!preview) return `<span class="table-sub member-code-preview">${escapeHtml(membersText('portalCode.unissued'))}</span>`;
+            const [before = '', after = ''] = membersText('portalCode', { code: '__CODE__' }).split('__CODE__');
+            return `<span class="table-sub member-code-preview">${escapeHtml(before)}<b dir="ltr">${escapeHtml(preview)}</b>${escapeHtml(after)}</span>`;
         }
         function memberInitials(name) {
             return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => Array.from(part)[0]).join('') || '؟';
@@ -684,16 +942,16 @@
             const phone = displayPhone(member.phone, member.phoneCountry);
             const phoneMarkup = member.phone
                 ? `<a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(phone)}</a>`
-                : '<span class="table-member-phone is-missing">لا يوجد رقم هاتف</span>';
+                : `<span class="table-member-phone is-missing">${escapeHtml(membersText('phone.missing'))}</span>`;
             const membershipStatus = sub?.status || 'expired';
-            const status = sub ? memberStatusBadge(membershipStatus) : memberStatusBadge('expired', 'بدون اشتراك');
+            const status = sub ? memberStatusBadge(membershipStatus) : memberStatusBadge('expired', membersText('noMembership'));
             const days = Number(sub?.daysRemaining || 0);
             const expiryDetail = sub
-                ? sub.status === 'expired' ? `منتهية منذ ${Math.abs(days)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${days} يوم متبقي`
+                ? sub.status === 'expired' ? membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDate(sub.freezeEnd) }) : membersText('remaining.days', { count: days })
                 : '—';
             const amountRemaining = Number(sub?.amountRemaining || 0);
             const balance = sub
-                ? `<div class="members-mobile-balance"><dt>المتبقي من الحساب</dt><dd class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}">${money(amountRemaining)}</dd></div>`
+                ? `<div class="members-mobile-balance"><dt>${escapeHtml(membersText('card.balance'))}</dt><dd class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}">${escapeHtml(membersCurrency(amountRemaining))}</dd></div>`
                 : '';
             const membershipCode = memberPortalCodeMarkup(member);
             return `<article class="members-mobile-card" data-member-id="${escapeHtml(member.id)}">
@@ -703,8 +961,8 @@
                     ${status}
                 </div>
                 <dl class="members-mobile-details">
-                    <div><dt>الاشتراك</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
-                    <div><dt>الانتهاء</dt><dd>${sub ? `${escapeHtml(formatDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
+                    <div><dt>${escapeHtml(membersText('card.subscription'))}</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
+                    <div><dt>${escapeHtml(membersText('card.expiry'))}</dt><dd>${sub ? `${escapeHtml(membersDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
                     ${balance}
                 </dl>
                 <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
@@ -712,14 +970,14 @@
         }
         function memberTableRow(member) {
             const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', 'بدون اشتراك')}</td><td>—</td><td>—</td><td>—</td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">${escapeHtml(membersText('registration', { date: membersDate(member.registrationDate) }))}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', membersText('noMembership'))}</td><td>—</td><td>—</td><td>—</td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
-            const remaining = sub.status === 'expired' ? `منتهية منذ ${Math.abs(sub.daysRemaining || 0)} يوم` : sub.status === 'frozen' ? `تجميد حتى ${formatDate(sub.freezeEnd)}` : `${sub.daysRemaining} يوم متبقي`;
-            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeCount}/${freezeLimit}</strong><span>متبقي ${Math.max(0, freezeLimit - freezeCount)}</span></span>`;
+            const remaining = sub.status === 'expired' ? membersText('remaining.expired', { count: Math.abs(sub.daysRemaining || 0) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDate(sub.freezeEnd) }) : membersText('remaining.days', { count: sub.daysRemaining });
+            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${membersNumber(freezeCount)}/${membersNumber(freezeLimit)}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span>`;
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">تسجيل: ${formatDate(member.registrationDate)}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${formatDate(sub.effectiveEndDate)}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${money(sub.amountDue)}</span><span class="table-sub ${remainingClass}">متبقي ${money(amountRemaining)}</span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">${escapeHtml(membersText('registration', { date: membersDate(member.registrationDate) }))}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${escapeHtml(membersDate(sub.effectiveEndDate))}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${escapeHtml(membersCurrency(sub.amountDue))}</span><span class="table-sub ${remainingClass}">${escapeHtml(membersText('balance.remaining', { amount: membersCurrency(amountRemaining) }))}</span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
         }
         function renderMembersSummary() {
             const section = document.getElementById('membersSection');
@@ -730,15 +988,15 @@
                 summary.id = 'membersSummary';
             summary.className = 'members-summary-grid';
                 summary.setAttribute('role', 'group');
-                summary.setAttribute('aria-label', 'ملخص المشتركين');
+            summary.setAttribute('aria-label', membersText('summary.aria'));
                 section.insertBefore(summary, section.querySelector('.members-toolbar'));
             }
             const stats = state.dashboard?.stats;
             const metrics = [
-                { key: 'total', label: 'إجمالي المشتركين', icon: '<circle cx="9" cy="8" r="3"/><path d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.5V19"', tone: 'total' },
-                { key: 'active', label: 'اشتراكات نشطة', icon: '<path d="m5 12 4 4L19 6"/>', tone: 'active' },
-                { key: 'expiringSoon', label: 'تنتهي قريبًا', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', tone: 'expiring' },
-                { key: 'expired', label: 'اشتراكات منتهية', icon: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"', tone: 'expired' }
+                { key: 'total', label: membersText('summary.total'), icon: '<circle cx="9" cy="8" r="3"/><path d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.5V19"', tone: 'total' },
+                { key: 'active', label: membersText('summary.active'), icon: '<path d="m5 12 4 4L19 6"/>', tone: 'active' },
+                { key: 'expiringSoon', label: membersText('summary.expiringSoon'), icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', tone: 'expiring' },
+                { key: 'expired', label: membersText('summary.expired'), icon: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"', tone: 'expired' }
             ];
             if (!stats || metrics.some(({ key }) => !Number.isFinite(Number(stats[key])))) {
                 summary.hidden = true;
@@ -746,22 +1004,78 @@
                 return;
             }
             summary.hidden = false;
-            summary.innerHTML = metrics.map(({ key, label, icon, tone }) => `<article class="stat-card members-summary-item ${tone}"><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><span class="members-summary-copy"><span class="stat-label">${label}</span><strong class="stat-value">${Number(stats[key]).toLocaleString('ar-EG')}</strong></span></article>`).join('');
+            summary.innerHTML = metrics.map(({ key, label, icon, tone }) => `<article class="stat-card members-summary-item ${tone}"><span class="stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icon}</svg></span><span class="members-summary-copy"><span class="stat-label">${escapeHtml(label)}</span><strong class="stat-value">${membersNumber(stats[key])}</strong></span></article>`).join('');
         }
         function renderMembers() {
             const pagination = state.pagination;
             const total = Number(pagination?.total ?? pagination?.totalItems ?? pagination?.totalCount ?? state.members.length);
-            $('membersCount').textContent = `${total.toLocaleString('ar-EG')} مشترك`;
+            $('membersCount').textContent = membersText('count', { count: total });
             const mobileResultsCount = document.querySelector('.members-mobile-results-count');
-            if (mobileResultsCount) mobileResultsCount.textContent = `${total.toLocaleString('ar-EG')} مشترك`;
+            if (mobileResultsCount) mobileResultsCount.textContent = membersText('count', { count: total });
             renderMembersSummary();
             const isMobile = window.matchMedia('(max-width: 767px)').matches;
             $('membersList').innerHTML = state.members.length
                 ? isMobile
                     ? `<div class="members-mobile-list">${state.members.map(memberMobileCard).join('')}</div>`
-                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>العضو</th><th>الاشتراك</th><th>الحالة</th><th>الانتهاء</th><th>التجميد</th><th>الحساب</th><th>الإجراءات</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
-                : '<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>لا يوجد مشتركون مطابقون</strong><p>جرّب تعديل البحث أو إزالة بعض الفلاتر لعرض النتائج.</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>مسح الفلاتر</button></div>';
+                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>${escapeHtml(membersText('table.member'))}</th><th>${escapeHtml(membersText('table.subscription'))}</th><th>${escapeHtml(membersText('table.status'))}</th><th>${escapeHtml(membersText('table.expiry'))}</th><th>${escapeHtml(membersText('table.freeze'))}</th><th>${escapeHtml(membersText('table.account'))}</th><th>${escapeHtml(membersText('table.actions'))}</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
+                : `<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>${escapeHtml(membersText('empty.title'))}</strong><p>${escapeHtml(membersText('empty.description'))}</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>${escapeHtml(membersText('empty.clear'))}</button></div>`;
         }
+
+        function applyMembersTranslations() {
+            const root = document.getElementById('membersSection');
+            if (!root) return;
+            const filtersDialogRoot = document.getElementById('membersFiltersDialog');
+            const find = (selector) => root.querySelector(selector) || filtersDialogRoot?.querySelector(selector) || null;
+            const setText = (selector, key) => { const element = find(selector); if (element) element.textContent = membersText(key); };
+            const setAttr = (selector, name, key) => { const element = find(selector); if (element) element.setAttribute(name, membersText(key)); };
+            setAttr('.members-toolbar', 'aria-label', 'toolbar.aria');
+            setText('.members-page-header h3', 'title');
+            setText('.members-page-subtitle', 'subtitle');
+            setText('#addMemberButton span', 'add');
+            setText('#pricingButton', 'pricing');
+            setText('#membershipTypesButton', 'types');
+            setText('.members-toolbar-copy strong', 'toolbar.title');
+            setText('.members-toolbar-copy div > span', 'toolbar.description');
+            setText('.members-search-field > span.visually-hidden', 'search.label');
+            setAttr('#searchInput', 'placeholder', 'search.placeholder');
+            setAttr('#searchInput', 'aria-label', 'search.label');
+            setAttr('#membersSearchClearButton', 'aria-label', 'search.clear');
+            const selectOptions = [
+                ['#statusFilter', [['', 'filter.all'], ['active', 'filter.active'], ['expiring_soon', 'filter.expiringSoon'], ['expired', 'filter.expired'], ['frozen', 'filter.frozen']]],
+                ['#sortFilter', [['expiry', 'filter.expiry'], ['newest', 'filter.newest'], ['remaining', 'filter.remaining']]]
+            ];
+            const statusLabel = find('#statusFilter')?.closest('.members-filter-field')?.querySelector('span');
+            if (statusLabel) statusLabel.textContent = membersText('filter.status');
+            setAttr('#statusFilter', 'aria-label', 'filter.statusAria');
+            const sortLabel = find('#sortFilter')?.closest('.members-filter-field')?.querySelector('span');
+            if (sortLabel) sortLabel.textContent = membersText('filter.sort');
+            setAttr('#sortFilter', 'aria-label', 'filter.sortAria');
+            selectOptions.forEach(([selector, options]) => {
+                const select = find(selector);
+                options.forEach(([value, key]) => { const option = [...(select?.options || [])].find((item) => item.value === value); if (option) option.textContent = membersText(key); });
+            });
+            const dialog = filtersDialogRoot;
+            if (dialog) {
+                dialog.querySelector('#membersFiltersTitle').textContent = membersText('filter.dialogTitle');
+                dialog.querySelector('#membersFiltersDescription').textContent = membersText('filter.dialogDescription');
+                const close = dialog.querySelector('#membersFiltersClose');
+                if (close) { close.textContent = membersText('filter.close'); close.setAttribute('aria-label', membersText('filter.close')); }
+                const clear = dialog.querySelector('#membersFiltersClear');
+                if (clear) clear.textContent = membersText('filter.clear');
+                const apply = dialog.querySelector('#membersFiltersApply');
+                if (apply) apply.textContent = membersText('filter.apply');
+            }
+            const disclosure = root.querySelector('.members-filter-disclosure summary');
+            if (disclosure) { const label = disclosure.querySelector('span'); if (label) label.textContent = membersText('filter.disclosure'); }
+            const clearButton = root.querySelector('.members-clear-filters');
+            if (clearButton) clearButton.textContent = membersText('filter.clear');
+            const loading = root.querySelector('#membersList .loading');
+            if (loading) loading.textContent = membersText('loading');
+        }
+        window.addEventListener('topgym:localechange', () => {
+            applyMembersTranslations();
+            if (Array.isArray(state.members)) renderMembers();
+        });
         const membersMobileMedia = window.matchMedia('(max-width: 767px)');
         membersMobileMedia.addEventListener?.('change', () => {
             if (state.members?.length) renderMembers();
@@ -1220,8 +1534,41 @@
 
         async function submitDialog(event) { event.preventDefault(); const action = state.dialogAction; const member = state.dialogMember; if (!action || !member) return; if (action === 'freeze' && !canOpenFreezeDialog(member)) { await notify('لا يمكن تنفيذ التجميد لهذه العضوية حاليًا.', 'warning'); closeDialog(); return; } try { await withLoader(async () => { if (action === 'freeze') await api(`/api/members/${member.id}/freeze`, { method: 'POST', body: JSON.stringify({ days: Number($('dialogDays').value), reason: $('dialogReason').value }) }); if (action === 'renew') await api(`/api/members/${member.id}/renew`, { method: 'POST', body: JSON.stringify({ membershipType: $('dialogType').value, membershipPlan: $('dialogPlan').value, discountAmount: Number($('dialogDiscount').value || 0), amountPaid: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); if (action === 'payment') { const pricing = calculateClientPricing($('dialogType').value, $('dialogPlan').value, $('dialogDiscount').value); await api(`/api/memberships/${member.membership.id}/payments`, { method: 'POST', body: JSON.stringify({ listPrice: pricing.listPrice, discountAmount: pricing.discountAmount, amountDue: pricing.amountDue, paymentAmount: Number($('dialogPaid').value || 0), paymentMethod: $('dialogMethod').value, paidAt: $('dialogPaidAt').value }) }); } }, 'جاري تنفيذ الإجراء…'); closeDialog(); await refreshAfterAction(action === 'freeze' ? 'تم تجميد العضوية.' : action === 'renew' ? 'تم تجديد العضوية.' : 'تم تسجيل الدفعة وإضافة الإيصال للسجل المالي.'); if (action === 'renew') window.dispatchEvent(new CustomEvent('topgym:membership-renewed', { detail: { memberId: member.id } })); } catch (error) { await notify(error.message, 'error'); } }
 
-         function renderPricingTable() { const typeEntries = activeTypeEntries(); const headers = typeEntries.map(([, type]) => `<th>${escapeHtml(type.label)}<small class="pricing-column-hint">سعر مستقل</small></th>`).join(''); const rows = Object.entries(state.pricing.plans).map(([code, plan]) => `<tr data-plan="${escapeHtml(code)}"><td><input data-field="planName" maxlength="80" value="${escapeHtml(plan.label)}"><span class="table-sub">${escapeHtml(code)}</span></td><td><input data-field="monthlyPrice" type="number" min="0" step="0.01" value="${Number(plan.monthlyPrice).toFixed(2)}"></td>${typeEntries.map(([typeCode, type]) => { const currentPrice = Number(state.pricing.prices?.[code]?.[typeCode] ?? (Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 1))); return `<td class="duration-price"><input data-field="typePrice" data-type-code="${escapeHtml(typeCode)}" type="number" min="0" step="0.01" value="${currentPrice.toFixed(2)}"></td>`; }).join('')}</tr>`).join(''); $('pricingTableContainer').innerHTML = `<table class="pricing-table"><thead><tr><th>الباقة</th><th>السعر الشهري</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`; }
-         function renderMembershipTypesTable() { const entries = Object.entries(state.pricing.types || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0)); const rows = entries.map(([code, type]) => { const duration = type.mode === 'days' ? `${Number(type.durationValue)} يوم` : `${Number(type.durationValue)} شهر`; const status = type.active === false ? '<span class="type-status off">غير ظاهر</span>' : '<span class="type-status">نشط</span>'; return `<tr><td><strong>${escapeHtml(type.label)}</strong><span class="table-sub">${escapeHtml(code)}</span></td><td>${duration}</td><td>${Number(type.priceMultiplier || 0).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}</td><td>${status}</td><td><div class="type-actions"><button class="btn btn-light btn-small" type="button" data-type-action="edit" data-code="${escapeHtml(code)}">تعديل</button></div></td></tr>`; }).join(''); $('membershipTypesTableContainer').innerHTML = `<table class="membership-types-table"><thead><tr><th>النوع</th><th>المدة</th><th>معامل السعر</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows || '<tr><td colspan="5">لا توجد أنواع عضويات.</td></tr>'}</tbody></table>`; }
+         function membershipManagementText(key, params = {}) { return window.TopGymI18n?.t?.(`membershipManagement.${key}`, params) || key; }
+         function membershipManagementNumber(value) { return window.TopGymI18n?.format?.('number', Number(value)) ?? String(Number(value || 0)); }
+         function membershipManagementCurrency(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value); }
+         function renderPricingTable() {
+             const typeEntries = activeTypeEntries();
+             const headers = typeEntries.map(([, type]) => `<th><span>${escapeHtml(type.label)}</span><small class="pricing-column-hint">${escapeHtml(membershipManagementText('pricing.column.independent'))}</small></th>`).join('');
+             const rows = Object.entries(state.pricing.plans).map(([code, plan]) => {
+                 const escapedCode = escapeHtml(code);
+                 const escapedName = escapeHtml(plan.label);
+                 const durationPrices = typeEntries.map(([typeCode, type]) => {
+                     const currentPrice = Number(state.pricing.prices?.[code]?.[typeCode] ?? (Number(plan.monthlyPrice || 0) * Number(type.priceMultiplier || 1)));
+                     const ariaLabel = membershipManagementText('pricing.input.durationPrice', { plan: plan.label, type: type.label });
+                     return `<td class="duration-price"><input data-field="typePrice" data-type-code="${escapeHtml(typeCode)}" type="number" min="0" step="0.01" value="${currentPrice.toFixed(2)}" aria-label="${escapeHtml(ariaLabel)}"></td>`;
+                 }).join('');
+                 return `<tr data-plan="${escapedCode}"><td><input data-field="planName" maxlength="80" value="${escapedName}" aria-label="${escapeHtml(membershipManagementText('pricing.input.planName', { name: plan.label }))}"><span class="table-sub" dir="ltr">${escapedCode}</span></td><td><input data-field="monthlyPrice" type="number" min="0" step="0.01" value="${Number(plan.monthlyPrice).toFixed(2)}" aria-label="${escapeHtml(membershipManagementText('pricing.input.monthlyPrice', { name: plan.label }))}"></td>${durationPrices}</tr>`;
+             }).join('');
+             $('pricingTableContainer').innerHTML = rows
+                 ? `<table class="pricing-table"><thead><tr><th>${escapeHtml(membershipManagementText('pricing.column.plan'))}</th><th>${escapeHtml(membershipManagementText('pricing.column.monthly'))}</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`
+                 : `<div class="empty">${escapeHtml(membershipManagementText('pricing.empty'))}</div>`;
+             applyMembershipManagementTranslations();
+         }
+         function renderMembershipTypesTable() {
+             const entries = Object.entries(state.pricing.types || {}).sort(([, first], [, second]) => Number(first.sortOrder || 0) - Number(second.sortOrder || 0));
+             const rows = entries.map(([code, type]) => {
+                 const durationKey = type.mode === 'days' ? 'types.duration.days' : 'types.duration.months';
+                 const duration = membershipManagementText(durationKey, { count: Number(type.durationValue) });
+                 const statusKey = type.active === false ? 'types.status.hidden' : 'types.status.active';
+                 const status = `<span class="type-status${type.active === false ? ' off' : ''}" data-membership-type-status>${escapeHtml(membershipManagementText(statusKey))}</span>`;
+                 const multiplier = membershipManagementNumber(Number(type.priceMultiplier || 0));
+                 const label = escapeHtml(type.label);
+                 return `<tr data-membership-type-row="${escapeHtml(code)}"><td><strong>${label}</strong><span class="table-sub" dir="ltr">${escapeHtml(code)}</span></td><td>${escapeHtml(duration)}</td><td>${escapeHtml(multiplier)}</td><td>${status}</td><td><div class="type-actions"><button class="btn btn-light btn-small" type="button" data-type-action="edit" data-code="${escapeHtml(code)}" aria-label="${escapeHtml(membershipManagementText('types.action.editAria', { name: type.label }))}">${escapeHtml(membershipManagementText('types.action.edit'))}</button></div></td></tr>`;
+             }).join('');
+             $('membershipTypesTableContainer').innerHTML = `<table class="membership-types-table"><thead><tr><th>${escapeHtml(membershipManagementText('types.column.type'))}</th><th>${escapeHtml(membershipManagementText('types.column.duration'))}</th><th>${escapeHtml(membershipManagementText('types.column.multiplier'))}</th><th>${escapeHtml(membershipManagementText('types.column.status'))}</th><th>${escapeHtml(membershipManagementText('types.column.action'))}</th></tr></thead><tbody>${rows || `<tr><td colspan="5">${escapeHtml(membershipManagementText('types.empty'))}</td></tr>`}</tbody></table>`;
+             applyMembershipManagementTranslations();
+         }
          const legacyRenderMembershipTypesTable = renderMembershipTypesTable;
          renderMembershipTypesTable = function() {
              legacyRenderMembershipTypesTable();
@@ -1236,11 +1583,12 @@
                  deleteButton.dataset.typeAction = 'delete';
                  deleteButton.dataset.code = editButton.dataset.code || '';
                  deleteButton.dataset.label = row.querySelector('strong')?.textContent?.trim() || editButton.dataset.code || '';
-                 deleteButton.setAttribute('aria-label', '\u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629');
-                 deleteButton.title = '\u062d\u0630\u0641';
-                 deleteButton.textContent = '\u062d\u0630\u0641';
+                 deleteButton.setAttribute('aria-label', membershipManagementText('types.action.deleteAria', { name: deleteButton.dataset.label }));
+                 deleteButton.title = membershipManagementText('types.action.delete');
+                 deleteButton.textContent = membershipManagementText('types.action.delete');
                  actions.appendChild(deleteButton);
              });
+             applyMembershipManagementTranslations();
          };
           document.addEventListener('click', (event) => {
               const button = event.target.closest('#membershipTypesTableContainer [data-type-action="delete"]');
@@ -1254,21 +1602,223 @@
                   applyPricingCatalog(catalog);
                   renderPricingTable();
                   renderMembershipTypesTable();
-                  await notify('\u062a\u0645 \u062d\u0630\u0641 \u0646\u0648\u0639 \u0627\u0644\u0639\u0636\u0648\u064a\u0629.');
+                  await notify(membershipManagementText('types.deleted'));
               } catch (error) {
                   await notify(error.message, 'error');
               }
           }
-          async function openPricingDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderPricingTable(); const dialog = $('pricingDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
-         async function openMembershipTypesDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderMembershipTypesTable(); const dialog = $('membershipTypesDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(error.message, 'error'); } }
+          async function openPricingDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderPricingTable(); const dialog = $('pricingDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(membershipManagementText('error.catalogUnavailable'), 'error'); } }
+         async function openMembershipTypesDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderMembershipTypesTable(); const dialog = $('membershipTypesDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(membershipManagementText('error.catalogUnavailable'), 'error'); } }
          function closePricingDialog() { const dialog = $('pricingDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
          function closeMembershipTypesDialog() { const dialog = $('membershipTypesDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-         async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); }, `جاري حفظ أسعار ${brandName()}…`); closePricingDialog(); await notify('تم حفظ أسعار الاشتراكات.'); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
+          async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); }, membershipManagementText('pricing.saveLoading')); closePricingDialog(); await notify(membershipManagementText('pricing.saved')); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
 
-         function updateMembershipTypePreview() { const mode = $('membershipTypeMode').value; const duration = Number($('membershipTypeDuration').value || 0); const multiplier = Number($('membershipTypeMultiplier').value || 0); const name = $('membershipTypeName').value.trim() || 'نوع جديد'; const unit = mode === 'days' ? 'يوم' : 'شهر'; const monthlyPrice = Number(state.pricing.plans.gym_only?.monthlyPrice || 0); $('membershipTypePreview').textContent = `${name} · ${duration || '—'} ${unit} · السعر المتوقع لجيم فقط: ${money(monthlyPrice * multiplier)}`; }
-         function openMembershipTypeDialog(code = '') { const type = code ? state.pricing.types?.[code] : null; const generatedCode = `custom_${Date.now().toString(36)}`; $('editingMembershipTypeCode').value = type ? code : ''; $('membershipTypeDialogTitle').textContent = type ? 'تعديل نوع العضوية' : 'إضافة نوع عضوية جديد'; $('membershipTypeDialogDescription').textContent = type ? 'يمكنك تعديل المدة أو السعر أو إخفاء النوع من قوائم الاشتراك.' : 'أدخل بيانات النوع الجديد ليظهر مباشرة عند إضافة أو تجديد الاشتراك.'; $('membershipTypeCode').value = type ? code : generatedCode; $('membershipTypeCode').readOnly = Boolean(type); $('membershipTypeName').value = type?.label || ''; $('membershipTypeMode').value = type?.mode || 'days'; $('membershipTypeDuration').value = type?.durationValue ?? (type ? '' : 15); $('membershipTypeMultiplier').value = type?.priceMultiplier ?? (type ? '' : 0.5); $('membershipTypeSortOrder').value = type?.sortOrder ?? (Object.keys(state.pricing.types || {}).length + 1); $('membershipTypeActive').checked = type?.active !== false; updateMembershipTypePreview(); const dialog = $('membershipTypeDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
+         function updateMembershipTypePreview() { const mode = $('membershipTypeMode').value; const duration = Number($('membershipTypeDuration').value || 0); const multiplier = Number($('membershipTypeMultiplier').value || 0); const name = $('membershipTypeName').value.trim() || membershipManagementText('type.previewFallback'); const unitKey = mode === 'days' ? (duration === 1 ? 'type.mode.daysSingular' : 'type.mode.daysPlural') : (duration === 1 ? 'type.mode.monthsSingular' : 'type.mode.monthsPlural'); const monthlyPrice = Number(state.pricing.plans.gym_only?.monthlyPrice || 0); const preview = membershipManagementText('type.preview', { name, duration: duration ? membershipManagementNumber(duration) : '—', unit: membershipManagementText(unitKey), price: membershipManagementCurrency(monthlyPrice * multiplier) }); if ($('membershipTypePreview').textContent !== preview) $('membershipTypePreview').textContent = preview; }
+
+         function applyMembershipManagementTranslations() {
+             const i18n = window.TopGymI18n;
+             const management = $('managementSection');
+             if (!i18n) return;
+             const text = (element, key) => { if (element) { const value = membershipManagementText(key); if (element.textContent !== value) element.textContent = value; } };
+             const attribute = (element, name, value) => { if (element && element.getAttribute(name) !== value) element.setAttribute(name, value); };
+             if (management) {
+                 attribute(management, 'aria-labelledby', 'membershipManagementTitle');
+                 text(management.querySelector('.management-eyebrow'), 'kicker');
+                 text(management.querySelector('.panel-header h3'), 'title');
+                 attribute(management.querySelector('.panel-header h3'), 'id', 'membershipManagementTitle');
+                 text(management.querySelector('.panel-header p'), 'description');
+                 const shortcuts = management.querySelectorAll('.management-shortcut');
+                 text(shortcuts[0]?.querySelector('strong'), 'pricingShortcut.title');
+                 text(shortcuts[0]?.querySelector('small'), 'pricingShortcut.description');
+                 text(shortcuts[1]?.querySelector('strong'), 'typesShortcut.title');
+                 text(shortcuts[1]?.querySelector('small'), 'typesShortcut.description');
+                 shortcuts[0]?.setAttribute('aria-label', membershipManagementText('pricingShortcut.title'));
+                 shortcuts[1]?.setAttribute('aria-label', membershipManagementText('typesShortcut.title'));
+             }
+
+             const pricingDialog = $('pricingDialog');
+             if (pricingDialog) {
+                 text(pricingDialog.querySelector('.management-dialog-eyebrow'), 'pricing.eyebrow');
+                 text($('pricingDialogTitle'), 'pricing.title');
+                 text(pricingDialog.querySelector('.management-dialog-heading p'), 'pricing.description');
+                 text(pricingDialog.querySelector('.pricing-section-head h4'), 'pricing.section.title');
+                 text(pricingDialog.querySelector('.pricing-section-head p'), 'pricing.section.description');
+                 text($('addMembershipPlanButton'), 'pricing.addPlan');
+                 text($('pricingClose'), 'pricing.close');
+                 text($('pricingSave'), window.topGymFeedback?.isLoading?.($('pricingSave')) ? 'pricing.saveLoading' : 'pricing.save');
+                 text($('dayPassPricingTitle'), 'dayPass.title');
+                 const dayPassHead = $('dayPassPricingTitle')?.closest('.pricing-section-head');
+                 text(dayPassHead?.querySelector('p'), 'dayPass.description');
+                 text(dayPassHead?.querySelector('.day-pass-pricing-note'), 'dayPass.note');
+                 text($('dayPassPricingSave'), 'dayPass.save');
+                 if ($('dayPassPricingSave')?.disabled) attribute($('dayPassPricingSave'), 'title', membershipManagementText('dayPass.ownerOnly'));
+                 const pricingContainer = $('pricingTableContainer');
+                 const pricingTable = pricingContainer?.querySelector('table.pricing-table');
+                 if (pricingTable) {
+                     const headers = pricingTable.querySelectorAll('thead th');
+                     text(headers[0], 'pricing.column.plan');
+                     text(headers[1], 'pricing.column.monthly');
+                     headers.forEach((header, index) => { if (index >= 2) text(header.querySelector('.pricing-column-hint'), 'pricing.column.independent'); });
+                     pricingTable.querySelectorAll('tbody tr[data-plan]').forEach((row) => {
+                         const nameInput = row.querySelector('[data-field="planName"]');
+                         const name = nameInput?.value || state.pricing.plans?.[row.dataset.plan]?.label || row.dataset.plan;
+                         attribute(nameInput, 'aria-label', membershipManagementText('pricing.input.planName', { name }));
+                         attribute(row.querySelector('[data-field="monthlyPrice"]'), 'aria-label', membershipManagementText('pricing.input.monthlyPrice', { name }));
+                         row.querySelectorAll('[data-field="typePrice"]').forEach((input) => {
+                             const type = state.pricing.types?.[input.dataset.typeCode];
+                             attribute(input, 'aria-label', membershipManagementText('pricing.input.durationPrice', { plan: name, type: type?.label || input.dataset.typeCode }));
+                         });
+                         const statusCell = row.querySelector('[data-plan-status]');
+                         if (statusCell) text(statusCell.querySelector('.type-status'), state.pricing.plans?.[row.dataset.plan]?.active === false ? 'pricing.status.hidden' : 'pricing.status.active');
+                         const edit = row.querySelector('[data-plan-action="edit"]');
+                         if (edit) {
+                             const label = membershipManagementText('pricing.action.edit');
+                             const aria = membershipManagementText('pricing.action.editAria', { name });
+                             text(edit, 'pricing.action.edit');
+                             attribute(edit, 'aria-label', aria);
+                             attribute(edit, 'title', label);
+                         }
+                     });
+                 }
+                 const dayPassContainer = $('dayPassPricingContainer');
+                 const dayPassTable = dayPassContainer?.querySelector('table.day-pass-pricing-table');
+                 if (dayPassTable) {
+                     const headers = dayPassTable.querySelectorAll('thead th');
+                     text(headers[0], 'dayPass.column.type');
+                     text(headers[1], 'dayPass.column.price');
+                     text(headers[2], 'dayPass.column.status');
+                     dayPassTable.querySelectorAll('tbody tr[data-day-pass-price-code]').forEach((row) => {
+                         const input = row.querySelector('[data-day-pass-price]');
+                         const name = row.querySelector('strong')?.textContent?.trim() || row.dataset.dayPassPriceCode;
+                         attribute(input, 'aria-label', membershipManagementText('dayPass.priceFor', { name }));
+                         text(row.querySelector('.day-pass-type-status'), row.querySelector('.day-pass-type-status')?.classList.contains('inactive') ? 'dayPass.inactive' : 'dayPass.active');
+                     });
+                 }
+                 const dayPassEmpty = dayPassContainer?.querySelector('.empty');
+                 if (dayPassEmpty) text(dayPassEmpty, 'dayPass.empty');
+                 text(pricingContainer?.querySelector('.loading'), 'pricing.loading');
+                 text(dayPassContainer?.querySelector('.loading'), 'dayPass.loading');
+                 attribute(pricingDialog, 'aria-labelledby', 'pricingDialogTitle');
+                 attribute(pricingDialog, 'aria-describedby', 'pricingDialogDescription');
+                 attribute(pricingDialog.querySelector('.management-dialog-heading p'), 'id', 'pricingDialogDescription');
+             }
+
+             const typesDialog = $('membershipTypesDialog');
+             if (typesDialog) {
+                 text(typesDialog.querySelector('.management-dialog-eyebrow'), 'types.eyebrow');
+                 text($('membershipTypesDialogTitle'), 'types.title');
+                 text(typesDialog.querySelector('.management-dialog-heading p'), 'types.description');
+                 text(typesDialog.querySelector('.pricing-section-head h4'), 'types.section.title');
+                 text(typesDialog.querySelector('.pricing-section-head p'), 'types.section.description');
+                 text($('addMembershipTypeButton'), 'types.add');
+                 text($('membershipTypesClose'), 'types.close');
+                 text($('membershipTypesTableContainer')?.querySelector('.loading'), 'types.loading');
+                 attribute(typesDialog, 'aria-labelledby', 'membershipTypesDialogTitle');
+                 attribute(typesDialog, 'aria-describedby', 'membershipTypesDialogDescription');
+                 attribute(typesDialog.querySelector('.management-dialog-heading p'), 'id', 'membershipTypesDialogDescription');
+                 const table = $('membershipTypesTableContainer')?.querySelector('table.membership-types-table');
+                 if (table) {
+                     const headerKeys = ['types.column.type', 'types.column.duration', 'types.column.multiplier', 'types.column.status', 'types.column.action'];
+                     table.querySelectorAll('thead th').forEach((header, index) => { if (headerKeys[index]) text(header, headerKeys[index]); });
+                     table.querySelectorAll('tbody tr[data-membership-type-row]').forEach((row) => {
+                         const code = row.dataset.membershipTypeRow;
+                         const type = state.pricing.types?.[code];
+                         if (!type) return;
+                         const durationKey = type.mode === 'days' ? 'types.duration.days' : 'types.duration.months';
+                         const duration = membershipManagementText(durationKey, { count: Number(type.durationValue) });
+                         if (row.children[1]?.textContent !== duration) row.children[1].textContent = duration;
+                         text(row.querySelector('[data-membership-type-status]'), type.active === false ? 'types.status.hidden' : 'types.status.active');
+                         const edit = row.querySelector('[data-type-action="edit"]');
+                         if (edit) {
+                             text(edit, 'types.action.edit');
+                             attribute(edit, 'aria-label', membershipManagementText('types.action.editAria', { name: type.label }));
+                             attribute(edit, 'title', membershipManagementText('types.action.edit'));
+                         }
+                         const remove = row.querySelector('[data-type-action="delete"]');
+                         if (remove) {
+                             const label = membershipManagementText('types.action.delete');
+                             text(remove, 'types.action.delete');
+                             attribute(remove, 'aria-label', membershipManagementText('types.action.deleteAria', { name: type.label }));
+                             attribute(remove, 'title', label);
+                         }
+                     });
+                 }
+             }
+
+             const typeDialog = $('membershipTypeDialog');
+             if (typeDialog) {
+                 attribute(typeDialog, 'aria-labelledby', 'membershipTypeDialogTitle');
+                 attribute(typeDialog, 'aria-describedby', 'membershipTypeDialogDescription');
+                 const editing = Boolean($('editingMembershipTypeCode')?.value);
+                 text($('membershipTypeDialogTitle'), editing ? 'type.edit.title' : 'type.add.title');
+                 text($('membershipTypeDialogDescription'), editing ? 'type.edit.description' : 'type.add.description');
+                 attribute($('membershipTypeDialogDescription'), 'id', 'membershipTypeDialogDescription');
+                 const typeLabels = [
+                     ['membershipTypeCode', 'type.code'], ['membershipTypeName', 'type.name'], ['membershipTypeMode', 'type.mode'],
+                     ['membershipTypeDuration', 'type.duration'], ['membershipTypeMultiplier', 'type.multiplier'], ['membershipTypeSortOrder', 'type.sortOrder']
+                 ];
+                 typeLabels.forEach(([id, key]) => text(typeDialog.querySelector(`label[for="${id}"]`), key));
+                 text(typeDialog.querySelector('#membershipTypeCode')?.parentElement?.querySelector('.field-hint'), 'type.code.hint');
+                 text(typeDialog.querySelector('#membershipTypeMultiplier')?.parentElement?.querySelector('.field-hint'), 'type.multiplier.hint');
+                 attribute($('membershipTypeCode'), 'placeholder', membershipManagementText('type.code.placeholder'));
+                 attribute($('membershipTypeName'), 'placeholder', membershipManagementText('type.name.placeholder'));
+                 const typeMode = $('membershipTypeMode');
+                 if (typeMode?.options.length >= 2) {
+                     text(typeMode.options[0].value === 'months' ? typeMode.options[0] : typeMode.options[1], 'type.mode.months');
+                     text(typeMode.options[0].value === 'days' ? typeMode.options[0] : typeMode.options[1], 'type.mode.days');
+                 }
+                 text(typeDialog.querySelector('#membershipTypeActive')?.closest('.checkbox-field')?.querySelector('span'), 'type.active');
+                 text($('membershipTypeCancel'), 'type.cancel');
+                 text($('membershipTypeDialogClose'), 'type.close');
+                 const saveKey = window.topGymFeedback?.isLoading?.($('membershipTypeSave')) ? 'type.saveLoading' : 'type.save';
+                 text($('membershipTypeSave'), saveKey);
+                 if ($('membershipTypePreview')) updateMembershipTypePreview();
+                 attribute($('membershipTypeDialogClose'), 'aria-label', membershipManagementText('type.close'));
+                 attribute($('membershipTypeCancel'), 'aria-label', membershipManagementText('type.cancel'));
+             }
+
+             const planDialog = $('membershipPlanDialog');
+             if (planDialog) {
+                 attribute(planDialog, 'aria-labelledby', 'membershipPlanDialogTitle');
+                 attribute(planDialog, 'aria-describedby', 'membershipPlanDialogDescription');
+                 const editing = Boolean($('editingMembershipPlanCode')?.value);
+                 text($('membershipPlanDialogTitle'), editing ? 'plan.edit.title' : 'plan.add.title');
+                 text($('membershipPlanDialogDescription'), editing ? 'plan.edit.description' : 'plan.add.description');
+                 attribute($('membershipPlanDialogDescription'), 'id', 'membershipPlanDialogDescription');
+                 const planLabels = [
+                     ['membershipPlanCode', 'plan.code'], ['membershipPlanName', 'plan.name'], ['membershipPlanPrice', 'plan.price'], ['membershipPlanSortOrder', 'plan.sortOrder']
+                 ];
+                 planLabels.forEach(([id, key]) => text(planDialog.querySelector(`label[for="${id}"]`), key));
+                 text(planDialog.querySelector('#membershipPlanCode')?.parentElement?.querySelector('.field-hint'), 'plan.code.hint');
+                 attribute($('membershipPlanCode'), 'placeholder', membershipManagementText('plan.code.placeholder'));
+                 attribute($('membershipPlanName'), 'placeholder', membershipManagementText('plan.name.placeholder'));
+                 text(planDialog.querySelector('#membershipPlanActive')?.closest('.checkbox-field')?.querySelector('span'), 'plan.active');
+                 text($('membershipPlanCancel'), 'plan.cancel');
+                 text($('membershipPlanDialogClose'), 'plan.close');
+                 const saveKey = window.topGymFeedback?.isLoading?.($('membershipPlanSave')) ? 'plan.saveLoading' : 'plan.save';
+                 text($('membershipPlanSave'), saveKey);
+                 const planName = $('membershipPlanName')?.value.trim() || membershipManagementText('plan.previewFallback');
+                 const monthly = Number($('membershipPlanPrice')?.value || 0);
+                 const halfMultiplier = Number(state.pricing.types?.half_month?.priceMultiplier || 0.5);
+                 const preview = membershipManagementText('plan.preview', { name: planName, monthly: membershipManagementCurrency(monthly), halfMonth: membershipManagementCurrency(monthly * halfMultiplier) });
+                 if ($('membershipPlanPreview')?.textContent !== preview) $('membershipPlanPreview').textContent = preview;
+                 attribute($('membershipPlanDialogClose'), 'aria-label', membershipManagementText('plan.close'));
+                 attribute($('membershipPlanCancel'), 'aria-label', membershipManagementText('plan.cancel'));
+             }
+         }
+
+         function setupMembershipManagementTranslations() {
+             if (document.documentElement.dataset.membershipManagementI18nReady === 'true') return;
+             document.documentElement.dataset.membershipManagementI18nReady = 'true';
+             const pricingRoot = $('pricingDialog');
+             if (pricingRoot) new MutationObserver(() => applyMembershipManagementTranslations()).observe(pricingRoot, { childList: true, subtree: true });
+             const typesRoot = $('membershipTypesDialog');
+             if (typesRoot) new MutationObserver(() => applyMembershipManagementTranslations()).observe(typesRoot, { childList: true, subtree: true });
+             applyMembershipManagementTranslations();
+         }
+         function openMembershipTypeDialog(code = '') { const type = code ? state.pricing.types?.[code] : null; const generatedCode = `custom_${Date.now().toString(36)}`; $('editingMembershipTypeCode').value = type ? code : ''; $('membershipTypeCode').value = type ? code : generatedCode; $('membershipTypeCode').readOnly = Boolean(type); $('membershipTypeName').value = type?.label || ''; $('membershipTypeMode').value = type?.mode || 'days'; $('membershipTypeDuration').value = type?.durationValue ?? (type ? '' : 15); $('membershipTypeMultiplier').value = type?.priceMultiplier ?? (type ? '' : 0.5); $('membershipTypeSortOrder').value = type?.sortOrder ?? (Object.keys(state.pricing.types || {}).length + 1); $('membershipTypeActive').checked = type?.active !== false; applyMembershipManagementTranslations(); updateMembershipTypePreview(); const dialog = $('membershipTypeDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
          function closeMembershipTypeDialog() { const dialog = $('membershipTypeDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-         async function submitMembershipType(event) { event.preventDefault(); const code = $('membershipTypeCode').value.trim().toLowerCase(); const editingCode = $('editingMembershipTypeCode').value; const button = $('membershipTypeSave'); button.disabled = true; try { const body = { typeCode: code, typeName: $('membershipTypeName').value, durationMode: $('membershipTypeMode').value, durationValue: Number($('membershipTypeDuration').value), priceMultiplier: Number($('membershipTypeMultiplier').value), sortOrder: Number($('membershipTypeSortOrder').value || 0), isActive: $('membershipTypeActive').checked }; applyPricingCatalog(await api(editingCode ? `/api/membership-types/${encodeURIComponent(editingCode)}` : '/api/membership-types', { method: editingCode ? 'PUT' : 'POST', body: JSON.stringify(body) })); renderPricingTable(); renderMembershipTypesTable(); closeMembershipTypeDialog(); await notify(editingCode ? 'تم تعديل نوع العضوية.' : 'تمت إضافة نوع العضوية.'); } catch (error) { await notify(error.message, 'error'); } finally { button.disabled = false; } }
+         async function submitMembershipType(event) { event.preventDefault(); const code = $('membershipTypeCode').value.trim().toLowerCase(); const editingCode = $('editingMembershipTypeCode').value; const button = $('membershipTypeSave'); button.disabled = true; try { const body = { typeCode: code, typeName: $('membershipTypeName').value, durationMode: $('membershipTypeMode').value, durationValue: Number($('membershipTypeDuration').value), priceMultiplier: Number($('membershipTypeMultiplier').value), sortOrder: Number($('membershipTypeSortOrder').value || 0), isActive: $('membershipTypeActive').checked }; applyPricingCatalog(await api(editingCode ? `/api/membership-types/${encodeURIComponent(editingCode)}` : '/api/membership-types', { method: editingCode ? 'PUT' : 'POST', body: JSON.stringify(body) })); renderPricingTable(); renderMembershipTypesTable(); closeMembershipTypeDialog(); await notify(membershipManagementText(editingCode ? 'type.save.edited' : 'type.save.added')); } catch (error) { await notify(error.message, 'error'); } finally { button.disabled = false; } }
 
          function eventSummary(event) { const details = event.details || {}; const values = []; if (details.membershipPlan) values.push(planLabel(details.membershipPlan)); if (details.membershipType) values.push(typeLabel(details.membershipType)); if (details.startDate) values.push(`من ${formatDate(details.startDate)}`); if (details.endDate) values.push(`إلى ${formatDate(details.endDate)}`); if (details.amountDue !== undefined) values.push(`مستحق ${money(details.amountDue)}`); if (details.amountPaid !== undefined) values.push(`مدفوع ${money(details.amountPaid)}`); if (details.days) values.push(`${details.days} يوم`); return values.join(' · ') || 'تم تسجيل العملية في سجل العضو.'; }
          function renderDetails(data) { const member = data.member; const memberships = data.memberships || []; const freezes = data.freezes || []; const events = data.events || []; $('detailsTitle').textContent = member.fullName; $('detailsSubtitle').textContent = `${displayPhone(member.phone, member.phoneCountry)}${member.email ? ` · ${member.email}` : ''}`; const membershipRows = memberships.length ? memberships.map((item, index) => `<tr><td><strong>#${index + 1}</strong><span class="table-sub">${item.id}</span></td><td><strong>${escapeHtml(planLabel(item.plan))}</strong><span class="table-sub">${escapeHtml(typeLabel(item.type))}</span></td><td>${formatDate(item.startDate)}<span class="table-sub">حتى ${formatDate(item.effectiveEndDate)}</span></td><td><span class="badge ${item.status}">${STATUS_LABELS[item.status] || item.status}</span></td><td><span class="table-money">${money(item.amountDue)}</span><span class="table-sub">مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</span></td><td>${item.freezes.length ? `${item.freezes.length} مرة` : '—'}</td></tr>`).join('') : '<tr><td colspan="6">لا توجد اشتراكات مسجلة.</td></tr>'; const freezeRows = freezes.length ? freezes.map((item) => `<tr><td>${formatDate(item.startDate)}</td><td>${formatDate(item.endDate)}</td><td>${item.resumedDate ? formatDate(item.resumedDate) : '<span class="badge frozen">نشط</span>'}</td><td>${item.days} يوم</td><td>${escapeHtml(item.reason || '—')}</td></tr>`).join('') : ''; const eventRows = events.length ? events.map((event) => `<div class="event-item"><div><strong>${escapeHtml(EVENT_LABELS[event.eventType] || event.eventType)}</strong><span>${escapeHtml(eventSummary(event))}</span></div><span class="event-date">${formatDateTime(event.createdAt)}</span></div>`).join('') : '<div class="history-empty">لا توجد عمليات مسجلة بعد.</div>'; $('detailsContent').innerHTML = `<div class="details-summary"><div class="details-summary-card"><span>تاريخ التسجيل</span><strong>${formatDate(member.registrationDate)}</strong></div><div class="details-summary-card"><span>عدد الاشتراكات</span><strong>${memberships.length}</strong></div><div class="details-summary-card"><span>عدد التجميدات</span><strong>${freezes.length}</strong></div><div class="details-summary-card"><span>عدد العمليات</span><strong>${events.length}</strong></div></div><div class="details-section"><h4>سجل الاشتراكات والتجديدات</h4><div class="history-scroll"><table class="history-table"><thead><tr><th>#</th><th>الباقة والمدة</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>التجميد</th></tr></thead><tbody>${membershipRows}</tbody></table></div></div>${freezes.length ? `<div class="details-section"><h4>سجل التجميد</h4><div class="history-scroll"><table class="history-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeRows}</tbody></table></div></div>` : ''}<div class="details-section"><h4>سجل كل العمليات</h4><div class="event-list">${eventRows}</div></div>${member.notes ? `<div class="details-section"><h4>ملاحظات العضو</h4><div class="history-empty">${escapeHtml(member.notes)}</div></div>` : ''}`; }
@@ -1473,6 +2023,10 @@
         function initializeApp() {
             if (appInitialized) return;
             appInitialized = true;
+            setupDashboardTranslations();
+            setupMemberTranslations();
+            setupMembershipManagementTranslations();
+            window.addEventListener('topgym:localechange', applyMembershipManagementTranslations);
              document.querySelectorAll('dialog').forEach((dialog) => prepareDialogAccessibility(dialog));
              setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('topPricingButton').addEventListener('click', openPricingDialog); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); $('memberBranchId').addEventListener('change', () => { void syncMemberScopeOptions({ preserve: true }); }); let timer; const membersSearchInput = $('searchInput'); const membersSearchClear = $('membersSearchClearButton'); const syncMembersSearchClear = () => { if (membersSearchClear && membersSearchInput) membersSearchClear.hidden = !membersSearchInput.value.trim(); }; membersSearchInput.addEventListener('input', () => { syncMembersSearchClear(); clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); membersSearchClear?.addEventListener('click', () => { clearTimeout(timer); membersSearchInput.value = ''; syncMembersSearchClear(); membersSearchInput.focus({ preventScroll: true }); void loadMembersOnly(); }); syncMembersSearchClear(); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });

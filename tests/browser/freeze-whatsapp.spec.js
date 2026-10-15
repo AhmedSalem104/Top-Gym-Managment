@@ -190,7 +190,7 @@ async function installApi(page, { freezeFails = false, welcomeTemplate = null } 
 async function openFreezeDialog(page) {
     await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
     await page.evaluate(() => window.LogicFitPhoneInputs?.loadCatalog?.());
-    const row = page.locator('tr[data-member-id="4242"]');
+    const row = page.locator('tr[data-member-id="4242"], .members-mobile-card[data-member-id="4242"]');
     await row.locator('[data-menu-toggle]').click();
     await row.locator('.action-menu-panel [data-action="freeze"]').evaluate((button) => button.click());
     const checkboxBlock = page.locator('#dialogFreezeWhatsappOption');

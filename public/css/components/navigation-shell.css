@@ -16,7 +16,7 @@
   overflow-x: clip;
   background: var(--bg-app);
   color: var(--text-primary);
-  direction: rtl;
+  direction: inherit;
 
   /* Navigation motion is intentionally local to the shell. Keeping these
      values here prevents a sidebar refinement from changing motion elsewhere
@@ -62,7 +62,7 @@
   gap: var(--space-6);
   margin-inline: auto;
   padding-block: 14px;
-  direction: rtl;
+  direction: inherit;
 }
 
 .topbar-brand-area,
@@ -164,7 +164,7 @@
   flex: 0 1 auto;
   justify-content: flex-start;
   gap: var(--space-2);
-  direction: rtl;
+  direction: inherit;
 }
 
 .topbar-quick-actions,
@@ -1160,6 +1160,52 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
   color: var(--primary);
 }
 
+/* Canonical V2 tab-rail presentation. Keep these states beside the shell
+   structure so visual polish does not compete with navigation ownership. */
+body .app-shell > .page-tabs {
+  background-color: var(--sidebar-bg);
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--sidebar-bg) 92%, var(--primary) 8%), var(--sidebar-bg));
+  background-blend-mode: normal;
+}
+
+body .app-shell > .page-tabs::before {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sidebar-bg) 12%, transparent), color-mix(in srgb, var(--sidebar-bg) 42%, transparent));
+}
+
+body .app-shell > .page-tabs > .page-tab,
+body .app-shell > .page-tabs > .smart-assistant-launcher {
+  min-height: 48px;
+  border-color: transparent;
+  border-radius: var(--radius-md);
+  color: var(--sidebar-text-muted);
+  font-weight: var(--weight-semibold);
+  box-shadow: none;
+}
+
+body .app-shell > .page-tabs > .page-tab:hover,
+body .app-shell > .page-tabs > .page-tab:focus-visible,
+body .app-shell > .page-tabs > .smart-assistant-launcher:hover,
+body .app-shell > .page-tabs > .smart-assistant-launcher:focus-visible {
+  border-color: var(--sidebar-divider);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+  box-shadow: none;
+}
+
+body .app-shell > .page-tabs > .page-tab.active,
+body .app-shell > .page-tabs > .page-tab[aria-selected="true"],
+body .app-shell > .page-tabs > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--sidebar-text);
+  box-shadow: inset 3px 0 0 var(--primary-hover);
+}
+
+body .app-shell > .page-tabs > .page-tab::before,
+body .app-shell > .page-tabs > .smart-assistant-launcher::before {
+  background: var(--primary-hover);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-shell > .page-tabs {
     scroll-behavior: auto;
@@ -1217,18 +1263,18 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
 .topbar-quick-actions #topAddMemberButton {
   min-height: 42px;
   border-color: color-mix(in srgb, var(--primary) 70%, white 10%);
-  box-shadow: 0 8px 18px rgb(23 105 232 / .22);
+  box-shadow: var(--shadow-primary);
 }
 
 @media (min-width: 1200px) {
   .app-shell {
-    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
     grid-template-rows: 80px auto minmax(0, 1fr);
   }
 
   .app-shell.sidebar-expanded,
   .app-shell:has(> .page-tabs:focus-within) {
-    grid-template-columns: minmax(252px, var(--sidebar-width-expanded)) minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
   }
 
   .app-shell > .topbar { grid-column: 1 / -1; grid-row: 1; }
@@ -1747,8 +1793,8 @@ html[data-brand-active-style="pill"] .app-shell > .page-tabs > .page-tab.active 
    owned here so feature/page styles cannot become a second navigation owner.
    Values are intentionally preserved from the approved visual baseline. */
 body .app-shell {
-  background: var(--rf-page);
-  color: var(--rf-ink);
+  background: var(--bg-app);
+  color: var(--text-primary);
 }
 
 body .app-shell > main.page {
@@ -1912,17 +1958,17 @@ body .app-shell > .page-tabs > .page-tab {
 
 body .app-shell > .page-tabs > .page-tab:hover,
 body .app-shell > .page-tabs > .page-tab:focus-visible {
-  border-color: rgb(174 153 255 / .28);
-  background: rgb(126 101 227 / .2);
-  color: #fff;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--sidebar-text);
 }
 
 body .app-shell > .page-tabs > .page-tab.active,
 body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
-  border-color: rgb(180 160 255 / .48);
-  background: linear-gradient(135deg, rgb(121 92 227 / .9), rgb(75 50 157 / .88));
-  box-shadow: 0 10px 24px rgb(50 29 126 / .26), inset 0 1px 0 rgb(255 255 255 / .15);
-  color: #fff;
+  border-color: var(--nav-active-border);
+  background: var(--nav-active-bg);
+  box-shadow: var(--nav-active-shadow);
+  color: var(--sidebar-active-text);
 }
 
 @media (min-width: 1200px) {
@@ -2034,10 +2080,52 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {
-  /* The wrapped tablet header is 77px tall; matching the sticky offset to
-     that measured shell track prevents a sub-pixel rail/content overlap. */
+  /* Keep the sticky tablet rail below the measured 81px header track. */
   .app-shell > .page-tabs {
-    top: 77px;
+    top: 81px;
+    scrollbar-color: var(--primary) var(--sidebar-divider);
+    scrollbar-width: thin;
+  }
+
+  /* Scrollbars can be hidden by Windows overlay-scrollbar settings even when
+     the rail is scrollable. Keep a small, non-interactive continuation cue at
+     the inline end so clipped destinations are discoverable in both layouts. */
+  .app-shell > .page-tabs::after {
+    position: absolute;
+    z-index: 2;
+    inset-block: 1px;
+    inset-inline-end: 0;
+    display: grid;
+    width: 34px;
+    place-items: center;
+    border-inline-start: 1px solid var(--sidebar-divider);
+    background: linear-gradient(90deg, transparent, var(--bg-header) 72%);
+    color: var(--sidebar-text-muted);
+    content: "›";
+    font-size: 20px;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  .app-shell > .page-tabs:dir(rtl)::after {
+    background: linear-gradient(270deg, transparent, var(--bg-header) 72%);
+    content: "‹";
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar-track {
+    border-radius: var(--radius-pill);
+    background: var(--sidebar-divider);
+  }
+
+  .app-shell > .page-tabs::-webkit-scrollbar-thumb {
+    border: 1px solid var(--sidebar-bg);
+    border-radius: var(--radius-pill);
+    background: var(--primary);
   }
 }
 
@@ -2304,5 +2392,513 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
   .app-shell > .page-tabs > .page-tab .ui-icon,
   .sidebar-section-label {
     transition: none !important;
+  }
+}
+
+/* Navbar shell refinements. */
+@media (max-width: 1199px) {
+  body .topbar-inner {
+    flex-wrap: wrap;
+  }
+
+  body .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+}
+
+@media (max-width: 767px) {
+  body .topbar-inner {
+    gap: 6px;
+  }
+
+  body .topbar-controls {
+    align-items: stretch;
+  }
+
+}
+
+/* -------------------------------------------------------------------------
+/* Navbar context: keep branch and section as lightweight, independent
+   controls. The existing select/trigger/menu behavior stays untouched. */
+body .topbar-controls > .branch-context-shell {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: inline-flex;
+  flex: 0 1 auto;
+  width: auto;
+  max-width: min(100%, 640px);
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0;
+  gap: 3px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  isolation: auto;
+}
+
+body .topbar-controls > .branch-context-shell:hover,
+body .topbar-controls > .branch-context-shell:focus-within {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 1199px) {
+  body .topbar-controls > .branch-context-shell {
+    position: static;
+    width: auto;
+    max-width: 100%;
+    height: 34px;
+    min-height: 34px;
+    margin-inline: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    max-width: 100%;
+    min-height: 34px;
+    flex: 1 1 100%;
+    order: -2;
+    justify-content: flex-start;
+    gap: 1px;
+  }
+}
+
+/* Navbar reference pass: keep the existing controls and handlers, but make
+   the bar a compact command row with no brand/context/status containers. */
+body .app-shell > .topbar .topbar-brand-area {
+  display: none !important;
+}
+
+body .app-shell > .topbar .topbar-inner {
+  width: calc(100% - 32px);
+  max-width: none;
+  justify-content: stretch;
+  gap: 0;
+}
+
+body .app-shell > .topbar .topbar-controls {
+  width: 100%;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+body .topbar-controls > .branch-context-shell {
+  order: 1;
+  width: auto;
+  max-width: 410px;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 1 auto;
+  gap: 0;
+}
+
+body .topbar-quick-actions {
+  order: 2;
+  min-width: 0;
+  flex: 0 0 auto;
+  gap: 7px;
+  margin: 0;
+}
+
+body .topbar-quick-actions #topPricingButton,
+body .topbar-quick-actions #refreshButton {
+  display: none !important;
+}
+
+body .topbar-quick-actions #topAddMemberButton {
+  display: inline-flex;
+  height: 40px;
+  min-height: 40px;
+  min-width: 112px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 14px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+body .topbar-controls > #mobileNavToggle {
+  order: 3;
+}
+
+body .topbar-controls > #globalKioskToggle,
+body .topbar-controls > #authAccountBar {
+  order: 4;
+}
+
+body .topbar-controls > #globalKioskToggle { order: 5; }
+body .topbar-controls > #authAccountBar { order: 6; }
+
+body .topbar-controls > #globalKioskToggle,
+body .topbar-controls > #authAccountBar .auth-logout-button {
+  box-sizing: border-box;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 10px;
+}
+
+body .topbar-controls > #authAccountBar .auth-logout-button > span {
+  display: none;
+}
+
+body .topbar-controls > #globalKioskToggle .ui-icon,
+body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+@media (max-width: 1199px) {
+  body .app-shell > .topbar .topbar-controls {
+    flex-wrap: nowrap;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    max-width: 360px;
+  }
+
+  body .topbar-quick-actions #topAddMemberButton {
+    min-width: 104px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 16px);
+    min-height: 0;
+    padding-block: 8px;
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  body .topbar-controls > .branch-context-shell {
+    width: 100%;
+    max-width: none;
+    height: 34px;
+    min-height: 34px;
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  body .topbar-quick-actions {
+    order: 2;
+    flex: 0 1 auto;
+    gap: 5px;
+  }
+
+  body .topbar-quick-actions #topAddMemberButton {
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    flex: 0 1 auto;
+    height: 38px;
+    min-height: 38px;
+    overflow: visible;
+    padding-inline: 8px;
+    font-size: 10px;
+  }
+
+  body .topbar-controls > #mobileNavToggle,
+  body .topbar-controls > #globalKioskToggle,
+  body .topbar-controls > #authAccountBar .auth-logout-button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    flex: 0 0 38px;
+    border-radius: 9px;
+  }
+
+  body .topbar-controls > #globalKioskToggle .ui-icon,
+  body .topbar-controls > #authAccountBar .auth-logout-button .ui-icon,
+  body .topbar-controls > #mobileNavToggle .ui-icon {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+  }
+}
+
+@media (max-width: 380px) {
+
+  body .topbar-quick-actions #topAddMemberButton {
+    padding-inline: 6px;
+    font-size: 9px;
+  }
+}
+
+/* Navbar context alignment: centered selectors on desktop, two equal controls
+   above the action row on mobile. The existing selects and handlers remain. */
+body .app-shell > .topbar .topbar-controls {
+  position: relative;
+}
+
+body .topbar-controls > .branch-context-shell {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  width: min(430px, 100%);
+  max-width: 100%;
+  height: 38px;
+  min-height: 38px;
+  flex: 0 1 430px;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+body .topbar-controls > .branch-context-shell:hover,
+body .topbar-controls > .branch-context-shell:focus-within {
+  transform: none;
+}body .topbar-controls > .branch-context-shell{
+  box-sizing: border-box;
+}
+
+body .topbar-quick-actions {
+  margin-inline-start: auto;
+}
+
+@media (max-width: 767px) {
+  body .topbar-controls > .branch-context-shell {
+    position: relative;
+    inset: auto;
+    left: auto;
+    right: auto;
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    height: 36px;
+    min-height: 36px;
+    flex: 1 1 100%;
+    transform: none !important;
+  }
+
+  body .topbar-controls > .branch-context-shell:hover,
+  body .topbar-controls > .branch-context-shell:focus-within {
+    transform: none !important;
+  }
+
+  body .topbar-quick-actions {
+    margin-inline-start: auto;
+  }
+}
+
+/* Navigation refinement: keep the current route hooks and branch/section
+   controls, but present them as one calm, labelled command bar. */
+body .app-shell > .topbar .topbar-inner {
+  width: min(100% - 40px, 1520px);
+  min-height: 76px;
+  gap: var(--space-5);
+  overflow: visible;
+}
+
+body .app-shell > .topbar,
+body .app-shell > .topbar .topbar-inner,
+body .app-shell > .topbar .topbar-controls {
+  overflow: visible;
+}
+
+body .app-shell > .topbar .topbar-controls {
+  position: static;
+  min-height: 56px;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 1199px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    flex: 1 1 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell {
+    width: auto;
+    max-width: 100%;
+    flex-basis: auto;
+  }
+}
+
+/* Navbar context/action contract. Keep selectors and existing actions in the
+   current shell; this layer only normalizes their presentation and hit areas. */
+body .app-shell > .topbar .topbar-controls > #branchContextShell {
+  box-sizing: border-box;
+  width: min(400px, 100%);
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  flex: 0 1 400px;
+  align-items: center;
+  gap: var(--space-2);
+  transform: none;
+  transition: none;
+}
+
+body .app-shell > .topbar .topbar-controls > #branchContextShell:hover,
+body .app-shell > .topbar .topbar-controls > #branchContextShell:focus-within {
+  transform: none;
+}
+
+/* Action order remains DOM/CSS-owned by the existing shell. Theme changes only
+   affect the semantic color treatment; geometry is identical in both modes. */
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--sidebar-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button {
+  color: var(--nav-action-neutral);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle {
+  color: var(--nav-action-blue);
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+  color: var(--nav-action-cyan);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle .ui-icon,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button .ui-icon,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger .ui-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:hover,
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:active {
+  border-color: var(--info-border);
+  background: var(--nav-action-blue-surface);
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:hover,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:active {
+  border-color: var(--nav-context-section-surface);
+  background: var(--nav-action-cyan-surface);
+}
+
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:hover,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:active {
+  border-color: var(--sidebar-border);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:focus-visible,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:focus-visible,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+body .app-shell > .topbar .topbar-controls > #globalKioskToggle:disabled,
+body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button:disabled,
+body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
+  inset-block-start: 3px;
+  inset-inline-end: 3px;
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-controls > #branchContextShell {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    flex: 1 1 100%;
+  }
+
+  body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+  body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button,
+  body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex-basis: 44px;
+  }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 20px);
+    padding-block: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    gap: var(--space-2);
+  }
+
+  body .app-shell > .topbar .topbar-controls > .branch-context-shell {
+    width: auto;
+    min-height: 0;
+    flex: 0 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .app-shell > .topbar .branch-context-shell {
+    transition: none;
   }
 }

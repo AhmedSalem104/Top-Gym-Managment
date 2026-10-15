@@ -19,7 +19,9 @@ test('unified feedback utility exposes safe async action primitives', () => {
     assert.match(source, /setAttribute\('aria-busy', 'true'\)/);
     assert.match(source, /originalHtml: button\.innerHTML/);
     assert.match(source, /messageElement\.textContent/);
-    assert.match(source, /button\.style\.minWidth = `\$\{rect\.width\}px`/);
+    assert.match(source, /button\.style\.boxSizing = 'border-box'/);
+    assert.match(source, /button\.style\.width = `\$\{rect\.width\}px`/);
+    assert.match(source, /button\.style\.width = record\.originalWidth/);
     assert.doesNotMatch(source, /Math\.ceil\(rect\.width\)/);
 });
 
@@ -65,14 +67,14 @@ test('critical surfaces load the same feedback layer with context-aware labels',
     const gymRegistration = read('public/register-gym.html');
     const trainerRegistration = read('public/register-trainer.html');
 
-    assert.match(index, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(index, /\/js\/ui-feedback\.js\?v=4/);
     assert.match(index, /id="loginSubmit"[^>]*data-feedback-ignore[^>]*data-loading-text="جاري تسجيل الدخول\.\.\."/);
-    assert.match(portal, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(portal, /\/js\/ui-feedback\.js\?v=4/);
     assert.match(portal, /id="portalSubmitButton"[^>]*data-loading-text="جاري التحقق من الكود\.\.\."/);
     assert.match(portal, /id="portalOccupancyRefresh"[^>]*data-async-action="true"/);
-    assert.match(platform, /\/js\/ui-feedback\.js\?v=3/);
-    assert.match(gymRegistration, /\/js\/ui-feedback\.js\?v=3/);
-    assert.match(trainerRegistration, /\/js\/ui-feedback\.js\?v=3/);
+    assert.match(platform, /\/js\/ui-feedback\.js\?v=4/);
+    assert.match(gymRegistration, /\/js\/ui-feedback\.js\?v=4/);
+    assert.match(trainerRegistration, /\/js\/ui-feedback\.js\?v=4/);
 });
 
 test('legacy auto-loading bridge excludes immediate controls and preserves compatibility hooks', () => {
@@ -106,11 +108,14 @@ test('submit controls are not disabled during click capture before native submit
 
 test('backup and restore actions use contextual loading without changing success semantics', () => {
     const source = read('public/js/pages/management/backup.js');
+    const i18n = read('public/js/core/i18n.js');
 
     assert.match(source, /function setActionLoading\(button, loading, loadingText\)/);
-    assert.match(source, /جاري إنشاء النسخة/);
-    assert.match(source, /جاري استرجاع النسخة/);
-    assert.match(source, /setActionLoading\(trigger, true/);
+    assert.match(source, /setActionLoading\(manualBackupButton, true, translate\('backupHistory\.action\.creating'\)\)/);
+    assert.match(source, /backupHistory\.action\.restoring/);
+    assert.match(source, /setActionLoading\(manualBackupButton, true/);
     assert.match(source, /setActionLoading\(restoreSubmit, true/);
+    assert.match(i18n, /'backupHistory\.action\.creating':/);
+    assert.match(i18n, /'backupHistory\.action\.restoring':/);
     assert.match(source, /window\.topGymFeedback\.toast/);
 });

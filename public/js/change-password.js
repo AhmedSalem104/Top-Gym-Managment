@@ -6,6 +6,40 @@
     const submit = document.getElementById('passwordChangeSubmit');
     const submitLabel = submit?.querySelector('.password-change-submit-label');
     const identity = document.getElementById('passwordChangeIdentity');
+    const i18n = window.TopGymI18n;
+    const tr = (key, params) => i18n?.t?.(`passwordChange.${key}`, params) || key;
+    let identityName = '';
+    let localMessageKey = '';
+
+    function applyPasswordChangeLocale() {
+        i18n?.apply?.(document);
+        if (submitLabel) {
+            const loading = submit?.getAttribute('aria-busy') === 'true';
+            submitLabel.textContent = tr(loading ? 'submit.loading' : 'submit');
+        }
+        if (identityName && identity) {
+            identity.textContent = tr('identity', { name: identityName });
+            identity.hidden = false;
+        }
+        if (localMessageKey && message) message.textContent = tr(localMessageKey);
+        document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
+            const kind = toggle.dataset.passwordToggleKind;
+            const visible = toggle.getAttribute('aria-pressed') === 'true';
+            const key = kind === 'new'
+                ? `password.${visible ? 'hideNew' : 'showNew'}`
+                : kind === 'confirm'
+                    ? `password.${visible ? 'hideConfirm' : 'showConfirm'}`
+                    : `password.${visible ? 'hide' : 'show'}`;
+            toggle.setAttribute('aria-label', tr(key));
+        });
+        const theme = window.TopGymTheme?.get?.() || document.documentElement.dataset.theme || 'light';
+        const nextThemeKey = theme === 'dark' ? 'theme.enableLight' : 'theme.enableDark';
+        const themeButton = document.querySelector('[data-theme-toggle]');
+        themeButton?.setAttribute('aria-label', tr(nextThemeKey));
+        themeButton?.setAttribute('title', tr(nextThemeKey));
+        const themeLabel = themeButton?.querySelector('[data-theme-toggle-label]');
+        if (themeLabel) themeLabel.textContent = tr(theme === 'dark' ? 'theme.light' : 'theme.dark');
+    }
 
     const normalizeTenantType = (user) => String(user?.tenantType ?? user?.tenant_type ?? '')
         .trim()
@@ -22,16 +56,23 @@
 
     function setMessage(text = '', type = 'error') {
         if (!message) return;
+        localMessageKey = '';
         message.textContent = String(text || '');
         message.className = `password-change-message${type === 'success' ? ' is-success' : ''}${type === 'info' ? ' is-info' : ''}`;
         message.hidden = !text;
+    }
+
+    function setLocalizedMessage(key, type = 'error') {
+        localMessageKey = key;
+        setMessage(tr(key), type);
+        localMessageKey = key;
     }
 
     function setLoading(loading) {
         if (!submit) return;
         submit.disabled = Boolean(loading);
         submit.setAttribute('aria-busy', String(Boolean(loading)));
-        if (submitLabel) submitLabel.textContent = loading ? 'جارٍ حفظ كلمة المرور…' : 'حفظ كلمة المرور والمتابعة';
+        if (submitLabel) submitLabel.textContent = tr(loading ? 'submit.loading' : 'submit');
     }
 
     async function request(url, options = {}) {
@@ -42,7 +83,11 @@
             headers: { Accept: 'application/json', ...(options.headers || {}) }
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'تعذر إكمال العملية. حاول مرة أخرى.');
+        if (!response.ok) {
+            const error = new Error(data.error || tr('error.request'));
+            if (typeof data.code === 'string') error.code = data.code;
+            throw error;
+        }
         return data;
     }
 
@@ -77,13 +122,14 @@
                 return;
             }
             if (identity && user.name) {
-                identity.textContent = `الحساب: ${user.name}`;
+                identityName = String(user.name);
+                identity.textContent = tr('identity', { name: identityName });
                 identity.hidden = false;
             }
             document.body.dataset.passwordChangeReady = 'true';
             window.setTimeout(() => document.getElementById('forceNewPassword')?.focus(), 0);
         } catch (error) {
-            setMessage(error.message || 'تعذر التحقق من جلسة الحساب. حاول إعادة تحميل الصفحة.');
+            setMessage(error.message || tr('error.session'));
         }
     }
 
@@ -93,11 +139,11 @@
         const confirmPassword = document.getElementById('forceConfirmPassword')?.value || '';
         setMessage('');
         if (newPassword.length < 8) {
-            setMessage('كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
+            setLocalizedMessage('error.short');
             return;
         }
         if (newPassword !== confirmPassword) {
-            setMessage('كلمتا المرور غير متطابقتين.');
+            setLocalizedMessage('error.mismatch');
             return;
         }
         setLoading(true);
@@ -112,11 +158,16 @@
             // session, without asking the user to log in again.
             const user = await currentSession();
             if (!user || isPasswordChangeRequired(user)) {
-                throw new Error('لم يتم تحديث حالة الحساب بعد. أعد المحاولة.');
+                throw Object.assign(new Error(tr('error.sessionUpdate')), { localMessageKey: 'error.sessionUpdate' });
             }
             routeForUser(user);
         } catch (error) {
-            setMessage(error.message || 'تعذر حفظ كلمة المرور. حاول مرة أخرى.');
+            if (error.localMessageKey) setLocalizedMessage(error.localMessageKey);
+            else {
+                const apiMessageKey = error.code ? `error.api.${error.code}` : '';
+                if (apiMessageKey && tr(apiMessageKey) !== `passwordChange.${apiMessageKey}`) setLocalizedMessage(apiMessageKey);
+                else setMessage(error.message || tr('error.save'));
+            }
             setLoading(false);
         }
     }
@@ -128,10 +179,19 @@
             const visible = input.type === 'text';
             input.type = visible ? 'password' : 'text';
             toggle.setAttribute('aria-pressed', String(!visible));
-            toggle.setAttribute('aria-label', visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
+            const kind = toggle.dataset.passwordToggleKind;
+            const key = kind === 'new'
+                ? `password.${visible ? 'showNew' : 'hideNew'}`
+                : kind === 'confirm'
+                    ? `password.${visible ? 'showConfirm' : 'hideConfirm'}`
+                    : `password.${visible ? 'show' : 'hide'}`;
+            toggle.setAttribute('aria-label', tr(key));
         });
     });
 
+    applyPasswordChangeLocale();
+    window.addEventListener('topgym:localechange', applyPasswordChangeLocale);
+    window.addEventListener('topgym:themechange', applyPasswordChangeLocale);
     form?.addEventListener('submit', submitPassword);
     bootstrap();
 }());

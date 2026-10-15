@@ -15,18 +15,53 @@
     const detailsDialog = byId('trainerClientDetailsDialog');
     let currentPage = 1;
     let searchTimer;
+    const workspaceDataState = { clients: 'idle', operations: 'idle', reports: 'idle', workspace: 'idle' };
     let clientsCache = [];
+    let clientsPagination = {};
     let packagesCache = [];
     let purchasesCache = [];
     let sessionsCache = [];
 
-    const setText = (element, value) => { if (element) element.textContent = String(value ?? ''); };
+    const i18n = () => window.TopGymI18n;
+    const t = (key, params = {}) => i18n()?.t(`trainerWorkspaceScreen.${key}`, params) || key;
+    function localizeTrainerContent(root = document.body) {
+        if (!root || !i18n()) return;
+        i18n().annotateText(root, 'trainerWorkspaceScreen.');
+    }
+    const setText = (element, value) => {
+        if (!element) return;
+        element.removeAttribute('data-i18n');
+        Object.keys(element.dataset).filter((key) => key.startsWith('i18nParam')).forEach((key) => delete element.dataset[key]);
+        element.textContent = String(value ?? '');
+        localizeTrainerContent(element);
+    };
+    function setI18nText(element, key, params = {}) {
+        if (!element) return;
+        element.dataset.i18n = `trainerWorkspaceScreen.${key}`;
+        Object.entries(params).forEach(([name, value]) => {
+            const dataName = `i18nParam${name[0].toUpperCase()}${name.slice(1)}`;
+            element.dataset[dataName] = String(value);
+        });
+        element.textContent = t(key, params);
+    }
+    function translatedMarkup(key, params = {}) {
+        const fullKey = `trainerWorkspaceScreen.${key}`;
+        const attrs = Object.entries(params).map(([name, value]) => ` data-i18n-param-${name}="${escapeHtml(value)}"`).join('');
+        return `<span data-i18n="${fullKey}"${attrs}>${escapeHtml(t(key, params))}</span>`;
+    }
+    function formattedMarkup(kind, value) {
+        const raw = String(value ?? '');
+        const rendered = kind === 'currency'
+            ? (i18n()?.format('currency', raw, { currency: 'EGP' }) || moneyValue(raw))
+            : formatDate(raw, kind === 'time');
+        return `<span data-i18n-format="${kind}" data-i18n-value="${escapeHtml(raw)}"${kind === 'currency' ? ' data-i18n-currency="EGP"' : ''}>${escapeHtml(rendered)}</span>`;
+    }
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
     const api = async (path, options = {}) => {
         const response = await fetch(path, { credentials: 'same-origin', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw Object.assign(new Error(payload.error || 'تعذر تحميل البيانات.'), { code: payload.code, status: response.status });
+        if (!response.ok) throw Object.assign(new Error(payload.error || t('error.loadClients')), { code: payload.code, status: response.status });
         return payload;
     };
 
@@ -39,15 +74,21 @@
 
     function setClientsMessage(value, isError = false) {
         if (!clientsMessage) return;
+        clientsMessage.removeAttribute('data-i18n');
+        Object.keys(clientsMessage.dataset).filter((key) => key.startsWith('i18nParam')).forEach((key) => delete clientsMessage.dataset[key]);
         clientsMessage.textContent = value || '';
         clientsMessage.classList.toggle('is-error', Boolean(isError));
+        localizeTrainerContent(clientsMessage);
     }
 
     function setSectionMessage(id, value, isError = false) {
         const element = byId(id);
         if (!element) return;
+        element.removeAttribute('data-i18n');
+        Object.keys(element.dataset).filter((key) => key.startsWith('i18nParam')).forEach((key) => delete element.dataset[key]);
         element.textContent = value || '';
         element.classList.toggle('is-error', Boolean(isError));
+        localizeTrainerContent(element);
     }
 
     function localDateValue(date = new Date()) {
@@ -62,6 +103,7 @@
 
     function formatDate(value, withTime = false) {
         if (!value) return '—';
+        if (i18n()) return i18n().format(withTime ? 'time' : 'date', value, withTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' });
         // SQL DATE values are calendar dates, not instants. Parse them in a
         // stable UTC context so the browser timezone cannot render the
         // previous day for users in positive-offset timezones.
@@ -75,11 +117,17 @@
     }
 
     function moneyValue(value) {
+        if (i18n()) return i18n().format('currency', Number(value || 0), { currency: 'EGP' });
         return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
     }
 
     function statusLabel(value) {
-        return ({ scheduled: 'مجدولة', completed: 'مكتملة', cancelled: 'ملغاة', no_show: 'لم يحضر', active: 'نشطة', completed_purchase: 'مكتملة' }[value] || value || '—');
+        const keys = { scheduled: 'status.session.scheduled', completed: 'status.session.completed', cancelled: 'status.session.cancelled', no_show: 'status.session.noShow', active: 'status.purchase.active', completed_purchase: 'status.purchase.completed' };
+        return keys[value] ? t(keys[value]) : value || '—';
+    }
+    function statusMarkup(value) {
+        const keys = { scheduled: 'status.session.scheduled', completed: 'status.session.completed', cancelled: 'status.session.cancelled', no_show: 'status.session.noShow', active: 'status.purchase.active', completed_purchase: 'status.purchase.completed' };
+        return keys[value] ? translatedMarkup(keys[value]) : escapeHtml(value || '—');
     }
 
     function openDialog(dialog) {
@@ -99,35 +147,40 @@
     }
 
     function populateClientSelect(id, value = '') {
-        populateSelect(id, clientsCache.map((client) => ({ id: client.id, label: client.fullName })), value, 'اختر العميل');
+        populateSelect(id, clientsCache.map((client) => ({ id: client.id, label: client.fullName })), value, t('form.client'));
     }
 
     function populatePackageSelect(id, value = '') {
-        populateSelect(id, packagesCache.filter((item) => item.status === 'active').map((item) => ({ id: item.id, label: `${item.name} · ${moneyValue(item.price)}` })), value, 'اختر الباقة');
+        populateSelect(id, packagesCache.filter((item) => item.status === 'active').map((item) => ({ id: item.id, label: `${item.name} · ${moneyValue(item.price)}` })), value, t('form.package'));
     }
 
     function populatePurchaseSelect(id, memberId = '', value = '') {
         const items = purchasesCache.filter((item) => !memberId || Number(item.memberId) === Number(memberId));
-        populateSelect(id, items.map((item) => ({ id: item.id, label: `${item.packageName || 'باقة'} · متبقي ${moneyValue(item.amountRemaining)}` })), value, 'بدون باقة');
+        populateSelect(id, items.map((item) => ({ id: item.id, label: `${item.packageName || t('form.package')} · ${t('money.remaining')} ${moneyValue(item.amountRemaining)}` })), value, t('option.noPackage'));
     }
 
     function renderEmpty(messageText = 'لا يوجد عملاء بعد.') {
-        if (clientsList) clientsList.innerHTML = `<div class="trainer-empty-state"><strong>${escapeHtml(messageText)}</strong><span>أضف أول عميل لبدء بناء ملفه التدريبي.</span></div>`;
+        if (clientsList) {
+            clientsList.innerHTML = `<div class="trainer-empty-state"><strong>${escapeHtml(messageText)}</strong><span>${escapeHtml(t('empty.clientsHint'))}</span></div>`;
+            localizeTrainerContent(clientsList);
+        }
     }
 
     function renderClients(payload) {
         const clients = Array.isArray(payload?.clients) ? payload.clients : [];
         clientsCache = clients;
-        if (!clients.length) { renderEmpty(search?.value ? 'لم نعثر على نتائج مطابقة.' : 'لا يوجد عملاء بعد.'); renderPagination({}); return; }
+        clientsPagination = payload?.pagination || {};
+        if (!clients.length) { renderEmpty(search?.value ? t('empty.search') : t('empty.clients')); renderPagination({}); return; }
         clientsList.innerHTML = clients.map((client) => `
             <article class="trainer-client-row" data-client-id="${Number(client.id)}">
-                <div class="trainer-client-name"><strong title="${escapeHtml(client.fullName)}">${escapeHtml(client.fullName)}</strong><span>${escapeHtml(client.phone ? displayPhone(client.phone, client.phoneCountry) : (client.email || 'لا توجد وسيلة تواصل'))}</span></div>
-                <div class="trainer-client-goal" title="${escapeHtml(client.primaryGoal || '')}">${escapeHtml(client.primaryGoal || 'لم يحدد هدفًا بعد')}</div>
-                <div class="trainer-client-stat"><strong>${Number(client.workoutCount || 0)}</strong><span>تدريب</span></div>
-                <div class="trainer-client-stat"><strong>${Number(client.nutritionCount || 0)}</strong><span>تغذية</span></div>
-                <div class="trainer-client-stat"><strong>${Number(client.measurementCount || 0)}</strong><span>قياس</span></div>
-                <div class="trainer-client-actions"><button type="button" data-client-action="details">فتح</button><button type="button" data-client-action="edit">تعديل</button></div>
+                <div class="trainer-client-name"><strong title="${escapeHtml(client.fullName)}">${escapeHtml(client.fullName)}</strong><span>${escapeHtml(client.phone ? displayPhone(client.phone, client.phoneCountry) : (client.email || t('empty.contact')))}</span></div>
+                <div class="trainer-client-goal" title="${escapeHtml(client.primaryGoal || '')}">${escapeHtml(client.primaryGoal || t('empty.goal'))}</div>
+                <div class="trainer-client-stat"><strong>${Number(client.workoutCount || 0)}</strong><span>${translatedMarkup('stat.training')}</span></div>
+                <div class="trainer-client-stat"><strong>${Number(client.nutritionCount || 0)}</strong><span>${translatedMarkup('stat.nutrition')}</span></div>
+                <div class="trainer-client-stat"><strong>${Number(client.measurementCount || 0)}</strong><span>${translatedMarkup('stat.measurements')}</span></div>
+                <div class="trainer-client-actions"><button type="button" data-client-action="details">${translatedMarkup('action.open')}</button><button type="button" data-client-action="edit">${translatedMarkup('action.edit')}</button></div>
             </article>`).join('');
+        localizeTrainerContent(clientsList);
         renderPagination(payload?.pagination);
     }
 
@@ -136,23 +189,28 @@
         const totalPages = Number(info.totalPages || 0);
         pagination.hidden = totalPages <= 1;
         if (pagination.hidden) return;
-        pagination.innerHTML = `<button type="button" data-page="prev" ${info.hasPrevious ? '' : 'disabled'} aria-label="الصفحة السابقة">‹</button><span>${Number(info.page || 1)} / ${totalPages}</span><button type="button" data-page="next" ${info.hasNext ? '' : 'disabled'} aria-label="الصفحة التالية">›</button>`;
+        pagination.innerHTML = `<button type="button" data-page="prev" ${info.hasPrevious ? '' : 'disabled'} aria-label="${escapeHtml(t('pagination.previous'))}">‹</button><span>${Number(info.page || 1)} / ${totalPages}</span><button type="button" data-page="next" ${info.hasNext ? '' : 'disabled'} aria-label="${escapeHtml(t('pagination.next'))}">›</button>`;
+        localizeTrainerContent(pagination);
     }
 
     async function loadClients(pageNumber = currentPage) {
+        workspaceDataState.clients = 'loading';
         currentPage = pageNumber;
-        setClientsMessage('جارٍ تحميل العملاء...');
+        setClientsMessage(t('state.loadingClients'));
         beginRegionLoading(clientsList, window.topGymSkeleton?.list({ rows: 5, className: 'trainer-clients-skeleton' }));
         try {
             const payload = await api(`/api/trainer/clients?page=${currentPage}&pageSize=20&search=${encodeURIComponent(search?.value || '')}`);
             renderClients(payload);
             const total = Number(payload.pagination?.total || 0);
-            setClientsMessage(total ? `${total} عميل` : '');
+            if (total) {
+                setI18nText(clientsMessage, total === 1 ? 'state.clientCountSingular' : 'state.clientCount', { count: total });
+            } else setClientsMessage('');
         } catch (error) {
-            setClientsMessage(error.message || 'تعذر تحميل العملاء.', true);
-            renderEmpty('تعذر تحميل قائمة العملاء.');
+            setClientsMessage(error.message || t('error.loadClients'), true);
+            renderEmpty(t('error.loadClientList'));
         } finally {
             window.topGymSkeleton?.ready(clientsList);
+            workspaceDataState.clients = 'ready';
         }
     }
 
@@ -166,7 +224,15 @@
         setText(byId('trainerMetricSessions'), metrics.sessionsToday ?? 0);
         setText(byId('trainerMetricUpcoming'), metrics.upcomingSessions ?? 0);
         setText(byId('trainerMetricPackages'), metrics.packagesExpiring ?? 0);
-        setText(byId('trainerMetricPayments'), metrics.outstandingPayments == null ? '—' : `${Number(metrics.outstandingPayments).toLocaleString('ar-EG')} ج.م`);
+        const payments = byId('trainerMetricPayments');
+        if (metrics.outstandingPayments == null) {
+            setText(payments, '—');
+        } else {
+            payments.dataset.i18nFormat = 'currency';
+            payments.dataset.i18nValue = String(metrics.outstandingPayments);
+            payments.dataset.i18nCurrency = 'EGP';
+            payments.textContent = moneyValue(metrics.outstandingPayments);
+        }
     }
 
     function resetClientForm(client = null) {
@@ -178,7 +244,7 @@
         byId('trainerClientGoal').value = client?.primaryGoal || '';
         byId('trainerClientStatus').value = client?.status || 'active';
         byId('trainerClientNotes').value = client?.notes || '';
-        setText(byId('trainerClientDialogTitle'), client ? 'تعديل ملف العميل' : 'إضافة عميل');
+        setText(byId('trainerClientDialogTitle'), client ? t('dialog.editClient') : t('action.addClient'));
         setText(byId('trainerClientFormMessage'), '');
     }
 
@@ -192,19 +258,20 @@
     async function openDetails(id) {
         const container = byId('trainerClientDetails');
         if (!container) return;
-        container.innerHTML = '<p>جارٍ تحميل الملف...</p>';
+        container.innerHTML = `<p>${escapeHtml(t('state.loadingProfile'))}</p>`;
         if (typeof detailsDialog?.showModal === 'function') detailsDialog.showModal();
         const payload = await api(`/api/trainer/clients/${Number(id)}`);
         const client = payload.client || {};
         container.dataset.clientId = String(Number(id));
         container.innerHTML = `<div class="trainer-client-details-grid">
-            <div class="trainer-detail-stat"><span>الاسم</span><strong>${escapeHtml(client.fullName)}</strong></div>
-            <div class="trainer-detail-stat"><span>الهاتف</span><strong>${escapeHtml(displayPhone(client.phone, client.phoneCountry) || '—')}</strong></div>
-            <div class="trainer-detail-stat"><span>خطط التدريب</span><strong>${Number(payload.trainingPlans?.length || 0)}</strong></div>
-            <div class="trainer-detail-stat"><span>خطط التغذية</span><strong>${Number(payload.nutritionPlans?.length || 0)}</strong></div>
-            <div class="trainer-detail-stat"><span>القياسات</span><strong>${Number(payload.measurements?.length || 0)}</strong></div>
-            <div class="trainer-detail-stat"><span>المتابعات</span><strong>${Number(payload.checkins?.length || 0)}</strong></div>
-        </div><p class="trainer-detail-note"><strong>الهدف:</strong> ${escapeHtml(client.primaryGoal || 'لم يحدد بعد')}<br><strong>ملاحظات:</strong> ${escapeHtml(client.notes || 'لا توجد ملاحظات.')}</p><div class="trainer-detail-actions"><button type="button" class="btn btn-light btn-small" data-detail-action="timeline">عرض الخط الزمني</button><button type="button" class="btn btn-light btn-small" data-detail-action="measurement">إضافة قياس</button><button type="button" class="btn btn-light btn-small" data-detail-action="checkin">إضافة متابعة</button><button type="button" class="btn btn-primary btn-small" data-detail-action="portal">إصدار دخول البوابة</button></div><p id="trainerClientDetailsPortalMessage" class="trainer-inline-message" role="status"></p>`;
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.name'))}</span><strong>${escapeHtml(client.fullName)}</strong></div>
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.phone'))}</span><strong>${escapeHtml(displayPhone(client.phone, client.phoneCountry) || '—')}</strong></div>
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.trainingPlans'))}</span><strong>${Number(payload.trainingPlans?.length || 0)}</strong></div>
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.nutritionPlans'))}</span><strong>${Number(payload.nutritionPlans?.length || 0)}</strong></div>
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.measurements'))}</span><strong>${Number(payload.measurements?.length || 0)}</strong></div>
+            <div class="trainer-detail-stat"><span>${escapeHtml(t('details.checkins'))}</span><strong>${Number(payload.checkins?.length || 0)}</strong></div>
+        </div><p class="trainer-detail-note"><strong>${escapeHtml(t('details.goal'))}</strong> ${escapeHtml(client.primaryGoal || t('details.noGoal'))}<br><strong>${escapeHtml(t('details.notes'))}</strong> ${escapeHtml(client.notes || t('details.noNotes'))}</p><div class="trainer-detail-actions"><button type="button" class="btn btn-light btn-small" data-detail-action="timeline">${escapeHtml(t('action.viewTimeline'))}</button><button type="button" class="btn btn-light btn-small" data-detail-action="measurement">${escapeHtml(t('action.addMeasurement'))}</button><button type="button" class="btn btn-light btn-small" data-detail-action="checkin">${escapeHtml(t('action.addCheckin'))}</button><button type="button" class="btn btn-primary btn-small" data-detail-action="portal">${escapeHtml(t('action.issuePortalAccess'))}</button></div><p id="trainerClientDetailsPortalMessage" class="trainer-inline-message" role="status"></p>`;
+        localizeTrainerContent(container);
     }
 
     async function editClient(id) {
@@ -226,15 +293,15 @@
             status: byId('trainerClientStatus').value,
             notes: byId('trainerClientNotes').value.trim()
         };
-        if (!payload.fullName || !payload.phone) { setText(byId('trainerClientFormMessage'), 'الاسم ورقم الهاتف مطلوبان.'); return; }
+        if (!payload.fullName || !payload.phone) { setText(byId('trainerClientFormMessage'), t('validation.clientRequired')); return; }
         saveButton.disabled = true;
-        setText(byId('trainerClientFormMessage'), 'جارٍ الحفظ...');
+        setText(byId('trainerClientFormMessage'), t('state.saving'));
         try {
             if (id) await api(`/api/trainer/clients/${Number(id)}`, { method: 'PATCH', body: JSON.stringify(payload) });
             else await api('/api/trainer/clients', { method: 'POST', body: JSON.stringify(payload) });
             clientDialog?.close();
             await Promise.all([loadClients(currentPage), loadWorkspace()]);
-        } catch (error) { setText(byId('trainerClientFormMessage'), error.message || 'تعذر حفظ العميل.'); }
+        } catch (error) { setText(byId('trainerClientFormMessage'), error.message || t('error.saveClient')); }
         finally { saveButton.disabled = false; }
     }
 
@@ -244,9 +311,10 @@
         if (!target) return;
         target.innerHTML = packagesCache.length ? packagesCache.map((item) => `
             <article class="trainer-compact-row">
-                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.name)}</strong><span>${moneyValue(item.price)} · ${item.sessionCount ? `${Number(item.sessionCount)} جلسة` : `${Number(item.durationDays)} يوم`} · ${item.serviceMode === 'online' ? 'أونلاين' : item.serviceMode === 'in_person' ? 'حضوري' : 'هجين'}</span></div>
-                <span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span>
-            </article>`).join('') : '<div class="trainer-empty-state"><strong>لا توجد باقات بعد.</strong><span>أضف أول باقة لربط الخدمات بالتحصيل والجلسات.</span></div>';
+                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.name)}</strong><span>${formattedMarkup('currency', item.price)} · ${item.sessionCount ? translatedMarkup('duration.sessions', { count: Number(item.sessionCount) }) : translatedMarkup('duration.days', { count: Number(item.durationDays) })} · ${translatedMarkup(item.serviceMode === 'online' ? 'option.online' : item.serviceMode === 'in_person' ? 'option.inPerson' : 'service.hybrid')}</span></div>
+                <span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${statusMarkup(item.status)}</span>
+            </article>`).join('') : `<div class="trainer-empty-state"><strong>${escapeHtml(t('empty.packages'))}</strong><span>${escapeHtml(t('empty.packagesHint'))}</span></div>`;
+        localizeTrainerContent(target);
         populatePackageSelect('trainerPurchasePackage');
     }
 
@@ -256,9 +324,10 @@
         if (!target) return;
         target.innerHTML = sessionsCache.length ? sessionsCache.map((item) => `
             <article class="trainer-compact-row" data-session-id="${Number(item.id)}">
-                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.clientName || 'عميل')}</strong><span>${formatDate(item.scheduledStart, true)} · ${formatDate(item.scheduledEnd, true)}</span></div>
-                <div class="trainer-compact-row-actions"><span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span>${item.status === 'scheduled' ? '<button type="button" class="trainer-inline-action" data-session-action="complete">إتمام</button><button type="button" class="trainer-inline-action" data-session-action="cancel">إلغاء</button>' : ''}</div>
-            </article>`).join('') : '<div class="trainer-empty-state"><strong>لا توجد جلسات مجدولة.</strong><span>ستظهر المواعيد القادمة هنا بعد جدولتها.</span></div>';
+                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.clientName || t('form.client'))}</strong><span>${formattedMarkup('time', item.scheduledStart)} · ${formattedMarkup('time', item.scheduledEnd)}</span></div>
+                <div class="trainer-compact-row-actions"><span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${statusMarkup(item.status)}</span>${item.status === 'scheduled' ? `<button type="button" class="trainer-inline-action" data-session-action="complete">${escapeHtml(t('action.complete'))}</button><button type="button" class="trainer-inline-action" data-session-action="cancel">${escapeHtml(t('action.cancel'))}</button>` : ''}</div>
+            </article>`).join('') : `<div class="trainer-empty-state"><strong>${escapeHtml(t('empty.sessions'))}</strong><span>${escapeHtml(t('empty.sessionsHint'))}</span></div>`;
+        localizeTrainerContent(target);
     }
 
     function renderPurchases(payload) {
@@ -267,13 +336,15 @@
         if (!target) return;
         target.innerHTML = purchasesCache.length ? purchasesCache.map((item) => `
             <article class="trainer-compact-row">
-                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.clientName || 'عميل')} · ${escapeHtml(item.packageName || 'باقة')}</strong><span>${moneyValue(item.amountPaid)} مدفوع من ${moneyValue(item.amountDue)} · متبقي ${moneyValue(item.amountRemaining)} · ${formatDate(item.startsOn)}</span></div>
-                <div class="trainer-compact-row-actions"><span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span>${Number(item.amountRemaining) > 0 && item.status !== 'cancelled' ? `<button type="button" class="trainer-inline-action" data-purchase-action="payment" data-purchase-id="${Number(item.id)}">دفعة</button>` : ''}</div>
-            </article>`).join('') : '<div class="trainer-empty-state"><strong>لا توجد مشتريات بعد.</strong><span>سجّل بيع أول باقة لبدء متابعة المدفوعات.</span></div>';
+                <div class="trainer-compact-row-main"><strong>${escapeHtml(item.clientName || t('form.client'))} · ${escapeHtml(item.packageName || t('form.package'))}</strong><span>${formattedMarkup('currency', item.amountPaid)} ${translatedMarkup('money.paidFrom')} ${formattedMarkup('currency', item.amountDue)} · ${translatedMarkup('money.remaining')} ${formattedMarkup('currency', item.amountRemaining)} · ${formattedMarkup('date', item.startsOn)}</span></div>
+                <div class="trainer-compact-row-actions"><span class="trainer-status-pill trainer-status-pill--${escapeHtml(item.status)}">${statusMarkup(item.status)}</span>${Number(item.amountRemaining) > 0 && item.status !== 'cancelled' ? `<button type="button" class="trainer-inline-action" data-purchase-action="payment" data-purchase-id="${Number(item.id)}">${escapeHtml(t('action.payment'))}</button>` : ''}</div>
+            </article>`).join('') : `<div class="trainer-empty-state"><strong>${escapeHtml(t('empty.purchases'))}</strong><span>${escapeHtml(t('empty.purchasesHint'))}</span></div>`;
+        localizeTrainerContent(target);
         populatePurchaseSelect('trainerSessionPurchase', byId('trainerSessionClient')?.value || '');
     }
 
     async function loadOperations() {
+        workspaceDataState.operations = 'loading';
         const operationTargets = [
             [byId('trainerPackagesList'), window.topGymSkeleton?.list({ rows: 3, className: 'trainer-packages-skeleton' })],
             [byId('trainerSessionsList'), window.topGymSkeleton?.list({ rows: 4, className: 'trainer-sessions-skeleton' })],
@@ -304,6 +375,7 @@
             });
         } finally {
             operationTargets.forEach(([target]) => window.topGymSkeleton?.ready(target));
+            workspaceDataState.operations = 'ready';
         }
     }
 
@@ -321,10 +393,13 @@
     }
 
     async function loadReports() {
+        workspaceDataState.reports = 'loading';
         try {
             renderReports(await api('/api/trainer/reports/summary'));
         } catch (error) {
-            setSectionMessage('trainerReportsMessage', error.message || 'تعذر تحميل التقرير.', true);
+            setSectionMessage('trainerReportsMessage', error.message || t('error.loadReport'), true);
+        } finally {
+            workspaceDataState.reports = 'ready';
         }
     }
 
@@ -490,15 +565,15 @@
         const target = byId('trainerTimelineList');
         const rows = Array.isArray(payload?.timeline) ? payload.timeline : [];
         if (!target) return;
-        target.innerHTML = rows.length ? rows.map((item) => `<article class="trainer-timeline-item"><span class="trainer-timeline-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title || item.type || 'نشاط')}</strong><span>${formatDate(item.occurredAt, true)}</span>${item.details ? `<p>${escapeHtml(item.details)}</p>` : ''}</div></article>`).join('') : '<div class="trainer-empty-state"><strong>لا توجد أحداث بعد.</strong><span>ستظهر القياسات والخطط والجلسات والمدفوعات هنا.</span></div>';
+        target.innerHTML = rows.length ? rows.map((item) => `<article class="trainer-timeline-item"><span class="trainer-timeline-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title || item.type || t('timeline.activity'))}</strong><span>${formatDate(item.occurredAt, true)}</span>${item.details ? `<p>${escapeHtml(item.details)}</p>` : ''}</div></article>`).join('') : `<div class="trainer-empty-state"><strong>${translatedMarkup('empty.timeline')}</strong><span>${translatedMarkup('empty.timelineHint')}</span></div>`;
     }
 
     async function openTimeline(clientId) {
         const target = byId('trainerTimelineList');
-        setText(target, 'جارٍ تحميل الخط الزمني...');
+        setI18nText(target, 'state.loadingTimeline');
         openDialog(byId('trainerTimelineDialog'));
         try { renderTimeline(await api(`/api/trainer/clients/${Number(clientId)}/timeline?limit=100`)); }
-        catch (error) { setText(target, error.message || 'تعذر تحميل الخط الزمني.'); }
+        catch (error) { setText(target, error.message || t('error.loadTimeline')); }
     }
 
     function openMeasurementDialog(clientId) {
@@ -592,6 +667,7 @@
     });
 
     async function loadWorkspace() {
+        workspaceDataState.workspace = 'loading';
         const summary = document.querySelector('.trainer-workspace-summary[data-skeleton-region="trainer-metrics"]');
         window.topGymSkeleton?.start(summary, '', { preserve: true });
         try {
@@ -599,7 +675,8 @@
             setMetrics(payload);
             const billing = await api('/api/saas/subscription');
             const tenant = billing.tenant || {};
-            setText(brand, tenant.name || 'Logic Fit');
+            brand.dataset.tenantName = tenant.name ? 'true' : 'false';
+            setText(brand, tenant.name || t('brand'));
             setText(plan, billing.subscription?.plan?.name || '—');
             setText(status, billing.subscription?.status === 'active' ? 'نشط' : (billing.subscription?.status || '—'));
             setText(message, 'مساحة العمل جاهزة بالبيانات المتاحة لحسابك.');
@@ -608,6 +685,7 @@
             setText(message, error.message || 'تعذر تحميل مساحة العمل.');
         } finally {
             window.topGymSkeleton?.ready(summary);
+            workspaceDataState.workspace = 'ready';
         }
     }
 
@@ -651,7 +729,7 @@
         const id = button.closest('[data-client-id]')?.dataset.clientId;
         if (!id) return;
         button.disabled = true;
-        try { if (button.dataset.clientAction === 'details') await openDetails(id); else await editClient(id); } catch (error) { setClientsMessage(error.message || 'تعذر فتح الملف.', true); }
+        try { if (button.dataset.clientAction === 'details') await openDetails(id); else await editClient(id); } catch (error) { setClientsMessage(error.message || t('error.openClientFile'), true); }
         finally { button.disabled = false; }
     });
     byId('trainerSessionsList')?.addEventListener('click', async (event) => {
@@ -672,6 +750,14 @@
         link.addEventListener('click', () => {
             document.querySelectorAll('[data-trainer-nav]').forEach((item) => item.classList.toggle('is-active', item === link));
         });
+    });
+
+    document.addEventListener('trainer-studio-route-enter', (event) => {
+        const route = event.detail?.route;
+        if (route === 'clients' && workspaceDataState.clients === 'idle') void loadClients(1);
+        if (['dashboard', 'packages', 'sales'].includes(route) && workspaceDataState.operations === 'idle') void loadOperations();
+        if (route === 'dashboard' && workspaceDataState.workspace === 'idle') void loadWorkspace();
+        if (route === 'reports' && workspaceDataState.reports === 'idle') void loadReports();
     });
 
     document.addEventListener('trainer-studio-open-client', (event) => {

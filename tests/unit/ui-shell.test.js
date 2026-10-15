@@ -5,6 +5,17 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..', '..');
 
+test('complete UI QA requires explicit static-server mode and labels its evidence', () => {
+    const source = fs.readFileSync(path.join(root, 'scripts/qa-complete-ui.js'), 'utf8');
+
+    assert.match(source, /QA_ALLOW_STATIC_SERVER === '1'/u);
+    assert.match(source, /4174\|4173[\s\S]*?&& !allowStaticQaServer/u);
+    assert.match(source, /executionMode:\s*allowStaticQaServer \? 'static-assets-with-browser-api-fixtures'/u);
+    assert.match(source, /Express\/server behavior is not under test/u);
+    assert.match(source, /QA_REPORTS_DIR \|\| path\.join\(root, 'qa', 'reports'\)/u);
+    assert.match(source, /QA_ARTIFACTS_DIR \|\| path\.join\(root, 'qa', 'artifacts'\)/u);
+});
+
 test('navigation pending state keeps the first authenticated shell crisp and interactive', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/layout.css'), 'utf8');
     const pendingBlock = source.match(/\.top-gym-navigation-pending[\s\S]*?transition: none;/u)?.[0] || '';
@@ -44,7 +55,6 @@ test('navigation polish keeps desktop controls usable and coordinated', () => {
 test('Gym App shell styles have one canonical source', () => {
     const canonical = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
     const secondarySources = [
-        'public/css/components/ui-foundation.css',
         'public/css/components/tabs.css',
         'public/css/components/navbar.css',
         'public/css/components/assistant.css',

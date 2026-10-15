@@ -19,6 +19,30 @@
         noDayPassPrices: '\u0644\u0627 \u062a\u0648\u062c\u062f \u0623\u0633\u0639\u0627\u0631 \u062d\u0635\u0635 \u0645\u0633\u062c\u0644\u0629.'
     };
 
+    const TEXT_KEYS = {
+        plan: 'pricing.column.plan',
+        planName: 'plan.name',
+        monthlyPrice: 'pricing.column.monthly',
+        durations: 'pricing.card.durations',
+        durationSingular: 'pricing.card.durationSingular',
+        durationPlural: 'pricing.card.durationPlural',
+        independentPrice: 'pricing.column.independent',
+        membershipType: 'types.card.eyebrow',
+        duration: 'types.column.duration',
+        multiplier: 'types.column.multiplier',
+        dayPass: 'dayPass.column.type',
+        currency: 'pricing.card.currency',
+        noPlans: 'pricing.empty',
+        noTypes: 'types.empty',
+        noDayPassPrices: 'dayPass.empty',
+        price: 'dayPass.column.price'
+    };
+
+    function label(name) {
+        const key = TEXT_KEYS[name];
+        return (key && window.TopGymI18n?.t?.(`membershipManagement.${key}`)) || TEXT[name];
+    }
+
     const hosts = [
         { id: 'pricingTableContainer', tableClass: 'pricing-table', gridClass: 'pricing-plan-grid', render: renderPlanCards },
         { id: 'membershipTypesTableContainer', tableClass: 'membership-types-table', gridClass: 'membership-type-card-grid', render: renderMembershipTypeCards },
@@ -60,21 +84,23 @@
         return field;
     }
 
-    function createMoneyField(label, source, data, hint = TEXT.independentPrice) {
+    function createMoneyField(fieldLabel, source, data, hint = label('independentPrice')) {
         const field = createElement('label', 'pricing-card-field pricing-card-money-field');
-        const fieldLabel = createElement('span', 'pricing-card-field-label', label);
-        if (hint) fieldLabel.appendChild(createElement('small', 'pricing-card-field-hint', hint));
+        const labelNode = createElement('span', 'pricing-card-field-label', fieldLabel);
+        if (hint) labelNode.appendChild(createElement('small', 'pricing-card-field-hint', hint));
         const shell = createElement('span', 'pricing-card-input-shell');
         shell.appendChild(cloneInput(source, data));
-        shell.appendChild(createElement('span', 'pricing-card-currency', TEXT.currency));
-        field.append(fieldLabel, shell);
+        shell.appendChild(createElement('span', 'pricing-card-currency', label('currency')));
+        field.append(labelNode, shell);
         return field;
     }
 
     function createInfo(label, value, className = '') {
         const item = createElement('div', `membership-type-info ${className}`.trim());
         item.appendChild(createElement('span', 'membership-type-info-label', label));
-        item.appendChild(createElement('strong', 'membership-type-info-value', value || '—'));
+        const valueNode = createElement('strong', 'membership-type-info-value', value || '—');
+        valueNode.dir = 'auto';
+        item.appendChild(valueNode);
         return item;
     }
 
@@ -100,12 +126,12 @@
         const headers = [...(table.tHead?.rows?.[0]?.cells || [])];
         const durationHeaders = headers.slice(2).map((header) => ({
             label: headerLabel(header),
-            hint: header.querySelector('small')?.textContent?.trim() || TEXT.independentPrice
+            hint: header.querySelector('small')?.textContent?.trim() || label('independentPrice')
         }));
         const rows = [...table.querySelectorAll('tbody tr[data-plan]')];
 
         if (!rows.length) {
-            grid.appendChild(createEmptyState(TEXT.noPlans));
+            grid.appendChild(createEmptyState(label('noPlans')));
             return;
         }
 
@@ -118,35 +144,35 @@
 
             const cardHeader = createElement('div', 'pricing-plan-card-header');
             const heading = createElement('div', 'pricing-plan-card-heading');
-            heading.appendChild(createElement('span', 'pricing-card-eyebrow', TEXT.plan));
+            heading.appendChild(createElement('span', 'pricing-card-eyebrow', label('plan')));
             heading.appendChild(createElement('strong', 'pricing-plan-card-code', code));
             cardHeader.appendChild(heading);
             cardHeader.appendChild(createElement('span', 'pricing-card-index', String(index + 1).padStart(2, '0')));
             card.appendChild(cardHeader);
 
             const baseFields = createElement('div', 'pricing-card-base-fields');
-            if (planName) baseFields.appendChild(createTextField(TEXT.planName, planName, { pricingCardInput: 'true', sourcePlan: code, sourceField: 'planName' }));
-            if (monthlyPrice) baseFields.appendChild(createMoneyField(TEXT.monthlyPrice, monthlyPrice, { pricingCardInput: 'true', sourcePlan: code, sourceField: 'monthlyPrice' }, TEXT.independentPrice));
+            if (planName) baseFields.appendChild(createTextField(label('planName'), planName, { pricingCardInput: 'true', sourcePlan: code, sourceField: 'planName' }));
+            if (monthlyPrice) baseFields.appendChild(createMoneyField(label('monthlyPrice'), monthlyPrice, { pricingCardInput: 'true', sourcePlan: code, sourceField: 'monthlyPrice' }, label('independentPrice')));
             card.appendChild(baseFields);
 
             const durationSection = createElement('section', 'pricing-card-duration-section');
             const durationHeading = createElement('div', 'pricing-card-section-heading');
-            durationHeading.appendChild(createElement('strong', '', TEXT.durations));
-            durationHeading.appendChild(createElement('span', '', `${durationHeaders.length} ${durationHeaders.length === 1 ? '\u0645\u062f\u0629' : '\u0645\u062f\u062f'}`));
+            durationHeading.appendChild(createElement('strong', '', label('durations')));
+            durationHeading.appendChild(createElement('span', '', `${durationHeaders.length} ${label(durationHeaders.length === 1 ? 'durationSingular' : 'durationPlural')}`));
             durationSection.appendChild(durationHeading);
             const durationGrid = createElement('div', 'pricing-duration-grid');
             [...row.querySelectorAll('td.duration-price')].forEach((cell, durationIndex) => {
                 const input = cell.querySelector('input');
                 if (!input) return;
-                const metadata = durationHeaders[durationIndex] || { label: TEXT.duration, hint: TEXT.independentPrice };
-                durationGrid.appendChild(createMoneyField(metadata.label || TEXT.duration, input, {
+                const metadata = durationHeaders[durationIndex] || { label: label('duration'), hint: label('independentPrice') };
+                durationGrid.appendChild(createMoneyField(metadata.label || label('duration'), input, {
                     pricingCardInput: 'true',
                     sourcePlan: code,
                     sourceField: 'typePrice',
                     sourceTypeCode: input.dataset.typeCode || ''
                 }, metadata.hint));
             });
-            if (!durationGrid.children.length) durationGrid.appendChild(createElement('span', 'pricing-cards-muted', TEXT.noTypes));
+            if (!durationGrid.children.length) durationGrid.appendChild(createElement('span', 'pricing-cards-muted', label('noTypes')));
             durationSection.appendChild(durationGrid);
             card.appendChild(durationSection);
 
@@ -171,7 +197,7 @@
         const rows = [...table.querySelectorAll('tbody tr')].filter((row) => row.querySelector('[data-type-action="edit"]'));
 
         if (!rows.length) {
-            grid.appendChild(createEmptyState(TEXT.noTypes));
+            grid.appendChild(createEmptyState(label('noTypes')));
             return;
         }
 
@@ -182,7 +208,7 @@
             const card = createElement('article', 'membership-type-card');
             const header = createElement('div', 'membership-type-card-header');
             const heading = createElement('div', 'membership-type-card-heading');
-            heading.appendChild(createElement('span', 'pricing-card-eyebrow', TEXT.membershipType));
+            heading.appendChild(createElement('span', 'pricing-card-eyebrow', label('membershipType')));
             heading.appendChild(createElement('strong', '', row.cells?.[0]?.querySelector('strong')?.textContent?.trim() || textFromCell(row.cells?.[0])));
             heading.appendChild(createElement('small', 'membership-type-card-code', code));
             header.appendChild(heading);
@@ -191,8 +217,8 @@
             card.appendChild(header);
 
             const infoGrid = createElement('div', 'membership-type-info-grid');
-            infoGrid.appendChild(createInfo(TEXT.duration, textFromCell(row.cells?.[1])));
-            infoGrid.appendChild(createInfo(TEXT.multiplier, textFromCell(row.cells?.[2]), 'membership-type-info-emphasis'));
+            infoGrid.appendChild(createInfo(label('duration'), textFromCell(row.cells?.[1])));
+            infoGrid.appendChild(createInfo(label('multiplier'), textFromCell(row.cells?.[2]), 'membership-type-info-emphasis'));
             card.appendChild(infoGrid);
 
             const actionBar = createElement('div', 'membership-type-card-actions');
@@ -216,7 +242,7 @@
         const rows = [...table.querySelectorAll('tbody tr[data-day-pass-price-code]')];
 
         if (!rows.length) {
-            grid.appendChild(createEmptyState(TEXT.noDayPassPrices));
+            grid.appendChild(createEmptyState(label('noDayPassPrices')));
             return;
         }
 
@@ -228,13 +254,13 @@
             const card = createElement('article', 'day-pass-pricing-card');
             const header = createElement('div', 'day-pass-pricing-card-header');
             const heading = createElement('div', 'day-pass-pricing-card-heading');
-            heading.appendChild(createElement('span', 'pricing-card-eyebrow', TEXT.dayPass));
+            heading.appendChild(createElement('span', 'pricing-card-eyebrow', label('dayPass')));
             heading.appendChild(createElement('strong', '', labelCell?.querySelector('strong')?.textContent?.trim() || textFromCell(labelCell)));
             heading.appendChild(createElement('small', 'day-pass-pricing-card-code', code));
             header.appendChild(heading);
             if (status) header.appendChild(status.cloneNode(true));
             card.appendChild(header);
-            if (priceInput) card.appendChild(createMoneyField('\u0627\u0644\u0633\u0639\u0631', priceInput, { dayPassCardInput: code }, TEXT.independentPrice));
+            if (priceInput) card.appendChild(createMoneyField(label('price'), priceInput, { dayPassCardInput: code }, label('independentPrice')));
             card.appendChild(createElement('span', 'pricing-card-index', String(index + 1).padStart(2, '0')));
             grid.appendChild(card);
         });

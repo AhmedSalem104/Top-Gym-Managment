@@ -4,6 +4,13 @@
 
     const $ = (id) => document.getElementById(id);
     const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
+    const t = (key, params) => window.TopGymI18n?.t?.(key, params) || key;
+    function applyLibraryTranslations() {
+        if (!window.TopGymI18n?.annotateText) return;
+        [$('librarySection'), $('libraryFormDialog'), $('libraryDetailsDialog')]
+            .filter(Boolean)
+            .forEach((root) => window.TopGymI18n.annotateText(root, 'gymLibrary.'));
+    }
     const state = {
         activeType: 'foods',
         opened: false,
@@ -26,11 +33,6 @@
         detailsRequestId: 0
     };
 
-    const META = {
-        muscles: { title: 'العضلات', singular: 'عضلة', add: 'إضافة عضلة', empty: 'لا توجد عضلات مطابقة للبحث.', color: 'muscles' },
-        foods: { title: 'الأطعمة', singular: 'طعام', add: 'إضافة طعام', empty: 'لا توجد أطعمة مطابقة للبحث.', color: 'foods' },
-        exercises: { title: 'التمارين', singular: 'تمرين', add: 'إضافة تمرين', empty: 'لا توجد تمارين مطابقة للبحث.', color: 'exercises' }
-    };
     const VISIBLE_TYPES = ['muscles', 'foods', 'exercises'];
 
     function escapeHtml(value) {
@@ -39,7 +41,9 @@
 
     function formatNumber(value, maximumFractionDigits = 0) {
         const number = Number(value || 0);
-        return Number.isFinite(number) ? number.toLocaleString('ar-EG', { maximumFractionDigits }) : '—';
+        if (!Number.isFinite(number)) return '—';
+        return window.TopGymI18n?.format?.('number', number, { maximumFractionDigits })
+            || number.toLocaleString('ar-EG', { maximumFractionDigits });
     }
 
     function safeArray(value) { return Array.isArray(value) ? value : []; }
@@ -55,7 +59,7 @@
     }
     function itemName(item) {
         const names = itemNames(item);
-        return names.arabic || names.english || 'عنصر بدون اسم';
+        return names.arabic || names.english || t('gymLibrary.value.itemWithoutName');
     }
     function contentLines(value) {
         if (Array.isArray(value)) {
@@ -82,10 +86,10 @@
     function exerciseGallery(item) {
         const match = window.TopGymExerciseAssets?.find(item) || item;
         const names = itemNames(item);
-        const altName = names.arabic || names.english || 'التمرين';
-        const start = `<figure>${exerciseImage(item, 'start', { className: 'exercise-media-detail', alt: `${altName} - وضع البداية`, loading: 'eager' })}<figcaption>وضع البداية</figcaption></figure>`;
+        const altName = names.arabic || names.english || t('gymLibrary.type.exercises.singular');
+        const start = `<figure>${exerciseImage(item, 'start', { className: 'exercise-media-detail', alt: `${altName} - ${t('gymLibrary.details.startPose')}`, loading: 'eager' })}<figcaption>${escapeHtml(t('gymLibrary.details.startPose'))}</figcaption></figure>`;
         const end = match?.imageAssets?.end
-            ? `<figure>${exerciseImage(item, 'end', { className: 'exercise-media-detail', alt: `${altName} - وضع النهاية`, loading: 'lazy' })}<figcaption>وضع النهاية</figcaption></figure>`
+            ? `<figure>${exerciseImage(item, 'end', { className: 'exercise-media-detail', alt: `${altName} - ${t('gymLibrary.details.endPose')}`, loading: 'lazy' })}<figcaption>${escapeHtml(t('gymLibrary.details.endPose'))}</figcaption></figure>`
             : '';
         return `${start}${end}`;
     }
@@ -96,7 +100,7 @@
         if (response.status === 204) return null;
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            const error = new Error(data.error || 'تعذر تنفيذ الطلب.');
+            const error = new Error(data.error || t('gymLibrary.error.request'));
             error.code = data.code || null;
             throw error;
         }
@@ -109,6 +113,7 @@
         element.textContent = message;
         element.className = `library-message ${type}`;
         element.hidden = false;
+        applyLibraryTranslations();
         window.clearTimeout(showMessage.timer);
         showMessage.timer = window.setTimeout(() => { element.hidden = true; }, type === 'error' ? 6500 : 3200);
     }
@@ -125,6 +130,33 @@
         else dialog.removeAttribute('open');
     }
 
+    function keepDialogFocusInside(dialog) {
+        if (!dialog || dialog.dataset.libraryFocusManaged === 'true') return;
+        dialog.dataset.libraryFocusManaged = 'true';
+        dialog.addEventListener('keydown', (event) => {
+            if (event.key !== 'Tab' || !dialog.open) return;
+            const focusable = [...dialog.querySelectorAll('a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')]
+                .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true' && getComputedStyle(element).display !== 'none' && element.getClientRects().length > 0);
+            if (!focusable.length) {
+                event.preventDefault();
+                dialog.focus();
+                return;
+            }
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (!dialog.contains(document.activeElement)) {
+                event.preventDefault();
+                (event.shiftKey ? last : first).focus({ preventScroll: true });
+            } else if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus({ preventScroll: true });
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus({ preventScroll: true });
+            }
+        });
+    }
+
     function selected(value, current) { return String(value ?? '') === String(current ?? '') ? ' selected' : ''; }
 
     function renderSummary() {
@@ -139,8 +171,23 @@
         if (exercisesCount) exercisesCount.textContent = formatNumber(counts.exercises);
     }
 
-    function optionList(items, current, placeholder) {
-        return `<option value="">${placeholder}</option>${(items || []).map((value) => `<option value="${escapeHtml(value)}"${selected(value, current)}>${escapeHtml(value)}</option>`).join('')}`;
+    function optionList(items, current, placeholderKey, type) {
+        return `<option value="">${escapeHtml(t(placeholderKey))}</option>${(items || []).map((value) => `<option data-i18n-preserve value="${escapeHtml(value)}"${selected(value, current)}>${escapeHtml(libraryValueLabel(value, type))}</option>`).join('')}`;
+    }
+
+    const LIBRARY_VALUE_KEYS = Object.freeze({
+        category: { meat: 'meat', poultry: 'poultry', seafood: 'seafood', fish: 'fish', dairy: 'dairy', eggs: 'eggs', grains: 'grains', cereals: 'cereals', fruit: 'fruit', fruits: 'fruits', vegetable: 'vegetable', vegetables: 'vegetables', legumes: 'legumes', nuts: 'nuts', oils: 'oils', beverages: 'beverages', sweets: 'sweets', snacks: 'snacks', supplements: 'supplements', other: 'other', meals: 'meals', meal: 'meals' },
+        bodyPart: { 'upper body': 'upperBody', 'lower body': 'lowerBody', core: 'core', neck: 'neck', shoulders: 'shoulders', arms: 'arms', legs: 'legs', back: 'back', chest: 'chest' },
+        difficulty: { beginner: 'beginner', intermediate: 'intermediate', advanced: 'advanced', expert: 'expert' },
+        equipment: { 'body only': 'bodyOnly', 'bodyweight': 'bodyOnly', barbell: 'barbell', dumbbell: 'dumbbell', cable: 'cable', kettlebells: 'kettlebells', machine: 'machine', bands: 'bands', 'e-z curl bar': 'ezBar', other: 'other' },
+        exerciseCategory: { strength: 'strength', stretching: 'stretching', plyometrics: 'plyometrics', cardio: 'cardio', powerlifting: 'powerlifting', olympic: 'olympic', strongman: 'strongman' },
+        unit: { gram: 'gram', grams: 'gram', g: 'g', kilogram: 'kilogram', kg: 'kg', milliliter: 'milliliter', ml: 'ml', serving: 'serving', piece: 'piece' }
+    });
+
+    function libraryValueLabel(value, type) {
+        const raw = String(value ?? '').trim();
+        const key = LIBRARY_VALUE_KEYS[type]?.[raw.toLowerCase()];
+        return key ? t(`gymLibrary.value.${key}`) : raw;
     }
 
     function renderFilters() {
@@ -150,17 +197,18 @@
         const filters = state.filters[state.activeType];
         const available = state.options?.filters || {};
         if (state.activeType === 'muscles') {
-            container.innerHTML = `<select class="library-filter" data-library-filter="bodyPart" aria-label="فلترة منطقة الجسم">${optionList(available.bodyParts, filters.bodyPart, 'كل مناطق الجسم')}</select>`;
+            container.innerHTML = `<select class="library-filter" data-library-filter="bodyPart" aria-label="${escapeHtml(t('gymLibrary.filter.bodyPart.label'))}">${optionList(available.bodyParts, filters.bodyPart, 'gymLibrary.filter.bodyPart.all', 'bodyPart')}</select>`;
         } else if (state.activeType === 'foods') {
-            container.innerHTML = `<select class="library-filter" data-library-filter="category" aria-label="فلترة تصنيف الطعام">${optionList(available.categories, filters.category, 'كل التصنيفات')}</select>`;
+            container.innerHTML = `<select class="library-filter" data-library-filter="category" aria-label="${escapeHtml(t('gymLibrary.filter.category.food.label'))}">${optionList(available.categories, filters.category, 'gymLibrary.filter.category.all', 'category')}</select>`;
         } else {
             const muscles = available.muscles || [];
             container.innerHTML = `
-                <select class="library-filter" data-library-filter="category" aria-label="فلترة تصنيف التمرين">${optionList(available.exerciseCategories, filters.category, 'كل التصنيفات')}</select>
-                <select class="library-filter" data-library-filter="difficulty" aria-label="فلترة مستوى التمرين">${optionList(available.difficulties, filters.difficulty, 'كل المستويات')}</select>
-                <select class="library-filter" data-library-filter="equipment" aria-label="فلترة أدوات التمرين">${optionList(available.equipment, filters.equipment, 'كل الأدوات')}</select>
-                <select class="library-filter" data-library-filter="targetMuscleId" aria-label="فلترة العضلة المستهدفة"><option value="">كل العضلات المستهدفة</option>${muscles.map((muscle) => `<option value="${muscle.id}"${selected(muscle.id, filters.targetMuscleId)}>${escapeHtml(muscle.nameAr || muscle.name)}</option>`).join('')}</select>`;
+                <select class="library-filter" data-library-filter="category" aria-label="${escapeHtml(t('gymLibrary.filter.category.exercise.label'))}">${optionList(available.exerciseCategories, filters.category, 'gymLibrary.filter.category.all', 'exerciseCategory')}</select>
+                <select class="library-filter" data-library-filter="difficulty" aria-label="${escapeHtml(t('gymLibrary.filter.difficulty.label'))}">${optionList(available.difficulties, filters.difficulty, 'gymLibrary.filter.difficulty.all', 'difficulty')}</select>
+                <select class="library-filter" data-library-filter="equipment" aria-label="${escapeHtml(t('gymLibrary.filter.equipment.label'))}">${optionList(available.equipment, filters.equipment, 'gymLibrary.filter.equipment.all', 'equipment')}</select>
+                <select class="library-filter" data-library-filter="targetMuscleId" aria-label="${escapeHtml(t('gymLibrary.filter.targetMuscle.label'))}"><option value="">${escapeHtml(t('gymLibrary.filter.targetMuscle.all'))}</option>${muscles.map((muscle) => `<option data-i18n-preserve value="${escapeHtml(muscle.id)}"${selected(muscle.id, filters.targetMuscleId)}>${escapeHtml(muscle.nameAr || muscle.name)}</option>`).join('')}</select>`;
         }
+        applyLibraryTranslations();
     }
 
     function renderTypeTabs() {
@@ -170,11 +218,17 @@
             button.setAttribute('aria-selected', String(active));
         });
         const addButton = $('libraryAddButton');
-        if (addButton && META[state.activeType]) addButton.querySelector('span:last-child').textContent = META[state.activeType].add;
+        const addLabel = addButton?.querySelector('span:last-child');
+        if (addLabel && VISIBLE_TYPES.includes(state.activeType)) {
+            const key = `gymLibrary.type.${state.activeType}.add`;
+            addLabel.dataset.i18n = key;
+            addLabel.textContent = t(key);
+        }
+        applyLibraryTranslations();
     }
 
     function tableActions(id) {
-        return `<div class="library-row-actions"><button class="btn btn-light library-action-button" type="button" title="التفاصيل" aria-label="التفاصيل" data-library-action="details" data-required-permission="library.read" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button><button class="btn btn-light library-action-button" type="button" title="تعديل" aria-label="تعديل" data-library-action="edit" data-required-permission="library.update" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg></button><button class="btn library-delete library-action-button" type="button" title="حذف" aria-label="حذف" data-library-action="delete" data-required-permission="library.delete" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg></button></div>`;
+        return `<div class="library-row-actions"><button class="btn btn-light library-action-button" type="button" title="${escapeHtml(t('gymLibrary.action.details'))}" aria-label="${escapeHtml(t('gymLibrary.action.details'))}" data-library-action="details" data-required-permission="library.read" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path><circle cx="12" cy="12" r="2.5"></circle></svg></button><button class="btn btn-light library-action-button" type="button" title="${escapeHtml(t('gymLibrary.action.edit'))}" aria-label="${escapeHtml(t('gymLibrary.action.edit'))}" data-library-action="edit" data-required-permission="library.update" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"></path></svg></button><button class="btn library-delete library-action-button" type="button" title="${escapeHtml(t('gymLibrary.action.delete'))}" aria-label="${escapeHtml(t('gymLibrary.action.delete'))}" data-library-action="delete" data-required-permission="library.delete" data-id="${id}"><svg class="ui-icon library-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg></button></div>`;
     }
 
     function renderMuscleRow(item) {
@@ -182,39 +236,53 @@
         const muscleMedia = window.TopGymMuscleAssets?.imageMarkup
             ? window.TopGymMuscleAssets.imageMarkup(item, 'main', { className: 'muscle-media-thumb', alt: title, icon: item.icon || '💪' })
             : `<span class="muscle-media muscle-media-fallback"><span class="muscle-media-fallback-icon">${escapeHtml(item.icon || '💪')}</span></span>`;
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon muscle-table-icon">${muscleMedia}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(bodyPartLabel(item.bodyPart))}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? '<span class="library-table-badge positive">وصف متاح</span>' : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon muscle-table-icon">${muscleMedia}</span><div><strong data-i18n-preserve title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr" data-i18n-preserve>${escapeHtml(item.name || '')}</small></div></div></td><td>${item.bodyPart ? `<span class="library-table-badge muscles">${escapeHtml(bodyPartLabel(item.bodyPart))}</span>` : '—'}</td><td>${item.descriptionAr || item.description ? `<span class="library-table-badge positive">${escapeHtml(t('gymLibrary.row.descriptionAvailable'))}</span>` : '—'}</td><td>${formatNumber(item.id)}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderFoodRow(item) {
         const title = item.nameAr || item.nameEn || itemName(item);
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon food-table-icon">${foodImage(item, { className: 'food-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(foodCategoryLabel(item.category))}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>سعرة</small></td><td><strong>${formatNumber(item.protein, 1)} جرام</strong><small>بروتين</small></td><td><strong>${formatNumber(item.carbs, 1)} جرام</strong><small>كارب</small></td><td><strong>${formatNumber(item.fat, 1)} جرام</strong><small>دهون</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(foodUnitLabel(item.servingUnit))}</td><td>${tableActions(item.id)}</td></tr>`;
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon food-table-icon">${foodImage(item, { className: 'food-media-thumb', alt: title })}</span><div><strong data-i18n-preserve title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr" data-i18n-preserve>${escapeHtml(item.nameEn || '')}</small></div></div></td><td>${item.category ? `<span class="library-table-badge foods">${escapeHtml(foodCategoryLabel(item.category))}</span>` : '—'}</td><td><strong>${formatNumber(item.calories, 1)}</strong><small>${escapeHtml(t('gymLibrary.unit.calorie'))}</small></td><td><strong>${formatNumber(item.protein, 1)} ${escapeHtml(t('gymLibrary.unit.gram'))}</strong><small>${escapeHtml(t('gymLibrary.unit.protein'))}</small></td><td><strong>${formatNumber(item.carbs, 1)} ${escapeHtml(t('gymLibrary.unit.gram'))}</strong><small>${escapeHtml(t('gymLibrary.unit.carbs'))}</small></td><td><strong>${formatNumber(item.fat, 1)} ${escapeHtml(t('gymLibrary.unit.gram'))}</strong><small>${escapeHtml(t('gymLibrary.unit.fat'))}</small></td><td>${formatNumber(item.servingSize, 1)} ${escapeHtml(foodUnitLabel(item.servingUnit))}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderExerciseRow(item) {
         const title = item.nameAr || item.name || itemName(item);
-        const target = item.targetMuscleNameAr || item.targetMuscleName || 'غير محددة';
-        return `<tr><td><div class="library-table-primary"><span class="library-table-icon exercise-table-icon">${exerciseImage(item, 'main', { className: 'exercise-media-thumb', alt: title })}</span><div><strong title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr">${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises">${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(exerciseValue(item.difficulty, 'difficulty')) : '—'}</td><td>${item.equipment ? escapeHtml(exerciseValue(item.equipment, 'equipment')) : '—'}</td><td>${item.category ? escapeHtml(exerciseValue(item.category, 'category')) : '—'}</td><td>${item.isHighImpact ? '<span class="library-table-badge warning">مجهود مرتفع</span>' : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
+        const target = item.targetMuscleNameAr || item.targetMuscleName || t('gymLibrary.value.unspecifiedFem');
+        return `<tr><td><div class="library-table-primary"><span class="library-table-icon exercise-table-icon">${exerciseImage(item, 'main', { className: 'exercise-media-thumb', alt: title })}</span><div><strong data-i18n-preserve title="${escapeHtml(title)}">${escapeHtml(title)}</strong><small dir="ltr" data-i18n-preserve>${escapeHtml(item.name || '')}</small></div></div></td><td><span class="library-table-badge exercises" data-i18n-preserve>${escapeHtml(target)}</span></td><td>${item.difficulty ? escapeHtml(exerciseValue(item.difficulty, 'difficulty')) : '—'}</td><td>${item.equipment ? escapeHtml(exerciseValue(item.equipment, 'equipment')) : '—'}</td><td>${item.category ? escapeHtml(exerciseValue(item.category, 'category')) : '—'}</td><td>${item.isHighImpact ? `<span class="library-table-badge warning">${escapeHtml(t('gymLibrary.row.highImpact'))}</span>` : '—'}</td><td>${tableActions(item.id)}</td></tr>`;
     }
 
     function renderList() {
         const list = $('libraryList');
         if (!list) return;
         if (!state.items.length) {
-            list.innerHTML = `<div class="library-empty">${META[state.activeType].empty}</div>`;
+            list.innerHTML = `<div class="library-empty">${t(`gymLibrary.type.${state.activeType}.empty`)}</div>`;
             renderPagination();
+            applyLibraryTranslations();
             return;
         }
         const renderer = state.activeType === 'muscles' ? renderMuscleRow : state.activeType === 'foods' ? renderFoodRow : renderExerciseRow;
-        const headers = state.activeType === 'muscles'
-            ? '<th>العضلة</th><th>منطقة الجسم</th><th>الوصف</th><th>الرقم</th><th>الإجراءات</th>'
+        const headerKeys = state.activeType === 'muscles'
+            ? ['muscle', 'bodyPart', 'description', 'number', 'actions']
             : state.activeType === 'foods'
-                ? '<th>الطعام</th><th>التصنيف</th><th>السعرات</th><th>البروتين</th><th>الكربوهيدرات</th><th>الدهون</th><th>الحصة</th><th>الإجراءات</th>'
-                : '<th>التمرين</th><th>العضلة المستهدفة</th><th>المستوى</th><th>الأداة</th><th>التصنيف</th><th>التنبيه</th><th>الإجراءات</th>';
+                ? ['food', 'category', 'calories', 'protein', 'carbs', 'fat', 'serving', 'actions']
+                : ['exercise', 'targetMuscle', 'difficulty', 'equipment', 'category', 'alert', 'actions'];
+        const headers = headerKeys.map((key) => `<th>${escapeHtml(t(`gymLibrary.table.${key}`))}</th>`).join('');
         list.innerHTML = `<div class="library-table-wrap"><table class="library-data-table ${state.activeType}"><thead><tr>${headers}</tr></thead><tbody>${state.items.map(renderer).join('')}</tbody></table></div>`;
+        applyMobileCellLabels(list, headerKeys);
         window.TopGymExerciseAssets?.hydrate(list);
         window.TopGymMuscleAssets?.hydrate(list);
         window.TopGymFoodAssets?.hydrate(list);
         renderPagination();
+        applyLibraryTranslations();
+    }
+
+    function applyMobileCellLabels(root, headerKeys) {
+        root.querySelectorAll('.library-data-table tbody tr').forEach((row) => {
+            row.querySelectorAll('td').forEach((cell, index) => {
+                const key = headerKeys[index];
+                if (key) cell.dataset.label = t(`gymLibrary.table.${key}`);
+                else delete cell.dataset.label;
+            });
+        });
     }
 
     function renderPagination() {
@@ -227,7 +295,8 @@
         container.hidden = false;
         const from = (pagination.page - 1) * pagination.pageSize + 1;
         const to = Math.min(pagination.totalItems, pagination.page * pagination.pageSize);
-        container.innerHTML = `<span class="library-pagination-info">عرض ${formatNumber(from)}–${formatNumber(to)} من ${formatNumber(pagination.totalItems)} ${META[state.activeType].singular}</span><div class="library-pagination-actions"><button class="btn btn-light" type="button" data-library-page="prev" ${pagination.page <= 1 ? 'disabled' : ''}>السابق</button><button class="btn btn-light" type="button" data-library-page="next" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>التالي</button></div>`;
+        container.innerHTML = `<span class="library-pagination-info">${escapeHtml(t('gymLibrary.pagination.info', { from: formatNumber(from), to: formatNumber(to), total: formatNumber(pagination.totalItems), item: t(`gymLibrary.type.${state.activeType}.singular`) }))}</span><div class="library-pagination-actions"><button class="btn btn-light" type="button" data-library-page="prev" ${pagination.page <= 1 ? 'disabled' : ''}>${escapeHtml(t('gymLibrary.action.previous'))}</button><button class="btn btn-light" type="button" data-library-page="next" ${pagination.page >= pagination.totalPages ? 'disabled' : ''}>${escapeHtml(t('gymLibrary.action.next'))}</button></div>`;
+        applyLibraryTranslations();
     }
 
     async function loadOptions(force = false) {
@@ -267,7 +336,8 @@
         if (force) params.set('refresh', String(Date.now()));
         Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
         const list = $('libraryList');
-        if (list) list.innerHTML = '<div class="loading">جاري تحميل بيانات المكتبة...</div>';
+        if (list) list.innerHTML = `<div class="loading">${escapeHtml(t('gymLibrary.loading.list'))}</div>`;
+        applyLibraryTranslations();
         try {
             const response = await requestJson(`/api/library/${state.activeType}?${params}`, { signal: state.abortController.signal });
             if (requestId !== state.requestId) return;
@@ -299,7 +369,7 @@
     }
 
     function selectField(name, label, value, options, placeholder, full = false) {
-        return `<div class="library-field${full ? ' full' : ''}"><label for="libraryField_${name}">${label}</label><select id="libraryField_${name}" data-library-field="${name}"><option value="">${placeholder}</option>${options.map((option) => { const optionValue = typeof option === 'object' ? option.value : option; const optionLabel = typeof option === 'object' ? option.label : option; return `<option value="${escapeHtml(optionValue)}"${selected(optionValue, value)}>${escapeHtml(optionLabel)}</option>`; }).join('')}</select></div>`;
+        return `<div class="library-field${full ? ' full' : ''}"><label for="libraryField_${name}">${label}</label><select id="libraryField_${name}" data-library-field="${name}"><option value="">${placeholder}</option>${options.map((option) => { const optionValue = typeof option === 'object' ? option.value : option; const optionLabel = typeof option === 'object' ? option.label : option; return `<option data-i18n-preserve value="${escapeHtml(optionValue)}"${selected(optionValue, value)}>${escapeHtml(optionLabel)}</option>`; }).join('')}</select></div>`;
     }
 
     function formValue(item, key) { return item?.[key] ?? ''; }
@@ -333,10 +403,20 @@
         if (!dialog || !form) return;
         form.dataset.type = type;
         form.dataset.id = item?.id ? String(item.id) : '';
-        $('libraryFormTitle').textContent = item ? `تعديل ${META[type].singular}` : META[type].add;
-        $('libraryFormDescription').textContent = item ? 'حدّث البيانات ثم احفظ التعديلات في المكتبة.' : 'أدخل البيانات الأساسية، ويمكنك استكمال التفاصيل لاحقًا.';
-        $('libraryFormSave').textContent = item ? 'حفظ التعديلات' : 'حفظ العنصر';
+        const title = $('libraryFormTitle');
+        const description = $('libraryFormDescription');
+        const save = $('libraryFormSave');
+        const titleKey = item ? 'gymLibrary.form.edit.title' : `gymLibrary.type.${type}.add`;
+        title.dataset.i18n = titleKey;
+        if (item) title.dataset.i18nParamItem = t(`gymLibrary.type.${type}.singular`);
+        else delete title.dataset.i18nParamItem;
+        description.dataset.i18n = item ? 'gymLibrary.form.edit.description' : 'gymLibrary.form.add.description';
+        save.dataset.i18n = item ? 'gymLibrary.form.saveChanges' : 'gymLibrary.form.saveItem';
+        title.textContent = item ? t(titleKey, { item: t(`gymLibrary.type.${type}.singular`) }) : t(titleKey);
+        description.textContent = t(description.dataset.i18n);
+        save.textContent = t(save.dataset.i18n);
         renderFormFields(type, item || {});
+        applyLibraryTranslations();
         openDialog(dialog);
     }
 
@@ -446,7 +526,7 @@
         return { id: match?.id || source.id || '', sourceId: match?.sourceId || source.sourceId || '', nameAr, nameEn, matched: Boolean(match || nameAr || nameEn) };
     }
 
-    function bilingualName(nameAr, nameEn, fallback = 'غير محددة') {
+    function bilingualName(nameAr, nameEn, fallback = t('gymLibrary.value.unspecifiedFem')) {
         const arabic = String(nameAr || '').trim();
         const english = String(nameEn || '').trim();
         if (arabic && english && arabic.toLocaleLowerCase() !== english.toLocaleLowerCase()) return `${arabic} · ${english}`;
@@ -471,77 +551,49 @@
             const resolved = resolveMuscle(reference,
                 nonEmptyValue(source.nameAr, source.name_ar),
                 nonEmptyValue(source.name, source.nameEn, source.name_en));
-            return `${bilingualName(resolved.nameAr, resolved.nameEn, 'عضلة غير محددة')}${contributionText(entry)}`;
+            return `${bilingualName(resolved.nameAr, resolved.nameEn, t('gymLibrary.details.primaryMuscleUnavailable'))}${contributionText(entry)}`;
         }).filter(Boolean);
     }
 
-    const EXERCISE_VALUE_LABELS = {
-        difficulty: { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم', expert: 'خبير' },
-        equipment: { 'body only': 'وزن الجسم', barbell: 'بار', dumbbell: 'دامبل', cable: 'كابل', kettlebells: 'كيتل بيل', machine: 'جهاز', bands: 'أشرطة مقاومة', 'e-z curl bar': 'بار EZ', other: 'أخرى' },
-        category: { strength: 'قوة', stretching: 'إطالة', plyometrics: 'تمارين انفجارية', cardio: 'كارديو', powerlifting: 'باور ليفتنج', olympic: 'أولمبي', strongman: 'سترونجمان' }
-    };
-
-    const FOOD_CATEGORY_LABELS = {
-        meat: 'لحوم', poultry: 'دواجن', seafood: 'مأكولات بحرية', fish: 'أسماك', dairy: 'ألبان', eggs: 'بيض', grains: 'حبوب', cereals: 'حبوب',
-        fruits: 'فواكه', fruit: 'فواكه', vegetables: 'خضروات', vegetable: 'خضروات', legumes: 'بقوليات', nuts: 'مكسرات', oils: 'زيوت', beverages: 'مشروبات',
-        sweets: 'حلويات', snacks: 'وجبات خفيفة', supplements: 'مكملات', other: 'أخرى'
-    };
-
-    const BODY_PART_LABELS = {
-        'upper body': 'الجزء العلوي', 'lower body': 'الجزء السفلي', core: 'الجذع', neck: 'الرقبة', shoulders: 'الكتفان', arms: 'الذراعان', legs: 'الساقان', back: 'الظهر', chest: 'الصدر'
-    };
-
-    function translatedValue(value, labels, fallback = 'غير محدد') {
-        const raw = String(value || '').trim();
-        if (!raw) return fallback;
-        return labels[raw.toLowerCase()] || raw;
-    }
-
-    function foodCategoryLabel(value) { return translatedValue(value, FOOD_CATEGORY_LABELS); }
-    function bodyPartLabel(value) { return translatedValue(value, BODY_PART_LABELS); }
-    function foodUnitLabel(value) {
-        const raw = String(value || '').trim().toLowerCase();
-        return ({ gram: 'جرام', grams: 'جرام', g: 'جرام', kilogram: 'كجم', kg: 'كجم', milliliter: 'مل', ml: 'مل', serving: 'حصة', piece: 'قطعة' })[raw] || String(value || '').trim();
-    }
-
+    function foodCategoryLabel(value) { return libraryValueLabel(value, 'category'); }
+    function bodyPartLabel(value) { return libraryValueLabel(value, 'bodyPart'); }
+    function foodUnitLabel(value) { return libraryValueLabel(value, 'unit'); }
     function exerciseValue(value, type) {
-        const raw = String(value || '').trim();
-        if (!raw) return 'غير محدد';
-        const translated = EXERCISE_VALUE_LABELS[type]?.[raw.toLowerCase()];
-        return translated || raw;
+        if (!String(value || '').trim()) return t('gymLibrary.value.unspecified');
+        return libraryValueLabel(value, type === 'category' ? 'exerciseCategory' : type);
     }
 
     function detailItem(label, value, full = false) {
-        const displayValue = value === 0 ? '0' : nonEmptyValue(value, 'غير متوفر في بيانات المصدر');
-        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong dir="auto">${escapeHtml(displayValue)}</strong></div>`;
+        const displayValue = value === 0 ? '0' : nonEmptyValue(value, t('gymLibrary.value.notAvailable'));
+        return `<div class="library-detail-item${full ? ' full' : ''}"><span>${escapeHtml(label)}</span><strong dir="auto" data-i18n-preserve>${escapeHtml(displayValue)}</strong></div>`;
     }
 
     function detailList(label, values, fallback = 'غير متوفر في بيانات المصدر') {
         const list = contentLines(values);
-        return `<div class="library-detail-item full"><span>${escapeHtml(label)}</span>${list.length ? `<ol class="library-detail-list" dir="auto">${list.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}</ol>` : `<strong dir="auto">${escapeHtml(fallback)}</strong>`}</div>`;
+        return `<div class="library-detail-item full"><span>${escapeHtml(label)}</span>${list.length ? `<ol class="library-detail-list" dir="auto">${list.map((value) => `<li data-i18n-preserve>${escapeHtml(value)}</li>`).join('')}</ol>` : `<strong dir="auto">${escapeHtml(fallback)}</strong>`}</div>`;
     }
 
     function renderDetailsContent(type, item) {
         const content = $('libraryDetailsContent');
         if (!content || !item) return;
         const names = itemNames(item);
-        $('libraryDetailsTitle').textContent = `تفاصيل ${META[type].singular}`;
-        $('libraryDetailsSubtitle').textContent = `${itemName(item)} · رقم ${item.id}`;
+        $('libraryDetailsTitle').textContent = t('gymLibrary.details.title', { item: t(`gymLibrary.type.${type}.singular`) });
+        $('libraryDetailsSubtitle').textContent = t('gymLibrary.details.subtitle', { name: itemName(item), id: formatNumber(item.id) });
         if (type === 'muscles') {
             const muscleGallery = window.TopGymMuscleAssets?.galleryMarkup
                 ? window.TopGymMuscleAssets.galleryMarkup(item, { alt: itemName(item) })
                 : '';
             content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '💪')}</span><div><h4>${escapeHtml(itemName(item))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="muscle-detail-visual">${muscleGallery}<small class="muscle-detail-source-note">الصور التشريحية من Z-Anatomy / BodyParts3D بهوية ${escapeHtml(brandName())} الحديثة. السجلات غير المطابقة تعرض fallback لحين المراجعة.</small></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('منطقة الجسم', item.bodyPart)}${detailItem('المعرّف المصدر', item.sourceId)}${detailItem('الوصف بالعربية', item.descriptionAr, true)}${detailItem('الوصف بالإنجليزية', item.description, true)}</div>`;
         } else if (type === 'foods') {
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p dir="auto">${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح')}${detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح')}${detailItem('التصنيف', foodCategoryLabel(item.category))}${detailItem('الحصة', `${formatNumber(item.servingSize, 1)} ${foodUnitLabel(item.servingUnit)}`)}${detailItem('السعرات', formatNumber(item.calories, 1))}${detailItem('البروتين', `${formatNumber(item.protein, 1)} جرام`)}${detailItem('الكربوهيدرات', `${formatNumber(item.carbs, 1)} جرام`)}${detailItem('الدهون', `${formatNumber(item.fat, 1)} جرام`)}${detailItem('الألياف', `${formatNumber(item.fiber, 1)} جرام`)}${detailItem('السكريات', `${formatNumber(item.sugar, 1)} جرام`)}${detailItem('الصوديوم', `${formatNumber(item.sodium, 1)} ملجم`)}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">🥗</span><div><h4>${escapeHtml(itemName(item))}</h4><p dir="auto">${escapeHtml(names.english || t('gymLibrary.details.englishNameUnavailable'))}</p></div></div><div class="library-detail-grid">${detailItem(t('gymLibrary.details.nameArabic'), names.arabic || t('gymLibrary.details.arabicNameUnavailable'))}${detailItem(t('gymLibrary.details.nameEnglish'), names.english || t('gymLibrary.details.englishNameUnavailable'))}${detailItem(t('gymLibrary.details.category'), foodCategoryLabel(item.category))}${detailItem(t('gymLibrary.details.serving'), `${formatNumber(item.servingSize, 1)} ${foodUnitLabel(item.servingUnit)}`)}${detailItem(t('gymLibrary.details.calories'), formatNumber(item.calories, 1))}${detailItem(t('gymLibrary.details.protein'), `${formatNumber(item.protein, 1)} ${t('gymLibrary.unit.gram')}`)}${detailItem(t('gymLibrary.details.carbs'), `${formatNumber(item.carbs, 1)} ${t('gymLibrary.unit.gram')}`)}${detailItem(t('gymLibrary.details.fat'), `${formatNumber(item.fat, 1)} ${t('gymLibrary.unit.gram')}`)}${detailItem(t('gymLibrary.details.fiber'), `${formatNumber(item.fiber, 1)} ${t('gymLibrary.unit.gram')}`)}${detailItem(t('gymLibrary.details.sugar'), `${formatNumber(item.sugar, 1)} ${t('gymLibrary.unit.gram')}`)}${detailItem(t('gymLibrary.details.sodium'), `${formatNumber(item.sodium, 1)} ${t('gymLibrary.value.milligrams')}`)}</div>`;
         } else {
             const primary = resolveMuscle(item.targetMuscleId, item.targetMuscleNameAr, item.targetMuscleName);
-            const primaryLabel = bilingualName(primary.nameAr, primary.nameEn, 'العضلة الأساسية غير محددة');
+            const primaryLabel = bilingualName(primary.nameAr, primary.nameEn, t('gymLibrary.details.primaryMuscleUnavailable'));
             const secondary = secondaryMuscleLabels(item);
             const primaryMedia = window.TopGymMuscleAssets?.imageMarkup
                 ? `<div class="exercise-target-muscle-visual"><span>العضلة المستهدفة</span>${window.TopGymMuscleAssets.imageMarkup(primary, 'main', { className: 'exercise-target-muscle-image', alt: primaryLabel, icon: '💪' })}<strong>${escapeHtml(primaryLabel)}</strong></div>`
                 : '';
-            const details = [
+        const details = [
                 detailItem('الاسم بالعربية', names.arabic || 'الاسم العربي غير متاح', true),
                 detailItem('الاسم بالإنجليزية', names.english || 'الاسم الإنجليزي غير متاح', true),
                 detailItem('العضلة الأساسية', primaryLabel),
@@ -553,8 +605,8 @@
                 detailItem('نوع القوة', item.force),
                 detailItem('مدى التكرارات', item.repsRange),
                 detailItem('مدى المجموعات', item.setsRange),
-                detailItem('الراحة', item.restSeconds == null ? 'غير محددة' : `${item.restSeconds} ثانية`),
-                detailItem('التمرين عالي المجهود', item.isHighImpact ? 'نعم' : 'لا'),
+                detailItem(t('gymLibrary.details.rest'), item.restSeconds == null ? t('gymLibrary.value.unspecifiedFem') : `${item.restSeconds} ${t('gymLibrary.value.seconds')}`),
+                detailItem(t('gymLibrary.details.highImpact'), item.isHighImpact ? t('gymLibrary.value.yes') : t('gymLibrary.value.no')),
                 detailItem('رابط الفيديو', item.videoUrl, true),
                 detailItem('الوصف بالعربية', item.descriptionAr, true),
                 detailItem('الوصف بالإنجليزية', item.description, true),
@@ -566,7 +618,7 @@
                 detailList('الأخطاء الشائعة بالعربية', item.commonMistakesAr, 'الأخطاء الشائعة بالعربية غير متاحة في بيانات المصدر'),
                 detailList('الأخطاء الشائعة بالإنجليزية', item.commonMistakes, 'الأخطاء الشائعة بالإنجليزية غير متاحة في بيانات المصدر')
             ];
-            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '🏋️')}</span><div><h4>${escapeHtml(names.arabic || names.english || 'تمرين بدون اسم')}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${details.join('')}</div>`;
+            content.innerHTML = `<div class="library-detail-hero"><span class="library-detail-hero-icon">${escapeHtml(item.icon || '🏋️')}</span><div><h4>${escapeHtml(names.arabic || names.english || t('gymLibrary.value.itemWithoutName'))}</h4><p>${escapeHtml(names.english || 'الاسم الإنجليزي غير متاح')}</p></div></div><div class="library-detail-grid">${details.join('')}</div>`;
             const hero = content.querySelector('.library-detail-hero');
             const heroIcon = hero?.querySelector('.library-detail-hero-icon');
             if (heroIcon) heroIcon.outerHTML = `<div class="exercise-detail-gallery exercise-media-gallery">${exerciseGallery(item)}</div>`;
@@ -574,6 +626,7 @@
         }
         window.TopGymMuscleAssets?.hydrate(content);
         window.TopGymExerciseAssets?.hydrate(content);
+        applyLibraryTranslations();
     }
 
     async function showDetails(item) {
@@ -603,17 +656,17 @@
     async function confirmDelete(item) {
         const name = itemName(item);
         if (window.Swal) {
-            const result = await window.Swal.fire({ position: 'center', backdrop: window.topGymThemeValue('--overlay'), icon: 'warning', title: 'تأكيد الحذف', text: `هل تريد حذف ${name}؟`, showCancelButton: true, confirmButtonText: 'نعم، احذف', cancelButtonText: 'إلغاء', buttonsStyling: false, customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
+            const result = await window.Swal.fire({ position: 'center', backdrop: window.topGymThemeValue('--overlay'), icon: 'warning', title: t('gymLibrary.confirm.delete.title'), text: t('gymLibrary.confirm.delete.body', { name }), showCancelButton: true, confirmButtonText: t('gymLibrary.confirm.delete.confirm'), cancelButtonText: t('gymLibrary.dialog.cancel'), buttonsStyling: false, customClass: { popup: 'delete-confirm-alert', confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' } });
             return result.isConfirmed;
         }
-        return window.confirm(`هل تريد حذف ${name}؟`);
+        return window.confirm(t('gymLibrary.confirm.delete.body', { name }));
     }
 
     async function deleteItem(item) {
         if (!(await confirmDelete(item))) return;
         try {
             await requestJson(`/api/library/${state.activeType}/${item.id}`, { method: 'DELETE' });
-            showMessage(`تم حذف ${META[state.activeType].singular} بنجاح.`);
+            showMessage(t('gymLibrary.success.deleted', { item: t(`gymLibrary.type.${state.activeType}.singular`) }));
             await loadOptions(true);
             if (state.page > 1 && state.items.length === 1) state.page -= 1;
             await loadCollection(true);
@@ -633,7 +686,7 @@
             button.disabled = true;
             await requestJson(id ? `/api/library/${type}/${id}` : `/api/library/${type}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
             closeDialog($('libraryFormDialog'));
-            showMessage(id ? 'تم حفظ التعديلات بنجاح.' : `تمت إضافة ${META[type].singular} بنجاح.`);
+            showMessage(id ? t('gymLibrary.success.saved') : t('gymLibrary.success.added', { item: t(`gymLibrary.type.${type}.singular`) }));
             await loadOptions(true);
             await loadCollection(true);
         } catch (error) {
@@ -681,6 +734,8 @@
     function initializeEvents() {
         if (eventsInitialized) return;
         eventsInitialized = true;
+        keepDialogFocusInside($('libraryFormDialog'));
+        keepDialogFocusInside($('libraryDetailsDialog'));
         document.querySelectorAll('[data-library-type]').forEach((button) => button.addEventListener('click', () => changeType(button.dataset.libraryType)));
         $('libraryAddButton')?.addEventListener('click', () => openForm());
         $('libraryRefreshButton')?.addEventListener('click', () => { loadOptions(true); loadCollection(true); });
@@ -709,6 +764,33 @@
         $('libraryFormCancel')?.addEventListener('click', () => closeDialog($('libraryFormDialog')));
         $('libraryDetailsClose')?.addEventListener('click', () => closeDialog($('libraryDetailsDialog')));
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'library') initialize(); });
+        window.addEventListener('topgym:localechange', () => {
+            renderSummary();
+            renderTypeTabs();
+            renderFilters();
+            if (state.opened) renderList();
+            const formDialog = $('libraryFormDialog');
+            if (formDialog?.open) {
+                const type = formDialog.querySelector('#libraryForm')?.dataset.type || state.activeType;
+                const item = state.items.find((entry) => String(entry.id) === String(formDialog.querySelector('#libraryForm')?.dataset.id || ''));
+                const title = $('libraryFormTitle');
+                const description = $('libraryFormDescription');
+                const save = $('libraryFormSave');
+                const titleKey = item ? 'gymLibrary.form.edit.title' : `gymLibrary.type.${type}.add`;
+                title.dataset.i18n = titleKey;
+                if (item) title.dataset.i18nParamItem = t(`gymLibrary.type.${type}.singular`);
+                else delete title.dataset.i18nParamItem;
+                description.dataset.i18n = item ? 'gymLibrary.form.edit.description' : 'gymLibrary.form.add.description';
+                save.dataset.i18n = item ? 'gymLibrary.form.saveChanges' : 'gymLibrary.form.saveItem';
+                title.textContent = item ? t(titleKey, { item: t(`gymLibrary.type.${type}.singular`) }) : t(titleKey);
+                description.textContent = t(description.dataset.i18n);
+                save.textContent = t(save.dataset.i18n);
+                applyLibraryTranslations();
+            }
+            if ($('libraryDetailsDialog')?.open && state.detailsItem && state.detailsType) renderDetailsContent(state.detailsType, state.detailsItem);
+            applyLibraryTranslations();
+        });
+        applyLibraryTranslations();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeEvents, { once: true });

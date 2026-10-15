@@ -102,7 +102,7 @@ async function main() {
         // errors in an offline QA environment; app-origin errors are still
         // collected by the response assertion below.
         if (message.text().includes('net::ERR_NAME_NOT_RESOLVED')) return;
-        consoleErrors.push(message.text());
+        consoleErrors.push(`${message.text()}${message.location()?.url ? ` (${message.location().url})` : ''}`);
       });
       page.on('response', (response) => {
         if (response.status() < 400) return;
@@ -110,7 +110,10 @@ async function main() {
           if (new URL(response.url()).origin === new URL(baseUrl).origin) badResponses.push(`${response.status()} ${response.url()}`);
         } catch (_) { badResponses.push(`${response.status()} ${response.url()}`); }
       });
-      await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      // The static Browser QA server serves the authenticated shell at `/` and
+      // the standalone login at `/login.html`; use the real login entry so this
+      // check validates the production document/CSS contract in both servers.
+      await page.goto(`${baseUrl}/login.html`, { waitUntil: 'networkidle' });
       const login = await page.evaluate(() => ({
         overflow: document.documentElement.scrollWidth > window.innerWidth,
         stylesheetCount: [...document.styleSheets].filter((sheet) => sheet.href?.includes('/css/login-entry.css')).length,

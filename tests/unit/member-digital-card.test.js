@@ -48,8 +48,13 @@ test('attendance QR token is independent from the member portal bearer-code reve
 
 test('card branding uses separate logo and tenant-name zones and adapts the QR position to real fields', () => {
     const card = read('public/js/member-digital-card.js');
-    assert.match(card, /roundedRect\(92, 88, 176, 142, 24, CARD_COLORS\.surfaceMuted/);
-    assert.match(card, /drawText\(gymName, 970, 126, 46, CARD_COLORS\.text, 800, 'right', 640\)/);
+    assert.match(card, /primary: '#0070f3'/);
+    assert.match(card, /function cardColors\(branding\)/);
+    assert.match(card, /branding\?\.themes\?\.light\?\.primary/);
+    assert.match(card, /const primary = \/\^#\[\\da-f\]\{6\}\$\/i\.test\(configuredPrimary\) \? configuredPrimary : CARD_COLORS\.primary/);
+    assert.match(card, /colors: cardColors\(tenant\.branding\)/);
+    assert.match(card, /roundedRect\(92, 88, 176, 142, 24, palette\.surfaceMuted/);
+    assert.match(card, /drawText\(gymName, 970, 126, 46, palette\.text, 800, 'right', 640\)/);
     assert.match(card, /const rowCount = Math\.ceil\(fields\.length \/ 2\)/);
     assert.match(card, /const qrSize = 350/);
     assert.match(card, /const qrY = Math\.max\(574, Math\.min\(790, gridTop \+ rowCount \* \(tileHeight \+ rowGap\) \+ 24\)\)/);

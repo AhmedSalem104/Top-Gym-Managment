@@ -39,7 +39,7 @@
     grid-template-rows: 44px;
     align-items: center;
     gap: 8px;
-    direction: rtl;
+    direction: inherit;
   }
 
   .app-shell > .topbar #mobileNavToggle {

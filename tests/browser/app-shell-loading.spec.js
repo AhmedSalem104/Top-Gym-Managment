@@ -94,3 +94,50 @@ test('first dashboard does not pull phone formatter or dashboard enhancements be
     }));
     expect(timing.deferred.every((start) => start >= timing.readyAt - 1)).toBeTruthy();
 });
+
+test('dashboard hero renders through its page stylesheet without viewport overflow', async ({ page }, testInfo) => {
+    await installAuthenticatedRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
+    await page.evaluate(() => window.topGymAppUsable);
+
+    const hero = page.locator('#dashboardSection .dashboard-hero').first();
+    await expect(hero).toBeVisible({ timeout: 15000 });
+    const layout = await page.evaluate(() => ({
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        hero: (() => {
+            const element = document.querySelector('#dashboardSection .dashboard-hero');
+            const rect = element?.getBoundingClientRect();
+            return rect ? { width: rect.width, height: rect.height } : null;
+        })()
+    }));
+    expect(layout.page).toBeLessThanOrEqual(layout.viewport);
+    expect(layout.hero?.width).toBeGreaterThan(0);
+    expect(layout.hero?.height).toBeGreaterThan(0);
+    await page.screenshot({ path: testInfo.outputPath('dashboard-v2.png'), fullPage: true });
+});
+
+test('dashboard hero remains readable in dark theme without viewport overflow', async ({ page }, testInfo) => {
+    await page.addInitScript(() => localStorage.setItem('topgym-theme', 'dark'));
+    await installAuthenticatedRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
+    await page.evaluate(() => window.topGymAppUsable);
+    await expect(page.locator('#dashboardSection .dashboard-hero').first()).toBeVisible({ timeout: 15000 });
+
+    const layout = await page.evaluate(() => ({
+        theme: document.documentElement.dataset.theme,
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        hero: (() => {
+            const rect = document.querySelector('#dashboardSection .dashboard-hero')?.getBoundingClientRect();
+            return rect ? { width: rect.width, height: rect.height } : null;
+        })()
+    }));
+    expect(layout.theme).toBe('dark');
+    expect(layout.page).toBeLessThanOrEqual(layout.viewport);
+    expect(layout.hero?.width).toBeGreaterThan(0);
+    expect(layout.hero?.height).toBeGreaterThan(0);
+    await page.screenshot({ path: testInfo.outputPath('dashboard-v2-dark.png'), fullPage: true });
+});

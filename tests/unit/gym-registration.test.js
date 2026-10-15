@@ -160,6 +160,7 @@ test('Gym and Trainer registration expose configured transfer details, copy acti
     const gym = read('public/register-gym.html');
     const trainer = read('public/register-trainer.html');
     const client = read('public/js/register-gym.js');
+    const i18n = read('public/js/core/i18n.js');
     assert.match(gym, /registration-payment-steps/);
     assert.match(trainer, /registration-payment-steps/);
     assert.match(gym, /id="registrationPaymentConfirmation"/);
@@ -169,7 +170,9 @@ test('Gym and Trainer registration expose configured transfer details, copy acti
     assert.match(client, /uploadProof\(\)/);
     assert.match(client, /data-registration-refresh-status/);
     assert.match(client, /X-Registration-Token/);
-    assert.match(client, /لا يتم تفعيل الحساب إلا بعد مراجعة فريق Logic Fit واعتماد الطلب/);
+    assert.match(client, /t\('registration\.confirmation\.received'\)/);
+    assert.match(i18n, /'registration\.confirmation\.received': 'تم استلام إثبات التحويل\. لا يتم تفعيل الحساب إلا بعد مراجعة فريق Logic Fit واعتماد الطلب\.'/);
+    assert.match(i18n, /'registration\.confirmation\.received': 'Your transfer proof has been received\. The account is activated only after the Logic Fit team reviews and approves the request\.'/);
     assert.doesNotMatch(client, /01015819700|01005376843/);
 });
 

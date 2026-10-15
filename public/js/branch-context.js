@@ -6,6 +6,17 @@
     const sectionStorageKey = 'logicfit.sectionId';
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]));
+    const translate = (key, fallbackAr, params = {}) => {
+        const value = window.TopGymI18n?.t?.(`branchesScreen.${key}`, params);
+        return value && value !== `branchesScreen.${key}` ? value : fallbackAr;
+    };
+    const translateShared = (key, fallbackAr) => {
+        const value = window.TopGymI18n?.t?.(key);
+        return value && value !== key ? value : fallbackAr;
+    };
+    const formatNumber = (value) => window.TopGymI18n?.format?.('number', Number(value)) ?? Number(value).toLocaleString('ar-EG');
+    const localizedMarkup = (key, fallbackAr, tag = 'span', attributes = '') =>
+        `<${tag} data-i18n="branchesScreen.${escapeHtml(key)}" data-branches-fallback="${escapeHtml(fallbackAr)}"${attributes}>${escapeHtml(translate(key, fallbackAr))}</${tag}>`;
     const notify = (message, isError = false) => {
         if (window.showToast) window.showToast(message, isError);
         else if (isError) console.error(message);
@@ -84,9 +95,16 @@
     }
 
     function sectionLabel(section) {
-        const labels = { men: 'Men', women: 'Women', mixed: 'Mixed' };
-        const typeLabel = labels[String(section?.type || '').toLowerCase()] || section?.name || 'Section';
-        return section?.name && section.name !== typeLabel ? `${typeLabel} · ${section.name}` : typeLabel;
+        const labels = {
+            men: ['section.type.men', 'رجال'],
+            women: ['section.type.women', 'سيدات'],
+            mixed: ['section.type.mixed', 'مختلط']
+        };
+        const typeCode = String(section?.type || '').toLowerCase();
+        const type = labels[typeCode];
+        const typeLabel = type ? translate(type[0], type[1]) : section?.name || translate('section.type.unknown', 'قسم');
+        const canonicalNames = { men: ['men', 'رجال'], women: ['women', 'سيدات'], mixed: ['mixed', 'مختلط'] }[typeCode] || [];
+        return section?.name && section.name !== typeLabel && !canonicalNames.includes(String(section.name).toLowerCase()) ? `${typeLabel} · ${section.name}` : typeLabel;
     }
 
     function ensureBranchTab() {
@@ -99,9 +117,9 @@
         button.dataset.ownerOnly = '';
         button.dataset.branchTabReady = 'true';
         button.setAttribute('aria-selected', 'false');
-        button.setAttribute('aria-label', 'الفروع');
-        button.title = 'الفروع';
-        button.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg><span>الفروع</span>';
+        button.setAttribute('aria-label', translateShared('nav.branches', 'الفروع والأقسام'));
+        button.title = translateShared('nav.branches', 'الفروع والأقسام');
+        button.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M9 11h.01M15 11h.01M9 15h.01M15 15h.01"/></svg><span data-i18n="nav.branches">الفروع والأقسام</span>';
         const store = rail.querySelector('[data-page-tab="store"]');
         rail.insertBefore(button, store?.nextSibling || null);
     }
@@ -117,25 +135,25 @@
         panel.setAttribute('aria-labelledby', 'branchesTitle');
         panel.innerHTML = `
             <header class="branches-page-header">
-                <div class="branches-page-heading"><span class="branches-page-kicker">إدارة الفروع</span><h2 id="branchesTitle">إدارة فروع الجيم</h2><p>أضف الفروع وحدد بيانات التشغيل داخل حساب الجيم.</p></div>
-                <div class="branches-page-actions"><div class="branches-page-summary" aria-label="ملخص الفروع"><span><strong id="branchesActiveCount">0</strong><small>فروع نشطة</small></span><span><strong id="branchesLimitValue">—</strong><small>حد الباقة</small></span></div><button class="btn btn-primary branches-create-trigger" id="branchCreateOpen" type="button"><span aria-hidden="true">+</span> إضافة فرع</button></div>
+                <div class="branches-page-heading"><span class="branches-page-kicker" data-i18n="branchesScreen.header.kicker" data-branches-fallback="إدارة الفروع">${escapeHtml(translate('header.kicker', 'إدارة الفروع'))}</span><h2 id="branchesTitle" data-i18n="branchesScreen.header.title" data-branches-fallback="إدارة فروع الجيم">${escapeHtml(translate('header.title', 'إدارة فروع الجيم'))}</h2><p data-i18n="branchesScreen.header.description" data-branches-fallback="أضف الفروع وحدد بيانات التشغيل داخل حساب الجيم.">${escapeHtml(translate('header.description', 'أضف الفروع وحدد بيانات التشغيل داخل حساب الجيم.'))}</p></div>
+                <div class="branches-page-actions"><div class="branches-page-summary" aria-label="${escapeHtml(translate('summary.label', 'ملخص الفروع'))}"><span><strong id="branchesActiveCount">0</strong><small data-i18n="branchesScreen.summary.active" data-branches-fallback="فروع نشطة">${escapeHtml(translate('summary.active', 'فروع نشطة'))}</small></span><span><strong id="branchesLimitValue">—</strong><small data-i18n="branchesScreen.summary.limit" data-branches-fallback="حد الباقة">${escapeHtml(translate('summary.limit', 'حد الباقة'))}</small></span></div><button class="btn btn-primary branches-create-trigger" id="branchCreateOpen" type="button"><span aria-hidden="true">+</span> ${localizedMarkup('actions.addBranch', 'إضافة فرع')}</button></div>
             </header>
             <section class="branches-card branches-list-card">
-                    <div class="branches-card-header"><div><span class="branches-card-kicker">دليل الفروع</span><h3>الفروع الحالية</h3><p>الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">تحديث</button></div>
-                    <div id="branchesList" class="branches-list"><div class="loading">جارٍ تحميل الفروع…</div></div>
+                    <div class="branches-card-header"><div><span class="branches-card-kicker" data-i18n="branchesScreen.list.kicker" data-branches-fallback="دليل الفروع">${escapeHtml(translate('list.kicker', 'دليل الفروع'))}</span><h3 data-i18n="branchesScreen.list.title" data-branches-fallback="الفروع الحالية">${escapeHtml(translate('list.title', 'الفروع الحالية'))}</h3><p data-i18n="branchesScreen.list.description" data-branches-fallback="الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.">${escapeHtml(translate('list.description', 'الأرشفة تحفظ السجل ولا تحذف البيانات التشغيلية.'))}</p></div><button class="btn btn-light btn-small" id="branchesRefresh" type="button">${localizedMarkup('actions.refresh', 'تحديث')}</button></div>
+                    <div id="branchesList" class="branches-list"><div class="loading" data-i18n="branchesScreen.loading" data-branches-fallback="جارٍ تحميل الفروع…">${escapeHtml(translate('loading', 'جارٍ تحميل الفروع…'))}</div></div>
             </section>
             <dialog id="branchCreateDialog" class="branch-create-dialog lf-modal-shell lf-modal--md lf-modal--structured">
                 <form id="branchCreateForm" class="dialog-body branches-form" novalidate>
-                    <div class="details-dialog-head"><div><span class="branches-card-kicker">فرع جديد</span><h3>إضافة فرع</h3><p>سيتم حفظه كفرع تابع لنفس الجيم.</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">إغلاق</button></div>
+                    <div class="details-dialog-head"><div><span class="branches-card-kicker" data-i18n="branchesScreen.dialog.kicker" data-branches-fallback="فرع جديد">${escapeHtml(translate('dialog.kicker', 'فرع جديد'))}</span><h3 data-i18n="branchesScreen.dialog.title" data-branches-fallback="إضافة فرع">${escapeHtml(translate('dialog.title', 'إضافة فرع'))}</h3><p data-i18n="branchesScreen.dialog.description" data-branches-fallback="سيتم حفظه كفرع تابع لنفس الجيم.">${escapeHtml(translate('dialog.description', 'سيتم حفظه كفرع تابع لنفس الجيم.'))}</p></div><button class="btn btn-light btn-small" id="branchCreateDialogClose" type="button">${localizedMarkup('actions.close', 'إغلاق')}</button></div>
                     <div class="branch-create-fields">
-                        <label class="form-label">كود الفرع<input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
-                        <label class="form-label">اسم الفرع<input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر"></label>
-                        <label class="form-label">العنوان<input id="branchAddressInput" name="address" maxlength="300"></label>
-                        <label class="form-label">الهاتف<input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="40" dir="ltr"></label>
+                        <label class="form-label"><span data-i18n="branchesScreen.fields.code" data-branches-fallback="كود الفرع">${escapeHtml(translate('fields.code', 'كود الفرع'))}</span><input id="branchCodeInput" name="code" required maxlength="40" dir="ltr" placeholder="nasr-city"></label>
+                        <label class="form-label"><span data-i18n="branchesScreen.fields.name" data-branches-fallback="اسم الفرع">${escapeHtml(translate('fields.name', 'اسم الفرع'))}</span><input id="branchNameInput" name="name" required maxlength="160" placeholder="فرع مدينة نصر" data-i18n-placeholder="branchesScreen.fields.namePlaceholder" data-branches-placeholder-fallback="فرع مدينة نصر"></label>
+                        <label class="form-label"><span data-i18n="branchesScreen.fields.address" data-branches-fallback="العنوان">${escapeHtml(translate('fields.address', 'العنوان'))}</span><input id="branchAddressInput" name="address" maxlength="300"></label>
+                        <label class="form-label"><span data-i18n="branchesScreen.fields.phone" data-branches-fallback="الهاتف">${escapeHtml(translate('fields.phone', 'الهاتف'))}</span><input id="branchPhoneInput" name="phone" type="tel" inputmode="numeric" autocomplete="tel" data-phone-input maxlength="40" dir="ltr"></label>
                     </div>
-                    <div class="branch-create-options"><label class="checkbox-field branches-check-field"><input type="checkbox" name="storeEnabled" checked> تفعيل المتجر</label><label class="checkbox-field branches-check-field"><input type="checkbox" name="barEnabled"> تفعيل البار وإنشاء موقع البيع</label></div>
+                    <div class="branch-create-options"><label class="checkbox-field branches-check-field"><input type="checkbox" name="storeEnabled" checked> ${localizedMarkup('fields.enableStore', 'تفعيل المتجر')}</label><label class="checkbox-field branches-check-field"><input type="checkbox" name="barEnabled"> ${localizedMarkup('fields.enableBarAndPos', 'تفعيل البار وإنشاء موقع البيع')}</label></div>
                     <p class="branches-form-status" id="branchFormStatus" role="status" aria-live="polite"></p>
-                    <div class="dialog-actions"><button class="btn btn-light" id="branchCreateCancel" type="button">إلغاء</button><button class="btn btn-primary" type="submit">إضافة الفرع</button></div>
+                    <div class="dialog-actions"><button class="btn btn-light" id="branchCreateCancel" type="button">${localizedMarkup('actions.cancel', 'إلغاء')}</button><button class="btn btn-primary" type="submit">${localizedMarkup('actions.submitAddBranch', 'إضافة الفرع')}</button></div>
                 </form>
             </dialog>`;
         const feedback = $('feedbackSection');
@@ -171,9 +189,10 @@
         const selectedLabel = selectedOption?.textContent?.trim() || '—';
         const valueElement = trigger.querySelector('[data-context-value]');
         if (valueElement) valueElement.textContent = selectedLabel;
-        const contextLabel = field.dataset.contextField === 'section' ? 'القسم' : 'الفرع';
-        trigger.setAttribute('aria-label', `${contextLabel} الحالي: ${selectedLabel}`);
-        trigger.setAttribute('title', `${contextLabel}: ${selectedLabel}`);
+        const isSection = field.dataset.contextField === 'section';
+        const contextLabel = translate(isSection ? 'context.section' : 'context.branch', isSection ? 'القسم' : 'الفرع');
+        trigger.setAttribute('aria-label', translate(isSection ? 'context.currentSection' : 'context.currentBranch', `${contextLabel} الحالي: {{name}}`, { name: selectedLabel }));
+        trigger.setAttribute('title', translate(isSection ? 'context.sectionTitle' : 'context.branchTitle', `${contextLabel}: {{name}}`, { name: selectedLabel }));
         trigger.setAttribute('dir', 'rtl');
         if (valueElement) valueElement.setAttribute('dir', 'auto');
         trigger.disabled = Boolean(select.disabled);
@@ -240,7 +259,7 @@
             trigger.type = 'button';
             trigger.setAttribute('aria-haspopup', 'listbox');
             trigger.setAttribute('aria-expanded', 'false');
-            trigger.setAttribute('aria-label', select.getAttribute('aria-label') || (field.dataset.contextField === 'section' ? 'القسم الحالي' : 'الفرع الحالي'));
+            trigger.setAttribute('aria-label', select.getAttribute('aria-label') || translate(field.dataset.contextField === 'section' ? 'context.sectionCurrent' : 'context.branchCurrent', field.dataset.contextField === 'section' ? 'القسم الحالي' : 'الفرع الحالي'));
             trigger.innerHTML = '<span data-context-value>—</span><span class="branch-context-trigger-chevron" aria-hidden="true"></span>';
             const menu = document.createElement('div');
             menu.className = 'branch-context-menu';
@@ -306,7 +325,7 @@
         const allSections = Array.isArray(data?.sections) ? data.sections : [];
         shell.hidden = (!data?.hasMultipleActiveBranches || allowed.length < 2) && allSections.length === 0;
         select.innerHTML = '';
-        if (data?.canUseAllBranches && active.length > 1) select.append(new Option('كل الفروع', ''));
+        if (data?.canUseAllBranches && active.length > 1) select.append(new Option(translate('context.allBranches', 'كل الفروع'), ''));
         allowed.forEach((branch) => select.append(new Option(branch.name, String(branch.id))));
         const stored = readStoredBranch();
         const allowedIds = new Set(allowed.map((branch) => String(branch.id)));
@@ -321,14 +340,14 @@
             writeStoredBranch(select.value);
         }
         const selected = active.find((branch) => String(branch.id) === select.value);
-        $('branchContextStatus').textContent = selected ? `${selected.status === 'active' ? 'نشط' : 'غير نشط'}` : 'عرض موحد';
+        $('branchContextStatus').textContent = selected ? translate(selected.status === 'active' ? 'status.active' : 'status.inactive', selected.status === 'active' ? 'نشط' : 'غير نشط') : translate('context.allBranchesView', 'عرض موحد');
         refreshContextDropdown(select);
         if (sectionSelect) {
             const sectionField = document.getElementById('sectionContextField');
             const sections = (Array.isArray(data?.sections) ? data.sections : [])
                 .filter((section) => String(section.branchId) === String(select.value) && section.active !== false);
             sectionSelect.innerHTML = '';
-            sectionSelect.append(new Option('كل الأقسام', ''));
+            sectionSelect.append(new Option(translate('context.allSections', 'كل الأقسام'), ''));
             sections.forEach((section) => sectionSelect.append(new Option(sectionLabel(section), String(section.id))));
             const storedSection = readStoredSection();
             const allowedSectionIds = new Set(sections.map((section) => String(section.id)));
@@ -344,41 +363,48 @@
 
     function renderManager(data) {
         const active = Array.isArray(data?.activeBranches) ? data.activeBranches : [];
-        const limit = data?.branchLimit == null ? '—' : Number(data.branchLimit).toLocaleString('ar-EG');
-        if ($('branchesActiveCount')) $('branchesActiveCount').textContent = active.length.toLocaleString('ar-EG');
+        const limit = data?.branchLimit == null ? '—' : formatNumber(data.branchLimit);
+        if ($('branchesActiveCount')) $('branchesActiveCount').textContent = formatNumber(active.length);
         if ($('branchesLimitValue')) $('branchesLimitValue').textContent = limit;
         const list = $('branchesList');
         if (!list) return;
-        list.innerHTML = active.length ? active.map((branch) => `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || 'بدون عنوان')} · ${branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'}</small></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}">${branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف'}</span>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">أرشفة</button>` : ''}</div></article>`).join('') : '<div class="empty">لا توجد فروع نشطة.</div>';
+        list.innerHTML = active.length ? active.map((branch) => {
+            const statusKey = branch.status === 'active' ? 'status.active' : branch.status === 'inactive' ? 'status.inactive' : 'status.archived';
+            const statusFallback = branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف';
+            return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || translate('branch.noAddress', 'بدون عنوان'))} · ${escapeHtml(translate(branch.isMain ? 'branch.main' : 'branch.operational', branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'))}</small></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}" data-i18n="branchesScreen.${statusKey}" data-branches-fallback="${escapeHtml(statusFallback)}">${escapeHtml(translate(statusKey, statusFallback))}</span>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">${localizedMarkup('actions.archive', 'أرشفة الفرع')}</button>` : ''}</div></article>`;
+        }).join('') : `<div class="empty" data-i18n="branchesScreen.empty" data-branches-fallback="لا توجد فروع نشطة.">${escapeHtml(translate('empty', 'لا توجد فروع نشطة.'))}</div>`;
     }
 
     function renderManagerWithCommerce(data) {
         // The existing archive endpoint is the safe delete contract: it removes a
         // branch from active operations while preserving its historical data.
-        function decorateBranchDeleteActions() {
+        function decorateBranchArchiveActions() {
             document.querySelectorAll('[data-branch-archive]').forEach((button) => {
-                button.classList.remove('btn-light');
-                button.classList.add('btn-danger');
-                button.textContent = 'حذف الفرع';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-light');
+                button.innerHTML = localizedMarkup('actions.archive', 'أرشفة الفرع');
                 const name = button.closest('[data-branch-row]')?.querySelector('.branch-list-copy strong')?.textContent?.trim();
-                button.title = 'حذف الفرع';
-                button.setAttribute('aria-label', name ? `حذف الفرع ${name}` : 'حذف الفرع');
+                button.title = translate('actions.archive', 'أرشفة الفرع');
+                button.setAttribute('aria-label', name ? translate('actions.archiveNamed', 'أرشفة الفرع {{name}}', { name }) : translate('actions.archive', 'أرشفة الفرع'));
             });
         }
 
         const active = Array.isArray(data?.activeBranches) ? data.activeBranches : [];
-        const limit = data?.branchLimit == null ? '—' : Number(data.branchLimit).toLocaleString('ar-EG');
-        if ($('branchesActiveCount')) $('branchesActiveCount').textContent = active.length.toLocaleString('ar-EG');
+        const limit = data?.branchLimit == null ? '—' : formatNumber(data.branchLimit);
+        if ($('branchesActiveCount')) $('branchesActiveCount').textContent = formatNumber(active.length);
         if ($('branchesLimitValue')) $('branchesLimitValue').textContent = limit;
         const list = $('branchesList');
         if (!list) return;
         list.innerHTML = active.length ? active.map((branch) => {
-            const storeLabel = branch.storeEnabled ? 'مفعل' : 'غير مفعل';
-            const barLabel = branch.barEnabled ? 'مفعل' : 'غير مفعل';
-            const toggleLabel = branch.barEnabled ? 'إيقاف البار' : 'تفعيل البار';
-            return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || 'بدون عنوان')} · ${branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'}</small><div class="branch-commerce-chips" aria-label="إعدادات التجارة"><span class="branch-commerce-chip ${branch.storeEnabled ? 'is-on' : ''}">المتجر ${storeLabel}</span><span class="branch-commerce-chip ${branch.barEnabled ? 'is-on' : ''}">البار ${barLabel}</span></div></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}">${branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف'}</span><button class="btn btn-light btn-small" type="button" data-branch-commerce="${escapeHtml(branch.id)}" data-next-bar="${branch.barEnabled ? 'false' : 'true'}">${toggleLabel}</button>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">أرشفة</button>` : ''}</div></article>`;
-        }).join('') : '<div class="empty">لا توجد فروع نشطة.</div>';
-        decorateBranchDeleteActions();
+            const statusKey = branch.status === 'active' ? 'status.active' : branch.status === 'inactive' ? 'status.inactive' : 'status.archived';
+            const statusFallback = branch.status === 'active' ? 'نشط' : branch.status === 'inactive' ? 'متوقف' : 'مؤرشف';
+            const storeKey = branch.storeEnabled ? 'status.enabled' : 'status.disabled';
+            const barKey = branch.barEnabled ? 'status.enabled' : 'status.disabled';
+            const toggleKey = branch.barEnabled ? 'actions.disableBar' : 'actions.enableBar';
+            const toggleFallback = branch.barEnabled ? 'إيقاف البار' : 'تفعيل البار';
+            return `<article class="branch-list-item" data-branch-row="${escapeHtml(branch.id)}"><div class="branch-list-marker" aria-hidden="true"></div><div class="branch-list-copy"><strong>${escapeHtml(branch.name)}</strong><span dir="ltr">${escapeHtml(branch.code)}</span><small>${escapeHtml(branch.address || translate('branch.noAddress', 'بدون عنوان'))} · ${escapeHtml(translate(branch.isMain ? 'branch.main' : 'branch.operational', branch.isMain ? 'الفرع الرئيسي' : 'فرع تشغيلي'))}</small><div class="branch-commerce-chips" aria-label="${escapeHtml(translate('commerce.settings', 'إعدادات التجارة'))}"><span class="branch-commerce-chip ${branch.storeEnabled ? 'is-on' : ''}">${localizedMarkup('commerce.store', 'المتجر')} ${localizedMarkup(storeKey, branch.storeEnabled ? 'مفعل' : 'غير مفعل')}</span><span class="branch-commerce-chip ${branch.barEnabled ? 'is-on' : ''}">${localizedMarkup('commerce.bar', 'البار')} ${localizedMarkup(barKey, branch.barEnabled ? 'مفعل' : 'غير مفعل')}</span></div></div><div class="branch-list-actions"><span class="branch-status ${escapeHtml(branch.status)}" data-i18n="branchesScreen.${statusKey}" data-branches-fallback="${escapeHtml(statusFallback)}">${escapeHtml(translate(statusKey, statusFallback))}</span><button class="btn btn-light btn-small" type="button" data-branch-commerce="${escapeHtml(branch.id)}" data-next-bar="${branch.barEnabled ? 'false' : 'true'}">${localizedMarkup(toggleKey, toggleFallback)}</button>${!branch.isMain && branch.status !== 'archived' ? `<button class="btn btn-light btn-small" type="button" data-branch-archive="${escapeHtml(branch.id)}">${localizedMarkup('actions.archive', 'أرشفة الفرع')}</button>` : ''}</div></article>`;
+        }).join('') : `<div class="empty" data-i18n="branchesScreen.empty" data-branches-fallback="لا توجد فروع نشطة.">${escapeHtml(translate('empty', 'لا توجد فروع نشطة.'))}</div>`;
+        decorateBranchArchiveActions();
     }
 
     async function toggleBranchBar(branchId, enabled) {
@@ -387,7 +413,7 @@
         try {
             await window.topGymApi.patch(`/api/branches/${encodeURIComponent(branchId)}`, { name: branch.name, address: branch.address, phone: branch.phone, workingHours: branch.workingHours, storeEnabled: branch.storeEnabled, barEnabled: enabled });
             await loadBranches();
-        } catch (error) { notify(error.message || 'تعذر تحديث إعدادات البار.', true); }
+        } catch (error) { notify(error.message || translate('errors.updateBar', 'تعذر تحديث إعدادات البار.'), true); }
     }
 
     async function loadBranches() {
@@ -431,7 +457,7 @@
                 writeStoredSection('');
                 if (shell) shell.hidden = true;
                 syncContextBar();
-            if (user.role === 'Owner') notify(error.message || 'تعذر تحميل سياق الفروع.', true);
+                if (user.role === 'Owner') notify(error.message || translate('errors.load', 'تعذر تحميل سياق الفروع.'), true);
             }
         })();
         const trackedPromise = loadPromise.finally(() => {
@@ -471,22 +497,60 @@
         try {
             await window.topGymApi.post('/api/branches', payload);
             form.reset();
-            status.textContent = 'تمت إضافة الفرع بنجاح.';
+            status.textContent = translate('messages.created', 'تمت إضافة الفرع بنجاح.');
             await loadBranches();
         } catch (error) {
-            status.textContent = error.message || 'تعذر إضافة الفرع.';
+            status.textContent = error.message || translate('errors.create', 'تعذر إضافة الفرع.');
             notify(status.textContent, true);
         }
     }
 
     async function archiveBranch(branchId) {
-        if (!window.confirm('سيتم إيقاف العمليات الجديدة مع الاحتفاظ بالسجل. هل تريد المتابعة؟')) return;
+        if (!window.confirm(translate('confirm.archive', 'سيتم إيقاف العمليات الجديدة مع الاحتفاظ بالسجل. هل تريد المتابعة؟'))) return;
         try { await window.topGymApi.post(`/api/branches/${encodeURIComponent(branchId)}/archive`, {}); await loadBranches(); }
-        catch (error) { notify(error.message || 'تعذر أرشفة الفرع.', true); }
+        catch (error) { notify(error.message || translate('errors.archive', 'تعذر أرشفة الفرع.'), true); }
+    }
+
+    function applyBranchTranslations() {
+        const root = $('branchesSection');
+        root?.querySelectorAll('[data-i18n][data-branches-fallback]').forEach((element) => {
+            const key = element.dataset.i18n;
+            const value = window.TopGymI18n?.t?.(key);
+            element.textContent = value && value !== key ? value : element.dataset.branchesFallback;
+        });
+        root?.querySelectorAll('[data-i18n-placeholder][data-branches-placeholder-fallback]').forEach((element) => {
+            const key = element.dataset.i18nPlaceholder;
+            const value = window.TopGymI18n?.t?.(key);
+            element.placeholder = value && value !== key ? value : element.dataset.branchesPlaceholderFallback;
+        });
+        const summary = root?.querySelector('.branches-page-summary');
+        if (summary) summary.setAttribute('aria-label', translate('summary.label', 'ملخص الفروع'));
+        root?.querySelectorAll('.branch-commerce-chips').forEach((element) => {
+            element.setAttribute('aria-label', translate('commerce.settings', 'إعدادات التجارة'));
+        });
+        const tab = document.querySelector('[data-page-tab="branches"]');
+        if (tab) {
+            const label = translateShared('nav.branches', 'الفروع والأقسام');
+            tab.title = label;
+            tab.setAttribute('aria-label', label);
+            const text = tab.querySelector('span');
+            if (text) text.textContent = label;
+        }
+    }
+
+    function refreshBranchLocale() {
+        applyBranchTranslations();
+        if (!bootstrap) return;
+        // Use only the already-authorized in-memory bootstrap. Switching locale
+        // must not issue a request or change the selected branch/section.
+        renderSelector(bootstrap);
+        renderManagerWithCommerce(bootstrap);
+        applyBranchTranslations();
     }
 
     function bind() {
         initMobileTopbarActions();
+        window.addEventListener('topgym:localechange', refreshBranchLocale);
         document.addEventListener('keydown', closeOpenContextFields, true);
         document.addEventListener('pointerdown', (event) => {
             document.querySelectorAll('[data-context-field].is-open').forEach((field) => {

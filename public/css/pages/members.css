@@ -55,8 +55,9 @@ body .members-panel > .panel-header {
 
 body .members-panel > .panel-header h3 {
   color: var(--color-text);
-  font-size: var(--font-xl);
-  font-weight: var(--weight-extrabold);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--weight-semibold);
+  line-height: 1.35;
 }
 
 body .members-panel > .panel-header p {
@@ -81,7 +82,10 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
 }
 
 .members-toolbar {
+  display: flex;
+  min-width: 0;
   align-items: flex-end;
+  gap: var(--space-3);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -112,6 +116,10 @@ body #membersSection .members-toolbar-copy { display: none; }
 }
 
 .members-toolbar-controls {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
   flex: 1;
 }
 
@@ -122,9 +130,15 @@ body #membersSection .members-toolbar-copy { display: none; }
   gap: var(--space-1);
 }
 
+.members-filter-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+
 .members-filter-field > span {
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--font-sm);
 }
 
 @media (min-width: 768px) {
@@ -144,10 +158,22 @@ body #membersSection .members-toolbar-copy { display: none; }
   flex: 1 1 280px;
 }
 
+.members-search-field input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+
+#searchInput {
+  padding-inline: calc(var(--space-9) + var(--space-2));
+}
+
 .members-search-field > svg {
   position: absolute;
   top: 50%;
-  left: var(--space-3);
+  inset-inline-start: var(--space-3);
   width: 17px;
   height: 17px;
   color: var(--color-text-subtle);
@@ -155,19 +181,13 @@ body #membersSection .members-toolbar-copy { display: none; }
   transform: translateY(-50%);
 }
 
-.members-search-field input {
-  padding-inline-start: var(--space-3);
-  padding-left: var(--space-9);
-}
-
 .members-search-field .search-clear-button {
   position: absolute;
   top: 50%;
-  right: calc(var(--space-3) + 28px);
-  left: auto;
+  inset-inline-end: calc(var(--space-3) + 28px);
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   border: 0;
   border-radius: var(--radius-pill);
@@ -187,11 +207,6 @@ body #membersSection .members-toolbar-copy { display: none; }
 .members-search-field .search-clear-button:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
-
-.members-search-field input {
-  padding-left: var(--space-3);
-  padding-right: calc(var(--space-9) + var(--space-6));
 }
 
 .members-search-field input::-webkit-search-cancel-button {
@@ -215,8 +230,8 @@ body #membersSection .members-toolbar-copy { display: none; }
 .member-list-card {
   display: grid;
   gap: var(--space-4);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
   padding: var(--space-4);
   box-shadow: var(--shadow-xs);
@@ -356,11 +371,16 @@ body #membersSection .members-toolbar-copy { display: none; }
 .member-card-copy small { color: var(--color-text-muted); font-size: var(--font-xs); direction: ltr; text-align: right; }
 .member-card-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .member-detail { display: grid; gap: 1px; }
-.member-detail span { color: var(--color-text-muted); font-size: 10px; }
+.member-detail span { color: var(--color-text-muted); font-size: var(--font-sm); }
 .member-detail strong { color: var(--color-text-soft); font-size: var(--font-sm); }
 
 .members-table .member-cell { min-width: 220px; }
 .members-table .actions-cell { width: 190px; }
+
+/* Keep the member identity column at the logical start when the table scrolls;
+   the shared table wrapper's LTR scroll origin otherwise hides it in RTL. */
+#membersSection .table-scroll { direction: inherit; }
+#membersSection .members-table { direction: inherit; }
 
 .members-table .table-actions > .action-menu {
   flex: 0 0 38px;
@@ -377,8 +397,34 @@ body #membersSection .members-toolbar-copy { display: none; }
 }
 
 .members-table .table-actions .action-menu-icon {
-  width: 17px;
-  height: 17px;
+  width: var(--icon-size-compact);
+  height: var(--icon-size-compact);
+  flex-basis: var(--icon-size-compact);
+}
+
+.members-table .table-actions > .table-action-visible .action-icon {
+  width: var(--icon-size-compact);
+  height: var(--icon-size-compact);
+  flex-basis: var(--icon-size-compact);
+}
+
+.members-table:not(.table-card-layout) tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.members-table:not(.table-card-layout) tbody tr:hover {
+  background: var(--color-surface-muted);
+}
+
+.members-table th {
+  color: var(--color-text-muted);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.members-table td {
+  color: var(--color-text);
+  font-size: var(--font-md);
 }
 
 .membership-portal-code-card {
@@ -388,7 +434,7 @@ body #membersSection .members-toolbar-copy { display: none; }
   padding: var(--space-5);
   border: 1px solid var(--primary-border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--bg-card-hover), var(--bg-surface));
+  background: var(--color-surface-muted);
 }
 
 .membership-portal-code-head,
@@ -398,16 +444,16 @@ body #membersSection .members-toolbar-copy { display: none; }
 .membership-portal-code-kicker { display: block; margin-bottom: 2px; color: var(--color-primary); font-size: var(--font-xs); font-weight: var(--weight-bold); }
 .membership-portal-code-head h4 { margin: 0; color: var(--color-text); font-size: var(--font-lg); }
 .membership-portal-code-head p { margin: 3px 0 0; color: var(--color-text-muted); font-size: var(--font-xs); }
-.membership-portal-code-status { padding: 5px 10px; border-radius: 999px; font-size: var(--font-xs); font-weight: var(--weight-bold); }
+.membership-portal-code-status { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--font-xs); font-weight: var(--weight-medium); }
 .membership-portal-code-status.active { background: var(--color-success-soft); color: var(--color-success); }
 .membership-portal-code-status.inactive { background: var(--color-danger-soft); color: var(--color-danger); }
 .membership-portal-code-value { justify-content: space-between; padding: var(--space-4); border: 1px dashed var(--border-focus); border-radius: var(--radius-md); background: var(--bg-card); }
-.membership-portal-code-value code { color: var(--primary-active); font: 800 1.2rem/1.3 Inter, "Cairo", sans-serif; letter-spacing: .08em; }
+.membership-portal-code-value code { color: var(--primary-active); font: var(--weight-semibold) var(--font-md)/1.4 var(--font-latin); letter-spacing: .04em; }
 .membership-portal-code-value span { color: var(--color-text-muted); font-size: var(--font-xs); }
 .membership-portal-code-actions { flex-wrap: wrap; }
 .membership-portal-code-actions .btn { min-height: 42px; }
 .member-code-preview { display: block; color: var(--color-primary); }
-.member-code-preview b { font-family: Inter, "Cairo", sans-serif; font-weight: var(--weight-bold); letter-spacing: .04em; }
+.member-code-preview b { font-family: var(--font-latin); font-weight: var(--weight-semibold); letter-spacing: .04em; }
 
 @media (max-width: 640px) {
   .membership-portal-code-card { padding: var(--space-4); }
@@ -421,14 +467,36 @@ body #membersSection .members-toolbar-copy { display: none; }
    wrapper and horizontal-overflow behavior remain owned by Tables. */
 @media (min-width: 768px) {
   #membersSection .members-table {
-    min-width: 1120px;
+    min-width: 1240px;
+  }
+
+  #membersSection .members-table th:nth-child(6),
+  #membersSection .members-table td:nth-child(6) {
+    min-width: 168px;
+  }
+
+  #membersSection .members-table td:nth-child(6) {
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  /* At tablet/laptop widths the sticky actions rail covers the adjacent
+     account column. Keep both columns in the scrollable table instead. */
+  #membersSection .members-table th:last-child,
+  #membersSection .members-table td:last-child:not([colspan]) {
+    position: static;
+    inset-inline-end: auto;
+    z-index: auto;
+    background: inherit;
+    box-shadow: none;
   }
 }
 
 @media (min-width: 768px) {
   .members-table:not(.table-card-layout) {
     width: 100%;
-    min-width: 1120px;
+    min-width: 1240px;
     table-layout: fixed;
   }
 
@@ -440,17 +508,17 @@ body #membersSection .members-toolbar-copy { display: none; }
   }
 
   .members-table:not(.table-card-layout) th:nth-child(1),
-  .members-table:not(.table-card-layout) td:nth-child(1) { width: 29%; }
+  .members-table:not(.table-card-layout) td:nth-child(1) { width: 25%; }
   .members-table:not(.table-card-layout) th:nth-child(2),
-  .members-table:not(.table-card-layout) td:nth-child(2) { width: 14%; }
+  .members-table:not(.table-card-layout) td:nth-child(2) { width: 12%; }
   .members-table:not(.table-card-layout) th:nth-child(3),
-  .members-table:not(.table-card-layout) td:nth-child(3) { width: 8%; }
+  .members-table:not(.table-card-layout) td:nth-child(3) { width: 9%; }
   .members-table:not(.table-card-layout) th:nth-child(4),
   .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
   .members-table:not(.table-card-layout) th:nth-child(5),
-  .members-table:not(.table-card-layout) td:nth-child(5) { width: 7%; }
+  .members-table:not(.table-card-layout) td:nth-child(5) { width: 8%; }
   .members-table:not(.table-card-layout) th:nth-child(6),
-  .members-table:not(.table-card-layout) td:nth-child(6) { width: 10%; }
+  .members-table:not(.table-card-layout) td:nth-child(6) { width: 14%; }
   .members-table:not(.table-card-layout) th:nth-child(7),
   .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
 
@@ -472,9 +540,9 @@ body #membersSection .members-toolbar-copy { display: none; }
 
   .members-table:not(.table-card-layout) .table-member-name {
     overflow: hidden;
-    color: var(--text-primary, #17233d);
-    font-size: .88rem;
-    font-weight: 900;
+    color: var(--color-text);
+    font-size: var(--font-md);
+    font-weight: var(--weight-semibold);
     line-height: 1.35;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -483,8 +551,8 @@ body #membersSection .members-toolbar-copy { display: none; }
   .members-table:not(.table-card-layout) .table-member-phone,
   .members-table:not(.table-card-layout) .member-identity-copy .table-sub,
   .members-table:not(.table-card-layout) .member-code-preview {
-    color: var(--text-secondary, #718096);
-    font-size: .72rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-sm);
     line-height: 1.45;
   }
 
@@ -495,7 +563,7 @@ body #membersSection .members-toolbar-copy { display: none; }
     min-height: 40px;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--space-2);
     flex-wrap: nowrap;
     white-space: nowrap;
   }
@@ -512,7 +580,7 @@ body #membersSection .members-toolbar-copy { display: none; }
     align-items: center;
     justify-content: center;
     padding: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
   }
 
   .members-table:not(.table-card-layout) .table-actions > [data-action="renew"] {
@@ -623,6 +691,27 @@ body #membersSection .members-toolbar-copy { display: none; }
   gap: var(--space-4);
 }
 
+body #actionDialog > form.dialog-body {
+  scroll-padding-bottom: 104px;
+  padding-bottom: calc(var(--space-5) + 104px);
+}
+
+body #actionDialog > form.dialog-body > .dialog-actions {
+  margin-bottom: 0;
+  padding: var(--space-3) var(--space-5);
+}
+
+@media (max-width: 767px) {
+  body #actionDialog > form.dialog-body {
+    padding-bottom: calc(var(--space-4) + 104px);
+  }
+
+  body #actionDialog > form.dialog-body > .dialog-actions {
+    margin-bottom: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+  }
+}
+
 .refund-loading-note,
 .refund-policy-note,
 .refund-unavailable-note {
@@ -645,6 +734,131 @@ body #membersSection .members-toolbar-copy { display: none; }
   border-color: var(--danger-border);
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+/* Member details presentation migrated from the visual polish layer. */
+body #detailsDialog .member-profile-name-row h3,
+body #detailsDialog .member-detail-stat-copy strong,
+body #detailsDialog .member-details-actions h4 {
+  color: var(--color-text);
+}
+
+body #detailsDialog > .dialog-body {
+  gap: var(--space-4);
+  padding: var(--space-5);
+  scroll-padding-bottom: var(--space-5);
+}
+
+body #detailsDialog .member-details-overview {
+  gap: var(--space-4);
+}
+
+body #detailsDialog .member-detail-stat {
+  min-height: 112px;
+  padding: var(--space-3);
+}
+
+body #detailsDialog .member-detail-stat-copy strong {
+  font-size: 21px;
+}
+
+body #detailsDialog .member-details-action-grid {
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+body #detailsDialog .member-details-action {
+  min-height: 48px;
+  padding-inline: var(--space-2);
+}
+
+body #detailsDialog .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+/* The details menu is promoted to a fixed layer inside the native dialog by
+   member-details-ui.js while open, so it can escape the scrolling body and be
+   placed above/below the trigger according to the available viewport space. */
+body .member-details-more-menu.is-floating {
+  position: fixed;
+  z-index: calc(var(--z-modal) + 5);
+  display: grid;
+  gap: 2px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
+  overscroll-behavior: contain;
+}
+
+body .member-details-more-menu.is-floating button {
+  display: flex;
+  min-height: 42px;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-soft);
+  padding: 0 var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--font-xs);
+  text-align: start;
+}
+
+body .member-details-more-menu.is-floating button:hover,
+body .member-details-more-menu.is-floating button:focus-visible {
+  background: var(--color-pale-blue);
+  color: var(--color-primary);
+  outline: 0;
+}
+
+body .member-details-more-menu.is-floating button[data-member-detail-action="refund"] {
+  color: var(--color-danger);
+}
+
+body .member-details-more-menu.is-floating .ui-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 767px) {
+  body #detailsDialog > .dialog-body {
+    padding: var(--space-4);
+  }
+
+  body #detailsDialog .member-details-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body #detailsDialog .member-details-action-renew {
+    grid-column: 1 / -1;
+  }
+
+  body #detailsDialog .member-details-action-more {
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  body #detailsDialog .member-details-action {
+    font-size: var(--font-xs);
+  }
 }
 
 .refund-summary-grid {
@@ -978,7 +1192,7 @@ body #membersSection .members-toolbar-copy { display: none; }
 }
 
 .members-mobile-details > div { min-width: 0; display: grid; gap: 3px; }
-.members-mobile-details dt { color: var(--color-text-muted); font-size: var(--font-xs); }
+.members-mobile-details dt { color: var(--color-text-muted); font-size: var(--font-sm); }
 .members-mobile-details dd {
   display: grid;
   min-width: 0;
@@ -1072,7 +1286,7 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
 
 @media (min-width: 768px) {
   body .members-panel > .panel-header .header-actions { flex: 0 0 auto; }
-  .members-table thead th { height: 42px; padding-block: var(--space-2); }
+  .members-table thead th { height: 44px; padding-block: var(--space-2); }
   .members-table tbody td { padding-block: var(--space-3); }
   .members-table .member-action-row { margin-top: 0; }
   .members-table .member-quick-actions { display: none; }
@@ -1085,7 +1299,23 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
 }
 
 @media (max-width: 767px) {
-  #membersSection { min-width: 0; gap: var(--space-3); }
+  #membersSection {
+    min-width: 0;
+    gap: var(--space-3);
+    padding-block-end: calc(68px + env(safe-area-inset-bottom));
+  }
+  body .members-panel::after {
+    position: fixed;
+    z-index: calc(var(--z-sticky) - 1);
+    inset-inline: 0;
+    inset-block-end: 0;
+    height: calc(72px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-border-soft);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+    content: '';
+    pointer-events: none;
+  }
   .members-summary-grid { display: none; }
   body .members-panel > .panel-header { min-height: 0; gap: var(--space-3); padding: 0 0 var(--space-3); }
   body .members-panel > .panel-header h3 { font-size: var(--font-lg); }
@@ -1094,14 +1324,13 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   body .members-panel > .panel-header .header-actions > #addMemberButton {
     position: fixed;
     z-index: var(--z-sticky);
-    inset-inline-start: max(var(--space-4), env(safe-area-inset-right));
-    inset-inline-end: auto;
-    inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom));
+    inset-inline: var(--space-3);
+    inset-block-end: calc(var(--space-3) + env(safe-area-inset-bottom));
     display: inline-flex;
     box-sizing: border-box;
     width: auto;
     min-width: 0;
-    max-width: calc(100vw - 32px);
+    max-width: none;
     height: 52px;
     min-height: 52px;
     flex: 0 0 auto;
@@ -1110,7 +1339,7 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
     gap: var(--space-2);
     place-items: center;
     overflow: hidden;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-control);
     padding-inline: var(--space-4);
     box-shadow: var(--shadow-primary-strong);
     font-size: var(--font-sm);
@@ -1140,6 +1369,7 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   .members-toolbar-copy { display: none; }
   .members-toolbar-controls { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
   .members-search-field { min-width: 0; width: 100%; }
+  .members-search-field .search-clear-button { width: 40px; height: 40px; }
   .members-search-field,
   .members-filter-disclosure > .members-filter-fields { grid-column: 1 / -1; }
   .members-filter-disclosure { min-width: 0; grid-column: 1; }
@@ -1160,6 +1390,10 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   }
   .members-filter-disclosure > summary::-webkit-details-marker { display: none; }
   .members-filter-disclosure > summary .ui-icon { width: 18px; height: 18px; color: var(--color-primary); }
+  .members-filter-disclosure > summary:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
   .members-filter-disclosure.has-active-filters > summary { border-color: var(--border-focus); background: var(--color-primary-soft); }
   .members-clear-filters { display: none; }
   .members-filter-count:not(:empty) {
@@ -1174,7 +1408,9 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   }
   .members-filter-fields { display: grid; gap: var(--space-4); padding: var(--space-4); }
   .members-filter-fields .members-filter-field { min-width: 0; width: 100%; }
-  .members-mobile-list { padding: 0 var(--space-3) var(--space-3); }
+  .members-mobile-list {
+    padding: 0 var(--space-3) calc(52px + var(--space-6) + var(--space-4) + var(--space-8) + var(--space-2) + env(safe-area-inset-bottom));
+  }
   .members-pagination:not([hidden]) {
     min-height: 0;
     align-items: center;
@@ -1370,4 +1606,13 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   .members-mobile-actions .table-actions > .table-action-visible { gap: var(--space-1); padding-inline: var(--space-1); }
   html[data-theme="dark"] .members-mobile-actions .table-actions { gap: var(--space-1); }
   html[data-theme="dark"] .members-mobile-actions .table-actions > .table-action-visible { gap: var(--space-1); padding-inline: var(--space-1); }
+}
+
+@media (max-width: 380px) {
+  /* In edit mode the header has an additional cancel action. The shared
+     shell's close button occupies the upper inline-end corner, so move the
+     edit action below that reserved touch target on narrow phones. */
+  #memberDialog .member-dialog-header .dialog-heading-actions:has(#cancelEditButton:not(.hidden)) {
+    margin-block-start: var(--ui-touch-target);
+  }
 }

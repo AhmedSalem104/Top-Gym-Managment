@@ -22,7 +22,219 @@
         profile: null
     };
 
+    const STATUS_KEYS = { active: 'coaching.status.active', draft: 'coaching.status.draft', paused: 'coaching.status.paused', completed: 'coaching.status.completed', archived: 'coaching.status.archived' };
+    const TRAINEE_TABLE_HEADERS = Object.freeze([
+        ['coaching.table.trainee', 'المتدرب'], ['coaching.table.type', 'النوع'], ['coaching.table.systems', 'الأنظمة'],
+        ['coaching.table.measurements', 'القياسات'], ['coaching.table.lastActivity', 'آخر نشاط'], ['coaching.table.actions', 'الإجراءات']
+    ]);
     const STATUS_LABELS = { active: 'نشط', draft: 'مسودة', paused: 'متوقف', completed: 'مكتمل', archived: 'مؤرشف' };
+    const coachingTextKeys = Object.freeze({
+        'إدارة التدريب والتغذية': 'coaching.page.kicker', 'المتدربون غير المشتركين': 'coaching.page.title',
+        'عملاء لديهم نظام تدريب أو تغذية بدون اشتراك Gym فعال، مع الحفاظ على نفس ملف العميل.': 'coaching.page.description',
+        'إضافة متدرب خارجي': 'coaching.addTrainee', 'ابحث باسم المتدرب أو الهاتف': 'coaching.search.placeholder',
+        'البحث في المتدربين': 'coaching.search.label', 'تحديث القائمة': 'coaching.refresh',
+        'المتدربون الخارجيون': 'coaching.summary.trainees', 'عملاء بدون عضوية فعالة': 'coaching.summary.traineesHint',
+        'برامج التدريب': 'coaching.summary.workouts', 'أنظمة محفوظة': 'coaching.summary.savedSystems',
+        'خطط التغذية': 'coaching.summary.diets', 'خطط محفوظة': 'coaching.summary.savedPlans',
+        'سجلات القياسات': 'coaching.summary.measurements', 'متابعة محفوظة': 'coaching.summary.savedFollowUps',
+        'خارجي': 'coaching.type.external', 'تدريب': 'coaching.type.workout', 'تغذية': 'coaching.type.diet',
+        '+ تدريب': 'coaching.action.addWorkout', '+ تغذية': 'coaching.action.addDiet',
+        'قياس محفوظ': 'coaching.type.measurement', 'لا توجد قياسات': 'coaching.type.noMeasurements',
+        'لا يوجد نشاط': 'coaching.activity.none', 'المتدرب': 'coaching.table.trainee', 'النوع': 'coaching.table.type',
+        'الأنظمة': 'coaching.table.systems', 'القياسات': 'coaching.table.measurements', 'آخر نشاط': 'coaching.table.lastActivity',
+        'الإجراءات': 'coaching.table.actions', 'إضافة تدريب': 'coaching.action.addWorkout', 'فتح الملف': 'coaching.action.openProfile',
+        'إضافة تغذية': 'coaching.action.addDiet', 'تعديل النظام': 'coaching.action.editSystem', 'طباعة النظام': 'coaching.action.printSystem',
+        'تحميل PDF النظام': 'coaching.action.downloadPdf', 'حذف النظام': 'coaching.action.deleteSystem',
+        'لا توجد أنظمة محفوظة': 'coaching.system.noSaved', 'تفاصيل البرنامج محفوظة': 'coaching.system.detailsSaved',
+        'تفاصيل الخطة محفوظة': 'coaching.system.detailsSaved', 'لا يوجد متدربون مطابقون لبحثك': 'coaching.empty.search.title',
+        'جرّب البحث باسم آخر أو رقم هاتف مختلف.': 'coaching.empty.search.description', 'مسح البحث': 'coaching.empty.search.clear',
+        'لا يوجد متدربون خارجيون حاليًا': 'coaching.empty.title',
+        'أضف متدربًا، ثم أنشئ له برنامج تدريب أو خطة تغذية ليظهر هنا.': 'coaching.empty.description',
+        'السابق': 'coaching.pagination.previous', 'التالي': 'coaching.pagination.next',
+        'افتح تبويب المتدربين لتحميل البيانات…': 'coaching.loading.list', 'جاري تحميل قائمة المتدربين…': 'coaching.loading.trainees',
+        'جارٍ تحميل قائمة المتدربين…': 'coaching.loading.trainees', 'تعذر تحميل قائمة المتدربين': 'coaching.error.trainees',
+        'إعادة المحاولة': 'coaching.action.retry', 'نشط': 'coaching.status.active', 'مسودة': 'coaching.status.draft',
+        'متوقف': 'coaching.status.paused', 'مكتمل': 'coaching.status.completed', 'مؤرشف': 'coaching.status.archived',
+        'أدخل البيانات الأساسية فقط، ثم أنشئ له برنامجًا أو خطة تغذية من ملفه.': 'coaching.dialog.externalTrainee.description',
+        'الاسم الكامل *': 'coaching.externalForm.fullName', 'مثال: كريم عبد الحميد': 'coaching.externalForm.fullNamePlaceholder',
+        'رقم الهاتف *': 'coaching.externalForm.phone', 'البريد الإلكتروني': 'coaching.externalForm.email',
+        'اختياري': 'coaching.externalForm.optional', 'تاريخ التسجيل': 'coaching.externalForm.registrationDate',
+        'ملاحظات': 'coaching.externalForm.notes', 'حفظ المتدرب': 'coaching.externalForm.save',
+        'ملف المتدرب': 'coaching.profile.title', 'إغلاق': 'coaching.profile.close',
+        'لا يوجد اشتراك Gym فعال حاليًا': 'coaching.profile.noGymMembership', 'إضافة اشتراك Gym': 'coaching.profile.addGymMembership',
+        'الوزن الحالي': 'coaching.profile.currentWeight', 'تغير الوزن': 'coaching.profile.weightChange',
+        'الجلسات المكتملة': 'coaching.profile.completedSessions', 'تسجيلات الوجبات': 'coaching.profile.mealLogs',
+        'برنامج تدريب': 'coaching.profile.newWorkout', 'خطة تغذية': 'coaching.profile.newDiet',
+        'قياس جديد': 'coaching.profile.newMeasurement', 'تعديل البيانات الأساسية': 'coaching.profile.editDetails',
+        'الأنظمة الحالية': 'coaching.profile.currentSystems', 'لم يتم إنشاء نظام بعد.': 'coaching.profile.noSystem',
+        'القياسات والمتابعة': 'coaching.profile.measurementsFollowUp', 'أضف أول قياس لمتابعة التقدم.': 'coaching.profile.firstMeasurement',
+        'إنشاء': 'coaching.builder.create', 'تعديل': 'coaching.builder.edit', 'إلغاء': 'coaching.builder.cancel',
+        'مراجعة سريعة': 'coaching.builder.preview', 'طباعة': 'coaching.builder.print', 'حفظ النظام': 'coaching.builder.save',
+        'حفظ التعديلات': 'coaching.builder.saveChanges', 'اعتماد وحفظ النظام': 'coaching.builder.approveSave',
+        'العميل': 'coaching.builder.client', 'اختر العميل الذي سيُحفظ النظام باسمه.': 'coaching.builder.clientPlaceholder',
+        'البيانات الأساسية': 'coaching.builder.basic', 'بناء الوجبات': 'coaching.builder.dietStructure',
+        'بناء الأيام والتمارين': 'coaching.builder.workoutStructure', 'المراجعة والحفظ': 'coaching.builder.review',
+        'مراجعة قبل الحفظ': 'coaching.builder.reviewBeforeSave', 'الطعام': 'coaching.builder.food',
+        'بروتين': 'coaching.builder.protein', 'كربوهيدرات': 'coaching.builder.carbs', 'دهون': 'coaching.builder.fat',
+        'السعرات': 'coaching.builder.calories', 'المستهدف': 'coaching.builder.target', 'التمرين': 'coaching.builder.exercise',
+        'المجموعات': 'coaching.builder.sets', 'التكرارات': 'coaching.builder.reps', 'الوزن': 'coaching.builder.weight',
+        'الراحة': 'coaching.builder.rest', 'الإيقاع': 'coaching.builder.tempo', 'سوبر سيت': 'coaching.builder.superset',
+        'تعديل سريع بالذكاء الاصطناعي': 'coaching.builder.quickAi', 'تطبيق التعديل': 'coaching.builder.applyAi',
+        'أكمل العميل والاسم وتاريخ البداية أولًا.': 'coaching.builder.validation.client',
+        'أضف يومًا وتمرينًا صحيحًا واحدًا على الأقل.': 'coaching.builder.validation.structure.workout',
+        'أضف وجبة وطعامًا صحيحًا واحدًا على الأقل لكل وجبة.': 'coaching.builder.validation.structure.diet',
+        'تعديل القياس': 'coaching.measurement.edit', 'تم حفظ القياس بنجاح.': 'coaching.measurement.saved',
+        'كيف كان يوم المتدرب؟': 'coaching.checkin.question', 'تعديل المتابعة اليومية': 'coaching.checkin.edit',
+        'تم حفظ المتابعة اليومية بنجاح.': 'coaching.checkin.saved', 'تم تحديث بيانات العميل.': 'coaching.client.updated',
+        'تم بدء جلسة التدريب.': 'coaching.session.started', 'تم حفظ المجموعة.': 'coaching.session.savedSet',
+        'تم إنهاء الجلسة وحفظ التقدم.': 'coaching.session.ended', 'تم تسجيل الوجبة وحفظ السعرات والماكروز.': 'coaching.meal.saved',
+        'Live Nutrition Totals': 'coaching.builder.nutritionTotals', 'Target Calories & Macros': 'coaching.builder.macroTargets',
+        'Target Calories': 'coaching.builder.targetCaloriesLabel', 'Protein (g)': 'coaching.builder.proteinGrams',
+        'Carbs (g)': 'coaching.builder.carbsGrams', 'Fat (g)': 'coaching.builder.fatGrams',
+        'Protein': 'coaching.builder.protein', 'Carbs': 'coaching.builder.carbs', 'Fat': 'coaching.builder.fat',
+        'Calories': 'coaching.builder.calories', 'Food': 'coaching.builder.food', 'Exercise': 'coaching.builder.exercise',
+        'Sets': 'coaching.builder.sets', 'Reps': 'coaching.builder.reps', 'Weight': 'coaching.builder.weight',
+        'Rest': 'coaching.builder.rest', 'Tempo': 'coaching.builder.tempo', 'Superset': 'coaching.builder.superset',
+        'BMR': 'coaching.builder.basalMetabolicRate', 'TDEE': 'coaching.builder.dailyEnergyNeeds',
+        'Basal metabolic rate (BMR)': 'coaching.builder.basalMetabolicRate',
+        'Total daily energy expenditure (TDEE)': 'coaching.builder.dailyEnergyNeeds',
+        'Suggested target': 'coaching.builder.calculationTarget', 'Target': 'coaching.builder.calculationTarget'
+    });
+    const coachingTextNodeKeys = new WeakMap();
+    const coachingAttributeKeys = new WeakMap();
+    let coachingLocaleObserver = null;
+    const coachingObservedRoots = new WeakSet();
+    let localizingCoaching = false;
+
+    function coachingText(key, fallback = '', params = {}) {
+        const translated = window.TopGymI18n?.t?.(key, params);
+        return translated && translated !== key ? translated : fallback;
+    }
+
+    function coachingStatusLabel(status) {
+        const key = STATUS_KEYS[status];
+        return key ? coachingText(key, status) : status;
+    }
+
+    function syncResponsiveTraineeLabels() {
+        const table = $('externalTraineesList')?.querySelector('.external-trainees-table');
+        if (!table) return;
+        const labels = TRAINEE_TABLE_HEADERS.map(([key, fallback]) => coachingText(key, fallback));
+        table.querySelectorAll('tbody tr').forEach((row) => {
+            [...row.cells].forEach((cell, index) => {
+                if (labels[index]) cell.dataset.label = labels[index];
+            });
+        });
+    }
+
+    function coachingLocalizationRoots() {
+        return [
+            $('traineesSection'), $('externalTraineeDialog'), $('coachingBuilderDialog'),
+            $('coachingProfileDialog'), $('coachingExecutionDialog'), $('coachingMealDialog'),
+            $('coachingMeasurementDialog'), $('coachingCheckinDialog'), $('coachingSubscriptionDialog'),
+            $('coachingClientEditDialog'), $('coachingMessage'),
+            ...document.querySelectorAll('#detailsContent .member-training-head')
+        ].filter(Boolean);
+    }
+
+    function translateCoachingSubtree(root) {
+        if (!root || !window.TopGymI18n?.t || localizingCoaching) return;
+        localizingCoaching = true;
+        try {
+            const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            if (root.nodeType === Node.TEXT_NODE) nodes.push(root);
+            while (walker.nextNode()) nodes.push(walker.currentNode);
+            nodes.forEach((node) => {
+                const parent = node.parentElement;
+                if (!parent || parent.closest('.trainee-avatar, .external-trainee-primary strong, .external-trainee-primary a, .external-trainee-primary small, .external-trainee-system-copy strong, .external-trainee-system-copy small, .profile-system-card strong, .profile-system-card small, .builder-search-option, .builder-search-select-options, .profile-table tbody')) return;
+                const raw = node.nodeValue || '';
+                const trimmed = raw.trim();
+                const key = coachingTextNodeKeys.get(node) || coachingTextKeys[trimmed];
+                if (!key) return;
+                coachingTextNodeKeys.set(node, key);
+                const firstTextNode = [...parent.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.nodeValue.trim());
+                if (!parent.dataset.i18n && firstTextNode === node) parent.dataset.i18n = key;
+                const translated = coachingText(key, trimmed);
+                if (translated !== trimmed) node.nodeValue = raw.replace(trimmed, translated);
+            });
+            const elements = root.nodeType === Node.ELEMENT_NODE
+                ? [root, ...root.querySelectorAll('[placeholder], [aria-label], [title]')]
+                : [];
+            elements.forEach((element) => {
+                const attributeKeys = coachingAttributeKeys.get(element) || new Map();
+                ['placeholder', 'aria-label', 'title'].forEach((attribute) => {
+                    if (!element.hasAttribute(attribute)) return;
+                    const value = element.getAttribute(attribute);
+                    const key = attributeKeys.get(attribute) || coachingTextKeys[value?.trim()];
+                    if (!key) return;
+                    attributeKeys.set(attribute, key);
+                    const dataKey = { placeholder: 'i18nPlaceholder', title: 'i18nTitle', 'aria-label': 'i18nAriaLabel' }[attribute];
+                    element.dataset[dataKey] = key;
+                    element.setAttribute(attribute, coachingText(key, value));
+                });
+                if (attributeKeys.size) coachingAttributeKeys.set(element, attributeKeys);
+            });
+        } finally {
+            localizingCoaching = false;
+        }
+    }
+
+    function renderCoachingLocale() {
+        const traineesSection = $('traineesSection');
+        if (traineesSection) window.TopGymI18n?.applyTranslations?.(traineesSection);
+        const externalTraineeTitle = $('externalTraineeTitle');
+        if (externalTraineeTitle) {
+            externalTraineeTitle.dataset.i18n = 'coaching.addTrainee';
+            externalTraineeTitle.textContent = coachingText('coaching.addTrainee', externalTraineeTitle.textContent);
+        }
+        coachingLocalizationRoots().forEach(translateCoachingSubtree);
+        const setText = (selector, key) => {
+            const element = document.querySelector(selector);
+            if (element) element.textContent = coachingText(key, element.textContent);
+        };
+        setText('#traineesTitle', 'coaching.page.title');
+        setText('#traineesSection .coaching-kicker', 'coaching.page.kicker');
+        setText('#traineesSection .coaching-heading p', 'coaching.page.description');
+        const coachingSummary = $('coachingSummary');
+        if (coachingSummary) translateCoachingSubtree(coachingSummary);
+        if (state.loaded) activateCoachingSummary();
+        const search = $('externalTraineeSearch');
+        if (search) {
+            search.placeholder = coachingText('coaching.search.placeholder', search.placeholder);
+            search.setAttribute('aria-label', coachingText('coaching.search.label', search.getAttribute('aria-label') || ''));
+        }
+        const refreshLabel = document.querySelector('#externalTraineeRefreshButton span');
+        if (refreshLabel) refreshLabel.textContent = coachingText('coaching.refresh', refreshLabel.textContent);
+        const externalTraineesList = $('externalTraineesList');
+        if (externalTraineesList) {
+            window.TopGymI18n?.applyTranslations?.(externalTraineesList);
+            translateCoachingSubtree(externalTraineesList);
+            syncResponsiveTraineeLabels();
+        }
+        renderPagination();
+    }
+
+    function observeCoachingLocaleContent() {
+        if (typeof MutationObserver !== 'function') return;
+        if (!coachingLocaleObserver) {
+            coachingLocaleObserver = new MutationObserver((records) => {
+                if (localizingCoaching) return;
+                records.forEach((record) => record.addedNodes.forEach((node) => {
+                    if (node.nodeType !== Node.ELEMENT_NODE && node.nodeType !== Node.TEXT_NODE) return;
+                    const root = coachingLocalizationRoots().find((item) => item === node || item.contains(node));
+                    if (root) translateCoachingSubtree(node);
+                }));
+                coachingLocaleObserver?.takeRecords();
+            });
+        }
+        const roots = [...coachingLocalizationRoots(), $('detailsContent')].filter(Boolean);
+        roots.forEach((root) => {
+            if (coachingObservedRoots.has(root)) return;
+            coachingLocaleObserver.observe(root, { childList: true, subtree: true });
+            coachingObservedRoots.add(root);
+        });
+    }
     const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
     function generatedSystemName(type, memberName = '') {
@@ -66,7 +278,9 @@
 
     function number(value, digits = 1) {
         const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
+        if (!Number.isFinite(parsed)) return '—';
+        return window.TopGymI18n?.format?.('number', parsed, { maximumFractionDigits: digits })
+            || parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits });
     }
 
     function today() {
@@ -175,7 +389,8 @@
     }
 
     function traineeSkeleton() {
-        return `<div class="coaching-skeleton-list" aria-hidden="true">${Array.from({ length: 3 }, () => '<div class="coaching-skeleton-row"><span></span><i></i><b></b><em></em></div>').join('')}</div>`;
+        const loadingLabel = escapeHtml(coachingText('coaching.loading.trainees', 'جارٍ تحميل قائمة المتدربين…'));
+        return `<div class="coaching-skeleton-list" aria-hidden="true"><span class="sr-only">${loadingLabel}</span>${Array.from({ length: 3 }, () => '<div class="coaching-skeleton-row"><span></span><i></i><b></b><em></em></div>').join('')}</div>`;
     }
 
     function closeTraineeMoreMenus() {
@@ -364,10 +579,15 @@
             ['برامج التدريب', workoutCount, 'workout', 'أنظمة محفوظة'],
             ['خطط التغذية', dietCount, 'diet', 'خطط محفوظة'],
             ['سجلات القياسات', measurements, 'progress', 'متابعة محفوظة']
-        ].map(([label, value, tone, caption]) => `<article class="coaching-summary-card ${tone}"><span class="coaching-summary-icon">${coachingIcon(tone)}</span><div class="coaching-summary-copy"><span>${label}</span><strong>${number(value, 0)}</strong><small>${caption}</small></div></article>`).join('');
+        ].map(([label, value, tone, caption]) => {
+            const localizedLabel = coachingText(coachingTextKeys[label], label);
+            const localizedCaption = coachingText(coachingTextKeys[caption], caption);
+            return `<article class="coaching-summary-card ${tone}"><span class="coaching-summary-icon">${coachingIcon(tone)}</span><div class="coaching-summary-copy"><span>${escapeHtml(localizedLabel)}</span><strong>${number(value, 0)}</strong><small>${escapeHtml(localizedCaption)}</small></div></article>`;
+        }).join('');
+        translateCoachingSubtree(summary);
         const badge = $('externalTraineeCountBadge');
         if (badge) {
-            badge.textContent = `${number(total, 0)} متدرب`;
+            badge.textContent = coachingText('coaching.count.trainees', `${number(total, 0)} متدرب`, { count: number(total, 0) });
             badge.hidden = false;
         }
     }
@@ -384,13 +604,24 @@
             return;
         }
         const rows = state.trainees.map((trainee) => {
+            const localizedInteger = (value) => {
+                const parsed = Number(value);
+                const safeValue = Number.isFinite(parsed) ? parsed : 0;
+                return `<span data-i18n-format="number" data-i18n-value="${safeValue}">${escapeHtml(number(safeValue, 0))}</span>`;
+            };
             const systemCard = (system, type) => {
                 const isDiet = type === 'diet';
-                const label = isDiet ? 'تغذية' : 'تدريب';
+                const labelKey = isDiet ? 'coaching.type.diet' : 'coaching.type.workout';
+                const label = coachingText(labelKey, isDiet ? 'تغذية' : 'تدريب');
+                const unit = (value, key, fallback) => `<span>${localizedInteger(value)} <span data-i18n="${key}">${escapeHtml(coachingText(key, fallback))}</span></span>`;
                 const details = isDiet
-                    ? [system.targetCalories == null ? '' : `${number(system.targetCalories, 0)} سعر`, system.meals ? `${number(system.meals, 0)} وجبات` : '', system.itemCount ? `${number(system.itemCount, 0)} أطعمة` : ''].filter(Boolean).join(' · ') || 'تفاصيل الخطة محفوظة'
-                    : [system.exerciseCount ? `${number(system.exerciseCount, 0)} تمرين` : '', system.durationWeeks ? `${number(system.durationWeeks, 0)} أسبوع` : '', system.daysPerWeek ? `${number(system.daysPerWeek, 0)} أيام أسبوعيًا` : ''].filter(Boolean).join(' · ') || 'تفاصيل البرنامج محفوظة';
-                return `<article class="external-trainee-system-item ${type}"><div class="external-trainee-system-copy"><span class="system-type ${type}">${label}</span><strong title="${escapeHtml(system.name)}">${escapeHtml(system.name)}</strong><small>${escapeHtml(details)} · ${escapeHtml(system.status ? (STATUS_LABELS[system.status] || system.status) : 'غير محددة')}</small></div><div class="external-trainee-system-actions"><button class="btn btn-light btn-small" type="button" data-member-coaching-action="edit-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="تعديل النظام">تعديل</button><button class="btn btn-light btn-small" type="button" data-member-coaching-action="print-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="طباعة النظام">طباعة</button><button class="btn btn-light btn-small" type="button" data-member-coaching-action="pdf-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="تحميل PDF النظام">PDF</button><button class="btn btn-danger btn-small" type="button" data-member-coaching-action="delete-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="حذف النظام">حذف</button></div></article>`;
+                    ? [system.targetCalories == null ? '' : unit(system.targetCalories, 'coaching.unit.calories', 'سعر'), system.meals ? unit(system.meals, 'coaching.unit.meals', 'وجبات') : '', system.itemCount ? unit(system.itemCount, 'coaching.unit.foods', 'أطعمة') : ''].filter(Boolean).join(' · ') || `<span data-i18n="coaching.system.detailsSaved">${escapeHtml(coachingText('coaching.system.detailsSaved', 'تفاصيل الخطة محفوظة'))}</span>`
+                    : [system.exerciseCount ? unit(system.exerciseCount, 'coaching.unit.exercises', 'تمرين') : '', system.durationWeeks ? unit(system.durationWeeks, 'coaching.unit.weeks', 'أسبوع') : '', system.daysPerWeek ? unit(system.daysPerWeek, 'coaching.unit.daysPerWeek', 'أيام أسبوعيًا') : ''].filter(Boolean).join(' · ') || `<span data-i18n="coaching.system.detailsSaved">${escapeHtml(coachingText('coaching.system.detailsSaved', 'تفاصيل البرنامج محفوظة'))}</span>`;
+                const statusKey = STATUS_KEYS[system.status];
+                const status = statusKey
+                    ? `<span data-i18n="${statusKey}">${escapeHtml(coachingStatusLabel(system.status))}</span>`
+                    : escapeHtml(system.status || 'غير محددة');
+                return `<article class="external-trainee-system-item ${type}"><div class="external-trainee-system-copy"><span class="system-type ${type}" data-i18n="${labelKey}">${escapeHtml(label)}</span><strong title="${escapeHtml(system.name)}">${escapeHtml(system.name)}</strong><small>${details} · ${status}</small></div><div class="external-trainee-system-actions"><button class="btn btn-light btn-small" type="button" data-member-coaching-action="edit-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="تعديل النظام" data-i18n="coaching.action.editSystem" data-i18n-title="coaching.action.editSystem">تعديل النظام</button><button class="btn btn-light btn-small" type="button" data-member-coaching-action="print-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="طباعة النظام" data-i18n="coaching.action.printSystem" data-i18n-title="coaching.action.printSystem">طباعة النظام</button><button class="btn btn-light btn-small" type="button" data-member-coaching-action="pdf-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="تحميل PDF النظام" data-i18n="coaching.action.downloadPdf" data-i18n-title="coaching.action.downloadPdf">تحميل PDF النظام</button><button class="btn btn-danger btn-small" type="button" data-member-coaching-action="delete-${type}" data-member-id="${trainee.id}" data-id="${system.id}" title="حذف النظام" data-i18n="coaching.action.deleteSystem" data-i18n-title="coaching.action.deleteSystem">حذف النظام</button></div></article>`;
             };
             const systems = [
                 ...(trainee.workoutPlans || []).map((program) => systemCard(program, 'workout')),
@@ -398,14 +629,17 @@
             ].join('');
             return `<tr data-trainee-id="${trainee.id}">
             <td class="trainee-cell"><div class="external-trainee-primary"><div class="trainee-avatar">${escapeHtml((trainee.fullName || 'م').trim().slice(0, 1))}</div><div><strong title="${escapeHtml(trainee.fullName)}">${escapeHtml(trainee.fullName)}</strong><a href="tel:${escapeHtml(trainee.phone)}" dir="ltr">${escapeHtml(displayPhone(trainee.phone, trainee.phoneCountry) || trainee.phone || '—')}</a>${trainee.email ? `<small title="${escapeHtml(trainee.email)}" dir="ltr">${escapeHtml(trainee.email)}</small>` : ''}</div></div></td>
-            <td class="trainee-type-cell"><span class="trainee-badge">خارجي</span></td>
-            <td class="trainee-systems-cell"><div class="external-trainee-systems"><div class="external-trainee-counts"><span class="external-trainee-count workout"><span class="external-trainee-count-icon">${coachingIcon('workout')}</span><b>${number(trainee.workoutCount, 0)}</b><span>تدريب</span></span><span class="external-trainee-count diet"><span class="external-trainee-count-icon">${coachingIcon('diet')}</span><b>${number(trainee.dietCount, 0)}</b><span>تغذية</span></span></div><div class="external-trainee-system-list">${systems || '<span class="external-trainee-no-diet">لا توجد أنظمة محفوظة</span>'}</div></div></td>
-            <td class="trainee-measurements-cell"><div class="external-trainee-compact-metric">${coachingIcon('ruler')}<span><strong>${number(trainee.measurementCount, 0)}</strong><small>${Number(trainee.measurementCount || 0) > 0 ? 'قياس محفوظ' : 'لا توجد قياسات'}</small></span></div></td>
-            <td class="trainee-activity-cell"><div class="external-trainee-compact-metric">${coachingIcon('calendar')}<span class="external-trainee-last-activity" dir="ltr">${trainee.lastActivity ? escapeHtml(new Date(trainee.lastActivity).toLocaleDateString('ar-EG')) : 'لا يوجد نشاط'}</span></div></td>
-            <td class="trainee-actions-cell"><div class="external-trainee-actions-cell"><div class="trainee-actions"><button class="btn btn-primary btn-small" type="button" title="إضافة تدريب" aria-label="إضافة تدريب" data-coaching-action="workout" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">+ تدريب</button><button class="btn btn-light btn-small" type="button" title="فتح الملف" aria-label="فتح الملف" data-coaching-action="profile" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">فتح الملف</button><button class="btn btn-light btn-small" type="button" title="إضافة تغذية" aria-label="إضافة تغذية" data-coaching-action="diet" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">+ تغذية</button></div></div></td>
+            <td class="trainee-type-cell"><span class="trainee-badge" data-i18n="coaching.type.external">خارجي</span></td>
+            <td class="trainee-systems-cell"><div class="external-trainee-systems"><div class="external-trainee-counts"><span class="external-trainee-count workout"><span class="external-trainee-count-icon">${coachingIcon('workout')}</span><b>${localizedInteger(trainee.workoutCount)}</b><span data-i18n="coaching.type.workout">تدريب</span></span><span class="external-trainee-count diet"><span class="external-trainee-count-icon">${coachingIcon('diet')}</span><b>${localizedInteger(trainee.dietCount)}</b><span data-i18n="coaching.type.diet">تغذية</span></span></div><div class="external-trainee-system-list">${systems || '<span class="external-trainee-no-diet" data-i18n="coaching.system.noSaved">لا توجد أنظمة محفوظة</span>'}</div></div></td>
+            <td class="trainee-measurements-cell"><div class="external-trainee-compact-metric">${coachingIcon('ruler')}<span><strong>${localizedInteger(trainee.measurementCount)}</strong><small data-i18n="${Number(trainee.measurementCount || 0) > 0 ? 'coaching.type.measurement' : 'coaching.type.noMeasurements'}">${Number(trainee.measurementCount || 0) > 0 ? 'قياس محفوظ' : 'لا توجد قياسات'}</small></span></div></td>
+            <td class="trainee-activity-cell"><div class="external-trainee-compact-metric">${coachingIcon('calendar')}<span class="external-trainee-last-activity" dir="auto">${trainee.lastActivity ? `<span data-i18n-format="date" data-i18n-value="${escapeHtml(trainee.lastActivity)}">${escapeHtml(window.TopGymI18n?.format?.('date', trainee.lastActivity, { dateStyle: 'medium' }) || new Date(trainee.lastActivity).toLocaleDateString())}</span>` : `<span data-i18n="coaching.activity.none">لا يوجد نشاط</span>`}</span></div></td>
+            <td class="trainee-actions-cell"><div class="external-trainee-actions-cell"><div class="trainee-actions"><button class="btn btn-primary btn-small" type="button" title="إضافة تدريب" aria-label="إضافة تدريب" data-i18n-title="coaching.action.addWorkout" data-i18n-aria-label="coaching.action.addWorkout" data-coaching-action="workout" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">+ تدريب</button><button class="btn btn-light btn-small" type="button" title="فتح الملف" aria-label="فتح الملف" data-i18n-title="coaching.action.openProfile" data-i18n-aria-label="coaching.action.openProfile" data-coaching-action="profile" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">فتح الملف</button><button class="btn btn-light btn-small" type="button" title="إضافة تغذية" aria-label="إضافة تغذية" data-i18n-title="coaching.action.addDiet" data-i18n-aria-label="coaching.action.addDiet" data-coaching-action="diet" data-id="${trainee.id}" data-member-name="${escapeHtml(trainee.fullName)}">+ تغذية</button></div></div></td>
         </tr>`;
         }).join('');
-        container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr><th>المتدرب</th><th>النوع</th><th>الأنظمة</th><th>القياسات</th><th>آخر نشاط</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        const headerHtml = TRAINEE_TABLE_HEADERS.map(([key, fallback]) => `<th data-i18n="${key}">${escapeHtml(coachingText(key, fallback))}</th>`).join('');
+        container.innerHTML = `<div class="external-trainees-table-wrap"><table class="external-trainees-table"><thead><tr>${headerHtml}</tr></thead><tbody>${rows}</tbody></table></div>`;
+        window.TopGymI18n?.applyTranslations?.(container);
+        syncResponsiveTraineeLabels();
         enhanceTraineeActionMenus();
         activateCoachingSummary();
         refreshCoachingPhoneDisplays();
@@ -416,7 +650,10 @@
         const pagination = state.pagination;
         if (!element || !pagination || pagination.totalPages <= 1) { if (element) element.hidden = true; return; }
         element.hidden = false;
-        element.innerHTML = `<span>صفحة ${number(pagination.page, 0)} من ${number(pagination.totalPages, 0)} · ${number(pagination.total, 0)} متدرب</span><div><button class="btn btn-light btn-small" data-coaching-page="prev" ${pagination.hasPrevious ? '' : 'disabled'}>السابق</button><button class="btn btn-light btn-small" data-coaching-page="next" ${pagination.hasNext ? '' : 'disabled'}>التالي</button></div>`;
+        const pageSummary = coachingText('coaching.pagination.page', `صفحة ${number(pagination.page, 0)} من ${number(pagination.totalPages, 0)} · ${number(pagination.total, 0)} متدرب`, {
+            page: number(pagination.page, 0), totalPages: number(pagination.totalPages, 0), count: number(pagination.total, 0)
+        });
+        element.innerHTML = `<span>${escapeHtml(pageSummary)}</span><div><button class="btn btn-light btn-small" data-coaching-page="prev" ${pagination.hasPrevious ? '' : 'disabled'}>${escapeHtml(coachingText('coaching.pagination.previous', 'السابق'))}</button><button class="btn btn-light btn-small" data-coaching-page="next" ${pagination.hasNext ? '' : 'disabled'}>${escapeHtml(coachingText('coaching.pagination.next', 'التالي'))}</button></div>`;
     }
 
     async function loadTrainees(force = false) {
@@ -501,7 +738,7 @@
         $('coachingProfileSubtitle').textContent = `${displayPhone(member.phone, member.phoneCountry)}${member.email ? ` · ${member.email}` : ''}`;
         const workoutCards = (overview.workoutPrograms || []).map((program) => `<article class="profile-system-card"><div><span class="system-type workout">برنامج تدريب</span><strong>${escapeHtml(program.name)}</strong><small>${escapeHtml(program.goal || 'هدف غير محدد')} · ${escapeHtml(program.level || 'مستوى غير محدد')}</small></div><div><span class="system-status ${program.status}">${STATUS_LABELS[program.status] || program.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-workout" data-id="${program.id}">تعديل</button></div></article>`).join('');
         const dietCards = (overview.dietPlans || []).map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealCount, 0)} وجبات</small></div><div><span class="system-status ${plan.status}">${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button></div></article>`).join('');
-        const measurements = (overview.measurements || []).slice(0, 6).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
+        const measurements = (overview.measurements || []).slice(0, 6).map((item) => `<tr><td>${escapeHtml(builderDate(item.measuredAt))}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
         $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · لا يوجد اشتراك Gym فعال حاليًا</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
             <div class="profile-stats"><article><span>الوزن الحالي</span><strong>${overview.progress.currentWeight == null ? '—' : `${number(overview.progress.currentWeight, 1)} كجم`}</strong></article><article><span>تغير الوزن</span><strong>${overview.progress.weightChange == null ? '—' : `${overview.progress.weightChange > 0 ? '+' : ''}${number(overview.progress.weightChange, 1)} كجم`}</strong></article><article><span>الجلسات المكتملة</span><strong>${number(overview.progress.completedSessions, 0)}</strong></article><article><span>تسجيلات الوجبات</span><strong>${number(overview.progress.mealLogCount, 0)}</strong></article></div>
             <div class="profile-actions"><button class="btn btn-primary" data-profile-action="new-workout">+ برنامج تدريب</button><button class="btn btn-light" data-profile-action="new-diet">+ خطة تغذية</button><button class="btn btn-light" data-profile-action="new-measurement">+ قياس جديد</button><button class="btn btn-light" data-profile-action="edit-client">تعديل البيانات الأساسية</button></div>
@@ -520,7 +757,7 @@
         const min = Math.min(...values);
         const max = Math.max(...values);
         const range = Math.max(1, max - min);
-        return `<div class="profile-chart-bars">${rows.map((item) => { const value = Number(item.weightKg); return `<div class="profile-chart-bar" title="${escapeHtml(item.measuredAt)} · ${number(value, 1)} كجم"><span><b>${number(value, 1)}</b></span><small>${escapeHtml(String(item.measuredAt).slice(5))}</small></div>`; }).join('')}</div>`;
+        return `<div class="profile-chart-bars">${rows.map((item) => { const value = Number(item.weightKg); const displayDate = window.TopGymI18n?.format?.('date', item.measuredAt, { month: 'numeric', day: 'numeric' }) || String(item.measuredAt).slice(5); return `<div class="profile-chart-bar" title="${escapeHtml(builderDate(item.measuredAt))} · ${number(value, 1)} كجم"><span><b>${number(value, 1)}</b></span><small>${escapeHtml(displayDate)}</small></div>`; }).join('')}</div>`;
     }
 
     function renderProfileEnhanced(overview) {
@@ -534,7 +771,7 @@
         const mealLogs = overview.mealLogs || [];
         const workoutCards = workouts.map((program) => `<article class="profile-system-card"><div><span class="system-type workout">برنامج تدريب</span><strong>${escapeHtml(program.name)}</strong><small>${escapeHtml(program.goal || 'هدف غير محدد')} · ${number(program.exerciseCount, 0)} تمرين · ${number(program.completedSessions, 0)} جلسة مكتملة</small><div class="profile-inline-progress"><i></i></div></div><div><span class="system-status ${program.status}">${progressPercent(program.progressPercent)}٪ · ${STATUS_LABELS[program.status] || program.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-workout" data-id="${program.id}">تعديل</button></div></article>`).join('');
         const dietCards = diets.map((plan) => `<article class="profile-system-card"><div><span class="system-type diet">خطة تغذية</span><strong>${escapeHtml(plan.name)}</strong><small>${number(plan.targetCalories, 0)} سعر · ${number(plan.mealsPerDay || plan.mealCount, 0)} وجبات · ${number(plan.loggedMeals, 0)} تسجيل</small><div class="profile-inline-progress diet"><i></i></div></div><div><span class="system-status ${plan.status}">${progressPercent(plan.progressPercent)}٪ · ${STATUS_LABELS[plan.status] || plan.status}</span><button class="btn btn-light btn-small" data-profile-action="edit-diet" data-id="${plan.id}">تعديل</button><button class="btn btn-danger btn-small" data-profile-action="delete-diet" data-id="${plan.id}">حذف</button></div></article>`).join('');
-        const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(item.measuredAt)}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
+        const measurements = (overview.measurements || []).slice(0, 8).map((item) => `<tr><td>${escapeHtml(builderDate(item.measuredAt))}</td><td>${item.weightKg == null ? '—' : `${number(item.weightKg, 1)} كجم`}</td><td>${item.bodyFatPercent == null ? '—' : `${number(item.bodyFatPercent, 1)}%`}</td><td><button class="btn btn-light btn-small" data-measurement-action="edit" data-id="${item.id}">تعديل</button><button class="btn btn-danger btn-small" data-measurement-action="delete" data-id="${item.id}">حذف</button></td></tr>`).join('');
         const sessionRows = sessions.slice(0, 6).map((session) => `<tr><td>${escapeHtml(session.programName || 'جلسة تدريب')}</td><td>${escapeHtml(session.routineName || '—')}</td><td>${escapeHtml(session.status === 'completed' ? 'مكتملة' : session.status === 'started' ? 'مفتوحة' : 'ملغاة')}</td><td>${number(session.setCount, 0)}</td></tr>`).join('');
         const mealRows = mealLogs.slice(0, 6).map((log) => `<tr><td><strong>${escapeHtml(log.foodName || 'طعام')}</strong><small>${number(log.consumedQuantity, 1)} ${escapeHtml(log.servingUnit || '')}</small></td><td>${escapeHtml(log.mealName || '—')}</td><td><strong>${number(log.calories, 0)}</strong><small class="profile-meal-macros">P ${number(log.protein, 1)} · C ${number(log.carbs, 1)} · F ${number(log.fats, 1)}</small></td><td>${escapeHtml(new Date(log.consumedAt).toLocaleDateString('ar-EG'))}</td></tr>`).join('');
         $('coachingProfileContent').innerHTML = `<div class="profile-hero"><div class="trainee-avatar large">${escapeHtml((member.fullName || 'م').trim().slice(0, 1))}</div><div><strong>${escapeHtml(member.fullName)}</strong><span>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</span><small>ملف العميل #${member.id} · التنفيذ والتقدم محفوظان في قاعدة البيانات</small></div><button class="btn btn-primary btn-small" data-profile-action="subscribe">إضافة اشتراك Gym</button></div>
@@ -952,12 +1189,18 @@
 
     function builderNum(value, digits = 0) {
         const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
+        return Number.isFinite(parsed)
+            ? (window.TopGymI18n?.format?.('number', parsed, { maximumFractionDigits: digits }) || parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits }))
+            : '—';
     }
 
     function builderDate(value) {
         if (!value) return '—';
-        try { return new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(`${String(value).slice(0, 10)}T00:00:00`)); } catch (_) { return String(value); }
+        try {
+            const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+            return window.TopGymI18n?.format?.('date', date, { dateStyle: 'medium' })
+                || new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+        } catch (_) { return String(value); }
     }
 
     function blankBuilderWorkout(memberId, memberName = '') {
@@ -1337,6 +1580,8 @@
     function localizeBuilderLabels() {
         const content = $('coachingBuilderContent');
         if (!content) return;
+        translateCoachingSubtree(content);
+        return;
         const labels = {
             Food: 'الطعام',
             Protein: 'بروتين',
@@ -1761,7 +2006,7 @@
         const content = state.builder.type === 'diet'
             ? `<div class="print-summary"><b>Target calories:</b> ${builderNum(draft.targetCalories)} · <b>Protein:</b> ${builderNum(draft.targetProtein, 1)}g · <b>Carbs:</b> ${builderNum(draft.targetCarbs, 1)}g · <b>Fat:</b> ${builderNum(draft.targetFats, 1)}g</div>${dietSections}`
             : `<div class="print-summary"><b>Goal:</b> ${escapeHtml(draft.goal)} · <b>Level:</b> ${escapeHtml(draft.level)} · <b>Duration:</b> ${builderNum(draft.durationWeeks)} weeks · <b>Days:</b> ${(draft.routines || []).length}</div>${workoutSections}`;
-        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=37"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Cairo,Tahoma,Arial,sans-serif;color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>Gym management</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
+        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=37"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:var(--font-body,sans-serif);color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>Gym management</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
     }
 
     const buildBuilderPrintDocumentLegacy = buildBuilderPrintDocument;
@@ -2445,7 +2690,7 @@
         $('externalTraineeForm')?.addEventListener('submit', submitExternalTrainee);
         $('externalTraineeClose')?.addEventListener('click', () => closeDialog($('externalTraineeDialog')));
         $('externalTraineeCancel')?.addEventListener('click', () => closeDialog($('externalTraineeDialog')));
-        $('addExternalTraineeButton')?.addEventListener('click', () => { renderExternalForm(); openDialog($('externalTraineeDialog')); });
+        $('addExternalTraineeButton')?.addEventListener('click', () => { renderExternalForm(); renderCoachingLocale(); openDialog($('externalTraineeDialog')); });
         $('externalTraineeRefreshButton')?.addEventListener('click', () => { state.page = 1; state.loaded = false; loadTrainees(true); });
         $('externalTraineeSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(() => { state.page = 1; state.loaded = false; loadTrainees(true); }, 300); });
         $('externalTraineesList')?.addEventListener('click', (event) => {
@@ -2593,7 +2838,12 @@
             if (action === 'edit') openCheckinDialog(memberId, (state.profile.checkins || []).find((item) => Number(item.id) === Number(button.dataset.id)));
             if (action === 'delete') deleteCheckinFromProfile(memberId, button.dataset.id);
         });
-        window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'trainees') loadTrainees(); });
+        window.addEventListener('topgym:tab-changed', (event) => {
+            if (event.detail?.name !== 'trainees') return;
+            observeCoachingLocaleContent();
+            renderCoachingLocale();
+            loadTrainees();
+        });
         window.addEventListener('topgym:brandingchange', () => { if (state.builder) renderBuilder(); });
         window.addEventListener('topgym:ai-draft-ready', (event) => { void openBuilderFromAiDraft(event.detail || {}); });
         window.addEventListener('topgym:member-details-opened', (event) => renderMemberTrainingPanel(event.detail?.member?.id || event.detail?.details?.member?.id));
@@ -2604,9 +2854,13 @@
             const memberId = event.detail?.memberId;
             if (memberId && Number(state.profile?.member?.id) === Number(memberId) && $('coachingProfileDialog')?.open) openProfile(memberId);
         });
+        observeCoachingLocaleContent();
+        renderCoachingLocale();
         // The tab router dispatches after the lazy module is ready; do not
         // race it with an eager duplicate request here.
     }
+
+    window.addEventListener('topgym:localechange', renderCoachingLocale);
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeCoaching, { once: true });
     else initializeCoaching();

@@ -19,8 +19,9 @@ const root = path.resolve(__dirname, '..');
 // Keep the default aligned with the local Express entry point so an omitted
 // variable cannot silently produce misleading missing-script failures.
 const baseUrl = process.env.QA_BASE_URL || 'http://127.0.0.1:3000';
-const reports = path.join(root, 'qa', 'reports');
-const artifacts = path.join(root, 'qa', 'artifacts');
+const allowStaticQaServer = process.env.QA_ALLOW_STATIC_SERVER === '1';
+const reports = path.resolve(process.env.QA_REPORTS_DIR || path.join(root, 'qa', 'reports'));
+const artifacts = path.resolve(process.env.QA_ARTIFACTS_DIR || path.join(root, 'qa', 'artifacts'));
 const viewports = [
     { name: '320', width: 320, height: 760 },
     { name: '360', width: 360, height: 800 },
@@ -69,7 +70,7 @@ const portalTools = [
     ['foods', 'portalLibrarySection'],
     ['subscription', 'portalSubscriptionSection']
 ];
-const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog'];
+const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog', 'authRecoveryDialog', 'authRegistrationDialog', 'membersFiltersDialog'];
 const lazyDialogFragments = [
     { source: '/dialogs/library.html?v=phase3-6', ids: ['libraryFormDialog', 'libraryDetailsDialog'] },
     { source: '/dialogs/coaching.html?v=phase3-6', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] },
@@ -158,11 +159,24 @@ async function inspect(page, evidence, diagnostics, options = {}) {
         return {
             rootExists: !(expected?.rootId || expected?.rootSelector) || Boolean(root),
             rootVisible: !(expected?.rootId || expected?.rootSelector) || visible(root),
+            contentReady: !expected?.backupHistory || Boolean(root?.querySelector('.backup-history-block, .backup-history-error')),
+            emptyRowsAvoidStickyActions: !expected?.backupHistory || (() => {
+                const cells = [...(root?.querySelectorAll('.backup-history-table tbody td[colspan]') || [])];
+                return cells.length >= 2 && cells.every((cell) => getComputedStyle(cell).position !== 'sticky');
+            })(),
             overflow: document.documentElement.scrollWidth > window.innerWidth,
             scrollWidth: document.documentElement.scrollWidth,
             viewport: window.innerWidth,
             theme: document.documentElement.dataset.theme || 'light',
             direction: document.documentElement.dir || getComputedStyle(document.documentElement).direction,
+            unnamedInteractiveExamples: interactive.slice(0, 8).map((element) => ({
+                tag: element.tagName.toLowerCase(),
+                id: element.id || null,
+                type: element.getAttribute('type') || null,
+                name: element.getAttribute('name') || null,
+                className: typeof element.className === 'string' ? element.className.slice(0, 100) : null,
+                html: element.outerHTML.slice(0, 180)
+            })),
             stylesheetCount: expected?.cssEntry === 'shell'
                 ? document.querySelectorAll('link[rel="stylesheet"][href*="/css/app-shell.css"]').length
                 : expected?.cssEntry === 'none'
@@ -174,6 +188,8 @@ async function inspect(page, evidence, diagnostics, options = {}) {
     const prefix = `${evidence.surface}/${evidence.target}/${evidence.theme}/${evidence.viewport}`;
     assert(result.rootExists, `${prefix}: root is missing`);
     if (options.rootId || options.rootSelector) assert(result.rootVisible, `${prefix}: root is not visible`);
+    if (options.backupHistory) assert(result.contentReady, `${prefix}: backup history remains at its initial loading state`);
+    if (options.backupHistory) assert(result.emptyRowsAvoidStickyActions, `${prefix}: empty table cells incorrectly inherit sticky action-column styling`);
     assert(!result.overflow, `${prefix}: horizontal overflow ${result.scrollWidth}/${result.viewport}`);
     if (options.cssEntry !== 'none') {
         const stylesheetName = options.cssEntry === 'shell' ? 'app-shell.css' : 'main.css';
@@ -200,7 +216,17 @@ async function prepareApp(page, id) {
             current.hidden = false;
             current = current.parentElement;
         }
+        if (targetId === 'backupHistorySection') {
+            document.documentElement.dataset.topGymActiveTab = 'backup-history';
+            window.dispatchEvent(new CustomEvent('topgym:tab-changed', { detail: { name: 'backup-history' } }));
+        }
     }, id);
+    if (id === 'backupHistorySection') {
+        await page.waitForFunction(() => {
+            const list = document.getElementById('backupHistoryList');
+            return Boolean(list?.querySelector('.backup-history-block, .backup-history-error'));
+        });
+    }
     // Branch management is injected by the branch-context module during the
     // initial shell lifecycle. Let that lifecycle settle, then force the
     // requested structural surface visible for this logged-out visual case.
@@ -305,9 +331,32 @@ async function installPortalVisualStubs(page) {
     }));
 }
 
+async function installStandaloneVisualStubs(page) {
+    // Public registration initializes the existing shared phone selector;
+    // return only the minimum valid local fixture it expects. Platform Admin
+    // reads entitlements for its UI gates, but this audit must not contact a
+    // live API or use a real platform session.
+    await page.route('**/api/phone/countries', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ countries: [{ isoCode: 'EG', dialCode: '+20', country: 'Egypt' }] })
+    }));
+    await page.route('**/api/saas/entitlements', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ tenantStatus: 'active', subscription: { status: 'active' }, entitlements: { features: {}, limits: {} } })
+    }));
+    await page.route('**/api/public/*-registration/catalog', (route) => route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ plans: [], paymentMethods: [] })
+    }));
+}
+
 async function ensureApplicationFeature(page, target) {
-    if (target !== 'expenses') return;
-    await page.evaluate(async () => { await window.topGymEnsureTab?.('finance'); });
+    if (!['expenses', 'backup-history'].includes(target)) return;
+    const feature = target === 'expenses' ? 'finance' : 'backup-history';
+    await page.evaluate(async (featureName) => { await window.topGymEnsureTab?.(featureName); }, feature);
 }
 
 async function assertDesktopNavigation(page) {
@@ -373,8 +422,11 @@ async function run() {
     };
 
     try {
-        if (/:(4174|4173)(?:\/|$)/.test(baseUrl)) {
-            throw new Error(`Complete UI QA requires the Express application server; received static server URL ${baseUrl}. Set QA_BASE_URL to the running app.`);
+        if (allowStaticQaServer) {
+            console.warn('[COMPLETE-UI-QA] Static asset server enabled explicitly; browser API fixtures are used and Express/server behavior is not under test.');
+        }
+        if (/:(4174|4173)(?:\/|$)/.test(baseUrl) && !allowStaticQaServer) {
+            throw new Error(`Complete UI QA requires the Express application server by default; static asset QA requires explicit QA_ALLOW_STATIC_SERVER=1.`);
         }
         for (const viewport of viewports) {
             const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
@@ -384,7 +436,10 @@ async function run() {
             for (const [id, target] of appSections) {
                 await ensureApplicationFeature(page, target);
                 await prepareApp(page, id);
-                await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme: 'light', viewport: viewport.name }, { rootId: id, cssEntry: 'shell', diagnostics });
+                await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme: 'light', viewport: viewport.name }, { rootId: id, cssEntry: 'shell', backupHistory: id === 'backupHistorySection', diagnostics });
+                if (id === 'backupHistorySection' && ['390', '1440'].includes(viewport.name)) {
+                    await page.screenshot({ path: path.join(artifacts, `backup-history-light-${viewport.name}.png`), fullPage: true });
+                }
             }
             if (viewport.name === '1440') {
                 try {
@@ -407,7 +462,10 @@ async function run() {
                 for (const [id, target] of appSections) {
                     await ensureApplicationFeature(page, target);
                     await prepareApp(page, id);
-                    await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme, viewport: viewport.name }, { rootId: id, cssEntry: 'shell', diagnostics });
+                    await runCase(page, { surface: 'Gym Application', target: `#${target}`, theme, viewport: viewport.name }, { rootId: id, cssEntry: 'shell', backupHistory: id === 'backupHistorySection', diagnostics });
+                    if (id === 'backupHistorySection' && theme === 'dark' && ['390', '1440'].includes(viewport.name)) {
+                        await page.screenshot({ path: path.join(artifacts, `backup-history-dark-${viewport.name}.png`), fullPage: true });
+                    }
                 }
                 await page.close();
             }
@@ -456,6 +514,7 @@ async function run() {
         for (const viewport of viewports) {
             for (const route of ['/member-portal', '/register-gym', '/platform-admin', '/platform-admin-forbidden']) {
                 const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+                await installStandaloneVisualStubs(page);
                 const diagnostics = listen(page);
                 await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
                 const surface = route === '/member-portal' ? 'Member Portal' : route === '/register-gym' ? 'Register Gym' : route === '/platform-admin' ? 'Platform Admin' : 'Forbidden State';
@@ -485,6 +544,7 @@ async function run() {
         for (const theme of ['light', 'dark']) {
             for (const route of ['/member-portal', '/register-gym', '/platform-admin']) {
                 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+                await installStandaloneVisualStubs(page);
                 await page.addInitScript((savedTheme) => { window.localStorage.setItem('topgym-theme', savedTheme); }, theme);
                 const diagnostics = listen(page);
                 await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
@@ -539,6 +599,7 @@ async function run() {
                 await dialogPage.route('**/js/trainer-workspace.js*', (route) => route.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));
                 await dialogPage.route('**/api/branding*', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
             }
+            if (dialogCase.surface === 'Platform Dialogs') await installStandaloneVisualStubs(dialogPage);
             const diagnostics = listen(dialogPage);
             const dialogRoute = dialogCase.surface === 'Trainer Dialogs'
                 ? '/trainer-workspace.html'
@@ -559,7 +620,7 @@ async function run() {
                 const rect = dialog.getBoundingClientRect();
                 const within = rect.left >= 0 && rect.top >= 0 && rect.right <= window.innerWidth + 1 && rect.bottom <= window.innerHeight + 1;
                 dialog.close();
-                return { exists: true, within, width: Math.round(rect.width), height: Math.round(rect.height) };
+                return { exists: true, within, rect: { left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom) }, viewport: { width: window.innerWidth, height: window.innerHeight } };
             }, id);
                 if (!result.exists || result.error || !result.within) failures.push(`Dialog/${id}/390: ${result.error || 'outside viewport'}`);
                 else evidence.push({ surface: dialogCase.surface, target: id, theme: 'light', viewport: '390', dialog: result, diagnostics: { ...diagnostics } });
@@ -573,6 +634,7 @@ async function run() {
     const report = {
         generatedAt: new Date().toISOString(),
         baseUrl,
+        executionMode: allowStaticQaServer ? 'static-assets-with-browser-api-fixtures' : 'express-application-with-browser-api-fixtures',
         viewportMatrix: viewports,
         appScreenCount: appSections.length,
         platformPanelCount: platformPanels.length,

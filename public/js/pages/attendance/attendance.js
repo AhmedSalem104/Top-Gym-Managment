@@ -3,11 +3,13 @@
     window.__topGymAttendanceLoaded = true;
 
     const $ = (id) => document.getElementById(id);
+    const translate = (key, params) => window.TopGymI18n?.t?.(key, params) || key;
+    const formatNumber = (value) => window.TopGymI18n?.format?.('number', Number(value)) ?? String(value ?? 0);
     const can = (permission) => window.topGymAuth?.isOwner?.() === true
         || window.topGymAuth?.hasPermission?.(permission) === true;
     const canReadMember = () => can('members.read') && can('memberships.read');
     const canReadAttendanceQr = () => canReadMember() && can('attendance.read');
-    const SOURCE_LABELS = { phone: 'بالهاتف', qr: 'QR Code', manual: 'يدوي', auto: 'تلقائي' };
+    const SOURCE_LABEL_KEYS = { phone: 'attendance.mode.phone', qr: 'attendance.mode.qr', manual: 'attendance.source.manual', auto: 'attendance.source.auto' };
     let scanner = null;
     let scannerRunning = false;
     let attendanceAbortController = null;
@@ -19,6 +21,7 @@
     let attendanceRequest = null;
     let attendanceRequestKey = '';
     let initialized = false;
+    let memberPreviewMessage = null;
 
     function escapeHtml(value) {
         return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
@@ -26,19 +29,18 @@
 
     function dateText(value) {
         if (!value) return '—';
-        const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-        return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date);
+        return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { dateStyle: 'medium' }) || String(value);
     }
 
     function timeText(value) {
         if (!value) return '—';
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(date);
+        return window.TopGymI18n?.format?.('time', value, { timeStyle: 'short' }) || String(value);
     }
 
-    const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
-    const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
-    const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' };
+    const STATUS_LABEL_KEYS = { active: 'attendance.member.status.active', expiring_soon: 'attendance.member.status.expiring', expired: 'attendance.member.status.expired', frozen: 'attendance.member.status.frozen' };
+    const PLAN_LABEL_KEYS = { gym_only: 'attendance.member.plan.gymOnly', gym_cardio: 'attendance.member.plan.gymCardio' };
+    const TYPE_LABEL_KEYS = { monthly: 'attendance.member.type.monthly', half_month: 'attendance.member.type.halfMonth', quarterly: 'attendance.member.type.quarterly', semiannual: 'attendance.member.type.semiannual', annual: 'attendance.member.type.annual' };
+    const displayEnum = (value, keys) => keys[value] ? translate(keys[value]) : (value || '—');
 
     function qrMemberId(value) {
         const token = String(value ?? '').trim();
@@ -80,20 +82,20 @@
         const status = String(membership.status || '').toLowerCase();
         const isCheckout = action === 'checkout';
         const eligible = isCheckout || ['active', 'expiring_soon'].includes(status);
-        const statusLabel = STATUS_LABELS[status] || 'بدون اشتراك';
-        const planLabel = PLAN_LABELS[membership.plan] || membership.plan || '—';
-        const typeLabel = TYPE_LABELS[membership.type] || membership.type || '—';
-        const operationLabel = isCheckout ? 'تسجيل الانصراف' : eligible ? 'تسجيل الحضور' : 'الحضور غير متاح';
+        const statusLabel = STATUS_LABEL_KEYS[status] ? translate(STATUS_LABEL_KEYS[status]) : translate('attendance.member.status.none');
+        const planLabel = displayEnum(membership.plan, PLAN_LABEL_KEYS);
+        const typeLabel = displayEnum(membership.type, TYPE_LABEL_KEYS);
+        const operationLabel = translate(isCheckout ? 'attendance.member.operation.checkOut' : eligible ? 'attendance.member.operation.checkIn' : 'attendance.member.operation.unavailable');
         const operationHint = isCheckout
-            ? 'المشترك مسجل داخل الجيم حاليًا'
+            ? translate('attendance.member.operation.inside')
             : eligible
-                ? 'العضوية صالحة لتسجيل الحضور'
-                : 'لا يمكن تسجيل الحضور بهذه العضوية';
+                ? translate('attendance.member.operation.valid')
+                : translate('attendance.member.operation.blocked');
         if (!window.Swal) return eligible;
         const result = await window.Swal.fire({
             position: 'center',
             icon: isCheckout ? 'success' : eligible ? 'info' : 'warning',
-            title: eligible ? `تأكيد ${operationLabel}` : 'بيانات المشترك',
+            title: eligible ? translate('attendance.member.operation.confirm', { action: operationLabel }) : translate('attendance.member.operation.details'),
             html: `<div class="qr-member-preview">
                 <div class="qr-member-preview-identity">
                     <span class="qr-member-preview-avatar" aria-hidden="true">${escapeHtml(memberInitials(member.fullName))}</span>
@@ -109,16 +111,16 @@
                     <small>${escapeHtml(operationHint)}</small>
                 </div>
                 <div class="qr-member-preview-grid">
-                    <div class="qr-member-preview-field"><span>الباقة</span><strong>${escapeHtml(planLabel)}</strong></div>
-                    <div class="qr-member-preview-field"><span>النوع</span><strong>${escapeHtml(typeLabel)}</strong></div>
-                    <div class="qr-member-preview-field"><span>تاريخ البداية</span><strong>${escapeHtml(dateText(membership.startDate))}</strong></div>
-                    <div class="qr-member-preview-field"><span>تاريخ الانتهاء</span><strong>${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</strong></div>
-                    ${Number(membership.amountRemaining || 0) > 0 ? `<div class="qr-member-preview-field qr-member-preview-balance"><span>المتبقي</span><strong>${Number(membership.amountRemaining).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م</strong></div>` : ''}
+                    <div class="qr-member-preview-field"><span>${escapeHtml(translate('attendance.member.field.plan'))}</span><strong>${escapeHtml(planLabel)}</strong></div>
+                    <div class="qr-member-preview-field"><span>${escapeHtml(translate('attendance.member.field.type'))}</span><strong>${escapeHtml(typeLabel)}</strong></div>
+                    <div class="qr-member-preview-field"><span>${escapeHtml(translate('attendance.member.field.startDate'))}</span><strong>${escapeHtml(dateText(membership.startDate))}</strong></div>
+                    <div class="qr-member-preview-field"><span>${escapeHtml(translate('attendance.member.field.endDate'))}</span><strong>${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</strong></div>
+                    ${Number(membership.amountRemaining || 0) > 0 ? `<div class="qr-member-preview-field qr-member-preview-balance"><span>${escapeHtml(translate('attendance.member.field.remaining'))}</span><strong>${formatNumber(Number(membership.amountRemaining))} ${escapeHtml(translate('attendance.member.currency'))}</strong></div>` : ''}
                 </div>
             </div>`,
             showCancelButton: eligible,
-            confirmButtonText: eligible ? (isCheckout ? 'تسجيل الانصراف' : 'تسجيل الحضور') : 'إغلاق',
-            cancelButtonText: 'إلغاء',
+            confirmButtonText: eligible ? operationLabel : translate('attendance.member.operation.close'),
+            cancelButtonText: translate('attendance.member.operation.cancel'),
             buttonsStyling: false,
             customClass: {
                 popup: `top-gym-alert qr-member-preview-alert qr-member-preview-alert-${isCheckout ? 'checkout' : eligible ? 'checkin' : 'blocked'}`,
@@ -136,7 +138,7 @@
                 icon,
                 title,
                 text,
-                confirmButtonText: 'حسنًا',
+                confirmButtonText: translate('attendance.member.operation.ok'),
                 buttonsStyling: false,
                 customClass: { popup: 'top-gym-alert', confirmButton: 'duplicate-phone-alert-confirm' }
             });
@@ -170,7 +172,7 @@
         const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            const error = new Error(data.error || 'تعذر تنفيذ عملية الحضور.');
+            const error = new Error(data.error || translate('attendance.error.request'));
             Object.assign(error, data);
             throw error;
         }
@@ -216,8 +218,8 @@
         checkOutButton.classList.add('hidden');
         checkInButton.disabled = !can('attendance.check_in');
         checkOutButton.disabled = !can('attendance.check_out');
-        checkInButton.textContent = 'تسجيل حضور';
-        checkOutButton.textContent = 'تسجيل انصراف';
+        checkInButton.textContent = translate('attendance.action.checkIn');
+        checkOutButton.textContent = translate('attendance.action.checkOut');
         checkInButton.classList.remove('is-suggested');
         checkOutButton.classList.remove('is-suggested');
         delete checkInButton.dataset.suggested;
@@ -241,26 +243,28 @@
         checkOutButton.classList.toggle('hidden', !canCheckOut);
         checkInButton.disabled = !can('attendance.check_in') || state.inside || state.checkedOut || !state.eligible;
         checkOutButton.disabled = !can('attendance.check_out') || !state.inside;
-        checkInButton.textContent = canCheckIn ? 'تسجيل حضور' : 'لا تملك صلاحية تسجيل الحضور';
-        checkOutButton.textContent = canCheckOut ? 'تسجيل انصراف' : 'لا تملك صلاحية تسجيل الانصراف';
+        checkInButton.textContent = canCheckIn ? translate('attendance.action.checkIn') : translate('attendance.action.noCheckInPermission');
+        checkOutButton.textContent = canCheckOut ? translate('attendance.action.checkOut') : translate('attendance.action.noCheckOutPermission');
         checkInButton.classList.toggle('is-suggested', canCheckIn);
         checkOutButton.classList.toggle('is-suggested', state.inside);
         checkInButton.dataset.suggested = canCheckIn ? 'true' : 'false';
         checkOutButton.dataset.suggested = state.inside ? 'true' : 'false';
     }
 
-    function renderMemberPreviewMessage(message, kind = 'neutral') {
+    function renderMemberPreviewMessage(key, kind = 'neutral') {
         const preview = $('attendanceMemberPreview');
         if (!preview) return;
+        memberPreviewMessage = { key, kind };
         preview.hidden = false;
         preview.className = `attendance-member-preview ${kind}`;
-        preview.innerHTML = `<span class="attendance-preview-state-icon" aria-hidden="true">${kind === 'error' ? '!' : 'i'}</span><span>${escapeHtml(message)}</span>`;
+        preview.innerHTML = `<span class="attendance-preview-state-icon" aria-hidden="true">${kind === 'error' ? '!' : 'i'}</span><span>${escapeHtml(translate(key))}</span>`;
     }
 
     function clearMemberPreview() {
         memberPreviewAbortController?.abort();
         memberPreviewLookupDigits = '';
         previewMember = null;
+        memberPreviewMessage = null;
         const preview = $('attendanceMemberPreview');
         if (preview) {
             preview.hidden = true;
@@ -275,23 +279,23 @@
         if (!preview) return;
         const state = attendanceMemberState(member);
         const membership = member.membership || {};
-        const statusLabel = STATUS_LABELS[state.status] || 'بدون اشتراك فعال';
-        const planLabel = PLAN_LABELS[membership.plan] || membership.plan || '—';
-        const attendanceLabel = state.inside ? 'داخل الجيم الآن' : state.checkedOut ? 'تم الانصراف اليوم' : 'لم يسجل حضور اليوم';
+        const statusLabel = STATUS_LABEL_KEYS[state.status] ? translate(STATUS_LABEL_KEYS[state.status]) : translate('attendance.member.status.none');
+        const planLabel = displayEnum(membership.plan, PLAN_LABEL_KEYS);
+        const attendanceLabel = translate(state.inside ? 'attendance.member.attendance.inside' : state.checkedOut ? 'attendance.member.attendance.checkedOut' : 'attendance.member.attendance.notCheckedIn');
         const attendanceTime = state.inside ? timeText(member.attendance?.checkInAt) : '—';
         const actionText = state.checkedOut
-            ? 'تم تسجيل الدخول والانصراف لهذا العضو اليوم.'
+            ? translate('attendance.member.operation.checkedOut')
             : !state.eligible
-                ? state.status === 'frozen' ? 'الاشتراك مجمد؛ لا يمكن تسجيل حضور.' : state.status === 'expired' ? 'الاشتراك منتهي؛ لا يمكن تسجيل حضور.' : 'لا يوجد اشتراك فعال يسمح بتسجيل الحضور.'
+                ? state.status === 'frozen' ? translate('attendance.member.operation.frozen') : state.status === 'expired' ? translate('attendance.member.operation.expired') : translate('attendance.member.operation.noMembership')
                 : state.inside && !can('attendance.check_out')
-                    ? 'لا توجد صلاحية لتسجيل انصراف.'
+                    ? translate('attendance.member.operation.noCheckOutPermission')
                     : !state.inside && !can('attendance.check_in')
-                        ? 'لا توجد صلاحية لتسجيل حضور.'
+                        ? translate('attendance.member.operation.noCheckInPermission')
                         : '';
         const initials = String(member.fullName || 'TG').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0)).join('') || 'TG';
         preview.hidden = false;
         preview.className = `attendance-member-preview ${state.inside ? 'inside' : state.eligible ? 'eligible' : 'blocked'}`;
-        preview.innerHTML = `<div class="attendance-preview-member"><span class="attendance-preview-avatar" aria-hidden="true">${escapeHtml(initials)}</span><div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</span></div><div class="attendance-preview-badges"><b class="attendance-preview-status ${escapeHtml(state.status || 'unknown')}">${escapeHtml(statusLabel)}</b><b class="attendance-preview-attendance ${state.inside ? 'inside' : state.checkedOut ? 'checked-out' : ''}">${escapeHtml(attendanceLabel)}</b></div></div><div class="attendance-preview-details"><span><small>الباقة</small><b>${escapeHtml(planLabel)}</b></span><span><small>الحضور اليوم</small><b>${escapeHtml(attendanceTime)}</b></span><span><small>الاشتراك حتى</small><b dir="ltr">${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</b></span></div>${actionText ? `<p class="attendance-preview-action${state.eligible ? ' is-warning' : ''}" role="status">${escapeHtml(actionText)}</p>` : ''}`;
+        preview.innerHTML = `<div class="attendance-preview-member"><span class="attendance-preview-avatar" aria-hidden="true">${escapeHtml(initials)}</span><div><strong>${escapeHtml(member.fullName || '—')}</strong><span dir="ltr">${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</span></div><div class="attendance-preview-badges"><b class="attendance-preview-status ${escapeHtml(state.status || 'unknown')}"><span data-i18n="${escapeHtml(STATUS_LABEL_KEYS[state.status] || 'attendance.member.status.none')}">${escapeHtml(statusLabel)}</span></b><b class="attendance-preview-attendance ${state.inside ? 'inside' : state.checkedOut ? 'checked-out' : ''}">${escapeHtml(attendanceLabel)}</b></div></div><div class="attendance-preview-details"><span><small>${escapeHtml(translate('attendance.member.field.plan'))}</small><b>${escapeHtml(planLabel)}</b></span><span><small>${escapeHtml(translate('attendance.member.field.todayAttendance'))}</small><b>${escapeHtml(attendanceTime)}</b></span><span><small>${escapeHtml(translate('attendance.member.field.membershipUntil'))}</small><b dir="ltr">${escapeHtml(dateText(membership.effectiveEndDate || membership.endDate))}</b></span></div>${actionText ? `<p class="attendance-preview-action${state.eligible ? ' is-warning' : ''}" role="status">${escapeHtml(actionText)}</p>` : ''}`;
         const previewPhone = preview.querySelector('.attendance-preview-member span[dir="ltr"]');
         if (previewPhone) previewPhone.textContent = displayPhone(member.phone, member.phoneCountry) || '—';
         updateAttendanceActionButtons(member);
@@ -310,7 +314,7 @@
         memberPreviewAbortController = new AbortController();
         const controller = memberPreviewAbortController;
         memberPreviewLookupDigits = digits;
-        renderMemberPreviewMessage('جاري البحث عن بيانات المشترك…', 'loading');
+        renderMemberPreviewMessage('attendance.preview.searching', 'loading');
         try {
             const params = new URLSearchParams({ search: phone, page: '1', pageSize: '5', sort: 'expiry' });
             const response = await request(`/api/members?${params}`, { signal: controller.signal });
@@ -321,7 +325,7 @@
             if (!member) {
                 memberPreviewLookupDigits = '';
                 previewMember = null;
-                renderMemberPreviewMessage('لم يتم العثور على مشترك بهذا الرقم.', 'error');
+                renderMemberPreviewMessage('attendance.preview.notFound', 'error');
                 updateAttendanceActionButtons();
                 return;
             }
@@ -331,7 +335,7 @@
             if (error.name === 'AbortError') return;
             memberPreviewLookupDigits = '';
             previewMember = null;
-            renderMemberPreviewMessage('تعذر تحميل بيانات المشترك. جرّب مرة أخرى.', 'error');
+            renderMemberPreviewMessage('attendance.preview.loadError', 'error');
             updateAttendanceActionButtons();
         }
     }
@@ -347,28 +351,51 @@
         if (mode === 'phone') $('attendancePhone')?.focus();
     }
 
-    function renderRecords(data) {
-        attendanceSnapshot = data;
+    function filteredAttendanceRecords(data) {
         const allRecords = data.records || [];
         const filter = $('attendanceStatusFilter')?.value || 'all';
-        const records = filter === 'inside'
+        return filter === 'inside'
             ? allRecords.filter((record) => !record.checkOutAt)
             : filter === 'checked_out'
                 ? allRecords.filter((record) => Boolean(record.checkOutAt))
                 : allRecords;
+    }
+
+    function renderRecords(data) {
+        attendanceSnapshot = data;
+        const allRecords = data.records || [];
+        const records = filteredAttendanceRecords(data);
+        const filter = $('attendanceStatusFilter')?.value || 'all';
         $('attendanceDateLabel').textContent = dateText(data.date);
-        $('attendancePresentCount').textContent = Number(data.summary?.present || 0).toLocaleString('ar-EG');
-        $('attendanceCheckedInCount').textContent = Number(data.summary?.checkedIn || 0).toLocaleString('ar-EG');
-        $('attendanceCheckedOutCount').textContent = Number(data.summary?.checkedOut || 0).toLocaleString('ar-EG');
-        $('attendanceListMeta').textContent = filter === 'all'
-            ? `${records.length.toLocaleString('ar-EG')} سجل حضور في ${dateText(data.date)}`
-            : `${records.length.toLocaleString('ar-EG')} من ${allRecords.length.toLocaleString('ar-EG')} سجل في ${dateText(data.date)}`;
+        $('attendancePresentCount').textContent = formatNumber(Number(data.summary?.present || 0));
+        $('attendanceCheckedInCount').textContent = formatNumber(Number(data.summary?.checkedIn || 0));
+        $('attendanceCheckedOutCount').textContent = formatNumber(Number(data.summary?.checkedOut || 0));
+        const listMeta = $('attendanceListMeta');
+        // The loading annotation is only valid before the first response.
+        // Once runtime data owns this node, prevent a locale-wide static pass
+        // from restoring the stale loading copy over the rendered summary.
+        listMeta?.removeAttribute('data-i18n');
+        if (listMeta) listMeta.textContent = filter === 'all'
+            ? translate('attendance.log.count', { count: records.length, date: dateText(data.date) })
+            : translate('attendance.log.filteredCount', { count: records.length, total: allRecords.length, date: dateText(data.date) });
         if (!records.length) {
-            $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${allRecords.length ? 'لا توجد سجلات مطابقة للفلاتر الحالية.' : 'لا توجد سجلات حضور اليوم حتى الآن.'}</div>`;
+            $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(translate(allRecords.length ? 'attendance.log.emptyFiltered' : 'attendance.log.empty'))}</div>`;
             return;
         }
-        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>العضو</th><th>الهاتف</th><th>وقت الدخول</th><th>وقت الخروج</th><th>المدة</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${records.map((record) => {
-            return `<tr><td data-label="العضو"><span class="attendance-row-avatar" aria-hidden="true">${escapeHtml(memberInitials(record.memberName))}</span><span class="attendance-member-name">${escapeHtml(record.memberName)}</span></td><td data-label="الهاتف"><span class="attendance-member-phone" dir="ltr">${escapeHtml(record.phone)}</span></td><td data-label="وقت الدخول"><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td data-label="وقت الخروج"><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td data-label="المدة">${record.durationMinutes === null ? 'داخل الجيم' : `${record.durationMinutes} دقيقة`}</td><td data-label="الحالة"><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${record.checkOutAt ? (record.checkOutSource === 'auto' ? 'انصرف تلقائيًا' : 'انصرف') : 'داخل الجيم'}</span></td><td data-label="الإجراء"></td></tr>`;
+        const labels = {
+            member: translate('attendance.table.member'), phone: translate('attendance.table.phone'),
+            checkIn: translate('attendance.table.checkIn'), checkOut: translate('attendance.table.checkOut'),
+            duration: translate('attendance.table.duration'), status: translate('attendance.table.status'),
+            action: translate('attendance.table.action')
+        };
+        $('attendanceTableWrap').innerHTML = `<table class="attendance-table"><thead><tr><th>${escapeHtml(labels.member)}</th><th>${escapeHtml(labels.phone)}</th><th>${escapeHtml(labels.checkIn)}</th><th>${escapeHtml(labels.checkOut)}</th><th>${escapeHtml(labels.duration)}</th><th>${escapeHtml(labels.status)}</th><th>${escapeHtml(labels.action)}</th></tr></thead><tbody>${records.map((record) => {
+            const duration = record.durationMinutes === null
+                ? translate('attendance.status.inside')
+                : `${formatNumber(record.durationMinutes)} ${translate('attendance.duration.minutes')}`;
+            const status = record.checkOutAt
+                ? translate(record.checkOutSource === 'auto' ? 'attendance.status.autoCheckedOut' : 'attendance.status.checkedOut')
+                : translate('attendance.status.inside');
+            return `<tr><td data-label="${escapeHtml(labels.member)}"><span class="attendance-row-avatar" aria-hidden="true">${escapeHtml(memberInitials(record.memberName))}</span><span class="attendance-member-name">${escapeHtml(record.memberName)}</span></td><td data-label="${escapeHtml(labels.phone)}"><span class="attendance-member-phone" dir="ltr">${escapeHtml(record.phone)}</span></td><td data-label="${escapeHtml(labels.checkIn)}"><span class="attendance-time">${timeText(record.checkInAt)}</span></td><td data-label="${escapeHtml(labels.checkOut)}"><span class="attendance-time">${timeText(record.checkOutAt)}</span></td><td data-label="${escapeHtml(labels.duration)}">${escapeHtml(duration)}</td><td data-label="${escapeHtml(labels.status)}"><span class="attendance-status${record.checkOutAt ? ' complete' : ''}">${escapeHtml(status)}</span></td><td data-label="${escapeHtml(labels.action)}"></td></tr>`;
         }).join('')}</tbody></table>`;
         $('attendanceTableWrap').querySelectorAll('.attendance-member-phone').forEach((phoneNode, index) => {
             const record = records[index];
@@ -379,7 +406,7 @@
     function searchAttendanceMember() {
         window.clearTimeout(memberPreviewTimer);
         if (normalizePhone($('attendancePhone')?.value || '').length < 5) {
-            renderMemberPreviewMessage('أدخل رقم هاتف صالحًا للبحث عن العضو.', 'error');
+            renderMemberPreviewMessage('attendance.preview.invalidPhone', 'error');
             $('attendancePhone')?.focus({ preventScroll: true });
             return;
         }
@@ -396,7 +423,7 @@
             if (record?.checkOutAt) {
                 const status = document.createElement('span');
                 status.className = `attendance-action-done${record.checkOutSource === 'auto' ? ' auto' : ''}`;
-                status.textContent = record.checkOutSource === 'auto' ? 'انصراف تلقائي' : 'تم الانصراف';
+                status.textContent = translate(record.checkOutSource === 'auto' ? 'attendance.status.autoCheckedOutDone' : 'attendance.status.checkedOutDone');
                 cell.append(status);
             } else {
                 const button = document.createElement('button');
@@ -405,7 +432,8 @@
                 button.dataset.attendanceCheckout = 'true';
                 button.dataset.requiredPermission = 'attendance.check_out';
                 button.dataset.phone = record?.phone || '';
-                button.textContent = 'تسجيل انصراف';
+                button.textContent = translate('attendance.action.checkOut');
+                button.setAttribute('aria-label', translate('attendance.action.checkOut'));
                 cell.append(button);
             }
             const existingCell = row.lastElementChild;
@@ -425,7 +453,7 @@
         attendanceAbortController = new AbortController();
         const controller = attendanceAbortController;
         const loadPromise = (async () => {
-        $('attendanceTableWrap').innerHTML = '<div class="loading">جاري تحديث سجل الحضور…</div>';
+        $('attendanceTableWrap').innerHTML = `<div class="loading" role="status" aria-live="polite">${escapeHtml(translate('attendance.log.refreshing'))}</div>`;
         try {
             const data = await request(`/api/attendance?${new URLSearchParams({ search })}`, { signal: controller.signal });
             renderRecords(data);
@@ -454,13 +482,13 @@
         const phoneInput = $('attendancePhone');
         const phone = phoneInput?.value.trim();
         if (!phone) {
-            showMessage('أدخل رقم الهاتف أو امسح QR Code أولاً.', 'warning');
+            showMessage(translate('attendance.action.enterPhoneOrScan'), 'warning');
             return null;
         }
         const validation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
         const payload = window.LogicFitPhoneInputs?.getSubmissionPayload?.(phoneInput);
         if (!validation?.valid || !payload) {
-            showMessage(validation?.message || 'أدخل رقم هاتف صحيحًا.', 'warning');
+            showMessage(validation?.message || translate('attendance.action.invalidPhone'), 'warning');
             phoneInput?.focus();
             return null;
         }
@@ -469,18 +497,18 @@
 
     async function checkIn(payload = null) {
         if (!can('attendance.check_in')) {
-            await showMessage('لا تملك صلاحية تسجيل الحضور.', 'error');
+            await showMessage(translate('attendance.permission.checkIn'), 'error');
             return;
         }
         const body = payload || currentInput();
         if (!body) return;
         try {
             const result = await request('/api/attendance/check-in', { method: 'POST', body: JSON.stringify(body) });
-            const memberName = previewMember?.fullName || 'العضو';
+            const memberName = previewMember?.fullName || translate('attendance.member.generic');
             $('attendancePhone').value = '';
             clearMemberPreview();
-            if (typeof window.showToast === 'function') window.showToast(`تم تسجيل حضور ${memberName} بنجاح`, false, 'success');
-            else void showMessage('تم تسجيل الحضور بنجاح', 'success', result.message);
+            if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkIn', { name: memberName }), false, 'success');
+            else void showMessage(translate('attendance.success.checkedIn'), 'success', result.message);
             attendanceFeedback('success');
             announceAttendanceUpdate();
             void loadAttendance({ force: true });
@@ -493,18 +521,18 @@
 
     async function checkOut(payload = null) {
         if (!can('attendance.check_out')) {
-            await showMessage('لا تملك صلاحية تسجيل الانصراف.', 'error');
+            await showMessage(translate('attendance.permission.checkOut'), 'error');
             return;
         }
         const body = payload || currentInput();
         if (!body) return;
         try {
             const result = await request('/api/attendance/check-out', { method: 'POST', body: JSON.stringify(body) });
-            const memberName = previewMember?.fullName || 'العضو';
+            const memberName = previewMember?.fullName || translate('attendance.member.generic');
             $('attendancePhone').value = '';
             clearMemberPreview();
-            if (typeof window.showToast === 'function') window.showToast(`تم تسجيل انصراف ${memberName}`, false, 'success');
-            else void showMessage('تم تسجيل الانصراف بنجاح', 'success', result.message);
+            if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkOut', { name: memberName }), false, 'success');
+            else void showMessage(translate('attendance.success.checkedOut'), 'success', result.message);
             attendanceFeedback('success');
             announceAttendanceUpdate();
             void loadAttendance({ force: true });
@@ -535,7 +563,7 @@
                 const resolved = await request('/api/attendance/resolve-qr', { method: 'POST', body: JSON.stringify({ qrToken: decodedText }) });
                 const member = resolved.member;
                 if (resolved.attendance?.checkedOut) {
-                    await showMessage('تم تسجيل انصراف هذا العضو اليوم بالفعل.', 'info');
+                    await showMessage(translate('attendance.qr.alreadyCheckedOutMember'), 'info');
                     return;
                 }
                 const action = resolved.attendance?.inside ? 'checkout' : 'checkin';
@@ -563,7 +591,7 @@
                 const attendance = await request(`/api/attendance?${new URLSearchParams({ search: member.phone || '' })}`);
                 const record = (attendance.records || []).find((item) => String(item.memberId) === String(member.id));
                 if (record?.checkOutAt) {
-                    await showMessage('تم تسجيل انصراف هذا المشترك اليوم بالفعل.', 'info');
+                    await showMessage(translate('attendance.qr.alreadyCheckedOutSubscriber'), 'info');
                     return;
                 }
                 if (record && !record.checkOutAt) action = 'checkout';
@@ -582,10 +610,14 @@
     async function openScanner() {
         try { await window.topGymLoadExternalAsset?.('html5-qrcode'); } catch (_) { /* keep the existing user-facing fallback */ }
         if (!window.Html5Qrcode) {
-            await showMessage('أداة مسح QR Code غير متاحة حالياً. استخدم رقم الهاتف.', 'warning');
+            await showMessage(translate('attendance.qr.unavailable'), 'warning');
             return;
         }
         const dialog = $('qrReaderDialog');
+        // The QR dialog is a sibling of attendanceSection, so the normal
+        // attendance localization pass does not cover it. Re-apply the
+        // canonical catalog when opening it, before it becomes visible.
+        window.TopGymI18n?.apply?.(dialog);
         if (dialog?.showModal) dialog.showModal(); else dialog?.setAttribute('open', '');
         await stopScanner();
         scanner = new window.Html5Qrcode('qrReader');
@@ -597,7 +629,7 @@
             scannerRunning = true;
         } catch (error) {
             await closeScanner();
-            await showMessage('تعذر تشغيل الكاميرا. تأكد من السماح بالوصول للكاميرا أو استخدم رقم الهاتف.', 'warning', error.message);
+            await showMessage(translate('attendance.qr.cameraError'), 'warning', error.message);
         }
     }
 
@@ -606,16 +638,28 @@
             await window.topGymMemberDigitalCard.openFromMemberId(memberId);
             return;
         }
-        await showMessage('أداة بطاقة العضوية غير جاهزة. لم يتم عرض رمز QR غير آمن؛ أعد تحميل الشاشة وحاول مرة أخرى.', 'error');
+        await showMessage(translate('attendance.qr.cardUnavailable'), 'error');
     }
 
     function isAttendanceActive() {
         return !$('attendanceSection')?.hidden;
     }
 
+    function applyAttendanceLocalization() {
+        const section = $('attendanceSection');
+        if (!section) return;
+        const phoneHelp = section.querySelector('#attendancePhone')
+            ?.closest('[data-phone-control]')
+            ?.querySelector('[data-phone-input-help]');
+        if (phoneHelp) phoneHelp.dataset.i18n = 'attendance.phone.help';
+        window.TopGymI18n?.apply?.(section);
+        window.TopGymI18n?.apply?.($('qrReaderDialog'));
+    }
+
     function initializeAttendance() {
         if (initialized) return;
         initialized = true;
+        applyAttendanceLocalization();
         resetAttendanceActionButtons();
         $('attendanceCheckInButton')?.addEventListener('click', () => checkIn());
         $('attendanceCheckOutButton')?.addEventListener('click', () => checkOut());
@@ -661,6 +705,17 @@
             const records = attendanceSnapshot.records || [];
             const filter = $('attendanceStatusFilter').value;
             decorateAttendanceActions(records.filter((record) => filter === 'inside' ? !record.checkOutAt : filter === 'checked_out' ? Boolean(record.checkOutAt) : true));
+        });
+        window.addEventListener('topgym:localechange', () => {
+            const section = $('attendanceSection');
+            if (!section) return;
+            applyAttendanceLocalization();
+            if (previewMember) renderMemberPreview(previewMember);
+            else if (memberPreviewMessage) renderMemberPreviewMessage(memberPreviewMessage.key, memberPreviewMessage.kind);
+            if (attendanceSnapshot) {
+                renderRecords(attendanceSnapshot);
+                decorateAttendanceActions(filteredAttendanceRecords(attendanceSnapshot));
+            } else updateAttendanceActionButtons();
         });
         $('attendancePhone')?.addEventListener('input', () => {
             clearTimeout(memberPreviewTimer);

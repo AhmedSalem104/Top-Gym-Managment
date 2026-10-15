@@ -76,6 +76,7 @@ test('Platform Admin UI manages platform methods and keeps tenant payment settin
     const client = read('public/js/platform-admin.js');
     const branding = read('public/index.html');
     const registerPage = read('public/js/register-gym.js');
+    const i18n = read('public/js/core/i18n.js');
     const portal = read('public/js/member-portal-subscription.js');
     const portalHtml = read('public/member-portal.html');
 
@@ -88,12 +89,16 @@ test('Platform Admin UI manages platform methods and keeps tenant payment settin
     assert.match(client, /platform-payment-method-edit/);
     assert.match(client, /data-platform-payment-method-edit/);
     assert.match(branding, /id="brandingPaymentMethods"/);
-    assert.match(registerPage, /Platform Admin تهيئة وسيلة دفع/);
-    assert.match(portal, /يجب على Owner إضافة وسيلة دفع من إعدادات هوية الجيم ثم نشر الهوية/);
+    assert.match(registerPage, /registration\.validation\.paymentMethodNotConfigured/);
+    assert.match(i18n, /'registration\.validation\.paymentMethodNotConfigured': 'لا توجد وسيلة دفع مفعلة/u);
+    assert.match(i18n, /'registration\.validation\.paymentMethodNotConfigured': 'No Logic Fit payment method/u);
+    assert.match(portal, /tr\('noPaymentMethods'\)/);
+    assert.equal((i18n.match(/'memberPortal\.subscription\.noPaymentMethods':/g) || []).length, 2,
+        'the missing-tenant-payment guidance is centralized in both Arabic and English');
     assert.match(portal, /data-portal-copy-payment/);
     assert.match(portal, /copyText\(method\.accountReference\)/);
     assert.match(portalHtml, /portal-payment-steps/);
-    assert.match(portal, /طلب #\$\{escapeHtml\(item\.id\)\}/);
+    assert.match(portal, /tr\('requestId', \{ id: item\.id \}\)/);
     assert.doesNotMatch(registerPage, /01015819700|01005376843/);
     assert.doesNotMatch(portal, /01015819700|01005376843/);
 });

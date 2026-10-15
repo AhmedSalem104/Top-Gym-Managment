@@ -2,8 +2,12 @@
     if (window.__topGymDashboardAnalyticsLoaded) return;
     window.__topGymDashboardAnalyticsLoaded = true;
 
-    const state = { period: 'month', requestId: 0, abortController: null };
-    const PERIOD_LABELS = { week: 'هذا الأسبوع', month: 'هذا الشهر', year: 'هذه السنة' };
+    const state = { period: 'month', requestId: 0, abortController: null, data: null, error: false };
+    const PERIOD_LABELS = {
+        week: 'dashboard.analytics.period.weekLabel',
+        month: 'dashboard.analytics.period.monthLabel',
+        year: 'dashboard.analytics.period.yearLabel'
+    };
     const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
     const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
     const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
@@ -11,14 +15,15 @@
 
     function $(id) { return document.getElementById(id); }
     function brandName() { return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit'; }
-    function number(value) { return Number(value || 0).toLocaleString('ar-EG'); }
-    function money(value) { return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
+    function text(key, params = {}) { return window.TopGymI18n?.t?.(`dashboard.analytics.${key}`, params) || key; }
+    function number(value) { return window.TopGymI18n?.format?.('number', Number(value || 0)) || Number(value || 0).toLocaleString('ar-EG'); }
+    function money(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`; }
     function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character])); }
     function displayPhone(value, iso = '') { return window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || ''); }
 
     function formatDate(value, options = { dateStyle: 'medium' }) {
         if (!value) return '—';
-        return new Intl.DateTimeFormat('ar-EG', options).format(new Date(`${String(value).slice(0, 10)}T00:00:00Z`));
+        return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), options) || new Intl.DateTimeFormat('ar-EG', options).format(new Date(`${String(value).slice(0, 10)}T00:00:00Z`));
     }
 
     function bucketLabel(value, period) {
@@ -28,18 +33,19 @@
 
     function periodText(data) {
         const period = data.period || {};
-        return `${PERIOD_LABELS[period.key] || ''} · ${formatDate(period.startDate)} — ${formatDate(period.endDate)}`;
+        return text('period.range', { period: text(PERIOD_LABELS[period.key] || 'period.monthLabel'), start: formatDate(period.startDate), end: formatDate(period.endDate) });
     }
 
     function comparisonSummary(data, key, inverse = false) {
         const comparison = data.comparisons?.[key];
         if (!comparison) return '';
-        if (comparison.percent === null) return comparison.current > 0 ? 'جديد خلال الفترة' : 'بدون حركة';
-        if (comparison.direction === 'flat') return 'بدون تغيير عن السابقة';
-        const percent = Math.abs(Number(comparison.percent || 0)).toLocaleString('ar-EG', { maximumFractionDigits: 1 });
+        if (comparison.percent === null) return text(comparison.current > 0 ? 'comparison.new' : 'comparison.none');
+        if (comparison.direction === 'flat') return text('comparison.flat');
+        const percent = number(Math.abs(Number(comparison.percent || 0)));
         const arrow = comparison.direction === 'up' ? '↑' : '↓';
         const isPositive = inverse ? comparison.direction === 'down' : comparison.direction === 'up';
-        return `<span class="${isPositive ? 'is-positive' : 'is-negative'}">${arrow} ${percent}٪</span> عن الفترة السابقة`;
+        const percentSymbol = document.documentElement.lang === 'en' ? '%' : '٪';
+        return `<span class="${isPositive ? 'is-positive' : 'is-negative'}">${arrow} ${percent}${percentSymbol}</span> ${text('comparison.previous')}`;
     }
 
     function comparisonMarkup(data, key, inverse = false) {
@@ -61,7 +67,7 @@
             <div class="dashboard-analytics-head">
                 <div class="dashboard-analytics-title">
                     <span class="dashboard-analytics-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
-                    <div><span class="dashboard-analytics-eyebrow">تحليلات ${brandName()}</span><h2 id="dashboardAnalyticsTitle">مؤشرات الأداء والرسومات البيانية</h2><p id="dashboardAnalyticsPeriod">جاري تحميل التحليلات…</p></div>
+                    <div><span class="dashboard-analytics-eyebrow">${escapeHtml(window.TopGymI18n?.t?.('dashboard.analytics.eyebrow', { brand: brandName() }) || `تحليلات ${brandName()}`)}</span><h2 id="dashboardAnalyticsTitle">مؤشرات الأداء والرسومات البيانية</h2><p id="dashboardAnalyticsPeriod">جاري تحميل التحليلات…</p></div>
                 </div>
                 <div class="analytics-period-switch" role="tablist" aria-label="الفترة الزمنية للتحليلات">
                     <button type="button" data-analytics-period="week" role="tab" aria-selected="false">أسبوعي</button>
@@ -115,6 +121,7 @@
         panel.querySelectorAll('[data-analytics-period]').forEach((button) => {
             button.addEventListener('click', () => loadAnalytics(button.dataset.analyticsPeriod));
         });
+        updateAnalyticsBranding();
         return panel;
     }
 
@@ -126,17 +133,24 @@
         });
     }
 
+    function updateAnalyticsBranding() {
+        const eyebrow = document.querySelector('.dashboard-analytics-eyebrow');
+        if (!eyebrow) return;
+        eyebrow.dataset.i18nPreserve = 'true';
+        eyebrow.textContent = window.TopGymI18n?.t?.('dashboard.analytics.eyebrow', { brand: brandName() }) || `تحليلات ${brandName()}`;
+    }
+
     function renderKpis(data) {
         const kpis = data.kpis || {};
         const attendance = data.attendance?.kpis || {};
         const attentionCount = Number(kpis.expiringSoon || 0) + Number(kpis.expiredMembers || 0);
         const items = [
-            { key: 'newMembers', label: 'أعضاء جدد', value: number(kpis.newMembers), meta: PERIOD_LABELS[data.period?.key] || '', delta: comparisonMarkup(data, 'newMembers'), tone: 'indigo', icon: 'plus' },
-            { key: 'collected', label: 'التحصيل الفعلي', value: money(kpis.collected), meta: `${number(kpis.paidTransactions)} دفعة · المبلغ المحصل فعليًا خلال الفترة`, delta: comparisonMarkup(data, 'collected'), tone: 'green', icon: 'up' },
-            { key: 'net', label: 'صافي الفترة', value: money(kpis.net), meta: Number(kpis.refunds || 0) > 0 ? 'التحصيل − المصروفات − الاستردادات' : 'التحصيل − المصروفات', delta: comparisonMarkup(data, 'net'), tone: kpis.net < 0 ? 'red' : 'teal', icon: 'net' },
-            { key: 'visits', label: 'زيارات الحضور', value: number(attendance.visits), meta: `${number(attendance.uniqueMembers)} مشترك حضر`, delta: comparisonMarkup(data, 'visits'), tone: 'blue', icon: 'visits' },
-            { key: 'outstanding', label: 'المبالغ المتبقية', value: money(kpis.outstanding), meta: `${number(kpis.outstandingCount)} اشتراك`, tone: 'rose', icon: 'clock' },
-            { key: 'attention', label: 'تحتاج متابعة', value: number(attentionCount), meta: `${number(attendance.inactiveMembers)} غائب 7 أيام`, tone: 'amber', icon: 'alert' }
+            { key: 'newMembers', label: text('label.newMembers'), value: number(kpis.newMembers), meta: text(PERIOD_LABELS[data.period?.key] || PERIOD_LABELS.month), delta: comparisonMarkup(data, 'newMembers'), tone: 'indigo', icon: 'plus' },
+            { key: 'collected', label: text('label.actualCollections'), value: money(kpis.collected), meta: text('meta.transactions', { count: number(kpis.paidTransactions) }), delta: comparisonMarkup(data, 'collected'), tone: 'green', icon: 'up' },
+            { key: 'net', label: text('label.periodNet'), value: money(kpis.net), meta: Number(kpis.refunds || 0) > 0 ? text('net.afterRefunds') : text('net.afterExpenses'), delta: comparisonMarkup(data, 'net'), tone: kpis.net < 0 ? 'red' : 'teal', icon: 'net' },
+            { key: 'visits', label: text('label.attendanceVisits'), value: number(attendance.visits), meta: text('meta.uniqueMembers', { count: number(attendance.uniqueMembers) }), delta: comparisonMarkup(data, 'visits'), tone: 'blue', icon: 'visits' },
+            { key: 'outstanding', label: text('label.outstanding'), value: money(kpis.outstanding), meta: text('meta.outstandingCount', { count: number(kpis.outstandingCount) }), tone: 'rose', icon: 'clock' },
+            { key: 'attention', label: text('label.needsFollowup'), value: number(attentionCount), meta: text('meta.inactiveMembers', { count: number(attendance.inactiveMembers) }), tone: 'amber', icon: 'alert' }
         ];
         const icons = {
             plus: '<path d="M12 5v14M5 12h14"/>',
@@ -160,16 +174,17 @@
         const activeRate = currentMembers ? Math.round((activeMembers / currentMembers) * 100) : 0;
         const expenseRatio = collected ? Math.round((expenses / collected) * 100) : (expenses ? 100 : 0);
         const healthScore = Math.max(0, Math.min(100, Math.round((activeRate * .45) + (net >= 0 ? 30 : 8) + Math.max(0, 25 - (expenseRatio * .35)))));
-        const healthLabel = healthScore >= 80 ? 'أداء ممتاز' : healthScore >= 60 ? 'أداء مستقر' : healthScore >= 35 ? 'يحتاج متابعة' : 'بيانات تحتاج تدخل';
+        const healthLabel = text(healthScore >= 80 ? 'health.excellent' : healthScore >= 60 ? 'health.stable' : healthScore >= 35 ? 'health.followup' : 'health.intervention');
         const priorityCount = Number(kpis.alertsCount || 0);
         const priorityText = Number(kpis.outstandingCount || 0) > 0
-            ? `${number(kpis.outstandingCount)} اشتراك عليه رصيد`
+            ? text('priority.balance', { count: number(kpis.outstandingCount) })
             : Number(kpis.expiringSoon || 0) > 0
-                ? `${number(kpis.expiringSoon)} اشتراك يقترب انتهاؤه`
+                ? text('priority.expiring', { count: number(kpis.expiringSoon) })
                 : Number(attendance.inactiveMembers || 0) > 0
-                    ? `${number(attendance.inactiveMembers)} مشترك يحتاج تنشيطًا`
-                    : 'لا توجد أولوية عاجلة';
-        $('analyticsSmartStrip').innerHTML = `<article class="analytics-smart-health"><div class="analytics-health-ring"><strong>${number(healthScore)}٪</strong><span>مؤشر الصحة</span></div><div><span class="analytics-smart-eyebrow">القراءة الذكية</span><h3>${healthLabel}</h3><p>${net >= 0 ? `الصافي موجب، ونسبة المصروفات ${number(expenseRatio)}٪ من التحصيل.` : 'المصروفات أعلى من التحصيل وتحتاج مراجعة.'}</p></div></article><article class="analytics-smart-insight blue"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span><div><span>نسبة النشاط</span><strong>${number(activeRate)}٪</strong><small>${number(activeMembers)} عضو نشط من ${number(currentMembers)}</small></div></article><article class="analytics-smart-insight green"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11l4 4 6-8"/><path d="M15 7h5v5"/></svg></span><div><span>اتجاه التحصيل</span><strong>${money(collected)}</strong><small>${comparisonSummary(data, 'collected') || 'لا توجد فترة مقارنة'}</small></div></article><article class="analytics-smart-insight rose"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><span>أولوية المتابعة</span><strong>${number(priorityCount)}</strong><small>${escapeHtml(priorityText)}</small></div></article>`;
+                    ? text('priority.inactive', { count: number(attendance.inactiveMembers) })
+                    : text('empty.priority');
+        const percent = document.documentElement.lang === 'en' ? '%' : '٪';
+        $('analyticsSmartStrip').innerHTML = `<article class="analytics-smart-health"><div class="analytics-health-ring"><strong>${number(healthScore)}${percent}</strong><span>${text('label.health')}</span></div><div><span class="analytics-smart-eyebrow">${text('label.smartReading')}</span><h3>${healthLabel}</h3><p>${net >= 0 ? text('net.positive', { ratio: number(expenseRatio) }) : text('net.negative')}</p></div></article><article class="analytics-smart-insight blue"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16.5 9"/></svg></span><div><span>${text('label.activityRate')}</span><strong>${number(activeRate)}${percent}</strong><small>${text('meta.activeMembers', { active: number(activeMembers), total: number(currentMembers) })}</small></div></article><article class="analytics-smart-insight green"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11l4 4 6-8"/><path d="M15 7h5v5"/></svg></span><div><span>${text('label.collectionTrend')}</span><strong>${money(collected)}</strong><small>${comparisonSummary(data, 'collected') || text('empty.comparison')}</small></div></article><article class="analytics-smart-insight rose"><span class="analytics-smart-insight-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg></span><div><span>${text('label.followupPriority')}</span><strong>${number(priorityCount)}</strong><small>${escapeHtml(priorityText)}</small></div></article>`;
     }
 
     function renderTrend(data) {
@@ -180,7 +195,7 @@
         const expenses = trend.expenses || [];
         if (!target) return;
         if (!labels.length || ![...collected, ...expenses].some((value) => Number(value || 0) > 0)) {
-            target.innerHTML = '<div class="analytics-chart-empty">ستظهر الحركة المالية هنا بعد تسجيل أول تحصيل أو مصروف.</div>';
+            target.innerHTML = `<div class="analytics-chart-empty">${text('empty.trend')}</div>`;
             return;
         }
         const width = 820;
@@ -205,7 +220,7 @@
         }).join('');
         const collectedPoints = makePoints(collected);
         const expensePoints = makePoints(expenses);
-        target.innerHTML = `<svg class="analytics-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="رسم التحصيل والمصروفات"><g>${yTicks}</g><polyline points="${collectedPoints}" class="analytics-line collected-line"/><polyline points="${expensePoints}" class="analytics-line expenses-line"/><g class="analytics-points collected-points">${collected.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g class="analytics-points expenses-points">${expenses.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g>${xLabels}</g></svg>`;
+        target.innerHTML = `<svg class="analytics-trend-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${text('chart.aria')}"><g>${yTicks}</g><polyline points="${collectedPoints}" class="analytics-line collected-line"/><polyline points="${expensePoints}" class="analytics-line expenses-line"/><g class="analytics-points collected-points">${collected.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g class="analytics-points expenses-points">${expenses.map((value, index) => `<circle cx="${x(index)}" cy="${y(value)}" r="3.5"><title>${bucketLabel(labels[index], data.period?.key)}: ${money(value)}</title></circle>`).join('')}</g><g>${xLabels}</g></svg>`;
     }
 
     function renderBars(targetId, items, labels, emptyText = 'لا توجد بيانات خلال الفترة.') {
@@ -220,7 +235,8 @@
         target.innerHTML = rows.map((item) => {
             const value = Number(item.value || 0);
             const width = Math.max(4, (value / max) * 100);
-            const label = labels[item.key] || item.key;
+            const labelKey = `value.${item.key}`;
+            const label = window.TopGymI18n?.t?.(`dashboard.analytics.${labelKey}`) || labels[item.key] || item.key;
             return `<div class="analytics-bar-row"><div class="analytics-bar-label"><span>${escapeHtml(label)}</span><strong>${number(value)}</strong></div><div class="analytics-bar-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`;
         }).join('');
     }
@@ -233,45 +249,46 @@
         const max = Math.max(1, ...members, ...memberships);
         if (!target) return;
         if (!members.length || ![...members, ...memberships].some((value) => Number(value || 0) > 0)) {
-            target.innerHTML = '<div class="analytics-chart-empty">لا توجد حركة تسجيل أو اشتراكات في هذه الفترة.</div>';
+            target.innerHTML = `<div class="analytics-chart-empty">${text('empty.activity')}</div>`;
             return;
         }
         const step = members.length <= 12 ? 1 : Math.ceil(members.length / 8);
-        target.innerHTML = `<div class="analytics-activity-legend"><span><i class="members"></i>أعضاء جدد</span><span><i class="memberships"></i>اشتراكات</span></div><div class="analytics-column-chart">${members.map((value, index) => { const membershipValue = Number(memberships[index] || 0); const memberHeight = Math.max(4, (Number(value || 0) / max) * 100); const membershipHeight = Math.max(4, (membershipValue / max) * 100); const label = index % step === 0 || index === members.length - 1 ? bucketLabel((data.trend.labels || [])[index], data.period?.key) : ''; return `<div class="analytics-column-group"><div class="analytics-column-pair"><span class="analytics-column members" style="height:${memberHeight.toFixed(2)}%" title="أعضاء جدد: ${number(value)}"></span><span class="analytics-column memberships" style="height:${membershipHeight.toFixed(2)}%" title="اشتراكات: ${number(membershipValue)}"></span></div><small>${escapeHtml(label)}</small></div>`; }).join('')}</div>`;
+        target.innerHTML = `<div class="analytics-activity-legend"><span><i class="members"></i>${text('activity.newMembers')}</span><span><i class="memberships"></i>${text('activity.memberships')}</span></div><div class="analytics-column-chart">${members.map((value, index) => { const membershipValue = Number(memberships[index] || 0); const memberHeight = Math.max(4, (Number(value || 0) / max) * 100); const membershipHeight = Math.max(4, (membershipValue / max) * 100); const label = index % step === 0 || index === members.length - 1 ? bucketLabel((data.trend.labels || [])[index], data.period?.key) : ''; return `<div class="analytics-column-group"><div class="analytics-column-pair"><span class="analytics-column members" style="height:${memberHeight.toFixed(2)}%" title="${text('activity.memberTitle', { count: number(value) })}"></span><span class="analytics-column memberships" style="height:${membershipHeight.toFixed(2)}%" title="${text('activity.membershipTitle', { count: number(membershipValue) })}"></span></div><small>${escapeHtml(label)}</small></div>`; }).join('')}</div>`;
     }
 
     function formatDateTime(value) {
         if (!value) return '—';
-        return new Intl.DateTimeFormat('ar-EG', {
+        const options = {
             dateStyle: 'short',
             timeStyle: 'short',
             timeZone: 'Africa/Cairo'
-        }).format(new Date(value));
+        };
+        return window.TopGymI18n?.format?.('date', value, options) || new Intl.DateTimeFormat('ar-EG', options).format(new Date(value));
     }
 
     function renderAttendanceInsights(data) {
         const attendance = data.attendance || {};
         const kpis = attendance.kpis || {};
-        const formatDecimal = (value) => Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 1 });
+        const formatDecimal = (value) => window.TopGymI18n?.format?.('number', Number(value || 0), { maximumFractionDigits: 1 }) || Number(value || 0).toLocaleString('ar-EG', { maximumFractionDigits: 1 });
         const peakHour = kpis.peakHour || '—';
         const badge = $('attendanceInsightsBadge');
-        if (badge) badge.textContent = peakHour === '—' ? 'لا توجد زيارات' : `الذروة ${peakHour}`;
+        if (badge) badge.textContent = peakHour === '—' ? text('empty.visits') : text('attendance.peak', { hour: peakHour });
 
         const kpiItems = [
-            ['الزيارات', number(kpis.visits), 'خلال الفترة', 'blue'],
-            ['مشتركون حضروا', number(kpis.uniqueMembers), 'مشترك مختلف', 'green'],
-            ['المتوسط اليومي', formatDecimal(kpis.averageVisitsPerDay), 'زيارة في اليوم', 'violet'],
-            ['تحتاج متابعة', number(kpis.inactiveMembers), 'بلا حضور 7 أيام', 'amber']
+            [text('label.visits'), number(kpis.visits), text('label.duringPeriod'), 'blue'],
+            [text('label.uniqueMembers'), number(kpis.uniqueMembers), text('label.differentMember'), 'green'],
+            [text('label.dailyAverage'), formatDecimal(kpis.averageVisitsPerDay), text('label.visitPerDay'), 'violet'],
+            [text('label.needsFollowup'), number(kpis.inactiveMembers), text('label.noAttendance7Days'), 'amber']
         ];
         if ($('attendanceInsightsKpis')) $('attendanceInsightsKpis').innerHTML = kpiItems.map(([label, value, meta, tone]) => `<article class="attendance-insights-kpi ${tone}"><strong>${value}</strong><span>${label}</span><small>${meta}</small></article>`).join('');
 
         const peakTarget = $('attendancePeakChart');
         const peakRows = (attendance.peakHours || []).filter((item) => Number(item.value || 0) > 0);
         if (peakTarget) {
-            if (!peakRows.length) peakTarget.innerHTML = '<div class="attendance-insights-empty">لا توجد زيارات مسجلة في هذه الفترة.</div>';
+            if (!peakRows.length) peakTarget.innerHTML = `<div class="attendance-insights-empty">${text('empty.visits')}</div>`;
             else {
                 const max = Math.max(1, ...peakRows.map((item) => Number(item.value || 0)));
-                peakTarget.innerHTML = peakRows.map((item) => { const value = Number(item.value || 0); const width = Math.max(4, (value / max) * 100); return `<div class="attendance-peak-row"><div><span>${escapeHtml(item.label || '—')}</span><strong>${number(value)} زيارة</strong></div><div class="attendance-peak-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`; }).join('');
+                peakTarget.innerHTML = peakRows.map((item) => { const value = Number(item.value || 0); const width = Math.max(4, (value / max) * 100); return `<div class="attendance-peak-row"><div><span>${escapeHtml(item.label || '—')}</span><strong>${text('meta.visitCount', { count: number(value) })}</strong></div><div class="attendance-peak-track"><span style="width:${width.toFixed(2)}%"></span></div></div>`; }).join('');
             }
         }
 
@@ -279,16 +296,16 @@
             const target = $(targetId);
             if (!target) return;
             if (!rows.length) {
-                target.innerHTML = `<div class="attendance-insights-empty">${inactive ? 'كل المشتركين حضروا خلال آخر 7 أيام.' : 'لا توجد زيارات مسجلة في هذه الفترة.'}</div>`;
+                target.innerHTML = `<div class="attendance-insights-empty">${inactive ? text('empty.allAttended') : text('empty.visits')}</div>`;
                 return;
             }
             target.innerHTML = rows.map((item) => {
                 const secondary = inactive
-                    ? (item.lastVisitDate ? `آخر حضور ${formatDate(item.lastVisitDate)}` : 'لم يسجل حضورًا')
-                    : `آخر حضور ${formatDateTime(item.lastVisitAt)}`;
+                    ? (item.lastVisitDate ? `${text('attendance.lastVisit')} ${formatDate(item.lastVisitDate)}` : text('attendance.notVisited'))
+                    : `${text('attendance.lastVisit')} ${formatDateTime(item.lastVisitAt)}`;
                 const meta = inactive
-                    ? (item.daysSinceLastVisit === null ? 'بحاجة إلى أول زيارة' : `منذ ${number(item.daysSinceLastVisit)} يوم`)
-                    : `${number(item.visits)} زيارة`;
+                    ? (item.daysSinceLastVisit === null ? text('attendance.firstVisitNeeded') : text('attendance.daysAgo', { count: number(item.daysSinceLastVisit) }))
+                    : text('meta.visitCount', { count: number(item.visits) });
                 return `<div class="attendance-member-row"><div class="attendance-member-copy"><strong>${escapeHtml(item.fullName || '—')}</strong><small>${escapeHtml(secondary)} · ${escapeHtml(displayPhone(item.phone, item.phoneCountry) || '—')}</small></div><span class="attendance-member-stat">${escapeHtml(meta)}</span></div>`;
             }).join('');
         };
@@ -297,7 +314,11 @@
     }
 
     function renderAnalytics(data) {
-        $('dashboardAnalyticsPeriod').textContent = periodText(data);
+        state.data = data;
+        state.error = false;
+        const period = $('dashboardAnalyticsPeriod');
+        period?.removeAttribute('data-i18n');
+        if (period) period.textContent = periodText(data);
         renderSmartStrip(data);
         renderKpis(data);
         renderTrend(data);
@@ -308,6 +329,16 @@
         renderBars('analyticsPaymentChart', data.distributions?.paymentMethods, PAYMENT_LABELS);
         renderActivity(data);
         renderAttendanceInsights(data);
+    }
+
+    function showAnalyticsError() {
+        state.data = null;
+        state.error = true;
+        const period = $('dashboardAnalyticsPeriod');
+        period?.removeAttribute('data-i18n');
+        if (period) period.textContent = text('error.generic');
+        const target = $('dashboardAnalyticsKpis');
+        if (target) target.innerHTML = `<div class="analytics-error">${text('error.generic')}</div>`;
     }
 
     function hidePanel() {
@@ -335,6 +366,7 @@
         panel.setAttribute('aria-hidden', 'false');
         panel.toggleAttribute('inert', false);
         state.period = ['week', 'month', 'year'].includes(period) ? period : 'month';
+        state.error = false;
         setActivePeriod(state.period);
         const requestId = ++state.requestId;
         state.abortController?.abort();
@@ -351,10 +383,7 @@
             if (requestId === state.requestId) renderAnalytics(data);
         } catch (error) {
             if (error.name === 'AbortError') return;
-            if (requestId === state.requestId) {
-                $('dashboardAnalyticsPeriod').textContent = error.message || 'تعذر تحميل التحليلات.';
-                $('dashboardAnalyticsKpis').innerHTML = `<div class="analytics-error">${escapeHtml(error.message || 'تعذر تحميل التحليلات.')}</div>`;
-            }
+            if (requestId === state.requestId) showAnalyticsError();
         } finally {
             if (requestId === state.requestId && loading) loading.hidden = true;
         }
@@ -376,8 +405,16 @@
             }
         });
         window.addEventListener('topgym:brandingchange', () => {
-            const eyebrow = document.querySelector('.dashboard-analytics-eyebrow');
-            if (eyebrow) eyebrow.textContent = `تحليلات ${brandName()}`;
+            updateAnalyticsBranding();
+        });
+        window.addEventListener('topgym:localechange', () => {
+            const panel = $('dashboardAnalytics');
+            if (!panel || !panel.dataset.ready) return;
+            updateAnalyticsBranding();
+            if (state.data) renderAnalytics(state.data);
+            else if (state.error) showAnalyticsError();
+            else window.TopGymI18n?.apply?.(panel);
+            window.TopGymI18n?.annotateText?.(panel, 'dashboard.');
         });
         window.addEventListener('hashchange', () => {
             if ((window.location.hash.slice(1) || 'dashboard') !== 'dashboard') hidePanel();

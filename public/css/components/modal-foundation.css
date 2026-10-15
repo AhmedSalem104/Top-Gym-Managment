@@ -189,8 +189,8 @@ dialog.lf-modal-shell::backdrop {
 
 .lf-modal-shell > .dialog-close-button {
   position: absolute;
-  top: var(--lf-modal-block);
-  left: var(--lf-modal-inline);
+  inset-block-start: var(--lf-modal-block);
+  inset-inline-end: var(--lf-modal-inline);
   z-index: var(--z-modal);
   width: 44px;
   min-width: 44px;
@@ -284,7 +284,7 @@ dialog.lf-modal-shell::backdrop {
 .lf-modal-shell .dialog-header > .btn {
   flex: 0 0 auto;
   min-width: 76px;
-  min-height: 40px;
+  min-height: 44px;
   white-space: nowrap;
 }
 
@@ -554,8 +554,8 @@ body .swal2-popup.lf-modal--workspace {
   }
 
   .lf-modal-shell > .dialog-close-button {
-    top: 12px;
-    left: 12px;
+    inset-block-start: var(--space-3);
+    inset-inline-end: var(--space-3);
   }
 
   .lf-modal-shell .dialog-actions,

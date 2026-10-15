@@ -9,6 +9,7 @@ const entry = path.join(cssRoot, 'main.css');
 const sourceEntry = path.join(cssRoot, 'main.source.css');
 const shellEntry = path.join(cssRoot, 'app-shell.css');
 const shellSourceEntry = path.join(cssRoot, 'app-shell.source.css');
+const loginEntry = path.join(cssRoot, 'login-entry.css');
 const errors = [];
 const warnings = [];
 const allowedImportantFiles = new Set([
@@ -92,7 +93,7 @@ for (const file of cssFiles) {
     definitions.get(name).push(file);
   }
   for (const match of source.matchAll(/var\(\s*(--[A-Za-z0-9_-]+)/g)) uses.add(match[1]);
-  if (!allowedImportantFiles.has(file) && file !== entry && file !== shellEntry && source.includes('!important')) {
+  if (!allowedImportantFiles.has(file) && file !== entry && file !== shellEntry && file !== loginEntry && source.includes('!important')) {
     warnings.push(`${path.relative(root, file)} uses !important; review if it is required`);
   }
 }
@@ -100,8 +101,11 @@ for (const name of uses) if (!definitions.has(name)) errors.push(`undefined CSS 
 
 const tokenFile = path.join(cssRoot, 'tokens.css');
 for (const [name, files] of definitions) {
-  const nonTokenFiles = files.filter((file) => file !== tokenFile && file !== entry && file !== shellEntry);
-  if (nonTokenFiles.length > 1) warnings.push(`CSS variable ${name} is defined outside tokens.css more than once`);
+  // Generated bundles are checked for syntax and undefined variable use above,
+  // but they are not independent token owners. login-entry.css is generated
+  // from tokens.css just like the main and app-shell bundles.
+  const nonTokenOwners = new Set(files.filter((file) => file !== tokenFile && file !== entry && file !== shellEntry && file !== loginEntry));
+  if (nonTokenOwners.size > 1) warnings.push(`CSS variable ${name} has multiple source owners outside tokens.css`);
 }
 
 const index = read(path.join(root, 'public', 'index.html'));

@@ -139,10 +139,13 @@
         button.className = 'dialog-close-button';
         button.dataset.dialogClose = '';
         button.dataset.dialogCloseGenerated = '';
-        button.setAttribute('aria-label', 'إغلاق النافذة');
-        button.title = 'إغلاق';
+        button.dataset.i18nAriaLabel = 'dialogs.close.aria';
+        button.dataset.i18nTitle = 'dialogs.close.title';
+        button.setAttribute('aria-label', window.TopGymI18n?.t?.('dialogs.close.aria') || 'إغلاق النافذة');
+        button.title = window.TopGymI18n?.t?.('dialogs.close.title') || 'إغلاق';
         button.innerHTML = closeIcon;
         dialog.appendChild(button);
+        window.TopGymI18n?.apply?.(button);
         dialog.dataset.dialogCloseReady = 'true';
     }
 

@@ -7,6 +7,9 @@
     const rememberEmailKey = 'topgym.login.email';
     const state = { user: null, ready: false, redirecting: false, entitlements: null };
     let tenantWelcomeTimer;
+    let rootAuthStylesPromise = null;
+    let rootAuthStylesReady = false;
+    let pendingRootLoginState = null;
     const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
     document.body.classList.add('auth-pending');
@@ -32,12 +35,23 @@
     }
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
 
-    function showMessage(message, type = 'error') {
+    function showMessage(message, type = 'error', code = '') {
         const element = $('loginMessage');
         if (!element) return;
         element.textContent = String(message || 'تعذر تنفيذ العملية.');
         element.className = `auth-message${type === 'info' ? ' info' : ''}`;
         element.hidden = false;
+        const errorKeys = {
+            INVALID_CREDENTIALS: 'login.error.invalidCredentials',
+            LOGIN_RATE_LIMITED: 'login.error.rateLimited',
+            ACCOUNT_DISABLED: 'login.error.accountDisabled'
+        };
+        if (errorKeys[code] && window.TopGymI18n) {
+            element.dataset.i18n = errorKeys[code];
+            window.TopGymI18n.apply(element);
+        } else {
+            window.TopGymI18n?.annotateText?.(element, 'login.error.');
+        }
     }
 
     function clearMessage() {
@@ -583,12 +597,45 @@
         }
         const screen = $('authScreen');
         if (screen) screen.hidden = true;
+        document.getElementById('rootAuthSurfaceStyles')?.remove();
         document.body.classList.remove('auth-pending', 'auth-locked');
         if (options.showWelcome && normalizedUser?.role !== 'PlatformAdmin') showTenantWelcome();
     }
 
     function showLogin(message = '', setupRequired = false) {
         if (!state.ready && message && message.includes('انتهت جلسة')) return;
+        const path = window.location.pathname;
+        const isRootAuthDocument = !document.body.hasAttribute('data-auth-entry') && (path === '/' || path === '/index.html');
+        if (isRootAuthDocument && !rootAuthStylesReady) {
+            pendingRootLoginState = { message, setupRequired };
+            document.body.classList.add('auth-pending');
+            if (!rootAuthStylesPromise) {
+                const styleUrl = document.querySelector('meta[name="auth-surface-stylesheet"]')?.content;
+                if (!styleUrl) {
+                    rootAuthStylesReady = true;
+                    const pending = pendingRootLoginState;
+                    pendingRootLoginState = null;
+                    showLogin(pending.message, pending.setupRequired);
+                    return;
+                }
+                rootAuthStylesPromise = new Promise((resolve) => {
+                    const link = document.createElement('link');
+                    link.id = 'rootAuthSurfaceStyles';
+                    link.rel = 'stylesheet';
+                    link.href = styleUrl;
+                    link.onload = resolve;
+                    link.onerror = resolve;
+                    document.head.appendChild(link);
+                }).then(() => {
+                    rootAuthStylesReady = true;
+                    rootAuthStylesPromise = null;
+                    const pending = pendingRootLoginState || { message: '', setupRequired: false };
+                    pendingRootLoginState = null;
+                    showLogin(pending.message, pending.setupRequired);
+                });
+            }
+            return;
+        }
         state.user = null;
         state.ready = true;
         document.body.classList.add('auth-locked');
@@ -684,7 +731,7 @@
             nextUrl.searchParams.set('welcome', '1');
             window.location.assign(nextUrl.toString());
         } catch (error) {
-            showMessage(error.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
+            showMessage(error.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.', 'error', error.code);
             setSubmitLoading(false);
         }
     }
@@ -716,7 +763,8 @@
             if (!input) return;
             const visible = input.type === 'text';
             input.type = visible ? 'password' : 'text';
-            $('loginPasswordToggle').setAttribute('aria-label', visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور');
+            const key = visible ? 'login.password.show' : 'login.password.hide';
+            $('loginPasswordToggle').setAttribute('aria-label', window.TopGymI18n?.t?.(key) || (visible ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور'));
         });
         const bindEntryDialog = (triggerId, dialogId, initialFocusSelector) => {
             const trigger = $(triggerId);

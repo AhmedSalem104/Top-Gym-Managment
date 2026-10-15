@@ -159,7 +159,7 @@ test('owner member request review and portal analytics surfaces stay tenant-scop
 
 test('member request review clears the loading summary and resyncs stale review conflicts', () => {
     const script = read('public/js/pages/management/member-subscription-requests.js');
-    assert.match(script, /if \(summary\) summary\.textContent = total \? `إجمالي النتائج:/);
+    assert.match(script, /if \(summary && !state\.loading && !state\.loadErrorKey\) summary\.textContent = total \? t\('memberSubscriptionRequests\.total', \{ count: total \}\) : t\('memberSubscriptionRequests\.empty\.title'\);/);
     assert.match(script, /if \(error\?\.code === 'MEMBER_SUBSCRIPTION_REQUEST_ALREADY_REVIEWED'\) \{\s*await load\(\);/);
     assert.match(script, /const membershipCodeLabel = \(value\) =>/);
     assert.match(script, /membershipCodeLabel\(request\.member\?\.membershipCode\)/);
@@ -184,7 +184,7 @@ test('member portal keeps theme controls outside the cards and uses mobile reque
     const portalStyles = read('public/css/pages/member-portal.css');
     const themeStyles = read('public/css/theme.css');
 
-    assert.match(page, /<div class="portal-utility-bar" data-no-print>\s*<button class="portal-theme-toggle theme-toggle-button"/);
+    assert.match(page, /<div class="portal-utility-bar" data-no-print data-i18n-switcher>\s*<button class="portal-theme-toggle theme-toggle-button"/);
     assert.match(portalStyles, /\.portal-login::before\s*\{[\s\S]*?background:\s*linear-gradient/u);
     assert.match(portalStyles, /@media \(max-width: 640px\)[\s\S]*?\.portal-request-history-row\s*\{[\s\S]*?display:\s*grid/u);
     assert.match(portalStyles, /@media \(max-width: 640px\)[\s\S]*?\.portal-request-history-actions\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto/u);

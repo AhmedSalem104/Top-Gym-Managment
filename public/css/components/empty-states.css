@@ -24,10 +24,10 @@ body .saas-empty {
   min-height: 84px;
   display: grid;
   place-items: center;
-  border: 1px dashed var(--rf-line);
-  border-radius: 14px;
-  background: var(--rf-surface-soft);
-  color: var(--rf-muted);
+  border: 1px dashed var(--border-primary);
+  border-radius: var(--radius-xl);
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
   overflow-wrap: anywhere;
 }
 

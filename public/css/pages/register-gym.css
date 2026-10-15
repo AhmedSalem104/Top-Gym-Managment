@@ -1,13 +1,16 @@
 /* Logic Fit registration flow — one coherent source for the public wizard. */
 .public-registration-page {
   min-height: 100dvh;
+  overflow-x: clip;
   background: var(--bg-app);
   color: var(--text-primary);
 }
 
-.registration-shell {
+.public-registration-page .registration-shell {
+  isolation: isolate;
   box-sizing: border-box;
-  width: min(100% - 48px, 1280px);
+  width: min(100% - 32px, 1280px);
+  min-width: 0;
   min-height: 100dvh;
   margin-inline: auto;
   padding-block: var(--space-5) var(--space-10);
@@ -100,11 +103,12 @@
 .registration-return,
 .registration-safe-note,
 .registration-header .theme-toggle-button {
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .registration-return,
 .registration-header .theme-toggle-button {
+  min-width: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -139,9 +143,9 @@
 }
 
 .registration-header .theme-toggle-button {
-  width: 40px;
+  width: 44px;
   padding: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   font-size: var(--font-lg);
 }
 
@@ -187,10 +191,10 @@
   gap: var(--space-6);
   margin-bottom: var(--space-3);
   padding: var(--space-4);
-  border: 1px solid var(--primary-border);
-  border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--primary-soft) 54%, var(--bg-card)), var(--bg-card));
-  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
 }
 
 .registration-type-switch-intro {
@@ -201,7 +205,7 @@
 
 .registration-type-switch-eyebrow {
   color: var(--primary);
-  font-size: 0.6875rem;
+  font-size: var(--font-2xs);
   font-weight: var(--weight-bold);
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -266,7 +270,7 @@
   flex: 0 0 42px;
   place-items: center;
   border: 1px solid var(--primary-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--primary-soft);
   color: var(--primary);
 }
@@ -282,8 +286,8 @@
 }
 
 .registration-type-switch-options a.is-active .registration-type-option-icon {
-  border-color: rgb(255 255 255 / .25);
-  background: rgb(255 255 255 / .16);
+  border-color: color-mix(in srgb, var(--text-on-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--text-on-primary) 16%, transparent);
   color: var(--text-on-primary);
 }
 
@@ -313,7 +317,7 @@
 }
 
 .registration-type-switch-options a.is-active .registration-type-option-copy small {
-  color: rgb(255 255 255 / .8);
+  color: color-mix(in srgb, var(--text-on-primary) 80%, transparent);
 }
 
 .registration-type-option-arrow {
@@ -430,10 +434,19 @@
   direction: ltr;
 }
 
-.registration-aside,
-.registration-card {
+.public-registration-page .registration-aside,
+.public-registration-page .registration-card {
   min-width: 0;
+}
+
+html[dir="rtl"] .public-registration-page .registration-aside,
+html[dir="rtl"] .public-registration-page .registration-card {
   direction: rtl;
+}
+
+html[dir="ltr"] .public-registration-page .registration-aside,
+html[dir="ltr"] .public-registration-page .registration-card {
+  direction: ltr;
 }
 
 .registration-aside {
@@ -444,7 +457,7 @@
   overflow: hidden;
   padding: var(--space-8) var(--space-6) var(--space-5);
   border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   background: var(--bg-card);
   box-shadow: var(--shadow-sm);
 }
@@ -478,9 +491,10 @@
   max-width: 360px;
   margin-top: var(--space-3);
   color: var(--text-primary);
-  font-size: clamp(2.15rem, 3.6vw, 3.3rem);
-  line-height: 1.15;
-  letter-spacing: -.04em;
+  font-size: clamp(var(--font-size-page-title), 2.4vw, 2rem);
+  font-weight: var(--weight-semibold);
+  line-height: 1.3;
+  letter-spacing: -.02em;
 }
 
 .registration-aside-copy p {
@@ -550,9 +564,9 @@
 .registration-card {
   padding: clamp(var(--space-6), 3vw, var(--space-9));
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-card);
   background: var(--bg-card);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .registration-card-head {
@@ -564,10 +578,13 @@
   border-bottom: 1px solid var(--border-secondary);
 }
 
+.registration-card-head :is(h1, h2, h3) { overflow-wrap: anywhere; }
+
 .registration-card-head h2 {
   margin-top: var(--space-1);
   color: var(--text-primary);
-  font-size: clamp(1.7rem, 2.8vw, 2.25rem);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--weight-semibold);
   line-height: 1.25;
 }
 
@@ -654,13 +671,19 @@
 .registration-field textarea {
   box-sizing: border-box;
   width: 100%;
-  min-height: 50px;
+  min-height: 44px;
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
   background: var(--bg-input);
   color: var(--text-primary);
   padding: var(--space-3) var(--space-4);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.registration-field :is(input[type="email"], input[type="tel"], input[type="number"], input[type="url"]) {
+  direction: ltr;
+  text-align: start;
+  unicode-bidi: plaintext;
 }
 
 .registration-field textarea {
@@ -728,6 +751,7 @@
   display: block;
   min-width: 0;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .registration-payment-choice {
@@ -913,6 +937,18 @@
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
 }
 
+.registration-upload > input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-width: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .registration-upload:hover,
 .registration-upload:focus-within {
   border-color: var(--primary);
@@ -1025,6 +1061,7 @@
   font-size: var(--font-sm);
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: end;
 }
 
 .registration-review-total {
@@ -1219,6 +1256,10 @@
     gap: var(--space-5);
   }
 
+  .registration-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .registration-card {
     grid-row: 1;
   }
@@ -1241,14 +1282,18 @@
     padding-inline: var(--space-2);
   }
 
-  .registration-steps li > div {
-    display: none;
+}
+
+@media (max-width: 767px) {
+  .registration-card-head { align-items: stretch; }
+  .registration-actions > * { max-width: 100%; }
+  .registration-actions {
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
   }
 }
 
 @media (max-width: 620px) {
-  .registration-shell {
-    width: calc(100% - 20px);
+  .public-registration-page .registration-shell {
     padding-block: var(--space-3) var(--space-7);
   }
 
@@ -1306,10 +1351,17 @@
   }
 
   .registration-return {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     padding: 0;
     font-size: 0;
+  }
+
+  .trainer-registration-page .registration-return::before {
+    color: var(--primary);
+    content: "←";
+    font-size: var(--font-lg);
+    line-height: 1;
   }
 
   .registration-return span {
@@ -1327,6 +1379,14 @@
     padding: var(--space-2) var(--space-1) var(--space-2);
   }
 
+  .registration-steps {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .registration-steps li > div {
+    display: none;
+  }
+
   .registration-steps li::after {
     inset-inline: var(--space-1);
   }
@@ -1335,7 +1395,7 @@
     width: 31px;
     height: 31px;
     flex-basis: 31px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .registration-card {
@@ -1348,7 +1408,7 @@
   }
 
   .registration-card-head h2 {
-    font-size: 1.55rem;
+    font-size: var(--font-size-page-title);
   }
 
   .registration-card-head p {
@@ -1356,6 +1416,7 @@
   }
 
   .registration-card-badge {
+    align-self: flex-start;
     padding: var(--space-2);
     font-size: 0;
   }
@@ -1381,7 +1442,7 @@
   }
 
   .registration-aside-copy h1 {
-    font-size: clamp(2rem, 10vw, 2.7rem);
+    font-size: clamp(var(--font-size-page-title), 7vw, 2rem);
   }
 
   .registration-aside-copy p {
@@ -1414,7 +1475,12 @@
 
   .registration-review-row strong {
     max-width: 56%;
-    text-align: left;
+  }
+}
+
+@media (max-width: 380px) {
+  .public-registration-page .registration-shell {
+    width: calc(100% - 16px);
   }
 }
 

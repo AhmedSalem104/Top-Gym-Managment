@@ -1,9 +1,9 @@
 .dashboard-store-summary {
-    margin-top: var(--space-5, 24px);
-    padding: var(--space-5, 24px);
-    border: 1px solid var(--store-border);
-    border-radius: var(--radius-lg, 20px);
-    background: var(--color-surface);
+    margin-top: var(--space-5);
+    padding: var(--space-5);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
+    background: var(--bg-surface);
 }
 
 .dashboard-store-summary-head,
@@ -12,36 +12,36 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-4, 16px);
+    gap: var(--space-4);
 }
 
 .dashboard-store-summary-title,
 .store-page-heading {
     display: flex;
     align-items: center;
-    gap: var(--space-3, 12px);
+    gap: var(--space-3);
 }
 
 .dashboard-store-summary-title h3,
 .store-page-heading h3,
 .store-card-header h4 {
     margin: 0;
-    color: var(--store-text);
+    color: var(--text-primary);
 }
 
 .dashboard-store-summary-title p,
 .store-page-heading p,
 .store-card-header p {
     margin: 4px 0 0;
-    color: var(--store-muted);
-    font-size: var(--font-sm, 13px);
+    color: var(--text-muted);
+    font-size: var(--font-sm);
 }
 
 .dashboard-store-summary-title > div > span,
 .store-page-heading > div > span {
-    color: var(--store-primary);
-    font-size: 12px;
-    font-weight: 800;
+    color: var(--primary);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
     letter-spacing: .04em;
     text-transform: uppercase;
 }
@@ -53,47 +53,47 @@
     flex: 0 0 auto;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: var(--radius-control);
     background: var(--primary-soft);
-    color: var(--store-primary);
+    color: var(--primary);
 }
 
 .dashboard-store-summary-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 18px;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
 }
 
 .dashboard-store-summary-grid article {
     min-width: 0;
-    padding: 16px;
-    border: 1px solid var(--store-border);
-    border-radius: 14px;
+    padding: var(--space-4);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
     background: var(--bg-card-hover);
 }
 
 .dashboard-store-summary-grid span {
     display: block;
-    color: var(--store-muted);
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
 }
 
 .dashboard-store-summary-grid strong {
     display: block;
-    margin-top: 8px;
-    color: var(--store-text);
-    font-size: 22px;
+    margin-top: var(--space-2);
+    color: var(--text-primary);
+    font-size: var(--font-xl);
     font-variant-numeric: tabular-nums;
 }
 
 .store-section {
     width: 100%;
-    margin-top: var(--space-6, 32px);
+    margin-top: var(--space-6);
 }
 
 .store-page-header {
-    padding: 4px 0 22px;
+    padding: var(--space-1) 0 var(--space-5);
 }
 
 .store-page-actions,
@@ -102,19 +102,32 @@
     display: flex;
     align-items: end;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--space-2);
+}
+
+/* Card section heading belongs to the Store feature, not the global polish layer. */
+body .store-card-header {
+    min-height: var(--control-height-large);
+    margin-block-end: var(--space-4);
+    border-block-end: 1px solid var(--border-secondary);
+    background: transparent;
+    padding-block: 0 var(--space-3);
+}
+
+body .store-card-header > div {
+    min-width: 0;
 }
 
 .store-subnav {
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: var(--space-2, 8px);
+    gap: var(--space-2);
     min-width: 0;
-    margin-bottom: var(--space-5, 24px);
-    padding: var(--space-2, 8px);
-    border: 1px solid var(--border-color, var(--store-border));
-    border-radius: var(--radius-lg, 18px);
-    background: var(--color-surface-muted, var(--bg-card-hover));
+    margin-bottom: var(--space-5);
+    padding: var(--space-2);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
+    background: var(--color-surface-muted);
     box-shadow: var(--shadow-xs);
 }
 
@@ -124,33 +137,33 @@
     min-height: 68px;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2, 8px);
-    padding: var(--space-2, 8px) var(--space-3, 12px);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     border: 1px solid transparent;
-    border-radius: var(--radius-md, 12px);
+    border-radius: var(--radius-control);
     background: transparent;
-    color: var(--color-text-muted, var(--store-muted));
+    color: var(--text-muted);
     cursor: pointer;
     font: inherit;
-    font-size: var(--font-xs, 12px);
-    font-weight: 700;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
     line-height: 1.35;
     text-align: center;
-    transition: background-color var(--transition-fast, 160ms ease), border-color var(--transition-fast, 160ms ease), color var(--transition-fast, 160ms ease), transform var(--transition-fast, 160ms ease), box-shadow var(--transition-fast, 160ms ease);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .store-subnav-button:hover,
 .store-subnav-button:focus-visible {
     border-color: var(--border-focus);
     background: var(--color-surface);
-    color: var(--color-primary, var(--store-primary));
+    color: var(--primary);
     transform: translateY(-1px);
 }
 
 .store-subnav-button.is-active,
 .store-subnav-button[aria-selected="true"] {
-    border-color: var(--color-primary, var(--store-primary));
-    background: var(--color-primary, var(--store-primary));
+    border-color: var(--primary);
+    background: var(--primary);
     color: var(--text-on-primary);
     box-shadow: var(--shadow-primary);
 }
@@ -161,9 +174,9 @@
     height: 32px;
     flex: 0 0 32px;
     place-items: center;
-    border-radius: var(--radius-sm, 8px);
-    background: var(--color-primary-soft);
-    color: var(--color-primary, var(--store-primary));
+    border-radius: var(--radius-control);
+    background: var(--primary-soft);
+    color: var(--primary);
 }
 
 .store-subnav-button.is-active .store-tab-icon,
@@ -191,15 +204,15 @@
 .store-pos-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(340px, .85fr);
-    gap: 16px;
+    gap: var(--space-4);
     align-items: start;
 }
 
 .store-card {
     min-width: 0;
-    padding: 20px;
-    border: 1px solid var(--store-border);
-    border-radius: 18px;
+    padding: var(--space-5);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
     background: var(--bg-card);
     box-shadow: var(--shadow-card);
 }
@@ -222,9 +235,9 @@
     min-height: 44px;
     box-sizing: border-box;
     border: 1px solid var(--border-primary);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--bg-input);
-    color: var(--store-text);
+    color: var(--text-primary);
     font: inherit;
 }
 
@@ -232,15 +245,15 @@
 .store-customer-picker input,
 .store-report-filters input,
 .store-report-filters select {
-    padding: 9px 12px;
+    padding: var(--space-2) var(--space-3);
 }
 
 .store-product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 10px;
+    gap: var(--space-2);
     max-height: 620px;
-    margin-top: 16px;
+    margin-top: var(--space-4);
     overflow: auto;
     padding: 2px;
 }
@@ -251,15 +264,15 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
-    padding: 14px;
-    border: 1px solid var(--store-border);
-    border-radius: 12px;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
     background: var(--bg-card-hover);
-    color: var(--store-text);
+    color: var(--text-primary);
     cursor: pointer;
-    text-align: right;
-    transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+    text-align: start;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast), transform var(--transition-fast);
 }
 
 .store-product-card:hover,
@@ -276,18 +289,18 @@
 }
 
 .store-product-card small {
-    color: var(--store-muted);
+    color: var(--text-muted);
 }
 
 .store-product-card .store-product-price {
-    color: var(--store-primary-dark);
-    font-size: 16px;
-    font-weight: 800;
+    color: var(--primary-hover);
+    font-size: var(--font-md);
+    font-weight: var(--weight-bold);
 }
 
 .store-customer-picker {
     position: relative;
-    margin-top: 16px;
+    margin-top: var(--space-4);
 }
 
 .store-customer-picker label,
@@ -295,22 +308,21 @@
 .store-checkout-form label,
 .store-report-filters label {
     display: grid;
-    gap: 6px;
-    color: var(--store-muted);
-    font-size: 12px;
-    font-weight: 700;
+    gap: var(--space-1);
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
 }
 
 .store-customer-results {
     position: absolute;
     z-index: 4;
     top: calc(100% + 4px);
-    right: 0;
-    left: 0;
+    inset-inline: 0;
     max-height: 220px;
     overflow: auto;
-    border: 1px solid var(--store-border);
-    border-radius: 10px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
     background: var(--bg-card);
     box-shadow: var(--shadow-popup);
 }
@@ -319,15 +331,15 @@
     display: flex;
     width: 100%;
     justify-content: space-between;
-    gap: 10px;
-    padding: 11px 12px;
+    gap: var(--space-2);
+    padding: var(--space-3);
     border: 0;
     border-bottom: 1px solid var(--border-secondary);
     background: var(--bg-card);
-    color: var(--store-text);
+    color: var(--text-primary);
     cursor: pointer;
     font: inherit;
-    text-align: right;
+    text-align: start;
 }
 
 .store-customer-result:hover,
@@ -338,21 +350,21 @@
 .store-selected-customer {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    margin-top: 8px;
-    padding: 10px 12px;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     border: 1px solid var(--primary-border);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     background: var(--primary-soft);
     color: var(--primary-active);
-    font-size: 13px;
+    font-size: var(--font-size-secondary);
 }
 
 .store-cart-lines {
     display: grid;
-    gap: 8px;
+    gap: var(--space-2);
     max-height: 280px;
-    margin-top: 14px;
+    margin-top: var(--space-3);
     overflow: auto;
 }
 
@@ -360,10 +372,10 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 8px;
-    padding: 10px;
+    gap: var(--space-2);
+    padding: var(--space-2);
     border: 1px solid var(--border-secondary);
-    border-radius: 10px;
+    border-radius: var(--radius-control);
 }
 
 .store-cart-line strong,
@@ -372,23 +384,23 @@
 }
 
 .store-cart-line small {
-    color: var(--store-muted);
+    color: var(--text-muted);
 }
 
 .store-cart-quantity {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--space-1);
 }
 
 .store-cart-quantity button,
 .store-cart-remove {
     width: 30px;
     height: 30px;
-    border: 1px solid var(--store-border);
-    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
     background: var(--bg-input);
-    color: var(--store-primary);
+    color: var(--primary);
     cursor: pointer;
     font: inherit;
 }
@@ -397,26 +409,26 @@
     width: 52px;
     min-height: 30px;
     padding: 3px;
-    border: 1px solid var(--store-border);
-    border-radius: 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-control);
     text-align: center;
 }
 
 .store-checkout-form {
     display: grid;
-    gap: 10px;
-    margin-top: 14px;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
 }
 
 .store-form-row {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--space-2);
 }
 
 .store-checkout-form label,
 .store-form-grid label {
-    color: var(--store-muted);
+    color: var(--text-muted);
 }
 
 .store-checkout-form input,
@@ -427,21 +439,21 @@
 .store-form-grid textarea,
 .store-report-filters input,
 .store-report-filters select {
-    padding: 9px 11px;
+    padding: 9px var(--space-3);
 }
 
 .store-cart-total {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 13px 0;
-    border-top: 1px solid var(--store-border);
-    color: var(--store-muted);
+    padding: var(--space-3) 0;
+    border-top: 1px solid var(--border-primary);
+    color: var(--text-muted);
 }
 
 .store-cart-total strong {
-    color: var(--store-text);
-    font-size: 22px;
+    color: var(--text-primary);
+    font-size: var(--font-xl);
     font-variant-numeric: tabular-nums;
 }
 
@@ -450,11 +462,11 @@
 }
 
 .store-form-card {
-    margin-top: 18px;
-    padding: 20px;
+    margin-top: var(--space-4);
+    padding: var(--space-4);
     border: 1px solid var(--border-secondary);
-    border-top: 3px solid var(--store-primary);
-    border-radius: 14px;
+    border-top: 3px solid var(--primary);
+    border-radius: var(--radius-card);
     background: var(--bg-card-hover);
 }
 
@@ -462,12 +474,12 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
-    gap: 12px;
+    gap: var(--space-3);
 }
 
 .store-form-grid label {
     min-width: 0;
-    gap: 8px;
+    gap: var(--space-2);
 }
 
 .store-form-grid label:has(textarea),
@@ -479,7 +491,7 @@
     display: flex;
     align-items: center;
     grid-template-columns: auto 1fr;
-    gap: 8px;
+    gap: var(--space-2);
     align-self: end;
     min-height: 44px;
 }
@@ -493,7 +505,7 @@
 .store-report-filters input,
 .store-report-filters select {
     outline: 0;
-    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .store-form-grid input:focus,
@@ -512,10 +524,10 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 10px;
-    margin-top: 4px;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
     border-top: 1px solid var(--border-secondary);
-    padding-top: 14px;
+    padding-top: var(--space-3);
 }
 
 .store-form-grid .store-form-actions .btn {
@@ -532,13 +544,13 @@
     width: 100%;
     min-width: 760px;
     border-collapse: collapse;
-    color: var(--store-text);
-    font-size: 13px;
+    color: var(--text-primary);
+    font-size: var(--font-size-secondary);
 }
 
 .store-table th,
 .store-table td {
-    padding: 12px 10px;
+    padding: var(--space-3) var(--space-2);
     border-bottom: 1px solid var(--border-secondary);
     text-align: center;
     vertical-align: middle;
@@ -547,9 +559,9 @@
 
 .store-table td > small {
     display: block;
-    margin-top: 3px;
-    color: var(--store-muted);
-    font-size: 11px;
+    margin-top: var(--space-1);
+    color: var(--text-muted);
+    font-size: var(--font-xs);
 }
 
 .store-row-actions {
@@ -558,18 +570,111 @@
     justify-content: center;
     min-width: max-content;
     flex-wrap: nowrap;
-    gap: 6px;
+    gap: var(--space-1);
 }
 
 .store-table th {
     background: var(--table-header-bg);
-    color: var(--store-muted);
-    font-size: 12px;
-    font-weight: 800;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
 }
 
 .store-table tbody tr:hover {
-    background: var(--color-primary-soft);
+    background: var(--primary-soft);
+}
+
+/* Keep Store record cards aligned with the shared label/value columns. The
+   value column needs the remaining width so long Arabic names stay readable. */
+@media (max-width: 767px) {
+    #storeSection .store-table tbody td {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-2);
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+    #storeSection .store-table tbody td::before {
+        grid-column: 1;
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+
+    /* Keep machine-readable product codes intact. The shared mobile table
+       layout allows arbitrary breaks for Arabic prose; SKU values should wrap
+       only at their existing separators instead of collapsing character-wise. */
+    #storeSection .store-table tbody td[dir="ltr"] {
+        grid-template-columns: minmax(0, 1fr);
+        overflow-wrap: normal;
+        word-break: normal;
+        text-align: start;
+    }
+
+    #storeSection .store-table tbody td[dir="ltr"]::before {
+        direction: rtl;
+        text-align: start;
+    }
+
+    #storeProductsTable .store-table tbody td:first-child > strong,
+    #storeProductsTable .store-table tbody td:first-child > small {
+        grid-column: 1;
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: break-word;
+        white-space: normal;
+    }
+
+    #storeProductsTable .store-row-actions {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .store-cart-quantity button,
+    .store-cart-remove {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .store-cart-quantity input {
+        min-height: 44px;
+    }
+}
+
+/* At tablet widths the app shell leaves less room than the physical viewport.
+   Keep Store row-management controls visible while the data columns scroll. */
+@media (min-width: 768px) and (max-width: 1023px) {
+    #storeSection .store-table tbody td {
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+    #storeSection .store-table tbody td[dir="ltr"] {
+        overflow-wrap: normal;
+        word-break: normal;
+    }
+
+    #storeSection .store-table:has(tbody > tr > td:last-child .btn) thead th:last-child,
+    #storeSection .store-table:has(tbody > tr > td:last-child .btn) tbody td:last-child {
+        position: sticky;
+        inset-inline-end: 0;
+        z-index: var(--z-content);
+        min-width: 160px;
+        background: var(--bg-surface);
+        box-shadow: var(--shadow-xs);
+    }
+
+    #storeSection .store-table:has(tbody > tr > td:last-child .btn) thead th:last-child {
+        z-index: var(--z-sticky);
+        background: var(--table-header-bg);
+    }
+
+    #storeSection .store-table:has(tbody > tr > td:last-child .btn) tbody tr:hover td:last-child {
+        background: var(--primary-soft);
+    }
 }
 
 .store-report-filters label {
@@ -580,13 +685,13 @@
 .store-status {
     display: inline-flex;
     align-items: center;
-    min-height: 28px;
-    padding: 4px 9px;
-    border-radius: 8px;
+    min-height: 26px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
     background: var(--success-soft);
     color: var(--success-text);
-    font-size: 12px;
-    font-weight: 800;
+    font-size: var(--font-xs);
+    font-weight: var(--weight-bold);
 }
 
 .store-status.warning {
@@ -602,14 +707,14 @@
 .store-report-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
-    margin-top: 18px;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
 }
 
 .store-report-summary article {
-    padding: 14px;
-    border: 1px solid var(--store-border);
-    border-radius: 12px;
+    padding: var(--space-3);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-card);
     background: var(--bg-card-hover);
 }
 
@@ -619,14 +724,14 @@
 }
 
 .store-report-summary span {
-    color: var(--store-muted);
-    font-size: 12px;
+    color: var(--text-muted);
+    font-size: var(--font-xs);
 }
 
 .store-report-summary strong {
-    margin-top: 7px;
-    color: var(--store-text);
-    font-size: 19px;
+    margin-top: var(--space-2);
+    color: var(--text-primary);
+    font-size: var(--font-lg);
 }
 
 @media (max-width: 1199px) {
@@ -648,7 +753,7 @@
 @media (max-width: 700px) {
     .dashboard-store-summary,
     .store-card {
-        padding: 16px;
+        padding: var(--space-4);
     }
 
     .dashboard-store-summary-head,
@@ -656,6 +761,18 @@
     .store-card-header {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    body .store-card-header {
+        gap: var(--space-3);
+    }
+
+    body .store-card-header .header-actions {
+        width: 100%;
+    }
+
+    body .store-card-header .header-actions .btn {
+        flex: 1 1 auto;
     }
 
     .dashboard-store-summary-grid,
@@ -678,7 +795,7 @@
     .store-subnav {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: var(--space-2, 8px);
+        gap: var(--space-2);
     }
 
     .store-subnav-button {
@@ -686,10 +803,10 @@
         min-width: 0;
         min-height: 68px;
         flex-direction: column;
-        gap: 4px;
-        padding: var(--space-2, 8px);
-        border-color: var(--store-border);
-        border-radius: 14px;
+        gap: var(--space-1);
+        padding: var(--space-2);
+        border-color: var(--border-primary);
+        border-radius: var(--radius-card);
         background: var(--bg-card);
         box-shadow: var(--shadow-sm);
     }
@@ -707,10 +824,41 @@
 }
 
 @media (max-width: 420px) {
+    #storeSection .store-only-summary .dashboard-store-summary-grid strong {
+        font-size: var(--font-md);
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
     .dashboard-store-summary-grid,
     .store-form-grid,
     .store-form-row {
         grid-template-columns: 1fr;
+    }
+
+    /* The dashboard summary is mounted at the top of #store for Store users.
+       Keep its four/five real metrics compact there without changing the
+       Dashboard's own summary composition. */
+    #storeSection .store-only-summary .dashboard-store-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #storeSection .store-only-summary .dashboard-store-summary-grid article {
+        padding: var(--space-3);
+    }
+
+    /* Nine sections need equal, readable access on narrow screens. A balanced
+       3x3 grid gives long Arabic labels room to wrap instead of ellipsizing. */
+    #storeSection .store-subnav {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    #storeSection .store-tab-label {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        line-height: 1.25;
+        overflow-wrap: normal;
     }
 
     .store-form-grid label:has(textarea),
@@ -725,5 +873,28 @@
     .store-cart-line > :last-child {
         grid-column: 2;
         grid-row: 1 / span 2;
+    }
+}
+
+@media (min-width: 1200px) {
+    .store-subnav:has(.store-subnav-button-bar:not([hidden])) {
+        grid-template-columns: repeat(9, minmax(0, 1fr));
+    }
+
+    .store-subnav:has(.store-subnav-button-bar:not([hidden])) .store-subnav-button {
+        flex-direction: column;
+        gap: var(--space-1);
+        padding: var(--space-2);
+    }
+
+    .store-subnav:has(.store-subnav-button-bar:not([hidden])) .store-tab-icon {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+    }
+
+    .store-subnav:has(.store-subnav-button-bar:not([hidden])) .store-tab-icon .ui-icon {
+        width: 16px;
+        height: 16px;
     }
 }

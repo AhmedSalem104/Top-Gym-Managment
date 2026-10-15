@@ -61,6 +61,8 @@ test('welcome card styles are shared by the login entry and authenticated app sh
     assert.match(appShell, /\.tenant-welcome-card\{/u);
     assert.match(loginCss, /\.tenant-welcome-card\{/u);
     assert.doesNotMatch(appShell, /\.auth-form\{/u);
+    assert.doesNotMatch(loginBuilder, /components\/visual-redesign\.css/u,
+        'the isolated Login bundle must not ship the legacy visual layer after its visual migration');
 });
 
 test('post-auth loading has no fixed welcome timeout or double-rAF bootstrap', () => {

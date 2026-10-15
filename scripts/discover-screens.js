@@ -133,6 +133,9 @@ try {
 }
 const browserReportMatchesInventory = Boolean(browserReport
     && browserReport.status === 'PASS'
+    && Number.isFinite(Date.parse(browserReport.generatedAt))
+    && Date.now() - Date.parse(browserReport.generatedAt) >= 0
+    && Date.now() - Date.parse(browserReport.generatedAt) <= 24 * 60 * 60 * 1000
     && Number(browserReport.appScreenCount) === hashViews.length
     && Number(browserReport.platformPanelCount) === platformPanels.length
     && Number(browserReport.registrationStepCount) === registrationSteps.length
@@ -140,7 +143,10 @@ const browserReportMatchesInventory = Boolean(browserReport
     && Number(browserReport.storeViewCount) === storeViewValues.length
     && Number(browserReport.portalToolCount) === portalToolValues.length
     && Number(browserReport.dialogCount) === overlayIds.length);
-const structuralReviewStatus = browserReportMatchesInventory ? 'STRUCTURAL QA PASS' : 'NOT VERIFIED';
+const structuralReviewStatus = browserReportMatchesInventory ? 'STRUCTURAL QA PASS' : 'NOT VERIFIED (no fresh matching browser report)';
+const visualReviewStatus = browserReportMatchesInventory ? 'DOM / LAYOUT MEASUREMENTS ONLY — HUMAN SCREENSHOT REVIEW OPEN' : 'NOT VERIFIED';
+const responsiveReviewStatus = browserReportMatchesInventory ? 'GEOMETRY SMOKE PASS — RESPONSIVE UX REVIEW OPEN' : 'NOT VERIFIED';
+const accessibilityReviewStatus = browserReportMatchesInventory ? 'NOT VERIFIED — automated unnamed-control observations only' : 'NOT VERIFIED';
 
 const lines = [];
 lines.push('# Logic Fit — Complete Screen Inventory');
@@ -166,16 +172,17 @@ lines.push('| Metric | Current status |');
 lines.push('|---|---|');
 lines.push(`| Discovered screens | ${hashViews.length} active app views + ${platformPanels.length} platform panels + ${registrationSteps.length} registration steps + ${portalRootIds.length} portal roots + ${storeViewValues.length} Store subviews + ${portalToolValues.length} Portal tools + ${overlayIds.length} overlay roots |`);
 lines.push(`| Structural review | ${structuralReviewStatus} |`);
-lines.push(`| Visual QA | ${structuralReviewStatus} |`);
-lines.push(`| Responsive QA | ${structuralReviewStatus} |`);
-lines.push(`| RTL / theme / accessibility QA | ${structuralReviewStatus === 'STRUCTURAL QA PASS' ? 'RTL/theme smoke PASS; accessibility engine NOT VERIFIED' : 'NOT VERIFIED'} |`);
+lines.push(`| Visual QA | ${visualReviewStatus} |`);
+lines.push(`| Responsive QA | ${responsiveReviewStatus} |`);
+lines.push(`| RTL / theme QA | ${browserReportMatchesInventory ? 'SMOKE COVERAGE — PER-SCREEN ACCEPTANCE OPEN' : 'NOT VERIFIED'} |`);
+lines.push(`| Accessibility QA | ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Entry surfaces');
 lines.push('');
-lines.push('| Surface | Route | Purpose | Source | Review status |');
-lines.push('|---|---|---|---|---|');
+lines.push('| Surface | Route | Purpose | Source | Structural | Visual / responsive / accessibility |');
+lines.push('|---|---|---|---|---|---|');
 for (const page of entryPages) {
-    lines.push(`| ${page.surface} | \`${page.route}\` | ${page.title || 'Entry page'} | \`${page.file}\` | ${structuralReviewStatus} |`);
+    lines.push(`| ${page.surface} | \`${page.route}\` | ${page.title || 'Entry page'} | \`${page.file}\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 }
 lines.push('');
 lines.push('## Application hash views');
@@ -185,41 +192,42 @@ if (legacyHashViews.length) {
         'The application removes these markers at runtime; the active Platform Admin surface is `/platform-admin`.');
     lines.push('');
 }
-lines.push('| View | Route | Parent | User roles | Primary state review |');
-lines.push('|---|---|---|---|---|');
+lines.push('| View | Route | Parent | User roles | Structural | Visual / responsive / accessibility |');
+lines.push('|---|---|---|---|---|---|');
 for (const view of hashViews) {
-    lines.push(`| ${view} | \`#${view}\` | Gym Application | Owner / Assistant by permission | ${structuralReviewStatus} |`);
+    const roles = view === 'branches' ? 'Gym Owner' : 'Owner / Assistant by permission';
+    lines.push(`| ${view} | \`#${view}\` | Gym Application | ${roles} | ${structuralReviewStatus}; ${visualReviewStatus} |`);
 }
 lines.push('');
 lines.push('## Platform Admin panels');
 lines.push('');
 lines.push('| Panel | Route | Review status |');
 lines.push('|---|---|---|');
-for (const panel of platformPanels) lines.push(`| \`${panel}\` | \`/platform-admin\` | ${structuralReviewStatus} |`);
+for (const panel of platformPanels) lines.push(`| \`${panel}\` | \`/platform-admin\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Member Portal roots');
 lines.push('');
 lines.push('| Root | Route | Review status |');
 lines.push('|---|---|---|');
-for (const id of portalRootIds) lines.push(`| \`${id}\` | \`/member-portal\` | ${structuralReviewStatus} |`);
+for (const id of portalRootIds) lines.push(`| \`${id}\` | \`/member-portal\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Registration steps');
 lines.push('');
 lines.push('| Step | Route | Review status |');
 lines.push('|---|---|---|');
-for (const step of registrationSteps) lines.push(`| \`${step}\` | \`/register-gym\` | ${structuralReviewStatus} |`);
+for (const step of registrationSteps) lines.push(`| \`${step}\` | \`/register-gym\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Store subviews');
 lines.push('');
 lines.push('| View | Parent route | Review status |');
 lines.push('|---|---|---|');
-for (const view of storeViewValues) lines.push(`| \`${view}\` | \`#store\` | ${structuralReviewStatus} |`);
+for (const view of storeViewValues) lines.push(`| \`${view}\` | \`#store\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Member Portal tools');
 lines.push('');
 lines.push('| Tool | Parent route | Review status |');
 lines.push('|---|---|---|');
-for (const tool of portalToolValues) lines.push(`| \`${tool}\` | \`/member-portal\` | ${structuralReviewStatus} |`);
+for (const tool of portalToolValues) lines.push(`| \`${tool}\` | \`/member-portal\` | ${structuralReviewStatus} | ${visualReviewStatus}; ${responsiveReviewStatus}; ${accessibilityReviewStatus} |`);
 lines.push('');
 lines.push('## Legacy source markers');
 lines.push('');

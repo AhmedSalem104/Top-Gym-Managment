@@ -49,6 +49,7 @@ html {
 }
 
 .page {
+  isolation: isolate;
   width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
   padding: var(--space-8) 0 var(--space-12);
@@ -64,6 +65,15 @@ html {
 
 .section-stack {
   gap: var(--space-8);
+}
+
+/* Keep the established application page rhythm on top-level work areas while
+   keeping spacing values owned by the central token scale. */
+body .page > .workspace,
+body .page > .content-grid,
+body .page > .dashboard-section,
+body .page > .section-stack {
+  gap: var(--space-page-stack);
 }
 
 .overview-grid,
@@ -106,6 +116,18 @@ html {
 .page-header,
 .section-heading {
   flex-wrap: wrap;
+}
+
+.section-heading {
+  min-height: 44px;
+  margin-block-end: var(--space-4);
+  border-block-end: 1px solid var(--border-secondary);
+  background: transparent;
+  padding-block-end: var(--space-3);
+}
+
+.section-heading > div {
+  min-width: 0;
 }
 
 .page-header-copy,

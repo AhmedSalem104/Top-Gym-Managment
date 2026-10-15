@@ -108,8 +108,9 @@ test('member details menu is visible, semantic and viewport-safe', async ({ page
             role: element.getAttribute('role'),
             floating: element.classList.contains('is-floating'),
             placement: element.dataset.placement,
-            visibleItems: [...element.querySelectorAll('[role="menuitem"]')]
-                .filter((item) => getComputedStyle(item).display !== 'none').length,
+            visibleActions: [...element.querySelectorAll('[role="menuitem"]')]
+                .filter((item) => getComputedStyle(item).display !== 'none')
+                .map((item) => item.dataset.memberDetailAction),
             withinViewport: rect.left >= 0 && rect.top >= 0
                 && rect.right <= window.innerWidth + 1
                 && rect.bottom <= window.innerHeight + 1,
@@ -119,7 +120,9 @@ test('member details menu is visible, semantic and viewport-safe', async ({ page
     expect(result.role).toBe('menu');
     expect(result.floating).toBe(true);
     expect(['top', 'bottom']).toContain(result.placement);
-    expect(result.visibleItems).toBe(4);
+    expect(result.visibleActions).toEqual((await page.evaluate(() => innerWidth)) < 768
+        ? ['payment', 'edit', 'refund', 'qr', 'print', 'freeze']
+        : ['payment', 'edit', 'refund', 'qr']);
     expect(result.withinViewport).toBe(true);
     expect(result.horizontalOverflow).toBe(false);
     await page.screenshot({ path: `qa/artifacts/members-popup-contract-${testInfo.project.name}.png` });
@@ -287,6 +290,7 @@ test('coaching builders use the shared workspace layout at desktop and mobile wi
     });
     await openSyntheticDetails(page);
     await expect(page.locator('#detailsDialog')).toBeVisible();
+    if ((await page.evaluate(() => innerWidth)) < 768) await page.locator('#memberDetailsTab-training').click();
     await expect(page.locator('.member-training-panel')).toBeVisible();
     await expect(page.locator('.member-training-head')).toBeVisible();
     const coachingActions = page.locator('[data-member-coaching-action]');
@@ -310,6 +314,7 @@ test('coaching builders use the shared workspace layout at desktop and mobile wi
     await page.locator('#coachingBuilderCancel').click();
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#memberDetailsTab-training').click();
     await page.locator('[data-member-coaching-action="new-workout"]').first().click();
     await expect(page.locator('#coachingBuilderDialog')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('training-builder-mobile390.png'), fullPage: false });
@@ -352,7 +357,13 @@ test('member form remains usable in portrait tablet layout', async ({ page }, te
 
 test('freeze action is rendered only for an eligible subscription', async ({ page }) => {
     await openSyntheticDetails(page, { status: 'active', freezeCount: 0, freezeLimit: 3 });
+    const isMobile = (await page.evaluate(() => innerWidth)) < 768;
+    if (isMobile) await page.locator('[data-member-detail-action="more"]').click();
     await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
+    if (isMobile) {
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#memberDetailsMoreMenu')).toBeHidden();
+    }
 
     await page.evaluate(() => {
         const member = { id: 4242, fullName: 'QA Member', phone: '01012345678', registrationDate: '2026-01-01' };
@@ -408,11 +419,49 @@ test('member details selects the latest non-cancelled subscription from full his
     });
 
     await expect(page.locator('#detailsExpiryBanner')).toBeHidden();
-    const overview = await page.locator('#detailsContent').innerText();
-    expect(overview).toContain('٣١');
-    expect(overview).toContain('جيم وكارديو');
-    expect(overview).not.toContain('الاشتراك منتهي');
+    const isMobile = (await page.evaluate(() => innerWidth)) < 768;
+    if (isMobile) {
+        // The mobile overview intentionally hides the plan stat; keep checking
+        // the actual rendered value node instead of assuming it's visible there.
+        await expect(page.locator('#detailsContent .member-details-stats .member-detail-stat:first-child .member-detail-stat-copy strong')).toHaveText('جيم وكارديو');
+    } else {
+        const overview = await page.locator('#detailsContent').innerText();
+        expect(overview).toContain('٣١');
+        expect(overview).toContain('جيم وكارديو');
+        expect(overview).not.toContain('الاشتراك منتهي');
+    }
+    if (isMobile) await page.locator('[data-member-detail-action="more"]').click();
+    else await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
     await expect(page.locator('[data-member-detail-action="freeze"]')).toBeVisible();
+});
+
+test('member details dialog can be closed and reopened on the same page', async ({ page }) => {
+    await openSyntheticDetails(page);
+    const dialog = page.locator('#detailsDialog');
+    await expect(dialog).toBeVisible();
+
+    await page.locator('#detailsClose').click();
+    await expect(dialog).toBeHidden();
+    await expect(dialog).not.toHaveAttribute('hidden', '');
+
+    await page.evaluate(() => {
+        const dialogElement = document.getElementById('detailsDialog');
+        if (!dialogElement.open) dialogElement.showModal();
+        const member = { id: 4242, fullName: 'QA Member', phone: '01012345678', registrationDate: '2026-01-01' };
+        const details = {
+            member,
+            memberships: [{ status: 'active', plan: 'gym_only', type: 'monthly', effectiveEndDate: '2026-12-31', daysRemaining: 100 }]
+        };
+        window.dispatchEvent(new CustomEvent('topgym:member-details-opened', { detail: { member, details } }));
+    });
+
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('#detailsSubtitle')).toContainText('010');
+    if ((await page.evaluate(() => innerWidth)) < 768) {
+        await expect(dialog.locator('[data-member-details-tabs]')).toBeVisible();
+        await expect(dialog.locator('[data-member-details-panel="overview"]')).toBeVisible();
+        await expect(dialog.locator('[data-member-details-panel="overview"]')).toContainText('ملخص العضوية');
+    }
 });
 
 test('member details promotes the list membership and orders the history newest first', async ({ page }, testInfo) => {
@@ -464,7 +513,7 @@ test('member details promotes the list membership and orders the history newest 
         });
     });
     await page.reload({ waitUntil: 'networkidle' });
-    await page.locator('tr[data-member-id="4151"] button[data-action="details"]').click();
+    await page.locator('tr[data-member-id="4151"] button[data-action="details"], .members-mobile-card[data-member-id="4151"] button[data-action="details"]').first().click();
     await expect(page.locator('#detailsDialog')).toBeVisible();
     await expect(page.locator('#currentMembershipTitle')).toHaveText('العضوية الحالية');
     await expect(page.locator('#detailsExpiryBanner')).toBeHidden();
@@ -523,7 +572,7 @@ test('members table keeps responsive overflow inside its scroll container', asyn
         expect(metrics.wrapperScrolls).toBe(false);
         expect(metrics.actionWrap).toBe('wrap');
     } else {
-        expect(metrics.tableMinWidth).toBe('1120px');
+        expect(metrics.tableMinWidth).toBe('1240px');
     }
 });
 
@@ -582,7 +631,12 @@ test('members table has a light frame and pagination renders from the API contra
     expect(styles.sharedState).toBe(true);
     await expect(page.locator('#membersPagination')).toContainText('11');
 
-    await page.locator('[data-members-page="2"]').click();
+    if ((await page.evaluate(() => innerWidth)) < 768) {
+        await page.locator('.members-mobile-pagination [aria-label="التالي"]').click();
+        await expect(page.locator('.members-mobile-pagination > span')).toHaveText('2 / 3');
+    } else {
+        await page.getByRole('button', { name: 'صفحة 2', exact: true }).click();
+        await expect(page.locator('.members-page-button[aria-label="صفحة 2"].active')).toBeVisible();
+    }
     await expect.poll(() => requestedPages.at(-1)).toBe(2);
-    await expect(page.locator('[data-members-page="2"].active')).toBeVisible();
 });

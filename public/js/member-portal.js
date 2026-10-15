@@ -2,6 +2,8 @@
   'use strict';
 
   const $ = (id) => document.getElementById(id);
+  const i18n = window.TopGymI18n;
+  const tr = (key, params) => i18n?.t?.(`memberPortal.${key}`, params) || key;
   const form = $('portalLookupForm');
   const input = $('membershipCodeInput');
   const submit = $('portalSubmitButton');
@@ -42,16 +44,19 @@
   let occupancyRefreshTimer = null;
   let occupancyRequestController = null;
   let occupancyRequestSequence = 0;
+  let portalViewData = null;
+  let occupancySnapshot = null;
+  let occupancyHasError = false;
 
   const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
 
   const portalViews = Object.freeze({
-    home: { title: 'بوابة عضويتي', description: 'اختر الخدمة التي تريد استخدامها' },
-    report: { title: 'بياناتي وطباعتها', description: 'عرض حالة العضوية والاشتراكات والمدفوعات والحضور.' },
-    feedback: { title: 'قيّم تجربتي', description: 'شاركنا رأيك في الجيم والمدربين.' },
-    subscription: { title: 'اشترك أو جدد عضويتك', description: 'أرسل طلب عضوية أو تجديد مع إثبات الدفع للمراجعة.' },
-    exercises: { title: 'دليل التمارين', description: 'ابحث عن التمرين بالاسم وحدد المستوى والأداة المناسبة.' },
-    foods: { title: 'دليل التغذية', description: 'ابحث عن الطعام وتعرّف على السعرات والماكروز لكل حصة.' }
+    home: { title: 'view.home.title', description: 'view.home.description' },
+    report: { title: 'view.report.title', description: 'view.report.description' },
+    feedback: { title: 'view.feedback.title', description: 'view.feedback.description' },
+    subscription: { title: 'view.subscription.title', description: 'view.subscription.description' },
+    exercises: { title: 'view.exercises.title', description: 'view.exercises.description' },
+    foods: { title: 'view.foods.title', description: 'view.foods.description' }
   });
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
@@ -63,27 +68,28 @@
   window.addEventListener('logicfit:phone-formatter-ready', refreshPortalPhoneDisplay);
   window.addEventListener('logicfit:phone-catalog-ready', refreshPortalPhoneDisplay);
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
-  const money = (value) => `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+  const formatNumber = (value, options = {}) => i18n?.format?.('number', value, options) || String(value ?? 0);
+  const money = (value) => i18n?.format?.('currency', number(value), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
   const dateText = (value) => {
     if (!value) return '—';
     const raw = String(value).slice(0, 10);
     const date = new Date(`${raw}T00:00:00`);
-    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+    return Number.isNaN(date.getTime()) ? String(value) : (i18n?.format?.('date', raw, { day: '2-digit', month: '2-digit', year: 'numeric' }) || new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date));
   };
   const dateTimeText = (value) => {
     if (!value) return '—';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    return Number.isNaN(date.getTime()) ? String(value) : (i18n?.format?.('date', value, { dateStyle: 'medium', timeStyle: 'short' }) || new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { dateStyle: 'medium', timeStyle: 'short' }).format(date));
   };
   const initials = (name) => String(name || 'م').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('') || 'م';
-  const planLabel = (value) => ({ gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' }[value] || value || '—');
-  const typeLabel = (value) => ({ monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية' }[value] || value || '—');
-  const statusLabel = (value) => ({ active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' }[value] || 'بدون حالة');
-  const paymentLabel = (value) => ({ cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' }[value] || value || '—');
+  const planLabel = (value) => ({ gym_only: tr('data.plan.gymOnly'), gym_cardio: tr('data.plan.gymCardio') }[value] || value || '—');
+  const typeLabel = (value) => ({ monthly: tr('data.type.monthly'), half_month: tr('data.type.halfMonth'), quarterly: tr('data.type.quarterly'), semiannual: tr('data.type.semiannual'), annual: tr('data.type.annual') }[value] || value || '—');
+  const statusLabel = (value) => ({ active: tr('data.status.active'), expiring_soon: tr('data.status.expiring'), expired: tr('data.status.expired'), frozen: tr('data.status.frozen') }[value] || tr('data.status.none'));
+  const paymentLabel = (value) => ({ cash: tr('data.payment.cash'), card: tr('data.payment.card'), transfer: tr('data.payment.transfer'), other: tr('data.payment.other') }[value] || value || '—');
 
   function setLoading(value) {
     if (window.topGymFeedback) {
-      if (value) window.topGymFeedback.start(submit, { loadingText: 'جاري التحقق من الكود...' });
+      if (value) window.topGymFeedback.start(submit, { loadingText: tr('lookup.loading') });
       else window.topGymFeedback.stop(submit);
       return;
     }
@@ -99,7 +105,7 @@
   function setFeedbackBusy(value) {
     if (!feedbackSubmit) return;
     if (window.topGymFeedback) {
-      if (value) window.topGymFeedback.start(feedbackSubmit, { loadingText: 'جاري إرسال التقييم...' });
+      if (value) window.topGymFeedback.start(feedbackSubmit, { loadingText: tr('feedback.sending') });
       else window.topGymFeedback.stop(feedbackSubmit);
       return;
     }
@@ -114,10 +120,10 @@
   }
 
   const occupancyLevels = Object.freeze({
-    quiet: { label: 'هادئ', hint: 'مناسب للتمرين براحة', className: 'quiet' },
-    moderate: { label: 'متوسط', hint: 'حركة متوازنة داخل الجيم', className: 'moderate' },
-    busy: { label: 'مزدحم', hint: 'الجيم فيه حركة ملحوظة', className: 'busy' },
-    very_busy: { label: 'مزدحم جدًا', hint: 'يفضل اختيار وقت أهدأ', className: 'very_busy' }
+    quiet: { label: 'occupancy.quiet', hint: 'occupancy.quietHint', className: 'quiet' },
+    moderate: { label: 'occupancy.moderate', hint: 'occupancy.moderateHint', className: 'moderate' },
+    busy: { label: 'occupancy.busy', hint: 'occupancy.busyHint', className: 'busy' },
+    very_busy: { label: 'occupancy.veryBusy', hint: 'occupancy.veryBusyHint', className: 'very_busy' }
   });
 
   function clearOccupancyTimer() {
@@ -136,16 +142,18 @@
     occupancyCard.hidden = true;
     if (occupancyCount) occupancyCount.textContent = '—';
     if (occupancyStatus) occupancyStatus.className = 'portal-occupancy-status is-loading';
-    if (occupancyStatusText) occupancyStatusText.textContent = 'جارٍ تحديث الحالة';
-    if (occupancyStatusHint) occupancyStatusHint.textContent = 'نحسب الحضور الحالي بأمان';
-    if (occupancyUpdated) occupancyUpdated.textContent = 'يتم التحديث تلقائيًا كل 30 ثانية';
-    if (occupancyNote) occupancyNote.textContent = 'يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.';
+    occupancySnapshot = null;
+    occupancyHasError = false;
+    if (occupancyStatusText) occupancyStatusText.textContent = tr('occupancy.loading');
+    if (occupancyStatusHint) occupancyStatusHint.textContent = tr('occupancy.safeEstimate');
+    if (occupancyUpdated) occupancyUpdated.textContent = tr('occupancy.autoRefresh');
+    if (occupancyNote) occupancyNote.textContent = tr('occupancy.note');
   }
 
   function setOccupancyBusy(value) {
     if (!occupancyRefresh) return;
     if (window.topGymFeedback) {
-      if (value) window.topGymFeedback.start(occupancyRefresh, { loadingText: 'جاري تحديث الحالة...' });
+    if (value) window.topGymFeedback.start(occupancyRefresh, { loadingText: tr('occupancy.refreshing') });
       else window.topGymFeedback.stop(occupancyRefresh);
       return;
     }
@@ -158,16 +166,18 @@
     const count = Math.max(0, Math.floor(number(data?.presentCount)));
     const level = occupancyLevels[data?.level] || occupancyLevels.quiet;
     occupancyCard.hidden = false;
-    if (occupancyCount) occupancyCount.textContent = count.toLocaleString('ar-EG');
+    occupancySnapshot = data;
+    occupancyHasError = false;
+    if (occupancyCount) occupancyCount.textContent = formatNumber(count);
     if (occupancyStatus) occupancyStatus.className = `portal-occupancy-status ${level.className}`;
-    if (occupancyStatusText) occupancyStatusText.textContent = level.label;
-    if (occupancyStatusHint) occupancyStatusHint.textContent = level.hint;
-    if (occupancyUpdated) occupancyUpdated.textContent = `آخر تحديث ${dateTimeText(data?.observedAt)}`;
+    if (occupancyStatusText) occupancyStatusText.textContent = tr(level.label);
+    if (occupancyStatusHint) occupancyStatusHint.textContent = tr(level.hint);
+    if (occupancyUpdated) occupancyUpdated.textContent = tr('occupancy.lastUpdated', { date: dateTimeText(data?.observedAt) });
     const staleCount = Math.max(0, Math.floor(number(data?.staleCheckInsExcluded)));
     if (occupancyNote) {
       occupancyNote.textContent = staleCount
-        ? `تم استبعاد ${staleCount.toLocaleString('ar-EG')} تسجيلات قديمة تلقائيًا حتى يظل العدد واقعيًا.`
-        : 'يتم استبعاد التسجيلات القديمة تلقائيًا حسب سياسة الانصراف التلقائي.';
+        ? tr('occupancy.staleExcluded', { count: staleCount })
+        : tr('occupancy.note');
     }
   }
 
@@ -175,9 +185,10 @@
     if (!occupancyCard) return;
     occupancyCard.hidden = false;
     if (occupancyStatus) occupancyStatus.className = 'portal-occupancy-status error';
-    if (occupancyStatusText) occupancyStatusText.textContent = 'تعذر تحديث الحالة';
-    if (occupancyStatusHint) occupancyStatusHint.textContent = 'حاول التحديث مرة أخرى بعد قليل';
-    if (occupancyUpdated) occupancyUpdated.textContent = 'آخر قراءة محفوظة إن وُجدت';
+    occupancyHasError = true;
+    if (occupancyStatusText) occupancyStatusText.textContent = tr('occupancy.error');
+    if (occupancyStatusHint) occupancyStatusHint.textContent = tr('occupancy.retryHint');
+    if (occupancyUpdated) occupancyUpdated.textContent = tr('occupancy.savedReading');
   }
 
   async function refreshOccupancy({ silent = false } = {}) {
@@ -238,8 +249,10 @@
 
   function setPortalView(view = 'home') {
     const nextView = portalViews[view] ? view : 'home';
-    const metadata = { ...portalViews[nextView] };
-    if (nextView === 'feedback') metadata.description = `شاركنا رأيك في ${brandName()} والمدربين.`;
+    const metadata = {
+      title: tr(portalViews[nextView].title),
+      description: tr(portalViews[nextView].description, { brand: brandName() })
+    };
     activePortalView = nextView;
     const isHome = nextView === 'home';
     const isReport = nextView === 'report';
@@ -247,9 +260,16 @@
 
     if (!isLibrary) window.topGymMemberPortalLibrary?.close?.();
     if (homeView) homeView.hidden = !isHome;
-    if (viewToolbar) viewToolbar.hidden = isHome;
-    if (viewTitle) viewTitle.textContent = metadata.title;
-    if (viewDescription) viewDescription.textContent = metadata.description;
+    if (viewToolbar) viewToolbar.hidden = isHome || isLibrary;
+    if (viewTitle) {
+      viewTitle.dataset.i18n = `memberPortal.${portalViews[nextView].title}`;
+      viewTitle.textContent = metadata.title;
+    }
+    if (viewDescription) {
+      viewDescription.dataset.i18n = `memberPortal.${portalViews[nextView].description}`;
+      viewDescription.dataset.i18nParamBrand = brandName();
+      viewDescription.textContent = metadata.description;
+    }
     if (resultTitle) resultTitle.textContent = metadata.title;
     if (reportContent) reportContent.hidden = !isReport;
     if (librarySection) librarySection.hidden = !isLibrary;
@@ -257,7 +277,16 @@
     if (subscriptionSection) subscriptionSection.hidden = nextView !== 'subscription';
     if ($('portalPrintButton')) $('portalPrintButton').hidden = !isReport;
     if ($('portalPdfButton')) $('portalPdfButton').hidden = !isReport;
-    if ($('portalIssueMeta')) $('portalIssueMeta').textContent = isReport ? portalReportMeta : metadata.description;
+    const issueMeta = $('portalIssueMeta');
+    if (issueMeta) {
+      if (isReport) {
+        issueMeta.removeAttribute('data-i18n');
+        issueMeta.textContent = portalReportMeta;
+      } else {
+        issueMeta.setAttribute('data-i18n', `memberPortal.view.${nextView}.description`);
+        issueMeta.textContent = metadata.description;
+      }
+    }
   }
 
   function ensureLibraryFeature() {
@@ -265,7 +294,7 @@
     if (libraryLoaderPromise) return libraryLoaderPromise;
     libraryLoaderPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = '/js/member-portal-library.js?v=4';
+      script.src = '/js/member-portal-library.js?v=5';
       script.async = true;
       script.onload = () => window.topGymMemberPortalLibrary ? resolve(window.topGymMemberPortalLibrary) : reject(new Error('Library feature did not initialize.'));
       script.onerror = () => reject(new Error('تعذر تحميل دليل التمارين والتغذية.'));
@@ -277,7 +306,7 @@
   async function openLibrary(type) {
     if (!librarySection) return;
     setPortalView(type);
-    viewToolbar?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    librarySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     try {
       const feature = await ensureLibraryFeature();
       feature.open(type);
@@ -295,11 +324,11 @@
 
   function table(title, headers, rows, emptyText = 'لا توجد بيانات مسجلة.', className = '') {
     const sectionClass = ['portal-section', className].filter(Boolean).join(' ');
-    const countLabel = rows.length ? `${rows.length.toLocaleString('ar-EG')} ${rows.length === 1 ? 'سجل' : 'سجلات'}` : 'لا توجد سجلات';
+    const countLabel = rows.length ? `${formatNumber(rows.length)} ${tr(rows.length === 1 ? 'report.recordSingular' : 'report.recordPlural')}` : tr('report.noRecords');
     return `<section class="${sectionClass}" aria-label="${escapeHtml(title)}"><div class="portal-section-heading"><div><span class="portal-section-kicker">سجل العضوية</span><h3>${escapeHtml(title)}</h3></div><span class="portal-section-count">${countLabel}</span></div>${rows.length ? `<div class="portal-table-wrap"><table class="portal-table"><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>` : `<div class="portal-empty">${escapeHtml(emptyText)}</div>`}</section>`;
   }
 
-  function renderTrainerPortal(data) {
+  function renderTrainerPortal(data, { localeRefresh = false } = {}) {
     const member = data.member || {};
     portalDisplayMember = member;
     const coaching = data.coaching || {};
@@ -313,33 +342,35 @@
     document.documentElement.dataset.portalRequestType = 'trainer_client';
     document.documentElement.dataset.portalRequestOperation = 'trainer_client';
     document.documentElement.dataset.portalRequestCanSubmit = 'false';
-    window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
+    if (!localeRefresh) window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
       detail: { requestType: 'trainer_client', operation: 'trainer_client', canSubmit: false, membershipStatus: 'none' }
     }));
     if (occupancyCard) occupancyCard.hidden = true;
     const trainerTool = document.querySelector('[data-portal-tool="subscription"]');
     if (trainerTool) trainerTool.hidden = true;
-    if (resultTitle) resultTitle.textContent = 'بوابة العميل';
-    if ($('portalIssueMeta')) $('portalIssueMeta').textContent = 'تابع خطتك وجلساتك وتقدمك مع مدربك.';
+    if (resultTitle) resultTitle.textContent = tr('clientPortal');
+    if ($('portalIssueMeta')) $('portalIssueMeta').textContent = tr('clientPortalDescription');
     if (trainerOverview) trainerOverview.hidden = false;
     if (trainerOverviewContent) {
       trainerOverviewContent.innerHTML = `
-        <section class="portal-trainer-identity"><div><span class="portal-section-kicker">CLIENT PROFILE</span><h4>${escapeHtml(member.fullName || '—')}</h4><p class="portal-ltr" data-portal-phone-display>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</p></div><span class="portal-trainer-mode">تدريب شخصي</span></section>
-        <div class="portal-stat-grid portal-trainer-stats" aria-label="ملخص مساحة العميل"><article class="portal-stat"><span>خطط التدريب</span><strong>${number(plans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>خطط التغذية</span><strong>${number(nutritionPlans.length).toLocaleString('ar-EG')}</strong><small>الخطط المتاحة لك</small></article><article class="portal-stat"><span>الجلسات القادمة</span><strong>${number(upcomingSessions.length).toLocaleString('ar-EG')}</strong><small>مواعيد مجدولة</small></article><article class="portal-stat"><span>الجلسات المتبقية</span><strong>${number(remainingSessions).toLocaleString('ar-EG')}</strong><small>ضمن الباقات الحالية</small></article></div>
+        <section class="portal-trainer-identity"><div><span class="portal-section-kicker">CLIENT PROFILE</span><h4>${escapeHtml(member.fullName || '—')}</h4><p class="portal-ltr" data-portal-phone-display>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</p></div><span class="portal-trainer-mode">${escapeHtml(tr('trainer.mode'))}</span></section>
+        <div class="portal-stat-grid portal-trainer-stats" aria-label="${escapeHtml(tr('trainer.summary'))}"><article class="portal-stat"><span>${escapeHtml(tr('trainer.trainingPlans'))}</span><strong>${formatNumber(plans.length)}</strong><small>${escapeHtml(tr('trainer.availablePlans'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('trainer.nutritionPlans'))}</span><strong>${formatNumber(nutritionPlans.length)}</strong><small>${escapeHtml(tr('trainer.availablePlans'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('trainer.upcomingSessions'))}</span><strong>${formatNumber(upcomingSessions.length)}</strong><small>${escapeHtml(tr('trainer.scheduledSessions'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('trainer.remainingSessions'))}</span><strong>${formatNumber(remainingSessions)}</strong><small>${escapeHtml(tr('trainer.currentPackages'))}</small></article></div>
         ${table('خطط التدريب', ['الخطة', 'الفترة', 'الحالة'], plans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تدريب متاحة.', 'portal-trainer-history')}
         ${table('خطط التغذية', ['الخطة', 'الفترة', 'الحالة'], nutritionPlans.map((item) => `<tr>${tableCell('الخطة', escapeHtml(item.name || '—'))}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status || '—'))}</tr>`), 'لا توجد خطط تغذية متاحة.', 'portal-trainer-history')}
         ${table('الجلسات القادمة', ['الموعد', 'الحالة', 'ملاحظات'], upcomingSessions.map((item) => `<tr>${tableCell('الموعد', dateTimeText(item.scheduledStart), 'portal-ltr')}${tableCell('الحالة', escapeHtml(item.status === 'scheduled' ? 'مجدولة' : item.status || '—'))}${tableCell('ملاحظات', escapeHtml(item.notes || '—'))}</tr>`), 'لا توجد جلسات قادمة.', 'portal-trainer-history')}`;
     }
     window.topGymSkeleton?.ready(trainerOverviewContent);
     refreshPortalPhoneDisplay();
-    portalReportMeta = `ملف العميل: ${member.fullName || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
-    resetFeedback();
-    setPortalView('home');
+    portalReportMeta = tr('report.memberName', { name: member.fullName || '—', date: dateTimeText(data.issuedAt) });
+    if (!localeRefresh) {
+      resetFeedback();
+      setPortalView('home');
+    }
   }
 
-  function render(data) {
+  function render(data, { localeRefresh = false } = {}) {
     if (data?.portalMode === 'trainer_client') {
-      renderTrainerPortal(data);
+      renderTrainerPortal(data, { localeRefresh });
       return;
     }
     document.documentElement.dataset.portalMode = 'gym_member';
@@ -361,18 +392,18 @@
     document.documentElement.dataset.portalRequestType = requestType;
     document.documentElement.dataset.portalRequestOperation = requestOperation;
     document.documentElement.dataset.portalRequestCanSubmit = String(requestCanSubmit);
-    window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
+    if (!localeRefresh) window.dispatchEvent(new CustomEvent('topgym:portal-session-change', {
       detail: { requestType, operation: requestOperation, canSubmit: requestCanSubmit, membershipStatus: status }
     }));
     const summary = data.financialSummary || {};
     const firstJoin = data.firstJoinDate || member.registrationDate;
     const remainingClass = number(summary.totalRemaining) > 0 ? 'portal-outstanding' : '';
-    const membershipRows = (data.memberships || []).map((item) => `<tr>${tableCell('الباقة والمدة', `${escapeHtml(planLabel(item.plan))}<small>${escapeHtml(typeLabel(item.type))}</small>`)}${tableCell('الفترة', `${dateText(item.startDate)}<br>حتى ${dateText(item.effectiveEndDate || item.endDate)}`, 'portal-ltr')}${tableCell('الحالة', `<span class="portal-status ${escapeHtml(item.status || '')}">${escapeHtml(statusLabel(item.status))}</span>`)}${tableCell('الحساب', `${money(item.amountDue)}<br><small>مدفوع ${money(item.amountPaid)} · متبقي ${money(item.amountRemaining)}</small>`, 'portal-money')}</tr>`);
-    const paymentRows = (data.payments || []).map((item) => `<tr>${tableCell('الإيصال', escapeHtml(item.receiptNumber || '—'), 'portal-ltr')}${tableCell('التاريخ', dateTimeText(item.transactionDate || item.createdAt))}${tableCell('العملية', escapeHtml(item.transactionType === 'subscription' ? 'اشتراك' : item.transactionType === 'adjustment' ? 'تسوية' : 'دفعة'))}${tableCell('المدفوع', money(item.amountPaid), 'portal-money')}${tableCell('المتبقي', money(item.amountRemaining), `portal-money ${number(item.amountRemaining) > 0 ? 'portal-debt' : ''}`)}${tableCell('طريقة الدفع', escapeHtml(paymentLabel(item.paymentMethod)))}</tr>`);
-    const attendanceRows = (data.attendance || []).map((item) => `<tr>${tableCell('التاريخ', dateText(item.attendanceDate), 'portal-ltr')}${tableCell('الحضور', dateTimeText(item.checkInAt))}${tableCell('الانصراف', item.checkOutAt ? dateTimeText(item.checkOutAt) : `داخل ${escapeHtml(brandName())}`)}${tableCell('المدة', item.durationMinutes == null ? '—' : `${number(item.durationMinutes)} دقيقة`)}</tr>`);
-    const freezeRows = (data.freezes || []).map((item) => `<tr>${tableCell('البداية', dateText(item.startDate))}${tableCell('النهاية', dateText(item.endDate))}${tableCell('الاستئناف', item.resumedDate ? dateText(item.resumedDate) : 'مستمر')}${tableCell('المدة', `${number(item.days)} يوم`)}</tr>`);
+    const membershipRows = (data.memberships || []).map((item) => `<tr>${tableCell(tr('report.planAndDuration'), `${escapeHtml(planLabel(item.plan))}<small>${escapeHtml(typeLabel(item.type))}</small>`)}${tableCell(tr('report.period'), `${dateText(item.startDate)}<br>${escapeHtml(tr('report.until', { date: dateText(item.effectiveEndDate || item.endDate) }))}`, 'portal-ltr')}${tableCell(tr('report.status'), `<span class="portal-status ${escapeHtml(item.status || '')}">${escapeHtml(statusLabel(item.status))}</span>`)}${tableCell(tr('report.account'), `${money(item.amountDue)}<br><small>${escapeHtml(tr('report.paidValue', { amount: money(item.amountPaid) }))} · ${escapeHtml(tr('report.remainingValue', { amount: money(item.amountRemaining) }))}</small>`, 'portal-money')}</tr>`);
+    const paymentRows = (data.payments || []).map((item) => `<tr>${tableCell(tr('report.receipt'), escapeHtml(item.receiptNumber || '—'), 'portal-ltr')}${tableCell(tr('report.date'), dateTimeText(item.transactionDate || item.createdAt))}${tableCell(tr('report.operation'), escapeHtml(tr(item.transactionType === 'subscription' ? 'data.transaction.subscription' : item.transactionType === 'adjustment' ? 'data.transaction.adjustment' : 'data.transaction.payment')))}${tableCell(tr('report.paid'), money(item.amountPaid), 'portal-money')}${tableCell(tr('report.due'), money(item.amountRemaining), `portal-money ${number(item.amountRemaining) > 0 ? 'portal-debt' : ''}`)}${tableCell(tr('report.paymentMethod'), escapeHtml(paymentLabel(item.paymentMethod)))}</tr>`);
+    const attendanceRows = (data.attendance || []).map((item) => `<tr>${tableCell(tr('report.date'), dateText(item.attendanceDate), 'portal-ltr')}${tableCell(tr('report.checkIn'), dateTimeText(item.checkInAt))}${tableCell(tr('report.checkOut'), item.checkOutAt ? dateTimeText(item.checkOutAt) : tr('report.insideGym', { gym: escapeHtml(brandName()) }))}${tableCell(tr('report.duration'), item.durationMinutes == null ? '—' : tr('report.minutes', { count: formatNumber(item.durationMinutes) }))}</tr>`);
+    const freezeRows = (data.freezes || []).map((item) => `<tr>${tableCell(tr('report.start'), dateText(item.startDate))}${tableCell(tr('report.end'), dateText(item.endDate))}${tableCell(tr('report.resumed'), item.resumedDate ? dateText(item.resumedDate) : tr('report.continues'))}${tableCell(tr('report.duration'), tr('report.daysCount', { count: formatNumber(item.days) }))}</tr>`);
     const currentEndDate = current.effectiveEndDate || current.endDate;
-    const daysRemaining = current.daysRemaining == null ? '—' : current.daysRemaining >= 0 ? `${number(current.daysRemaining)} يوم` : 'منتهية';
+    const daysRemaining = current.daysRemaining == null ? '—' : current.daysRemaining >= 0 ? tr('report.daysRemaining', { count: formatNumber(current.daysRemaining) }) : tr('report.expired');
     const tenantName = String(data.tenant?.name || brandName()).trim() || brandName();
     reportContent.innerHTML = `
       <section class="portal-member-identity">
@@ -381,17 +412,19 @@
       </section>
       <section class="portal-membership-overview" aria-labelledby="portalMembershipOverviewTitle">
         <header class="portal-membership-overview-head"><div><span class="portal-section-kicker">MEMBERSHIP PROFILE</span><h3 id="portalMembershipOverviewTitle">ملخص العضوية</h3><p>بيانات العضوية الحالية لهذا المشترك فقط</p></div><span class="portal-membership-scope"><span aria-hidden="true">⌂</span>${escapeHtml(tenantName)}</span></header>
-        <div class="portal-membership-facts"><article class="portal-membership-fact portal-membership-fact-featured"><span>الباقة</span><strong>${escapeHtml(planLabel(current.plan))}</strong><small>${escapeHtml(typeLabel(current.type))}</small></article><article class="portal-membership-fact"><span>تاريخ البداية</span><strong class="portal-ltr">${dateText(current.startDate)}</strong><small>بداية الاشتراك الحالي</small></article><article class="portal-membership-fact"><span>تاريخ الانتهاء</span><strong class="portal-ltr">${dateText(currentEndDate)}</strong><small>${escapeHtml(daysRemaining)} ${current.daysRemaining == null || current.daysRemaining < 0 ? '' : 'متبقي'}</small></article><article class="portal-membership-fact"><span>أول انضمام</span><strong class="portal-ltr">${dateText(firstJoin)}</strong><small>تاريخ بداية الملف</small></article></div>
+        <div class="portal-membership-facts"><article class="portal-membership-fact portal-membership-fact-featured"><span>الباقة</span><strong>${escapeHtml(planLabel(current.plan))}</strong><small>${escapeHtml(typeLabel(current.type))}</small></article><article class="portal-membership-fact"><span>تاريخ البداية</span><strong class="portal-ltr">${dateText(current.startDate)}</strong><small>بداية الاشتراك الحالي</small></article><article class="portal-membership-fact"><span>تاريخ الانتهاء</span><strong class="portal-ltr">${dateText(currentEndDate)}</strong><small>${escapeHtml(daysRemaining)}</small></article><article class="portal-membership-fact"><span>أول انضمام</span><strong class="portal-ltr">${dateText(firstJoin)}</strong><small>تاريخ بداية الملف</small></article></div>
       </section>
-      <section class="portal-stat-grid portal-financial-grid" aria-label="ملخص الزيارات والحساب"><article class="portal-stat"><span>إجمالي الزيارات</span><strong>${number(data.attendanceSummary?.totalVisits).toLocaleString('ar-EG')}</strong><small>سجل حضور كامل</small></article><article class="portal-stat"><span>إجمالي المستحق</span><strong>${money(summary.totalDue)}</strong><small>قيمة الاشتراكات</small></article><article class="portal-stat"><span>إجمالي المدفوع</span><strong>${money(summary.totalPaid)}</strong><small>المدفوع حتى الآن</small></article><article class="portal-stat"><span>المبلغ المتبقي</span><strong class="${remainingClass}">${money(summary.totalRemaining)}</strong><small>الرصيد الحالي</small></article></section>
+      <section class="portal-stat-grid portal-financial-grid" aria-label="${escapeHtml(tr('report.visitsFinance'))}"><article class="portal-stat"><span>${escapeHtml(tr('report.totalVisits'))}</span><strong>${formatNumber(data.attendanceSummary?.totalVisits)}</strong><small>${escapeHtml(tr('report.fullAttendance'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('report.totalDue'))}</span><strong>${money(summary.totalDue)}</strong><small>${escapeHtml(tr('report.membershipValue'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('report.totalPaid'))}</span><strong>${money(summary.totalPaid)}</strong><small>${escapeHtml(tr('report.paidToDate'))}</small></article><article class="portal-stat"><span>${escapeHtml(tr('report.remainingAmount'))}</span><strong class="${remainingClass}">${money(summary.totalRemaining)}</strong><small>${escapeHtml(tr('report.currentBalance'))}</small></article></section>
       ${table('الاشتراكات والتجديدات', ['الباقة والمدة', 'الفترة', 'الحالة', 'الحساب'], membershipRows, 'لا توجد اشتراكات مسجلة.', 'portal-membership-history')}
       ${table('سجل المدفوعات والإيصالات', ['الإيصال', 'التاريخ', 'العملية', 'المدفوع', 'المتبقي', 'طريقة الدفع'], paymentRows, 'لا توجد مدفوعات مسجلة.', 'portal-payments-history')}
       ${table('سجل الحضور والزيارات', ['التاريخ', 'الحضور', 'الانصراف', 'المدة'], attendanceRows, 'لا توجد زيارات مسجلة.', 'portal-attendance-history')}
       ${freezeRows.length ? table('حالات التجميد أو الإيقاف', ['البداية', 'النهاية', 'الاستئناف', 'المدة'], freezeRows, 'لا توجد حالات تجميد.', 'portal-freeze-history') : ''}`;
-    portalReportMeta = `رقم التقرير: ${data.reportNumber || '—'} · تاريخ الإصدار: ${dateTimeText(data.issuedAt)}`;
+    portalReportMeta = tr('report.number', { number: data.reportNumber || '—', date: dateTimeText(data.issuedAt) });
     refreshPortalPhoneDisplay();
-    resetFeedback();
-    setPortalView('home');
+    if (!localeRefresh) {
+      resetFeedback();
+      setPortalView('home');
+    }
   }
 
   function portalTenantSlug() {
@@ -464,16 +497,38 @@
     window.print();
   }
 
+  const portalLocalizationRoot = document.querySelector('.portal-shell');
+  const annotatePortalCopy = () => i18n?.annotateText?.(portalLocalizationRoot || document, 'memberPortal.');
+  annotatePortalCopy();
+  if (portalLocalizationRoot && typeof MutationObserver === 'function') {
+    const portalLocalizationObserver = new MutationObserver((records) => {
+      if (records.some((record) => record.addedNodes.length || record.removedNodes.length)) annotatePortalCopy();
+    });
+    portalLocalizationObserver.observe(portalLocalizationRoot, { childList: true, subtree: true });
+  }
+  window.addEventListener('topgym:localechange', () => {
+    const activeView = activePortalView;
+    if (portalViewData && resultPanel && !resultPanel.hidden) {
+      render(portalViewData, { localeRefresh: true });
+      setPortalView(activeView);
+    }
+    if (occupancySnapshot) renderOccupancy(occupancySnapshot);
+    else if (occupancyHasError) showOccupancyError();
+    annotatePortalCopy();
+    i18n?.apply?.(portalLocalizationRoot || document);
+  });
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     showError('');
     const code = String(input.value || '').trim();
-    if (!code) { showError('أدخل كود العضوية أولًا.'); input.focus(); return; }
+    if (!code) { showError(tr('lookup.codeRequired')); input.focus(); return; }
     setLoading(true);
     try {
       const data = await lookup(code);
       await applyPortalTenant(data.tenant);
       portalMembershipCode = code;
+      portalViewData = data;
       render(data);
       window.topGymNotificationCenter?.refresh?.();
       input.value = '';
@@ -488,7 +543,7 @@
       }
       resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
-      showError(error.message || 'تعذر عرض بيانات العضوية.');
+      showError(error.message || tr('lookup.failed'));
     } finally { setLoading(false); }
   });
   $('portalPrintButton')?.addEventListener('click', printReport);
@@ -526,7 +581,19 @@
   });
   window.addEventListener('topgym:brandingchange', () => {
     if (activePortalView === 'feedback') setPortalView(activePortalView);
+    applyPortalBrandFooter();
   });
+  function applyPortalBrandFooter() {
+    const footer = document.querySelector('[data-portal-brand-footer]');
+    if (!footer) return;
+    const brandingApi = window.topGymBranding;
+    const currentFooter = String(brandingApi?.get?.().documents?.footer || '').trim();
+    const fallbackFooter = String(brandingApi?.fallback?.().documents?.footer || '').trim();
+    footer.textContent = currentFooter && currentFooter !== fallbackFooter ? currentFooter : tr('footer');
+  }
+  window.addEventListener('topgym:localechange', applyPortalBrandFooter);
+  window.addEventListener('topgym:themechange', applyPortalBrandFooter);
+  applyPortalBrandFooter();
   document.addEventListener('visibilitychange', () => {
     if (!portalMembershipCode || document.documentElement.dataset.portalMode === 'trainer_client') return;
     if (document.hidden) {
@@ -547,10 +614,10 @@
     const rating = Number(feedbackRating?.value || 0);
     const noteType = String(feedbackType?.value || '');
     const message = String(feedbackMessage?.value || '').trim();
-    if (!portalMembershipCode) { showFeedbackError('أعد إدخال كود العضوية لفتح البوابة.'); return; }
-    if (!rating) { showFeedbackError('اختر تقييمًا من نجمة إلى 5 نجوم.'); return; }
-    if (!noteType) { showFeedbackError('اختر نوع الملاحظة.'); feedbackType?.focus(); return; }
-    if (message.length < 3) { showFeedbackError('اكتب ملاحظتك قبل إرسال التقييم.'); feedbackMessage?.focus(); return; }
+    if (!portalMembershipCode) { showFeedbackError(tr('feedback.portalCodeRequired')); return; }
+    if (!rating) { showFeedbackError(tr('feedback.ratingRequired')); return; }
+    if (!noteType) { showFeedbackError(tr('feedback.chooseType')); feedbackType?.focus(); return; }
+    if (message.length < 3) { showFeedbackError(tr('feedback.messageRequired')); feedbackMessage?.focus(); return; }
     setFeedbackBusy(true);
     try {
       const response = await fetch('/api/member-portal/feedback', {
@@ -560,11 +627,11 @@
         body: JSON.stringify({ membershipCode: portalMembershipCode, tenantSlug: portalTenantSlug() || undefined, rating, noteType, message })
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(response.status === 429 ? payload.error : payload.error || 'تعذر حفظ التقييم. حاول مرة أخرى.');
+      if (!response.ok) throw new Error(response.status === 429 ? payload.error : payload.error || tr('feedback.saveFailed'));
       resetFeedback();
       if (feedbackSuccess) feedbackSuccess.hidden = false;
     } catch (error) {
-      showFeedbackError(error.message || 'تعذر حفظ التقييم.');
+      showFeedbackError(error.message || tr('feedback.saveFailed'));
     } finally { setFeedbackBusy(false); }
   });
   $('portalResetButton')?.addEventListener('click', () => {

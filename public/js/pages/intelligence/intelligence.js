@@ -4,6 +4,10 @@
 
     const $ = (id) => document.getElementById(id);
     const api = window.topGymApi;
+    const t = (key, params) => window.TopGymI18n?.t?.(`intelligenceScreen.${key}`, params) || key;
+    const locale = () => window.TopGymI18n?.get?.() || 'ar';
+    const formatNumber = (value, digits = 0) => window.TopGymI18n?.format?.('number', value, { maximumFractionDigits: digits })
+        || (Number.isFinite(Number(value)) ? Number(value).toLocaleString(locale() === 'en' ? 'en-EG' : 'ar-EG', { maximumFractionDigits: digits }) : '—');
     const can = (permission) => window.topGymAuth?.isOwner?.() === true
         || window.topGymAuth?.hasPermission?.(permission) === true;
     const state = {
@@ -13,7 +17,8 @@
         overview: null,
         clients: [],
         catalog: { exercises: [], foods: [] },
-        plan: null
+        plan: null,
+        answer: null
     };
     function brandName() {
         return String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
@@ -31,13 +36,13 @@
 
     function number(value, digits = 0) {
         const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed.toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
+        return Number.isFinite(parsed) ? formatNumber(parsed, digits) : '—';
     }
 
     function dateText(value) {
         if (!value) return '—';
         const parsed = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-        return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleDateString('ar-EG');
+        return Number.isNaN(parsed.getTime()) ? String(value) : (window.TopGymI18n?.format?.('date', value) || parsed.toLocaleDateString(locale() === 'en' ? 'en-EG' : 'ar-EG'));
     }
 
     function notify(message, type = 'success') {
@@ -83,31 +88,37 @@
         return food?.nameAr || food?.nameEn || `طعام #${id}`;
     }
 
+    function planLevelLabel(value) {
+        const key = { beginner: 'plans.level.beginner', intermediate: 'plans.level.intermediate', advanced: 'plans.level.advanced' }[String(value || '').toLowerCase()];
+        return key ? t(key) : value || '—';
+    }
+
     function renderStats(stats = {}) {
         const cards = [
-            ['خطر توقف مرتفع', stats.highRiskMembers, 'أولوية تواصل اليوم', 'danger'],
-            ['قريبة الانتهاء', stats.expiringMemberships, 'تحتاج متابعة قريبة', 'warning'],
-            ['اشتراكات نشطة', stats.activeMemberships, 'تحتاج متابعة مستمرة', 'active'],
-            ['برامج تدريب نشطة', stats.activeWorkoutPrograms, 'خطة قيد التنفيذ', 'workout'],
-            ['خطط تغذية نشطة', stats.activeDietPlans, 'خطة قابلة للقياس', 'diet'],
-            ['الأعضاء', stats.totalMembers, 'إجمالي الملفات', 'members']
+            ['stats.highRisk', stats.highRiskMembers, 'stats.highRisk.caption', 'danger'],
+            ['stats.expiring', stats.expiringMemberships, 'stats.expiring.caption', 'warning'],
+            ['stats.activeMemberships', stats.activeMemberships, 'stats.activeMemberships.caption', 'active'],
+            ['stats.workouts', stats.activeWorkoutPrograms, 'stats.workouts.caption', 'workout'],
+            ['stats.diet', stats.activeDietPlans, 'stats.diet.caption', 'diet'],
+            ['stats.members', stats.totalMembers, 'stats.members.caption', 'members']
         ];
-        $('intelligenceStats').innerHTML = cards.map(([label, value, caption, tone]) => `<article class="intelligence-stat-card ${tone}"><span>${escapeHtml(label)}</span><strong>${number(value)}</strong><small>${escapeHtml(caption)}</small></article>`).join('');
+        $('intelligenceStats').innerHTML = cards.map(([label, value, caption, tone]) => `<article class="intelligence-stat-card ${tone}"><span>${escapeHtml(t(label))}</span><strong>${number(value)}</strong><small>${escapeHtml(t(caption))}</small></article>`).join('');
     }
 
     function renderPriorities(items = []) {
         const priorityOrder = { danger: 0, warning: 1, info: 2, success: 3 };
         const orderedItems = [...items].sort((left, right) => (priorityOrder[left.tone] ?? 9) - (priorityOrder[right.tone] ?? 9));
-        $('intelligencePriorities').innerHTML = orderedItems.map((item) => `<article class="intelligence-priority ${escapeHtml(item.tone || 'info')}"><span class="intelligence-priority-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.action)}</small></div></article>`).join('') || '<div class="intelligence-empty-line">لا توجد إشارات تحتاج تدخلاً الآن.</div>';
+        $('intelligencePriorities').innerHTML = orderedItems.map((item) => `<article class="intelligence-priority ${escapeHtml(item.tone || 'info')}"><span class="intelligence-priority-dot" aria-hidden="true"></span><div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.action)}</small></div></article>`).join('') || `<div class="intelligence-empty-line">${escapeHtml(t('priority.empty'))}</div>`;
     }
 
     function riskLabel(level) {
-        return level === 'high' ? 'مرتفع' : level === 'medium' ? 'متوسط' : 'منخفض';
+        return t(level === 'high' ? 'churn.legend.high' : level === 'medium' ? 'churn.legend.medium' : 'churn.legend.low');
     }
 
     function renderChurn(items = []) {
-        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || 'م').trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || 'بدون هاتف')}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? 'لا يوجد حضور' : `منذ ${number(item.daysSinceLastVisit)} يوم`}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? 'منتهية' : `${number(item.daysToExpiry)} يوم`}</td><td><small>${escapeHtml(item.reasons?.[0] || 'مؤشر يحتاج مراجعة')}</small></td><td><button class="btn btn-light btn-small" type="button" data-required-permission="members.read,memberships.read" data-intelligence-member="${escapeHtml(item.id)}">فتح ملف</button></td></tr>`).join('');
-        $('intelligenceChurnTable').innerHTML = rows ? `<table class="intelligence-table"><thead><tr><th>المشترك</th><th>المؤشر</th><th>آخر حضور</th><th>الانتهاء</th><th>السبب الأبرز</th><th>الإجراء</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="intelligence-empty-line">لا توجد عضويات نشطة في نطاق التحليل.</div>';
+        const rows = items.map((item) => `<tr><td><div class="intelligence-member-cell"><span class="intelligence-member-avatar">${escapeHtml((item.fullName || (locale() === 'en' ? 'M' : 'م')).trim().slice(0, 1))}</span><div><strong>${escapeHtml(item.fullName)}</strong><small dir="ltr">${escapeHtml(displayPhone(item.phone, item.phoneCountry) || t('churn.noPhone'))}</small></div></div></td><td><span class="intelligence-risk-badge ${escapeHtml(item.level)}">${riskLabel(item.level)} · ${number(item.score)}%</span></td><td>${item.daysSinceLastVisit == null ? t('churn.noAttendance') : t('churn.daysAgo', { count: number(item.daysSinceLastVisit) })}</td><td>${item.daysToExpiry == null ? '—' : item.daysToExpiry < 0 ? t('churn.expired') : t('churn.days', { count: number(item.daysToExpiry) })}</td><td><small>${escapeHtml(item.reasons?.[0] || t('churn.reasonFallback'))}</small></td><td><button class="btn btn-light btn-small" type="button" data-required-permission="members.read,memberships.read" data-intelligence-member="${escapeHtml(item.id)}">${escapeHtml(t('churn.openMember'))}</button></td></tr>`).join('');
+        const headers = ['member', 'risk', 'lastVisit', 'expiry', 'reason', 'action'].map((key) => `<th>${escapeHtml(t(`churn.header.${key}`))}</th>`).join('');
+        $('intelligenceChurnTable').innerHTML = rows ? `<table class="intelligence-table" data-responsive-cards="false"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>` : `<div class="intelligence-empty-line">${escapeHtml(t('churn.empty'))}</div>`;
     }
 
     function renderPrompts(prompts = []) {
@@ -121,31 +132,32 @@
         renderChurn(data.churn || []);
         renderPrompts(data.prompts || []);
         const badge = $('intelligenceEngineBadge');
-        if (badge) badge.textContent = data.mode === 'hybrid-rules' ? 'Hybrid intelligence · مراجعة بشرية' : brandText(data.engine || `${brandName()} Intelligence`);
+        if (badge) badge.textContent = data.mode === 'hybrid-rules' ? t('header.engine') : brandText(data.engine || `${brandName()} Intelligence`);
     }
 
     function renderClients() {
         const select = $('intelligenceMemberId');
         if (!select) return;
         const current = select.value;
-        select.innerHTML = `<option value="">اختر العميل</option>${state.clients.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.fullName || 'عميل')}${client.phone ? ` · ${escapeHtml(displayPhone(client.phone, client.phoneCountry))}` : ''}</option>`).join('')}`;
+        select.innerHTML = `<option value="">${escapeHtml(t('plans.client.choose'))}</option>${state.clients.map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.fullName || t('plans.client.fallback'))}${client.phone ? ` · ${escapeHtml(displayPhone(client.phone, client.phoneCountry))}` : ''}</option>`).join('')}`;
         if (state.clients.some((client) => String(client.id) === String(current))) select.value = current;
     }
 
     function renderAnswer(data) {
         const answer = $('intelligenceAnswer');
         if (!answer) return;
+        state.answer = data;
         answer.hidden = false;
-        answer.innerHTML = `<span class="intelligence-answer-label">تحليل النظام</span><p>${escapeHtml(brandText(data.answer || ''))}</p>`;
+        answer.innerHTML = `<span class="intelligence-answer-label">${escapeHtml(t('query.answer'))}</span><p>${escapeHtml(brandText(data.answer || ''))}</p>`;
     }
 
     function planSummary(plan, type) {
         if (type === 'workout') {
             const exercises = (plan.routines || []).reduce((sum, routine) => sum + (routine.exercises || []).length, 0);
-            return `<div class="intelligence-result-metrics"><span><b>${number(plan.routines?.length || 0)}</b> أيام</span><span><b>${number(exercises)}</b> تمارين</span><span><b>${number(plan.durationWeeks)}</b> أسابيع</span><span><b>${escapeHtml(plan.level || '—')}</b> مستوى</span></div>`;
+            return `<div class="intelligence-result-metrics"><span><b>${number(plan.routines?.length || 0)}</b> ${escapeHtml(t('plan.days'))}</span><span><b>${number(exercises)}</b> ${escapeHtml(t('plan.exercises'))}</span><span><b>${number(plan.durationWeeks)}</b> ${escapeHtml(t('plan.weeks'))}</span><span><b>${escapeHtml(planLevelLabel(plan.level))}</b> ${escapeHtml(t('plan.level'))}</span></div>`;
         }
         const foods = (plan.meals || []).reduce((sum, meal) => sum + (meal.items || []).length, 0);
-        return `<div class="intelligence-result-metrics"><span><b>${number(plan.meals?.length || 0)}</b> وجبات</span><span><b>${number(foods)}</b> أطعمة</span><span><b>${number(plan.targetCalories)}</b> سعر</span><span><b>${number(plan.targetProtein)}g</b> بروتين</span></div>`;
+        return `<div class="intelligence-result-metrics"><span><b>${number(plan.meals?.length || 0)}</b> ${escapeHtml(t('plan.meals'))}</span><span><b>${number(foods)}</b> ${escapeHtml(t('plan.foods'))}</span><span><b>${number(plan.targetCalories)}</b> ${escapeHtml(t('plan.calories'))}</span><span><b>${number(plan.targetProtein)}g</b> ${escapeHtml(t('plan.protein'))}</span></div>`;
     }
 
     function planPreview(plan, type) {
@@ -160,10 +172,81 @@
         const memberId = result.memberId || result.suggestion?.memberId || result.draft?.memberId;
         const member = state.clients.find((client) => String(client.id) === String(memberId));
         state.plan = { type, memberId, draft: normalizeGeneratedPlan(result.suggestion || result.draft, type, member?.fullName), warnings: result.warnings || [], explanation: result.explanation || [], changes };
+        renderCurrentPlan();
+    }
+
+    function renderCurrentPlan() {
+        if (!state.plan?.draft) return;
+        const refineValue = $('intelligenceRefineInstruction')?.value || '';
         const plan = state.plan.draft;
         const warningMarkup = state.plan.warnings.map((warning) => `<li>${escapeHtml(brandText(warning))}</li>`).join('');
-        const changeMarkup = changes.map((change) => `<li>${escapeHtml(brandText(change))}</li>`).join('');
-        $('intelligencePlanResult').innerHTML = `<div class="intelligence-result-head"><div><span class="intelligence-result-kicker">مسودة قابلة للمراجعة</span><h4>${escapeHtml(plan.name || 'اقتراح ذكي')}</h4><p>${escapeHtml(plan.description || '')}</p></div><span class="intelligence-draft-badge">Draft</span></div>${planSummary(plan, state.plan.type)}${planPreview(plan, state.plan.type)}${changeMarkup ? `<div class="intelligence-result-notice success"><strong>تم تطبيق التعديل</strong><ul>${changeMarkup}</ul></div>` : ''}${warningMarkup ? `<div class="intelligence-result-notice warning"><strong>مراجعة ضرورية قبل الاعتماد</strong><ul>${warningMarkup}</ul></div>` : ''}<form class="intelligence-refine-form" id="intelligenceRefineForm"><label>اكتب تعديلك على المسودة<textarea id="intelligenceRefineInstruction" rows="2" maxlength="500" placeholder="مثال: احذف تمرين السكوات وأضف جهاز الرجلين"></textarea></label><button class="btn btn-light" type="submit" data-required-permission="intelligence.generate">إعادة إنشاء بالتعليمات</button></form><div class="intelligence-result-actions"><button class="btn btn-primary" type="button" data-required-permission="coaching.create" data-intelligence-save>حفظ كمسودة في النظام</button><button class="btn btn-light" type="button" data-required-permission="coaching.create,coaching.read" data-intelligence-manual>فتح في المحرر اليدوي</button></div><small class="intelligence-human-review-note">لن يتم نشر الخطة كخطة معتمدة تلقائيًا؛ راجعها واحفظها أو عدّلها يدويًا.</small>`;
+        const changeMarkup = state.plan.changes.map((change) => `<li>${escapeHtml(brandText(change))}</li>`).join('');
+        $('intelligencePlanResult').innerHTML = `<div class="intelligence-result-head"><div><span class="intelligence-result-kicker">${escapeHtml(t('plan.draft'))}</span><h4>${escapeHtml(plan.name || t('plan.suggestion'))}</h4><p>${escapeHtml(plan.description || '')}</p></div><span class="intelligence-draft-badge">${escapeHtml(t('plan.status.draft'))}</span></div>${planSummary(plan, state.plan.type)}${planPreview(plan, state.plan.type)}${changeMarkup ? `<div class="intelligence-result-notice success"><strong>${escapeHtml(t('plan.applied'))}</strong><ul>${changeMarkup}</ul></div>` : ''}${warningMarkup ? `<div class="intelligence-result-notice warning"><strong>${escapeHtml(t('plan.review'))}</strong><ul>${warningMarkup}</ul></div>` : ''}<form class="intelligence-refine-form" id="intelligenceRefineForm"><label>${escapeHtml(t('plan.refine.label'))}<textarea id="intelligenceRefineInstruction" rows="2" maxlength="500" placeholder="${escapeHtml(t('plan.refine.placeholder'))}"></textarea></label><button class="btn btn-light" type="submit" data-required-permission="intelligence.generate">${escapeHtml(t('plan.refine.submit'))}</button></form><div class="intelligence-result-actions"><button class="btn btn-primary" type="button" data-required-permission="coaching.create" data-intelligence-save>${escapeHtml(t('plan.save'))}</button><button class="btn btn-light" type="button" data-required-permission="coaching.create,coaching.read" data-intelligence-manual>${escapeHtml(t('plan.manual'))}</button></div><small class="intelligence-human-review-note">${escapeHtml(t('plan.humanReview'))}</small>`;
+        $('intelligenceRefineInstruction').value = refineValue;
+    }
+
+    function translateOptions(select, keys) {
+        if (!select) return;
+        const current = select.value;
+        [...select.options].forEach((option) => {
+            if (keys[option.value]) option.textContent = t(keys[option.value]);
+        });
+        select.value = current;
+    }
+
+    function preserveDynamicCopy(section) {
+        const selectors = [
+            '#intelligenceStats', '#intelligencePriorities', '#intelligenceChurnTable',
+            '#intelligencePromptList', '#intelligenceAnswer', '#intelligencePlanResult',
+            '#intelligenceMemberId', '#intelligenceMessage', '#intelligenceEngineBadge'
+        ];
+        selectors.forEach((selector) => {
+            const element = section.querySelector(selector);
+            if (!element) return;
+            element.dataset.i18nPreserve = '';
+            [element, ...element.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-format]')]
+                .forEach((target) => ['i18n', 'i18nPlaceholder', 'i18nTitle', 'i18nAriaLabel', 'i18nFormat'].forEach((key) => delete target.dataset[key]));
+        });
+    }
+
+    function renderDynamicLocale() {
+        const section = $('intelligenceSection');
+        if (!section) return;
+        preserveDynamicCopy(section);
+        if (!state.overview) {
+            $('intelligenceStats').innerHTML = `<div class="loading">${escapeHtml(t('loading.analysis'))}</div>`;
+            $('intelligencePriorities').innerHTML = `<div class="loading">${escapeHtml(t('loading.priorities'))}</div>`;
+            $('intelligenceChurnTable').innerHTML = `<div class="loading">${escapeHtml(t('loading.cases'))}</div>`;
+        } else {
+            renderStats(state.overview.stats || {});
+            renderPriorities(state.overview.priorities || []);
+            renderChurn(state.overview.churn || []);
+            renderPrompts(state.overview.prompts || []);
+            const badge = $('intelligenceEngineBadge');
+            if (badge) badge.textContent = state.overview.mode === 'hybrid-rules' ? t('header.engine') : brandText(state.overview.engine || `${brandName()} Intelligence`);
+        }
+        if (state.loaded) renderClients();
+        else $('intelligenceMemberId').innerHTML = `<option value="">${escapeHtml(t('plans.client.loading'))}</option>`;
+        if (state.answer) renderAnswer(state.answer);
+        renderCurrentPlan();
+    }
+
+    function applyPageLocale() {
+        const section = $('intelligenceSection');
+        if (!section) return;
+        preserveDynamicCopy(section);
+        window.TopGymI18n?.annotateText?.(section, 'intelligenceScreen.', [
+            '#intelligenceStats', '#intelligencePriorities', '#intelligenceChurnTable',
+            '#intelligencePromptList', '#intelligenceAnswer', '#intelligencePlanResult',
+            '#intelligenceMemberId', '#intelligenceMessage', '#intelligenceEngineBadge'
+        ].join(','));
+        translateOptions($('intelligenceGoal'), {
+            hypertrophy: 'plans.goal.muscle', strength: 'plans.goal.strength', fat_loss: 'plans.goal.fatLoss',
+            weight_gain: 'plans.goal.weightGain', general: 'plans.goal.fitness', maintain: 'plans.goal.maintain'
+        });
+        translateOptions($('intelligenceLevel'), { beginner: 'plans.level.beginner', intermediate: 'plans.level.intermediate', advanced: 'plans.level.advanced' });
+        translateOptions($('intelligenceActivity'), { moderate: 'plans.activity.moderate', sedentary: 'plans.activity.sedentary', light: 'plans.activity.light', high: 'plans.activity.high' });
+        queueMicrotask(renderDynamicLocale);
     }
 
     async function loadBaseData() {
@@ -187,7 +270,7 @@
             state.loaded = true;
             setMessage('', 'info');
         } catch (error) {
-            setMessage(error.message || 'تعذر تحميل مركز الذكاء.', 'error');
+            setMessage(error.message || t('message.loadError'), 'error');
         } finally {
             state.loading = false;
         }
@@ -195,27 +278,27 @@
 
     async function refresh() {
         if (!can('intelligence.read')) {
-            setMessage('لا تملك صلاحية عرض مركز الذكاء.', 'error');
+            setMessage(t('message.permissionRead'), 'error');
             return;
         }
         state.loaded = false;
         await loadBaseData();
-        notify('تم تحديث التحليل الذكي.');
+        notify(t('message.refreshed'));
     }
 
     async function submitQuestion(event) {
         event.preventDefault();
         if (!can('intelligence.read')) {
-            setMessage('لا تملك صلاحية استخدام المساعد الذكي.', 'error');
+            setMessage(t('message.permissionAssistant'), 'error');
             return;
         }
         const input = $('intelligenceQuery');
         const question = input?.value.trim();
-        if (!question) return setMessage('اكتب سؤالًا للمساعد أولًا.', 'warning');
+        if (!question) return setMessage(t('message.questionRequired'), 'warning');
         try {
             const data = await api.post('/api/intelligence/query', { question });
             renderAnswer(data);
-        } catch (error) { setMessage(error.message || 'تعذر تحليل السؤال.', 'error'); }
+        } catch (error) { setMessage(error.message || t('message.queryError'), 'error'); }
     }
 
     function setPlanType(type) {
@@ -228,18 +311,18 @@
         $('intelligenceWorkoutFields').hidden = type !== 'workout';
         $('intelligenceDietFields').hidden = type !== 'diet';
         $('intelligenceGoal').innerHTML = type === 'diet'
-            ? '<option value="fat_loss">خسارة الدهون</option><option value="maintain">تثبيت الوزن</option><option value="weight_gain">زيادة الكتلة</option>'
-            : '<option value="hypertrophy">بناء العضلات</option><option value="strength">زيادة القوة</option><option value="fat_loss">خسارة الدهون</option><option value="weight_gain">زيادة الكتلة</option><option value="general">لياقة عامة</option>';
+            ? `<option value="fat_loss">${escapeHtml(t('plans.goal.fatLoss'))}</option><option value="maintain">${escapeHtml(t('plans.goal.maintain'))}</option><option value="weight_gain">${escapeHtml(t('plans.goal.weightGain'))}</option>`
+            : `<option value="hypertrophy">${escapeHtml(t('plans.goal.muscle'))}</option><option value="strength">${escapeHtml(t('plans.goal.strength'))}</option><option value="fat_loss">${escapeHtml(t('plans.goal.fatLoss'))}</option><option value="weight_gain">${escapeHtml(t('plans.goal.weightGain'))}</option><option value="general">${escapeHtml(t('plans.goal.fitness'))}</option>`;
     }
 
     async function generatePlan(event) {
         event.preventDefault();
         if (!can('intelligence.generate')) {
-            setMessage('لا تملك صلاحية إنشاء اقتراحات الذكاء.', 'error');
+            setMessage(t('message.permissionGenerate'), 'error');
             return;
         }
         const memberId = $('intelligenceMemberId')?.value;
-        if (!memberId) return setMessage('اختر العميل قبل إنشاء الاقتراح.', 'warning');
+        if (!memberId) return setMessage(t('message.clientRequired'), 'warning');
         const button = event.currentTarget.querySelector('button[type="submit"]');
         button.disabled = true;
         try {
@@ -249,33 +332,33 @@
             else Object.assign(body, { mealsPerDay: $('intelligenceMeals').value, targetCalories: $('intelligenceCalories').value || null, allergies: $('intelligenceAllergies').value, activity: $('intelligenceActivity').value });
             const result = await api.post(endpoint, body);
             renderPlanResult(result);
-            setMessage('تم إنشاء المسودة الذكية. راجعها قبل اعتمادها.', 'success');
-        } catch (error) { setMessage(error.message || 'تعذر إنشاء الاقتراح.', 'error'); }
+            setMessage(t('message.planCreated'), 'success');
+        } catch (error) { setMessage(error.message || t('message.planError'), 'error'); }
         finally { button.disabled = false; }
     }
 
     async function refinePlan(event) {
         event.preventDefault();
         if (!can('intelligence.generate')) {
-            setMessage('لا تملك صلاحية تعديل اقتراحات الذكاء.', 'error');
+            setMessage(t('message.permissionRefine'), 'error');
             return;
         }
         if (!state.plan) return;
         const instruction = $('intelligenceRefineInstruction')?.value.trim();
-        if (!instruction) return setMessage('اكتب التعديل المطلوب على المسودة.', 'warning');
+        if (!instruction) return setMessage(t('message.refineRequired'), 'warning');
         const button = event.currentTarget.querySelector('button[type="submit"]');
         button.disabled = true;
         try {
             const result = await api.post('/api/intelligence/refine', { type: state.plan.type, memberId: state.plan.memberId, draft: state.plan.draft, instruction });
             renderPlanResult(result, result.changes || []);
-            setMessage('تمت إعادة بناء المسودة حسب تعليماتك.', 'success');
-        } catch (error) { setMessage(error.message || 'تعذر تطبيق التعديل.', 'error'); }
+            setMessage(t('message.refined'), 'success');
+        } catch (error) { setMessage(error.message || t('message.refineError'), 'error'); }
         finally { button.disabled = false; }
     }
 
     async function savePlan() {
         if (!can('coaching.create')) {
-            notify('لا تملك صلاحية حفظ خطة التدريب أو التغذية.', 'error');
+            notify(t('message.permissionSave'), 'error');
             return;
         }
         if (!state.plan?.draft) return;
@@ -284,14 +367,14 @@
             const member = state.clients.find((client) => String(client.id) === String(state.plan.memberId));
             state.plan.draft = normalizeGeneratedPlan(state.plan.draft, state.plan.type, member?.fullName);
             await api.post(endpoint, { ...state.plan.draft, status: 'draft' });
-            notify('تم حفظ المسودة داخل التدريب والتغذية. يمكنك فتحها وتعديلها يدويًا.');
+            notify(t('message.saved'));
             window.dispatchEvent(new CustomEvent('topgym:coaching-data-changed', { detail: { memberId: state.plan.memberId } }));
-        } catch (error) { setMessage(error.message || 'تعذر حفظ المسودة.', 'error'); }
+        } catch (error) { setMessage(error.message || t('message.saveError'), 'error'); }
     }
 
     async function openManualEditor() {
         if (!can('coaching.create') || !can('coaching.read')) {
-            notify('لا تملك صلاحية فتح محرر التدريب والتغذية.', 'error');
+            notify(t('message.permissionManual'), 'error');
             return;
         }
         if (!state.plan?.draft) return;
@@ -299,7 +382,7 @@
         try {
             if (window.topGymActivateTab) await window.topGymActivateTab('trainees');
             window.dispatchEvent(new CustomEvent('topgym:ai-draft-ready', { detail: { type: state.plan.type, draft: JSON.parse(JSON.stringify(state.plan.draft)), memberName: member?.fullName || '' } }));
-        } catch (error) { setMessage(error.message || 'تعذر فتح المحرر اليدوي.', 'error'); }
+        } catch (error) { setMessage(error.message || t('message.manualError'), 'error'); }
     }
 
     function bindEvents() {
@@ -327,8 +410,10 @@
         });
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'intelligence') void loadBaseData(); });
         window.addEventListener('topgym:brandingchange', () => { if (state.overview) renderOverview(state.overview); });
+        window.addEventListener('topgym:localechange', applyPageLocale);
     }
 
     bindEvents();
     setPlanType('workout');
+    applyPageLocale();
 })();

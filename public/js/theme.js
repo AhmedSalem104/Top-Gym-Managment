@@ -32,8 +32,9 @@
             const nextTheme = theme === 'dark' ? 'light' : 'dark';
             const label = button.querySelector('[data-theme-toggle-label]');
             const navbarIcon = button.querySelector('[data-theme-toggle-icon], .theme-toggle-icon-dark, .theme-toggle-icon-light');
-            const labelText = nextTheme === 'dark' ? 'الوضع الداكن' : 'الوضع الفاتح';
-            const titleText = nextTheme === 'dark' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح';
+            const i18n = window.TopGymI18n;
+            const labelText = i18n?.t(nextTheme === 'dark' ? 'shell.theme.darkName' : 'shell.theme.lightName') || (nextTheme === 'dark' ? 'الوضع الداكن' : 'الوضع الفاتح');
+            const titleText = i18n?.t(nextTheme === 'dark' ? 'shell.theme.dark' : 'shell.theme.light') || (nextTheme === 'dark' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح');
             button.setAttribute('aria-pressed', String(theme === 'dark'));
             button.setAttribute('aria-label', titleText);
             button.setAttribute('title', titleText);
@@ -82,6 +83,7 @@
         placeLoginThemeControl();
         const initialTheme = root.dataset.theme || preferredTheme();
         setTheme(initialTheme, { persist: false });
+        window.addEventListener('topgym:localechange', () => updateControls(root.dataset.theme || preferredTheme()));
         document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
             button.addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
         });

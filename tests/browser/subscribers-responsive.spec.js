@@ -1,5 +1,10 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs');
+const path = require('node:path');
 const featureCatalog = require('../../src/services/feature-catalog');
+
+const VISUAL_MATRIX_DIR = path.join(process.cwd(), 'qa/reports/logicfit-v2-members');
+fs.mkdirSync(VISUAL_MATRIX_DIR, { recursive: true });
 
 const member = {
     id: 731,
@@ -84,6 +89,7 @@ async function installSubscribersRuntime(page, authUser = { id: 901, name: 'Subs
 }
 
 test('subscribers use the table on desktop and a single responsive card list on phones', async ({ page }) => {
+    test.setTimeout(120_000);
     const { runtime, memberQueries } = await installSubscribersRuntime(page);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto('/index.html#members', { waitUntil: 'networkidle' });
@@ -101,7 +107,8 @@ test('subscribers use the table on desktop and a single responsive card list on 
     expect(desktopPanelStyle.padding).toBe('0px');
     const desktopActionIconSizes = await page.locator('.members-table .actions-cell .table-actions > .table-action-visible .action-icon, .members-table .actions-cell .table-actions > .action-menu .action-menu-toggle .action-menu-icon').evaluateAll((icons) => icons.map((icon) => ({ width: getComputedStyle(icon).width, height: getComputedStyle(icon).height })));
     expect(desktopActionIconSizes.length).toBeGreaterThan(1);
-    expect(new Set(desktopActionIconSizes.map(({ width, height }) => `${width}x${height}`)).size).toBe(1);
+    expect(new Set(desktopActionIconSizes.map(({ width, height }) => `${width}x${height}`)).size,
+        `Action icon dimensions must match: ${JSON.stringify(desktopActionIconSizes)}`).toBe(1);
     const desktopActionOrder = await page.locator('.members-table .table-actions > [data-action]').evaluateAll((buttons) => buttons.map((button) => button.dataset.action));
     expect(desktopActionOrder.slice(0, 2)).toEqual(['renew', 'details']);
 
@@ -244,8 +251,8 @@ test('subscribers use the table on desktop and a single responsive card list on 
         membership: getComputedStyle(dialog.querySelector('.current-membership-section')).backgroundColor,
         text: getComputedStyle(dialog.querySelector('.current-membership-head h4')).color
     }));
-    expect(darkDetailsColors.dialog).toBe('rgb(7, 13, 22)');
-    expect(darkDetailsColors.membership).toBe('rgb(17, 28, 43)');
+    expect(darkDetailsColors.dialog).toBe('rgb(9, 9, 11)');
+    expect(darkDetailsColors.membership).toBe('rgb(17, 17, 19)');
     expect(darkDetailsColors.text).toBe('rgb(248, 250, 252)');
     await page.screenshot({ path: test.info().outputPath('subscribers-member-details-390-dark.png'), fullPage: true });
     await page.evaluate(() => window.TopGymTheme.toggle());
@@ -375,6 +382,24 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('#membersList [data-members-clear-filters]')).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('subscribers-empty-mobile.png'), fullPage: true });
     await expect(page.locator('#membersPagination')).toBeHidden();
+
+    runtime.total = 165;
+    await page.locator('#searchInput').fill('');
+    await expect(page.locator('.members-mobile-card, .members-table tbody > tr').first()).toBeVisible();
+    await page.locator('#searchInput').evaluate((input) => input.blur());
+    for (const width of [1440, 1024, 768, 390, 320]) {
+        await page.setViewportSize({ width, height: width < 400 ? 844 : 900 });
+        for (const theme of ['light', 'dark']) {
+            await page.evaluate((value) => window.TopGymTheme.set(value), theme);
+            await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+            if (width <= 767) await expect(page.locator('.members-mobile-card').first()).toBeVisible();
+            else await expect(page.locator('.members-table tbody > tr').first()).toBeVisible();
+            const dimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+            expect(dimensions.document, `${theme} members page overflow at ${width}px: ${JSON.stringify(dimensions)}`).toBeLessThanOrEqual(width + 1);
+            expect(dimensions.body, `${theme} members body overflow at ${width}px: ${JSON.stringify(dimensions)}`).toBeLessThanOrEqual(width + 1);
+            await page.screenshot({ path: path.join(VISUAL_MATRIX_DIR, `members-${width}-${theme}.png`), fullPage: true });
+        }
+    }
 });
 
 test('mobile add-member floating action respects permission-driven hidden state', async ({ page }) => {

@@ -15,10 +15,10 @@ body .loading {
   min-height: 84px;
   display: grid;
   place-items: center;
-  border: 1px dashed var(--rf-line);
+  border: 1px dashed var(--border-primary);
   border-radius: 14px;
-  background: var(--rf-surface-soft);
-  color: var(--rf-muted);
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
 }
 
 div.loading,
@@ -348,6 +348,19 @@ button[aria-busy="true"] .loading-spinner {
 .skeleton-line {
   height: 12px;
   width: 70%;
+}
+
+body .skeleton,
+body .loading-skeleton {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--bg-card-hover), var(--border-secondary), var(--bg-card-hover));
+  background-size: 200% 100%;
+  animation: logicfit-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes logicfit-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 @keyframes top-gym-spin {

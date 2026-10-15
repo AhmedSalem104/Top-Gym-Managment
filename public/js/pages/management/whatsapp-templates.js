@@ -25,6 +25,18 @@
         portal_url: window.location.origin + '/member-portal', tenant_type: 'الجيم',
         login_url: window.location.origin, username: 'owner@example.com', temporary_password: '********'
     };
+    const t = (key, fallback, params = {}) => window.TopGymI18n?.t(`platformAdminScreen.whatsapp.${key}`, params) || fallback;
+    const localize = () => {
+        if (!state.target || !window.TopGymI18n) return;
+        window.TopGymI18n.annotateText(state.target, 'platformAdminScreen.');
+        const loading = state.target.querySelector('.whatsapp-template-loading');
+        if (loading) loading.textContent = t('loading', 'جارٍ تحميل القوالب…');
+        const empty = state.target.querySelector('.whatsapp-template-empty');
+        if (empty) empty.textContent = t(empty.classList.contains('is-error') ? 'loadError' : 'empty', empty.classList.contains('is-error') ? 'تعذر تحميل القوالب.' : 'لا توجد قوالب متاحة.');
+        updateDirty();
+        const settingsCount = state.target.ownerDocument.querySelector('.platform-settings-card-featured .platform-settings-card-meta');
+        if (settingsCount && !state.loading) settingsCount.textContent = window.TopGymI18n.t('platformAdminScreen.settings.templatesCount', { count: state.templates.length });
+    };
 
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
@@ -38,14 +50,14 @@
     }
 
     function statusMarkup() {
-        return '<span data-whatsapp-template-status class="whatsapp-template-status platform">قالب النظام · Platform</span>';
+        return '<span data-whatsapp-template-status class="whatsapp-template-status platform">' + escapeHtml(t('status.platform', 'قالب النظام · المنصة')) + '</span>';
     }
 
     function markup() {
         return [
             '<section class="whatsapp-templates-page platform-whatsapp-management" aria-labelledby="platformWhatsappTemplatesTitle">',
             '<header class="whatsapp-templates-head"><div class="whatsapp-templates-heading">',
-            '<span class="whatsapp-templates-kicker">PLATFORM ADMIN · SYSTEM TEMPLATES</span>',
+            '<span class="whatsapp-templates-kicker" data-i18n="platformAdminScreen.whatsapp.kicker">PLATFORM ADMIN · SYSTEM TEMPLATES</span>',
             '<h2 id="platformWhatsappTemplatesTitle">الرسائل وWhatsApp</h2>',
             '<p>إدارة قوالب WhatsApp المركزية المستخدمة لجميع الجيمات والمدربين. يظل فتح WhatsApp والإرسال يدويًا.</p>',
             '</div><div class="whatsapp-templates-head-meta" role="note">',
@@ -53,12 +65,12 @@
             '<div><strong>قوالب مركزية</strong><small>قالب نظام واحد لكل نوع رسالة.</small></div></div></header>',
             '<div class="whatsapp-templates-layout">',
             '<aside class="whatsapp-templates-list-panel" aria-label="قوالب رسائل WhatsApp">',
-            '<header class="whatsapp-templates-list-head"><div><span class="whatsapp-templates-section-kicker">CATALOG</span><h3>القوالب</h3></div><span class="whatsapp-templates-list-count" data-whatsapp-template-list-count>0</span></header>',
+            '<header class="whatsapp-templates-list-head"><div><span class="whatsapp-templates-section-kicker">قائمة القوالب</span><h3>القوالب</h3></div><span class="whatsapp-templates-list-count" data-whatsapp-template-list-count>0</span></header>',
             '<p class="whatsapp-templates-list-hint">اختر قالبًا لتحريره ومعاينته. التعديلات المركزية تنطبق على كل الـTenants.</p>',
             '<div class="whatsapp-templates-list" data-whatsapp-template-list role="listbox" aria-label="القوالب المركزية"></div></aside>',
             '<section class="whatsapp-template-editor" data-whatsapp-template-editor hidden aria-labelledby="platformWhatsappTemplateEditorName">',
             '<header class="whatsapp-template-editor-head"><div class="whatsapp-template-editor-title">',
-            '<span class="whatsapp-templates-section-kicker">EDITOR</span><h3 data-whatsapp-template-name id="platformWhatsappTemplateEditorName"></h3>',
+            '<span class="whatsapp-templates-section-kicker">محرر القالب</span><h3 data-whatsapp-template-name id="platformWhatsappTemplateEditorName"></h3>',
             '<p data-whatsapp-template-description></p></div><div class="whatsapp-template-status-stack">',
             '<span class="whatsapp-template-category" data-whatsapp-template-category></span><span data-whatsapp-template-status></span></div></header>',
             '<div class="whatsapp-template-editor-body"><div class="whatsapp-template-field">',
@@ -66,14 +78,14 @@
             '<textarea id="platformWhatsappTemplateBody" data-whatsapp-template-body maxlength="8000" spellcheck="true" aria-describedby="platformWhatsappTemplateVariablesHint"></textarea>',
             '<span class="whatsapp-template-helper" id="platformWhatsappTemplateVariablesHint">اضغط على أي متغير لإضافته عند موضع المؤشر.</span></div>',
             '<div class="whatsapp-template-variables-box"><div class="whatsapp-template-variables-head"><div>',
-            '<span class="whatsapp-templates-section-kicker">INSERT</span><h4>المتغيرات المتاحة</h4></div><span class="whatsapp-template-variables-count" data-whatsapp-template-variables-count>0</span></div>',
+            '<span class="whatsapp-templates-section-kicker">إدراج متغير</span><h4>المتغيرات المتاحة</h4></div><span class="whatsapp-template-variables-count" data-whatsapp-template-variables-count>0</span></div>',
             '<div class="whatsapp-template-variables" data-whatsapp-template-variables aria-label="المتغيرات المتاحة"></div></div></div>',
             '<footer class="whatsapp-template-actions"><span class="whatsapp-template-dirty-state" data-whatsapp-template-dirty role="status" aria-live="polite">✓ محفوظ</span>',
             '<div class="whatsapp-template-action-buttons"><button class="btn btn-light" type="button" data-whatsapp-action="restore">استعادة الافتراضي</button>',
             '<button class="btn btn-light" type="button" data-whatsapp-action="test">فتح معاينة في WhatsApp</button>',
             '<button class="btn btn-primary" type="button" data-whatsapp-action="save" disabled>حفظ التعديلات</button></div></footer></section>',
             '<aside class="whatsapp-template-preview-panel" data-whatsapp-template-preview-panel hidden aria-label="معاينة الرسالة">',
-            '<header class="whatsapp-template-preview-head"><div><span class="whatsapp-templates-section-kicker">LIVE PREVIEW</span><h3>معاينة WhatsApp</h3></div><span class="whatsapp-template-preview-badge">بيانات تجريبية</span></header>',
+            '<header class="whatsapp-template-preview-head"><div><span class="whatsapp-templates-section-kicker">معاينة مباشرة</span><h3>معاينة WhatsApp</h3></div><span class="whatsapp-template-preview-badge">بيانات تجريبية</span></header>',
             '<div class="whatsapp-template-preview-device"><div class="whatsapp-template-preview-toolbar"><span class="whatsapp-preview-avatar" aria-hidden="true">T</span><div><strong>Top Gym</strong><small>WhatsApp</small></div><span class="whatsapp-preview-dot" aria-hidden="true"></span></div>',
             '<div class="whatsapp-template-preview" data-whatsapp-template-preview role="status" aria-live="polite"></div></div>',
             '<p class="whatsapp-template-preview-note">المعاينة لا ترسل رسالة ولا تستخدم بيانات عضو حقيقي.</p></aside></div></section>'
@@ -88,18 +100,21 @@
         const listCount = state.target.querySelector('[data-whatsapp-template-list-count]');
         if (countBadge) countBadge.textContent = String(state.templates.length);
         if (listCount) listCount.textContent = count;
+        const settingsCount = state.target.ownerDocument.querySelector('.platform-settings-card-featured .platform-settings-card-meta');
+        if (settingsCount) settingsCount.textContent = window.TopGymI18n?.t('platformAdminScreen.settings.templatesCount', { count: state.templates.length }) || `${state.templates.length} قوالب`;
         list.innerHTML = state.templates.length ? state.templates.map((template, index) =>
             '<button type="button" role="option" aria-selected="' + String(template.id === state.selectedId) + '" class="whatsapp-template-card ' + (template.id === state.selectedId ? 'is-selected' : '') + '" data-template-id="' + escapeHtml(template.id) + '">' +
             '<span class="whatsapp-template-card-index">' + String(index + 1).padStart(2, '0') + '</span>' +
             '<span class="whatsapp-template-card-copy"><strong>' + escapeHtml(template.name) + '</strong><small>' + escapeHtml(template.description || '') + '</small><em>' + escapeHtml(template.category || '') + '</em></span>' +
-            '<span class="whatsapp-template-card-state platform">نظامي</span></button>'
-        ).join('') : '<div class="whatsapp-template-empty">لا توجد قوالب متاحة.</div>';
+            '<span class="whatsapp-template-card-state platform">' + escapeHtml(t('status.system', 'نظامي')) + '</span></button>'
+        ).join('') : '<div class="whatsapp-template-empty">' + escapeHtml(t('empty', 'لا توجد قوالب متاحة.')) + '</div>';
+        localize();
     }
 
     function updateDirty() {
         const dirty = state.target?.querySelector('[data-whatsapp-template-dirty]');
         if (!dirty) return;
-        dirty.textContent = state.dirty ? '● تغييرات غير محفوظة' : '✓ محفوظ';
+        dirty.textContent = state.dirty ? `● ${t('unsaved', 'تغييرات غير محفوظة')}` : `✓ ${t('saved', 'تم الحفظ')}`;
         dirty.classList.toggle('is-dirty', state.dirty);
         const save = state.target.querySelector('[data-whatsapp-action="save"]');
         if (save) save.disabled = !state.dirty;
@@ -137,16 +152,17 @@
         state.target.querySelector('[data-whatsapp-template-variables-count]').textContent = String(variables.length).padStart(2, '0');
         state.target.querySelector('[data-whatsapp-template-variables]').innerHTML = variables.map((key) =>
             '<button type="button" class="whatsapp-variable-chip" data-variable="' + escapeHtml(key) + '"><span>' + escapeHtml(variableLabels[key] || key) + '</span><code>{{' + escapeHtml(key) + '}}</code></button>'
-        ).join('') || '<span class="whatsapp-template-no-variables">لا توجد متغيرات لهذا القالب.</span>';
+        ).join('') || '<span class="whatsapp-template-no-variables">' + escapeHtml(t('noVariablesForTemplate', 'لا توجد متغيرات لهذا القالب.')) + '</span>';
         updatePreview();
         updateDirty();
+        localize();
     }
 
     async function load({ force = false } = {}) {
         if (!state.target || state.loading || !window.LogicFitWhatsAppTemplates) return;
         state.loading = true;
         const list = state.target.querySelector('[data-whatsapp-template-list]');
-        if (list) list.innerHTML = '<div class="whatsapp-template-loading">جارٍ تحميل القوالب…</div>';
+        if (list) list.innerHTML = '<div class="whatsapp-template-loading">' + escapeHtml(t('loading', 'جارٍ تحميل القوالب…')) + '</div>';
         try {
             const templates = await window.LogicFitWhatsAppTemplates.load({ platform: true, force });
             state.templates = Array.isArray(templates) ? templates : [];
@@ -154,8 +170,10 @@
             state.dirty = false;
             renderList();
             renderEditor();
+            localize();
         } catch (error) {
-            if (list) list.innerHTML = '<div class="whatsapp-template-empty is-error">' + escapeHtml(error.message || 'تعذر تحميل القوالب.') + '</div>';
+            if (list) list.innerHTML = '<div class="whatsapp-template-empty is-error">' + escapeHtml(t('loadError', 'تعذر تحميل القوالب.')) + '</div>';
+            localize();
         } finally {
             state.loading = false;
         }
@@ -187,28 +205,28 @@
                 body: JSON.stringify({ body: body.value })
             });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.error || 'تعذر حفظ القالب.');
+            if (!response.ok) throw new Error(t('saveError', 'تعذر حفظ القالب.'));
             await load({ force: true });
-            showMessage('تم حفظ قالب النظام.');
+            showMessage(t('saveSuccess', 'تم حفظ قالب النظام.'));
         } catch (error) {
             if (button) button.disabled = false;
-            showMessage(error.message, 'error');
+            showMessage(error.message || t('saveError', 'تعذر حفظ القالب.'), 'error');
         }
     }
 
     async function restore() {
         const template = selected();
-        if (!template || !window.confirm('سيتم استعادة نص قالب النظام الافتراضي. هل تريد المتابعة؟')) return;
+        if (!template || !window.confirm(t('restoreConfirm', 'سيتم استعادة نص قالب النظام الافتراضي. هل تريد المتابعة؟'))) return;
         try {
             const response = await fetch('/api/platform/whatsapp-templates/' + encodeURIComponent(template.id) + '/restore-default', {
                 method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' }
             });
             const payload = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(payload.error || 'تعذر استعادة القالب الافتراضي.');
+            if (!response.ok) throw new Error(t('restoreError', 'تعذرت استعادة القالب الافتراضي.'));
             await load({ force: true });
-            showMessage('تمت استعادة القالب الافتراضي.');
+            showMessage(t('restoreSuccess', 'تمت استعادة القالب الافتراضي.'));
         } catch (error) {
-            showMessage(error.message, 'error');
+            showMessage(error.message || t('restoreError', 'تعذرت استعادة القالب الافتراضي.'), 'error');
         }
     }
 
@@ -216,7 +234,7 @@
         const template = selected();
         const body = state.target?.querySelector('[data-whatsapp-template-body]');
         if (!template || !body) return;
-        const phone = window.prompt('اكتب رقم اختبار لفتح WhatsApp:');
+        const phone = window.prompt(t('phonePrompt', 'أدخل رقم اختبار لفتح WhatsApp:'));
         const digits = String(phone || '').replace(/\D/g, '');
         if (digits.length < 6) return;
         const message = window.LogicFitWhatsAppTemplates.expand(body.value, sampleContext);
@@ -233,7 +251,7 @@
         state.target.addEventListener('click', (event) => {
             const card = event.target.closest('[data-template-id]');
             if (card && state.target.contains(card)) {
-                if (state.dirty && !window.confirm('لديك تغييرات غير محفوظة. هل تريد تبديل القالب؟')) return;
+                if (state.dirty && !window.confirm(t('unsavedConfirm', 'لديك تغييرات غير محفوظة. هل تريد تبديل القالب؟'))) return;
                 state.selectedId = card.dataset.templateId;
                 state.dirty = false;
                 renderList();
@@ -255,6 +273,7 @@
         state.target = target;
         state.target.innerHTML = markup();
         state.mounted = true;
+        localize();
         if (!state.target.dataset.bound) {
             state.target.dataset.bound = 'true';
             bindEvents();
@@ -262,6 +281,8 @@
         void load();
         return true;
     }
+
+    window.addEventListener('topgym:localechange', localize);
 
     window.addEventListener('beforeunload', (event) => {
         if (!state.dirty) return;

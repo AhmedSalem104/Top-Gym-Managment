@@ -20,6 +20,7 @@ const brandingUiSource = fs.readFileSync(path.join(root, 'public/js/branding.js'
 const portalRoutesSource = fs.readFileSync(path.join(root, 'src/routes/member-portal.routes.js'), 'utf8');
 const authMiddlewareSource = fs.readFileSync(path.join(root, 'src/middleware/auth.middleware.js'), 'utf8');
 const portalSubscriptionUiSource = fs.readFileSync(path.join(root, 'public/js/member-portal-subscription.js'), 'utf8');
+const localizationSource = fs.readFileSync(path.join(root, 'public/js/core/i18n.js'), 'utf8');
 
 test('member portal links can be pinned to a tenant without exposing the membership code', () => {
     assert.equal(
@@ -147,12 +148,13 @@ test('member portal subscription requests use the portal session and active tena
     assert.match(portalSubscriptionUiSource, /portal-request-history-review/);
     assert.match(portalSubscriptionUiSource, /item\.reviewNotes/);
     assert.match(portalSubscriptionUiSource, /item\.review_notes/);
-    assert.match(portalSubscriptionUiSource, /لم يتم تسجيل سبب إضافي/);
+    assert.match(portalSubscriptionUiSource, /tr\('noRejectionReason'\)/);
     assert.match(portalSubscriptionUiSource, /role="note"/);
     assert.match(portalSubscriptionUiSource, /statusCode >= 400 && statusCode < 500/);
     assert.match(portalSubscriptionUiSource, /MEMBER_SUBSCRIPTION_REQUEST_NOT_AVAILABLE/);
     assert.match(portalSubscriptionUiSource, /data-portal-proof-retry/);
     assert.match(portalSubscriptionUiSource, /proofRecoveryRequestId/);
-    assert.match(portalSubscriptionUiSource, /لن يتم إنشاء طلب جديد/);
+    assert.match(portalSubscriptionUiSource, /MEMBER_SUBSCRIPTION_REQUEST_ALREADY_PENDING: 'requestAlreadyPending'/);
+    assert.match(localizationSource, /memberPortal\.subscription\.errors\.requestAlreadyPending/);
     assert.doesNotMatch(portalSubscriptionUiSource, /01015819700|01005376843/);
 });

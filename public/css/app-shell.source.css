@@ -24,7 +24,6 @@
 @import url("./components/alerts.css");
 @import url("./components/sidebar.css");
 @import url("./components/navbar.css");
-@import url("./components/branch-context.css");
 @import url("./components/dropdowns.css");
 @import url("./components/assistant.css");
 @import url("./components/pagination.css");
@@ -32,10 +31,9 @@
 @import url("./components/notifications.css");
 @import url("./components/feedback.css");
 @import url("./components/empty-states.css");
-@import url("./components/ui-foundation.css");
-@import url("./components/design-foundation.css");
 @import url("./components/navigation-shell.css");
-@import url("./components/visual-redesign.css");
+@import url("./components/branch-context.css");
+@import url("./pages/branches.css");
 @import url("./components/tenant-welcome.css");
 @import url("./pages/dashboard.css");
 @import url("./responsive.css");

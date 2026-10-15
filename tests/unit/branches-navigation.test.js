@@ -16,17 +16,18 @@ test('dynamically injected Branches tab keeps delegated navigation and Gym-only 
     assert.match(tabs, /name === 'branches' && user\.tenantType !== 'gym'/u);
     assert.match(tabs, /setHidden\(dashboardInitialSkeleton, !isDashboard\)/u);
     assert.match(branches, /button\.dataset\.branchTabReady = 'true'/u);
-    assert.match(branches, /button\.setAttribute\('aria-label', 'الفروع'\)/u);
+    assert.match(branches, /button\.setAttribute\('aria-label', translateShared\('nav\.branches', 'الفروع والأقسام'\)\)/u);
     assert.match(branches, /tab\.toggleAttribute\('inert', !show\)/u);
 });
 
-test('branch delete action keeps safe archive semantics and destructive affordance', () => {
+test('branch archive action keeps safe archive semantics and neutral affordance', () => {
     const branches = read('public/js/branch-context.js');
 
     assert.match(branches, /data-branch-archive/u);
-    assert.match(branches, /function decorateBranchDeleteActions\(\)/u);
-    assert.match(branches, /button\.classList\.add\('btn-danger'\)/u);
-    assert.match(branches, /button\.textContent =/u);
+    assert.match(branches, /function decorateBranchArchiveActions\(\)/u);
+    assert.match(branches, /button\.classList\.remove\('btn-danger'\)/u);
+    assert.match(branches, /button\.classList\.add\('btn-light'\)/u);
+    assert.match(branches, /button\.innerHTML = localizedMarkup\('actions\.archive', 'أرشفة الفرع'\)/u);
     assert.match(branches, /\/archive`/u);
     assert.match(branches, /preserving its historical data/u);
 });

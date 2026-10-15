@@ -7,22 +7,38 @@
     open: false,
     loaded: false,
     loading: false,
+    loadingMore: false,
     unread: 0,
     page: 1,
     hasNext: false,
     category: '',
     items: []
   };
+  const i18n = () => window.TopGymI18n;
+  function t(key, arabicFallback, params = {}) {
+    const fullKey = `notificationCenter.${key}`;
+    const translated = i18n()?.t(fullKey, params);
+    if (translated && translated !== fullKey) return translated;
+    return String(arabicFallback).replace(/\{\{\s*([\w.-]+)\s*\}\}/gu, (match, name) => (
+      Object.prototype.hasOwnProperty.call(params, name)
+        ? (name === 'count' && typeof params[name] === 'number'
+          ? (i18n()?.format('number', params[name]) || String(params[name]))
+          : String(params[name]))
+        : match
+    ));
+  }
+  const locale = () => i18n()?.get?.() || (document.documentElement.lang?.startsWith('en') ? 'en' : 'ar');
+  const messageState = { key: '', fallback: '', className: 'notification-center-empty', params: {} };
   const categoryMeta = {
-    coaching: { label: '\u0627\u0644\u062a\u062f\u0631\u064a\u0628', tone: 'info', icon: 'coaching' },
-    registration: { label: 'التسجيل', tone: 'info', icon: 'registration' },
-    membership: { label: 'العضويات', tone: 'success', icon: 'membership' },
-    attendance: { label: 'الحضور والانصراف', tone: 'info', icon: 'attendance' },
-    payment: { label: 'المدفوعات', tone: 'warning', icon: 'payment' },
-    system: { label: 'النظام', tone: 'neutral', icon: 'system' },
-    default: { label: 'تنبيه', tone: 'neutral', icon: 'default' }
+    coaching: { key: 'category.coaching', label: 'التدريب', tone: 'info', icon: 'coaching' },
+    registration: { key: 'category.registration', label: 'التسجيل', tone: 'info', icon: 'registration' },
+    membership: { key: 'category.membership', label: 'العضويات', tone: 'success', icon: 'membership' },
+    attendance: { key: 'category.attendance', label: 'الحضور والانصراف', tone: 'info', icon: 'attendance' },
+    payment: { key: 'category.payment', label: 'المدفوعات', tone: 'warning', icon: 'payment' },
+    system: { key: 'category.system', label: 'النظام', tone: 'neutral', icon: 'system' },
+    default: { key: 'category.default', label: 'تنبيه', tone: 'neutral', icon: 'default' }
   };
-  categoryMeta.subscription = { label: '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a', tone: 'warning', icon: 'subscription' };
+  categoryMeta.subscription = { key: 'category.subscription', label: 'الاشتراكات', tone: 'warning', icon: 'subscription' };
   Object.freeze(categoryMeta);
   const iconPaths = Object.freeze({
     registration: '<path d="M12 5v14M5 12h14"/>',
@@ -35,23 +51,23 @@
     default: '<path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>'
   });
   const eventTitles = Object.freeze({
-    member_created: 'تمت إضافة المشترك',
-    membership_created: 'تم إنشاء اشتراك',
-    membership_frozen: 'تم تجميد العضوية',
-    membership_resumed: 'تم استئناف العضوية',
-    membership_renewed: 'تم تجديد العضوية',
-    membership_updated: 'تم تحديث العضوية',
-    payment_updated: 'تم تحديث الدفع',
-    attendance_checked_in: 'تم تسجيل حضور',
-    attendance_auto_checked_out: 'تم تسجيل الانصراف تلقائيًا',
-    member_subscription_request_created: 'تم استلام طلب اشتراك',
-    member_subscription_request_approved: 'تم قبول طلب الاشتراك',
-    member_subscription_request_rejected: 'تم رفض طلب الاشتراك',
-    trainer_session_scheduled: 'تم جدولة جلسة تدريب',
-    trainer_session_updated: 'تم تحديث جلسة التدريب',
-    trainer_session_status_changed: 'تغيرت حالة جلسة التدريب',
-    trainer_plan_published: 'تم نشر خطة تدريب',
-    system_announcement: 'إعلان جديد'
+    member_created: ['event.memberCreated', 'تمت إضافة المشترك'],
+    membership_created: ['event.membershipCreated', 'تم إنشاء اشتراك'],
+    membership_frozen: ['event.membershipFrozen', 'تم تجميد العضوية'],
+    membership_resumed: ['event.membershipResumed', 'تم استئناف العضوية'],
+    membership_renewed: ['event.membershipRenewed', 'تم تجديد العضوية'],
+    membership_updated: ['event.membershipUpdated', 'تم تحديث العضوية'],
+    payment_updated: ['event.paymentUpdated', 'تم تحديث الدفع'],
+    attendance_checked_in: ['event.attendanceCheckedIn', 'تم تسجيل حضور'],
+    attendance_auto_checked_out: ['event.attendanceAutoCheckedOut', 'تم تسجيل الانصراف تلقائيًا'],
+    member_subscription_request_created: ['event.subscriptionRequestCreated', 'تم استلام طلب اشتراك'],
+    member_subscription_request_approved: ['event.subscriptionRequestApproved', 'تم قبول طلب الاشتراك'],
+    member_subscription_request_rejected: ['event.subscriptionRequestRejected', 'تم رفض طلب الاشتراك'],
+    trainer_session_scheduled: ['event.trainerSessionScheduled', 'تم جدولة جلسة تدريب'],
+    trainer_session_updated: ['event.trainerSessionUpdated', 'تم تحديث جلسة التدريب'],
+    trainer_session_status_changed: ['event.trainerSessionStatusChanged', 'تغيرت حالة جلسة التدريب'],
+    trainer_plan_published: ['event.trainerPlanPublished', 'تم نشر خطة تدريب'],
+    system_announcement: ['event.systemAnnouncement', 'إعلان جديد']
   });
   let root;
   let panel;
@@ -71,6 +87,7 @@
   let sessionReady = false;
   let authBootstrapPromise;
   let liveToast;
+  let liveToastItem;
   let liveToastTimer;
   let bodyOverflowBeforeOpen = '';
   let focusBeforeOpen = null;
@@ -79,8 +96,9 @@
   const formatDate = (value) => {
     if (!value) return '';
     const date = new Date(value);
-    const locale = document.documentElement.lang || navigator.language || 'ar-EG';
-    return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    const dateLocale = locale() === 'en' ? 'en-EG' : 'ar-EG';
+    return Number.isNaN(date.getTime()) ? '' : (i18n()?.format('date', date.toISOString(), { dateStyle: 'medium', timeStyle: 'short' })
+      || new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(date));
   };
 
   function setBadge(value) {
@@ -91,8 +109,8 @@
     }
     if (summaryElement) {
       summaryElement.textContent = state.unread
-        ? `${state.unread.toLocaleString('ar-EG')} غير مقروءة`
-        : 'كل التنبيهات مقروءة';
+        ? t('status.unreadCount', '{{count}} غير مقروءة', { count: state.unread })
+        : t('status.allRead', 'كل التنبيهات مقروءة');
     }
     if (markAllButton) markAllButton.disabled = state.unread === 0 || state.loading;
   }
@@ -103,18 +121,20 @@
     const technical = originalMessage.match(/^Notification emitted for ([a-z0-9_-]+)\.\s*:?[ \t]*(.*)$/i);
     if (technical) {
       const key = type || technical[1].toLowerCase();
-      const label = eventTitles[key];
+      const event = eventTitles[key];
       const detail = technical[2].trim();
-      const title = label
-        ? `${label}${detail ? (key === 'membership_created' ? ` لـ${detail}` : ` ${detail}`) : ''}`
-        : 'إشعار جديد';
+      const label = event ? t(event[0], event[1]) : t('event.generic', 'إشعار جديد');
+      const title = detail
+        ? t(key === 'membership_created' ? 'event.withMembershipName' : 'event.withName',
+          key === 'membership_created' ? '{{title}} لـ{{name}}' : '{{title}} {{name}}', { title: label, name: detail })
+        : label;
       return { title, message: '' };
     }
 
     const suppliedTitle = String(item?.title || '').trim();
     const safeTitle = suppliedTitle && !/^[a-z][a-z0-9_-]+$/i.test(suppliedTitle)
       ? suppliedTitle
-      : eventTitles[type] || 'إشعار جديد';
+      : (eventTitles[type] ? t(eventTitles[type][0], eventTitles[type][1]) : t('event.generic', 'إشعار جديد'));
     const safeMessage = originalMessage && !/^Notification emitted for\b/i.test(originalMessage)
       ? originalMessage
       : '';
@@ -174,14 +194,15 @@
 
     const title = document.createElement('strong');
     title.className = 'notification-center-live-toast-title';
-    title.textContent = item.title || 'إشعار جديد';
+    const copy = notificationCopy(item);
+    title.textContent = copy.title || t('event.generic', 'إشعار جديد');
     const message = document.createElement('span');
     message.className = 'notification-center-live-toast-message';
     message.textContent = item.message || '';
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'notification-center-live-toast-close';
-    close.setAttribute('aria-label', 'إغلاق الإشعار');
+    close.setAttribute('aria-label', t('action.closeNotification', 'إغلاق الإشعار'));
     close.textContent = '×';
     close.addEventListener('click', () => toast.remove());
     toast.append(title, message, close);
@@ -196,35 +217,95 @@
 
     document.body.appendChild(toast);
     liveToast = toast;
+    liveToastItem = item;
     liveToastTimer = window.setTimeout(() => {
       toast.remove();
-      if (liveToast === toast) liveToast = null;
+      if (liveToast === toast) {
+        liveToast = null;
+        liveToastItem = null;
+      }
     }, 6500);
   }
 
   function getCategoryMeta(item) {
     const key = String(item?.category || item?.type || '').trim().toLowerCase();
-    return categoryMeta[key] || categoryMeta.default;
+    const meta = categoryMeta[key] || categoryMeta.default;
+    return { ...meta, label: t(meta.key, meta.label) };
   }
 
   function iconMarkup(kind) {
     return `<svg class="notification-center-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[kind] || iconPaths.default}</svg>`;
   }
 
-  function setMessage(text, className = 'notification-center-empty') {
+  function setMessage(text, className = 'notification-center-empty', key = '', fallback = text, params = {}) {
     if (!list) return;
+    messageState.key = key;
+    messageState.fallback = fallback;
+    messageState.className = className;
+    messageState.params = params;
     list.replaceChildren();
     const message = document.createElement('div');
     message.className = className;
-    message.textContent = text;
+    message.textContent = key ? t(key, fallback, params) : text;
     list.appendChild(message);
+  }
+
+  function refreshLocale() {
+    if (!root || !panel) return;
+    const setLabel = (selector, key, fallback, attribute = 'textContent') => {
+      const element = panel.querySelector(selector);
+      if (element) {
+        if (attribute === 'textContent') element.textContent = t(key, fallback);
+        else element.setAttribute(attribute, t(key, fallback));
+      }
+    };
+    triggerElement?.setAttribute('aria-label', t('trigger.label', 'الإشعارات'));
+    triggerElement?.setAttribute('title', t('trigger.title', 'الإشعارات'));
+    panel.setAttribute('aria-label', t('panel.label', 'الإشعارات'));
+    setLabel('.notification-center-heading h2', 'panel.title', 'الإشعارات');
+    setLabel('.notification-center-heading small', 'panel.description', 'آخر المستجدات في حسابك');
+    setLabel('[data-notification-close]', 'action.closePanel', 'إغلاق الإشعارات', 'aria-label');
+    setLabel('[data-notification-close]', 'action.close', 'إغلاق', 'title');
+    setLabel('.notification-center-filter-wrap .visually-hidden', 'filter.label', 'تصفية الإشعارات');
+    const filter = panel.querySelector('#notificationCategoryFilter');
+    if (filter) {
+      const labels = {
+        '': ['filter.all', 'كل الإشعارات'],
+        registration: ['category.registration', 'التسجيل'],
+        membership: ['category.membership', 'العضويات'],
+        payment: ['category.payment', 'المدفوعات'],
+        system: ['category.system', 'النظام'],
+        coaching: ['category.coaching', 'التدريب'],
+        subscription: ['category.subscription', 'الاشتراكات']
+      };
+      [...filter.options].forEach((option) => {
+        const [key, fallback] = labels[option.value] || ['filter.all', 'كل الإشعارات'];
+        option.textContent = t(key, fallback);
+      });
+    }
+    setLabel('[data-notification-refresh]', 'action.refreshAccessible', 'تحديث الإشعارات', 'aria-label');
+    setLabel('[data-notification-refresh]', 'action.refresh', 'تحديث', 'title');
+    setLabel('[data-notification-read-all] span', 'action.markAllRead', 'تمييز الكل كمقروء');
+    setLabel('[data-notification-more]', state.loadingMore ? 'state.loadingMore' : 'action.loadMore',
+      state.loadingMore ? 'جارٍ تحميل المزيد…' : 'تحميل المزيد');
+    setLabel('[data-notification-end]', 'state.endOfList', 'وصلت إلى نهاية الإشعارات');
+    setBadge(state.unread);
+    if (state.items.length) renderNotifications(state.items);
+    else if (messageState.key) setMessage('', messageState.className, messageState.key, messageState.fallback, messageState.params);
+    if (liveToast && liveToastItem) {
+      const copy = notificationCopy(liveToastItem);
+      const title = liveToast.querySelector('.notification-center-live-toast-title');
+      const close = liveToast.querySelector('.notification-center-live-toast-close');
+      if (title) title.textContent = copy.title || t('event.generic', 'إشعار جديد');
+      close?.setAttribute('aria-label', t('action.closeNotification', 'إغلاق الإشعار'));
+    }
   }
 
   function renderNotifications(items = []) {
     if (!list) return;
     list.replaceChildren();
     if (!items.length) {
-      setMessage('لا توجد إشعارات جديدة.');
+      setMessage('', 'notification-center-empty', 'state.empty', 'لا توجد إشعارات جديدة.');
       return;
     }
 
@@ -251,7 +332,7 @@
       if (!item.read) {
         const unread = document.createElement('span');
         unread.className = 'notification-center-item-unread';
-        unread.setAttribute('aria-label', 'غير مقروء');
+        unread.setAttribute('aria-label', t('status.unread', 'غير مقروء'));
         heading.appendChild(unread);
       }
 
@@ -283,8 +364,8 @@
         const readButton = document.createElement('button');
         readButton.type = 'button';
         readButton.className = 'notification-center-item-action';
-        readButton.setAttribute('aria-label', 'تمييز الإشعار كمقروء');
-        readButton.title = 'تمييز كمقروء';
+        readButton.setAttribute('aria-label', t('action.markReadAccessible', 'تمييز الإشعار كمقروء'));
+        readButton.title = t('action.markRead', 'تمييز كمقروء');
         readButton.innerHTML = '<svg class="notification-center-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4 4L19 7"/></svg>';
         readButton.addEventListener('click', () => markRead(item.id));
         article.appendChild(readButton);
@@ -330,7 +411,7 @@
         realtimeSource.close();
         realtimeSource = null;
       }
-      setMessage('سجّل الدخول لعرض إشعاراتك.');
+      setMessage('', 'notification-center-empty', 'state.signIn', 'سجّل الدخول لعرض إشعاراتك.');
     }
     return usable;
   }
@@ -348,13 +429,14 @@
     if (!(await ensureNotificationSession())) return;
     if (state.loading) return;
     state.loading = true;
+    state.loadingMore = append;
     if (loadMoreButton && append) {
       loadMoreButton.disabled = true;
       loadMoreButton.setAttribute('aria-busy', 'true');
-      loadMoreButton.textContent = 'جارٍ تحميل المزيد…';
+      loadMoreButton.textContent = t('state.loadingMore', 'جارٍ تحميل المزيد…');
     }
     if (markAllButton) markAllButton.disabled = true;
-    if (!append) setMessage('جاري تحميل الإشعارات...', 'notification-center-loading');
+    if (!append) setMessage('', 'notification-center-loading', 'state.loading', 'جاري تحميل الإشعارات...');
     try {
       const page = append ? state.page + 1 : 1;
       const params = new URLSearchParams({ page: String(page), pageSize: '8' });
@@ -370,7 +452,7 @@
           clearTimeout(realtimeReconnectTimer);
           realtimeReconnectTimer = null;
         }
-        setMessage('سجّل الدخول لعرض إشعاراتك.');
+        setMessage('', 'notification-center-empty', 'state.signIn', 'سجّل الدخول لعرض إشعاراتك.');
         state.loaded = true;
         return;
       }
@@ -390,13 +472,14 @@
       startRealtime();
       try { await refreshUnread(); } catch (_) { /* list remains usable */ }
     } catch (_) {
-      setMessage('تعذر تحميل الإشعارات. حاول مرة أخرى.', 'notification-center-error');
+      setMessage('', 'notification-center-error', 'state.loadError', 'تعذر تحميل الإشعارات. حاول مرة أخرى.');
     } finally {
       state.loading = false;
+      state.loadingMore = false;
       if (loadMoreButton) {
         loadMoreButton.disabled = false;
         loadMoreButton.removeAttribute('aria-busy');
-        loadMoreButton.textContent = 'تحميل المزيد';
+        loadMoreButton.textContent = t('action.loadMore', 'تحميل المزيد');
       }
       if (markAllButton) markAllButton.disabled = state.unread === 0;
     }
@@ -553,6 +636,8 @@
     subscriptionOption.value = 'subscription';
     subscriptionOption.textContent = '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a';
     categoryFilter.appendChild(subscriptionOption);
+    refreshLocale();
+    window.addEventListener('topgym:localechange', refreshLocale);
     trigger.addEventListener('click', () => toggle());
     closeButton.addEventListener('click', () => toggle(false));
     refreshButton.addEventListener('click', () => void load());

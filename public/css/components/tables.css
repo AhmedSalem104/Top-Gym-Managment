@@ -28,12 +28,11 @@ body .members-panel,
 body .store-table-wrap,
 body .saas-table-wrap,
 body .platform-table-wrap,
-body .auth-users-table-wrap,
 body .attendance-table-wrap,
 body .member-requests-table-wrap {
-  border: 1px solid var(--rf-line);
+  border: 1px solid var(--border-primary);
   border-radius: 14px;
-  background: var(--rf-surface);
+  background: var(--bg-surface);
   box-shadow: none;
 }
 
@@ -385,15 +384,15 @@ table .action-group {
    to data tables that actually expose row actions, so ordinary summary tables
    are not forced into a sticky last column. */
 .members-table th:last-child,
-.members-table td:last-child,
+.members-table td:last-child:not([colspan]),
 .attendance-table th:last-child,
-.attendance-table td:last-child,
+.attendance-table td:last-child:not([colspan]),
 .external-trainees-table th:last-child,
-.external-trainees-table td:last-child,
+.external-trainees-table td:last-child:not([colspan]),
 .library-data-table th:last-child,
-.library-data-table td:last-child,
+.library-data-table td:last-child:not([colspan]),
 .backup-history-table th:last-child,
-.backup-history-table td:last-child {
+.backup-history-table td:last-child:not([colspan]) {
   position: sticky;
   inset-inline-end: 0;
   z-index: 2;
@@ -411,19 +410,19 @@ table .action-group {
   background: var(--color-surface-muted);
 }
 
-.members-table tbody tr:nth-child(even) td:last-child,
-.attendance-table tbody tr:nth-child(even) td:last-child,
-.external-trainees-table tbody tr:nth-child(even) td:last-child,
-.library-data-table tbody tr:nth-child(even) td:last-child,
-.backup-history-table tbody tr:nth-child(even) td:last-child {
+.members-table tbody tr:nth-child(even) td:last-child:not([colspan]),
+.attendance-table tbody tr:nth-child(even) td:last-child:not([colspan]),
+.external-trainees-table tbody tr:nth-child(even) td:last-child:not([colspan]),
+.library-data-table tbody tr:nth-child(even) td:last-child:not([colspan]),
+.backup-history-table tbody tr:nth-child(even) td:last-child:not([colspan]) {
   background: var(--color-surface-muted);
 }
 
-.members-table tbody tr:hover td:last-child,
-.attendance-table tbody tr:hover td:last-child,
-.external-trainees-table tbody tr:hover td:last-child,
-.library-data-table tbody tr:hover td:last-child,
-.backup-history-table tbody tr:hover td:last-child {
+.members-table tbody tr:hover td:last-child:not([colspan]),
+.attendance-table tbody tr:hover td:last-child:not([colspan]),
+.external-trainees-table tbody tr:hover td:last-child:not([colspan]),
+.library-data-table tbody tr:hover td:last-child:not([colspan]),
+.backup-history-table tbody tr:hover td:last-child:not([colspan]) {
   background: var(--color-primary-soft);
 }
 
@@ -457,7 +456,7 @@ table .action-group {
 /* The actions header belongs to the same header row as every other column;
    do not let the sticky-column surface override its header background. */
 .members-table > thead > tr > th:last-child {
-  background: var(--rf-surface-soft) !important;
+  background: var(--bg-card-hover) !important;
   box-shadow: none !important;
 }
 
@@ -549,26 +548,26 @@ table td:last-child > .action-button {
  * product so this ownership move is not a redesign.
  */
 body table {
-  color: var(--rf-ink-soft);
+  color: var(--text-secondary);
 }
 
 body table thead,
 body table th {
-  background: var(--rf-surface-soft);
-  color: var(--rf-muted);
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
 }
 
 body table th {
   min-height: 44px;
-  border-bottom: 1px solid var(--rf-line);
+  border-bottom: 1px solid var(--border-primary);
   font-size: .7rem;
   font-weight: 800;
   letter-spacing: .01em;
 }
 
 body table td {
-  border-bottom-color: var(--rf-line-soft);
-  color: var(--rf-ink-soft);
+  border-bottom-color: var(--border-secondary);
+  color: var(--text-secondary);
   font-size: .76rem;
 }
 
@@ -577,7 +576,7 @@ body table tbody tr {
 }
 
 body table tbody tr:hover {
-  background: var(--rf-accent-soft);
+  background: var(--primary-soft);
 }
 
 /* Shared wrapper overflow/scrollbar primitives. Portal and subscription
@@ -600,7 +599,6 @@ body table tbody tr:hover {
   body .store-table-wrap,
   body .saas-table-wrap,
   body .platform-table-wrap,
-  body .auth-users-table-wrap,
   body .attendance-table-wrap,
   body .member-requests-table-wrap {
     overflow-x: auto;

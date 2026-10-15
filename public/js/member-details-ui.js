@@ -301,12 +301,24 @@
     const profileBadge = dialog.querySelector('#detailsMemberBadge');
     if (!profileBadge) return;
     if (!mobileDetailsBadgeOriginal) {
-      mobileDetailsBadgeOriginal = { text: profileBadge.textContent, status: profileBadge.dataset.membershipStatus || '' };
+      mobileDetailsBadgeOriginal = {
+        text: profileBadge.textContent,
+        status: profileBadge.dataset.membershipStatus || '',
+        i18nKey: profileBadge.dataset.i18n || ''
+      };
     }
     const status = String(mobileDetailsData?.currentMembership?.status || member?.membership?.status || '').toLowerCase();
     const labels = { active: 'نشط', expiring_soon: 'تنتهي قريبًا', frozen: 'مجمّدة', expired: 'منتهية', cancelled: 'ملغاة' };
     if (labels[status]) {
-      profileBadge.textContent = labels[status];
+      const i18nKeys = {
+        active: 'members.status.activeBadge',
+        expiring_soon: 'members.status.expiringSoonBadge',
+        frozen: 'members.status.frozenBadge',
+        expired: 'members.status.expiredBadge',
+        cancelled: 'members.status.cancelledBadge'
+      };
+      profileBadge.dataset.i18n = i18nKeys[status];
+      profileBadge.textContent = window.TopGymI18n?.t?.(i18nKeys[status]) || labels[status];
       profileBadge.dataset.membershipStatus = status;
     }
     const copy = dialog.querySelector('.member-profile-copy');
@@ -508,6 +520,8 @@
         profileBadge.textContent = mobileDetailsBadgeOriginal.text;
         if (mobileDetailsBadgeOriginal.status) profileBadge.dataset.membershipStatus = mobileDetailsBadgeOriginal.status;
         else delete profileBadge.dataset.membershipStatus;
+        if (mobileDetailsBadgeOriginal.i18nKey) profileBadge.dataset.i18n = mobileDetailsBadgeOriginal.i18nKey;
+        else delete profileBadge.dataset.i18n;
       }
       mobileDetailsBadgeOriginal = null;
     }
@@ -609,6 +623,11 @@
   }
 
   function renderOverview(member, details) {
+    // On mobile the action group is moved out of the overview into the fixed
+    // footer. Remove that previous member's detached presentation before
+    // rebuilding the summary, otherwise stale eligibility actions survive
+    // when the dialog is reused for a different member.
+    dialog.querySelector('[data-member-details-footer] .member-details-actions')?.remove();
     content.querySelector('.member-details-overview')?.remove();
     const subscription = resolveSubscription(member, details) || {};
     const freezeLimit = number(subscription.freezeLimit || 3);
@@ -725,6 +744,13 @@
     }
     closeMoreMenu();
     runExistingAction(action);
+  });
+
+  // The member screen already closes this native dialog from its own button
+  // handler. Keep the click from reaching the delegated legacy closer, which
+  // would otherwise process the same close twice and set `hidden` on reopen.
+  dialog.addEventListener('click', (event) => {
+    if (event.target.closest?.('#detailsClose')) event.stopPropagation();
   });
 
   dialog.addEventListener('close', () => { closeMoreMenu(); disableMobileDetails(); mobileDetailsMember = null; });
