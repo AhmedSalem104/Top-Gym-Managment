@@ -36,6 +36,7 @@ async function assertLoginSurface(page) {
 
     const metrics = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
+        viewportHeight: window.innerHeight,
         documentWidth: document.documentElement.scrollWidth,
         bodyWidth: document.body.scrollWidth,
         scrollY: window.scrollY,
@@ -47,6 +48,7 @@ async function assertLoginSurface(page) {
         card: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
         visualCard: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
         features: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
+        featuresWidth: document.querySelector('.auth-reference-features').getBoundingClientRect().width,
         backgroundImage: getComputedStyle(document.querySelector('.auth-screen'), '::before').backgroundImage,
         backgroundFilter: getComputedStyle(document.querySelector('.auth-screen'), '::before').filter,
         overlayImage: getComputedStyle(document.querySelector('.auth-screen'), '::after').backgroundImage,
@@ -76,6 +78,9 @@ async function assertLoginSurface(page) {
 
     expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
+    if (metrics.viewport >= 375 && metrics.viewportHeight >= 800) {
+        expect(metrics.documentHeight, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewportHeight + 1);
+    }
     expect(metrics.direction).toBe('rtl');
     expect(metrics.emailDirection).toBe('ltr');
     expect(metrics.card.width).toBeGreaterThan(280);
@@ -83,8 +88,10 @@ async function assertLoginSurface(page) {
     expect(Math.abs((metrics.card.left + metrics.card.right) / 2 - metrics.viewport / 2)).toBeLessThanOrEqual(2);
     expect(metrics.featuresAfterCard).toBe(true);
     expect(metrics.features.top).toBeGreaterThan(metrics.card.bottom);
+    expect(metrics.featuresWidth).toBeGreaterThanOrEqual(metrics.shell.width - 56);
     expect(metrics.backgroundImage).toContain('/assets/logic-fit-login-gym.webp');
-    expect(metrics.backgroundFilter).toContain('blur(2px)');
+    expect(metrics.backgroundFilter).not.toContain('blur(');
+    expect(metrics.backgroundFilter).toContain('brightness(0.7)');
     expect(metrics.overlayImage).toContain('gradient');
     expect(metrics.themeInsideCard).toBe(false);
     expect(metrics.themeInsideControls).toBe(true);
