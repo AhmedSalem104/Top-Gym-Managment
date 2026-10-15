@@ -109,3 +109,7 @@ The former `visual-redesign.css` layer was retired on 2026-10-11 after its remai
 ## 8. Evidence required for screen acceptance
 
 For each real route/view and role-dependent composition, record before/after screenshots, tested locale, theme, viewport, relevant states, preserved actions/contracts and test command/results. Print acceptance additionally requires actual rendered PDF/print preview inspection for existing formats and short/long content. Mark unrun or inaccessible cases honestly; do not infer coverage from a static inventory.
+
+## 9. Login entry presentation
+
+The public Logic Fit login uses the existing centralized theme and locale controls at the top edge of the page, outside the authentication card. Keep the form card centered with a 460px maximum width, opaque theme-aware surface, 16px login-specific radius, and 32px desktop / 24px mobile padding. The locally hosted `logic-fit-login-gym.webp` asset is the photographic backdrop; apply dimming and subtle blur to the background layer only. Keep the three existing translated benefit items in a transparent, borderless region below the card, using unboxed line icons. Login fields and submit control are 48px high, and the account row contains only the existing remember-me control. The forgot-password link is omitted from the visible login presentation; preserve its existing DOM integration, recovery dialog and underlying reset/help behavior without changing authentication contracts. Copyright year is rendered from the current runtime year and its rights label follows the selected locale.

@@ -20,12 +20,18 @@ test('login entry is generated from the shared auth card and excludes the app sh
     assert.match(login, /id="loginEmail"/u);
     assert.match(login, /id="loginPassword"/u);
     assert.match(login, /data-theme-toggle/iu);
+    assert.match(login, /class="auth-reference-controls"[^>]*data-i18n-switcher[\s\S]*?class="auth-theme-toggle/u);
+    assert.match(login, /id="authForgotHelp"[^>]*hidden/u);
+    assert.match(login, /id="authRecoveryDialog"/u);
+    assert.match(login, /data-current-year/u);
     assert.doesNotMatch(login, /class="app-shell"/u);
     assert.doesNotMatch(login, /notification-center\.js/u);
     assert.doesNotMatch(login, /\/js\/app\.js/u);
     assert.doesNotMatch(login, /core\/phone-inputs\.js/u);
     assert.doesNotMatch(login, /\/css\/main\.css/u);
     assert.match(login, /\/css\/login-entry\.css\?v=[a-f0-9]{12}/u);
+    assert.match(read('public/css/pages/login.css'), /max-width:\s*460px/u);
+    assert.match(read('public/css/pages/login.css'), /background:\s*transparent;[\s\S]*?box-shadow:\s*none;[\s\S]*?direction:\s*rtl;/u);
 });
 
 test('login entry delivery is server-selected only for unauthenticated root requests', () => {

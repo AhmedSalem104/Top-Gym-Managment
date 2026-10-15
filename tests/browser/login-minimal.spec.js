@@ -24,11 +24,11 @@ async function assertLoginSurface(page) {
     await expect(page.locator('.auth-reference-hero')).toHaveCount(0);
     await expect(page.locator('.auth-reference-features')).toBeVisible();
     await expect(page.locator('.auth-reference-features article')).toHaveCount(3);
-    await expect(page.locator('.auth-reference-controls')).toBeHidden();
+    await expect(page.locator('.auth-reference-controls')).toBeVisible();
     await expect(page.locator('.saas-entry-card')).toBeHidden();
     await expect(page.locator('.auth-reference-security')).toBeHidden();
     await expect(page.locator('.auth-reference-copyright')).toBeHidden();
-    await expect(page.locator('#authLoginCard [data-brand-text="brandName"]')).toBeVisible();
+    await expect(page.locator('#authLoginCard strong[data-brand-text="brandName"]')).toBeVisible();
     await expect(page.locator('#loginEmail')).toBeVisible();
     await expect(page.locator('#loginPassword')).toBeVisible();
     await expect(page.locator('#loginPasswordToggle')).toBeVisible();
@@ -47,15 +47,25 @@ async function assertLoginSurface(page) {
         card: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
         visualCard: document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect().toJSON(),
         features: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
-        backgroundImage: getComputedStyle(document.querySelector('.auth-screen')).backgroundImage,
+        backgroundImage: getComputedStyle(document.querySelector('.auth-screen'), '::before').backgroundImage,
+        backgroundFilter: getComputedStyle(document.querySelector('.auth-screen'), '::before').filter,
+        overlayImage: getComputedStyle(document.querySelector('.auth-screen'), '::after').backgroundImage,
         featuresAfterCard: Boolean(document.querySelector('.auth-form-panel').compareDocumentPosition(document.querySelector('.auth-reference-features')) & Node.DOCUMENT_POSITION_FOLLOWING),
         themeToggle: document.querySelector('.auth-theme-toggle').getBoundingClientRect().toJSON(),
         themeInsideCard: Boolean(document.querySelector('#authLoginCard .auth-theme-toggle')),
+        themeInsideControls: Boolean(document.querySelector('.auth-reference-controls .auth-theme-toggle')),
         themeWithinCard: (() => {
             const card = document.querySelector('#authLoginCard .auth-form-panel').getBoundingClientRect();
-            const toggle = document.querySelector('#authLoginCard .auth-theme-toggle').getBoundingClientRect();
+            const toggle = document.querySelector('.auth-theme-toggle').getBoundingClientRect();
             return toggle.left >= card.left && toggle.right <= card.right && toggle.top >= card.top && toggle.bottom <= card.bottom;
         })(),
+        featuresBackground: getComputedStyle(document.querySelector('.auth-reference-features')).backgroundColor,
+        featureIconBackground: getComputedStyle(document.querySelector('.auth-reference-feature-icon')).backgroundColor,
+        currentYear: document.querySelector('[data-current-year]')?.textContent,
+        expectedYear: String(new Date().getFullYear()),
+        submitHeight: document.querySelector('#loginSubmit').getBoundingClientRect().height,
+        rememberOnly: document.querySelectorAll('.auth-account-row > *:not([hidden])').length === 1,
+        inputHeight: document.querySelector('.auth-input-wrap').getBoundingClientRect().height,
         submitGap: (() => {
             const registration = document.querySelector('.auth-registration-entry').getBoundingClientRect();
             const submit = document.querySelector('#loginSubmit').getBoundingClientRect();
@@ -69,13 +79,22 @@ async function assertLoginSurface(page) {
     expect(metrics.direction).toBe('rtl');
     expect(metrics.emailDirection).toBe('ltr');
     expect(metrics.card.width).toBeGreaterThan(280);
-    expect(metrics.card.width).toBeLessThanOrEqual(metrics.viewport);
+    expect(metrics.card.width).toBeLessThanOrEqual(460);
     expect(Math.abs((metrics.card.left + metrics.card.right) / 2 - metrics.viewport / 2)).toBeLessThanOrEqual(2);
     expect(metrics.featuresAfterCard).toBe(true);
     expect(metrics.features.top).toBeGreaterThan(metrics.card.bottom);
-    expect(metrics.backgroundImage).not.toContain('gradient');
-    expect(metrics.themeInsideCard).toBe(true);
-    expect(metrics.themeWithinCard, JSON.stringify(metrics)).toBe(true);
+    expect(metrics.backgroundImage).toContain('/assets/logic-fit-login-gym.webp');
+    expect(metrics.backgroundFilter).toContain('blur(2px)');
+    expect(metrics.overlayImage).toContain('gradient');
+    expect(metrics.themeInsideCard).toBe(false);
+    expect(metrics.themeInsideControls).toBe(true);
+    expect(metrics.themeWithinCard, JSON.stringify(metrics)).toBe(false);
+    expect(metrics.rememberOnly).toBe(true);
+    expect(metrics.inputHeight).toBe(48);
+    expect(metrics.featuresBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(metrics.featureIconBackground).toBe('rgba(0, 0, 0, 0)');
+    expect(metrics.currentYear).toBe(metrics.expectedYear);
+    expect(metrics.submitHeight).toBe(48);
     expect(metrics.themeToggle.width).toBe(96);
     expect(metrics.themeToggle.height).toBe(40);
     expect(metrics.card.height, JSON.stringify(metrics)).toBeLessThan(650);
@@ -146,7 +165,8 @@ test('public registration offers only gym and independent trainer paths', async 
 });
 
 test('password recovery explains the actual supported path without claiming a self-service flow', async ({ page }) => {
-    await page.locator('#authForgotHelp').click();
+    await expect(page.locator('#authForgotHelp')).toBeHidden();
+    await page.evaluate(() => document.getElementById('authForgotHelp').click());
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
     await expect(page.locator('#authRecoveryDialog')).toContainText('لا تتوفر إعادة تعيين ذاتية');
 });

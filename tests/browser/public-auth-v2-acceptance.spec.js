@@ -110,7 +110,7 @@ test('Login V2 remains compact, theme-safe, keyboard-operable, and read-only acr
             expect(geometry.cardLeft).toBeGreaterThanOrEqual(0);
             expect(geometry.cardRight).toBeLessThanOrEqual(viewport.width + 1);
             expect(geometry.submitHeight).toBeGreaterThanOrEqual(44);
-            expect(geometry.radius).toBe('10px');
+            expect(geometry.radius).toBe('16px');
 
             await page.locator('.auth-theme-toggle').focus();
             expect(await page.locator('.auth-theme-toggle').evaluate((element) => element.matches(':focus-visible'))).toBe(true);
@@ -131,7 +131,8 @@ test('Login V2 remains compact, theme-safe, keyboard-operable, and read-only acr
     await expect(page.locator('#authRegistrationDialog a[href="/register-trainer"]')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('#authRegistrationDialog')).toBeHidden();
-    await page.locator('#authForgotHelp').click();
+    await expect(page.locator('#authForgotHelp')).toBeHidden();
+    await page.evaluate(() => document.getElementById('authForgotHelp').click());
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
     await page.locator('#authRecoveryDialog .auth-dialog-confirm').click();
     await expect(page.locator('#authRecoveryDialog')).toBeHidden();

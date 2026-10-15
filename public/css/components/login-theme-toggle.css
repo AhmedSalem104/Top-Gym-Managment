@@ -34,6 +34,12 @@
   transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
+/* Keep the extended mobile touch target anchored to this control, not the
+   independently positioned language/theme controls row. */
+.auth-screen[data-auth-stage="login"] .auth-reference-controls .theme-toggle-switch {
+  position: relative;
+}
+
 .auth-screen[data-auth-stage="login"] .theme-toggle-switch:hover,
 .auth-screen[data-auth-stage="login"] .theme-toggle-switch:focus-visible {
   border-color: var(--login-primary, var(--primary));

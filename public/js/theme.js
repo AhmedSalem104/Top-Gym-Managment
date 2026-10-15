@@ -64,7 +64,12 @@
 
     function placeLoginThemeControl() {
         const control = document.querySelector('#authLoginCard > .auth-theme-toggle');
+        const entryControls = document.querySelector('#authScreen .auth-reference-controls[data-i18n-switcher]');
         const panel = document.querySelector('#authLoginCard .auth-form-panel');
+        if (document.body?.dataset.authEntry === 'login' && control && entryControls && control.parentElement !== entryControls) {
+            entryControls.append(control);
+            return;
+        }
         if (control && panel && control.parentElement !== panel) panel.prepend(control);
     }
 
