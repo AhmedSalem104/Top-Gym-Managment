@@ -739,6 +739,8 @@
     function bindLoginUi() {
         const form = $('loginForm');
         if (!form || form.dataset.bound) return;
+        const copyrightYear = document.querySelector('[data-current-year]');
+        if (copyrightYear) copyrightYear.textContent = String(new Date().getFullYear());
         form.dataset.bound = 'true';
         form.hidden = true;
         setAuthStage('login');

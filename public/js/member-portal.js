@@ -294,7 +294,7 @@
     if (libraryLoaderPromise) return libraryLoaderPromise;
     libraryLoaderPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      script.src = '/js/member-portal-library.js?v=5';
+      script.src = '/js/member-portal-library.js?v=2b8c2265b1056448';
       script.async = true;
       script.onload = () => window.topGymMemberPortalLibrary ? resolve(window.topGymMemberPortalLibrary) : reject(new Error('Library feature did not initialize.'));
       script.onerror = () => reject(new Error('تعذر تحميل دليل التمارين والتغذية.'));

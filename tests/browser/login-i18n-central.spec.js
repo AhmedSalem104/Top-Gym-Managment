@@ -8,7 +8,9 @@ const CASES = [
     { width: 768, height: 900 },
     { width: 1440, height: 900 }
 ];
-const OUTPUT = path.resolve(__dirname, '../../qa/artifacts/login-i18n-central');
+const OUTPUT = process.env.LOGICFIT_LOGIN_QA_DIR
+    ? path.resolve(process.env.LOGICFIT_LOGIN_QA_DIR, 'login-i18n-central')
+    : path.resolve(__dirname, '../../qa/artifacts/login-i18n-central');
 
 test('Login uses central Arabic/English i18n across responsive themes without auth writes', async ({ page }) => {
     test.setTimeout(150_000);
@@ -94,6 +96,12 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                     const body = document.body;
                     const panel = document.querySelector('.auth-form-panel');
                     const language = document.getElementById('languageToggleButton');
+                    const languageRect = language.getBoundingClientRect();
+                    const languageHit = document.elementFromPoint(
+                        languageRect.left + languageRect.width / 2,
+                        languageRect.top + languageRect.height / 2
+                    );
+                    const themeControl = document.querySelector('.auth-reference-controls [data-theme-toggle]');
                     const button = document.getElementById('loginSubmit');
                     return {
                         viewport: innerWidth,
@@ -101,6 +109,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                         body: body.scrollWidth,
                         theme: root.dataset.theme,
                         locale: root.lang,
+                        languageReceivesPointer: languageHit === language,
+                        themePosition: getComputedStyle(themeControl).position,
                         direction: root.dir,
                         bodyFont: getComputedStyle(body).fontFamily,
                         headingFont: getComputedStyle(document.querySelector('.auth-form-heading h2')).fontFamily,
@@ -114,6 +124,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                 expect(layout.body, `${label} body overflow`).toBeLessThanOrEqual(viewport.width + 1);
                 expect(layout.theme).toBe(theme);
                 expect(layout.locale).toBe(locale);
+                expect(layout.languageReceivesPointer, label).toBe(true);
+                expect(layout.themePosition).toBe('relative');
                 expect(layout.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 expect(layout.bodyFont).toContain(locale === 'ar' ? 'Tajawal' : 'Geist Variable');
                 expect(layout.headingFont).toContain(locale === 'ar' ? 'Tajawal' : 'Geist Variable');
@@ -139,7 +151,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
         await expect(page.locator('#authRegistrationDialog a[href="/register-gym"] strong')).toHaveText(locale === 'ar' ? 'منصة جيم' : 'Gym platform');
         await expect(page.locator('#authRegistrationDialog .auth-choice-close')).toHaveAttribute('aria-label', locale === 'ar' ? 'إغلاق' : 'Close');
         await page.locator('#authRegistrationDialog .auth-choice-close').click();
-        await page.locator('#authForgotHelp').click();
+        await expect(page.locator('#authForgotHelp')).toBeHidden();
+        await page.evaluate(() => document.getElementById('authForgotHelp').click());
         await expect(page.locator('#authRecoveryDialog')).toBeVisible();
         await expect(page.locator('#authRecoveryTitle')).toHaveText(locale === 'ar' ? 'استعادة الوصول' : 'Recover access');
         await expect(page.locator('#authRecoveryDialog .auth-dialog-confirm')).toHaveText(locale === 'ar' ? 'حسنًا' : 'Got it');
@@ -157,9 +170,9 @@ test('Login uses central Arabic/English i18n across responsive themes without au
         await page.evaluate((theme) => window.TopGymTheme.set(theme), state.theme);
         await page.evaluate((locale) => window.TopGymI18n.set(locale, { persist: false }), state.locale);
         for (const dialog of ['registration', 'recovery']) {
-            const trigger = dialog === 'registration' ? '#authRegisterOpen' : '#authForgotHelp';
             const selector = dialog === 'registration' ? '#authRegistrationDialog' : '#authRecoveryDialog';
-            await page.locator(trigger).click();
+            if (dialog === 'registration') await page.locator('#authRegisterOpen').click();
+            else await page.evaluate(() => document.getElementById('authForgotHelp').click());
             const surface = page.locator(selector);
             await expect(surface).toBeVisible();
             const bounds = await surface.boundingBox();

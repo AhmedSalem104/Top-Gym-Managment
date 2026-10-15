@@ -2,10 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { planRuntimeAssetVersions } = require('../../scripts/build-runtime-asset-versions');
+const cryptoHash = (value) => crypto.createHash('sha256').update(value.replace(/\r\n?/g, '\n'), 'utf8').digest('hex').slice(0, 16);
 
 function makeFixture() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'logicfit-runtime-asset-version-'));
@@ -17,20 +19,29 @@ function makeFixture() {
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'library'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'management'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'attendance'), { recursive: true });
+    fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'members'), { recursive: true });
+    fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'store'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'pages'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'components'), { recursive: true });
-    fs.writeFileSync(path.join(publicDir, 'index.html'), '<meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=old">\n<link rel="stylesheet" href="/css/app-shell.css?v=old">\n<script defer src="/js/branch-context.js?v=old"></script>\n<script defer src="/js/core/feature-manifest.js?v=old"></script>\n<script defer src="/js/core/i18n.js?v=old"></script>\n');
+    fs.writeFileSync(path.join(publicDir, 'index.html'), '<meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=old">\n<link rel="stylesheet" href="/css/app-shell.css?v=old">\n<script defer src="/js/theme.js?v=old"></script>\n<script defer src="/js/branch-context.js?v=old"></script>\n<script defer src="/js/core/feature-manifest.js?v=old"></script>\n<script defer src="/js/core/i18n.js?v=old"></script>\n<script defer src="/js/app-shell-bootstrap.js?v=old"></script>\n<script defer src="/js/feature-loader.js?v=old"></script>\n');
     fs.writeFileSync(path.join(publicDir, 'login.html'), '<script defer src="/js/core/i18n.js?v=old"></script>\n');
-    fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, 'portal-analytics': { scripts: ['/js/pages/management/portal-analytics.js?v=old'] }, coaching: { scripts: ['/js/pages/coaching/coaching.js?v=old'] }, library: { scripts: ['/js/pages/library/library.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, members: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, 'member-details': { styles: ['/css/components/member-digital-card.css?v=old'], scripts: ['/js/member-digital-card.js?v=old'] } };\n");
+    fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, 'portal-analytics': { scripts: ['/js/pages/management/portal-analytics.js?v=old'] }, coaching: { scripts: ['/js/pages/coaching/coaching.js?v=old'] }, library: { scripts: ['/js/pages/library/library.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, members: { styles: ['/css/pages/members.css?v=old', '/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/members/action-menu.js?v=old', '/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, 'member-details': { styles: ['/css/components/member-digital-card.css?v=old'], scripts: ['/js/member-digital-card.js?v=old'] } };\n");
     fs.writeFileSync(path.join(publicDir, 'js', 'branch-context.js'), 'window.branchContextBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'theme.js'), 'window.themeBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'app-shell-bootstrap.js'), "loadScript('/js/app.js?v=old');\n");
+    fs.writeFileSync(path.join(publicDir, 'js', 'feature-loader.js'), "loadScript('/js/pages/store/bar-pos.js?v=old');\n");
+    fs.writeFileSync(path.join(publicDir, 'js', 'app.js'), 'window.appBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'store', 'bar-pos.js'), 'window.posBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'core', 'i18n.js'), 'window.localeBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'saas', 'saas.js'), 'window.saasBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'coaching', 'coaching.js'), 'window.coachingBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'library', 'library.js'), 'window.libraryBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'management', 'portal-analytics.js'), 'window.portalAnalyticsBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'attendance', 'attendance.js'), 'window.attendanceBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'pages', 'members', 'action-menu.js'), 'window.memberActionsBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'member-digital-card.js'), 'window.memberCardBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'css', 'pages', 'attendance.css'), '.attendance { color: blue; }\n');
+    fs.writeFileSync(path.join(publicDir, 'css', 'pages', 'members.css'), '.members { color: blue; }\n');
     fs.writeFileSync(path.join(publicDir, 'css', 'login-entry.css'), '.auth-screen { display: grid; }\n');
     fs.writeFileSync(path.join(publicDir, 'css', 'app-shell.css'), '.shell { color: blue; }\n');
     fs.writeFileSync(path.join(publicDir, 'css', 'components', 'member-digital-card.css'), '.card { color: blue; }\n');
@@ -173,6 +184,56 @@ test('member digital card JS and CSS URLs track content-derived fingerprints', (
         const changed = planRuntimeAssetVersions(root);
         assert.notEqual(changed.memberCardScriptVersion, first.memberCardScriptVersion);
         assert.notEqual(changed.manifestVersion, first.manifestVersion);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('all changed feature and shell assets receive content-addressed cache URLs', () => {
+    const root = makeFixture();
+    try {
+        const initial = planRuntimeAssetVersions(root);
+        const membersCssVersion = initial.generatedManifest.match(/\/css\/pages\/members\.css\?v=([a-f0-9]{16})/)?.[1];
+        const memberActionVersion = initial.generatedManifest.match(/\/js\/pages\/members\/action-menu\.js\?v=([a-f0-9]{16})/)?.[1];
+        const themeVersion = initial.generatedIndex.match(/\/js\/theme\.js\?v=([a-f0-9]{16})/)?.[1];
+        assert.ok(membersCssVersion);
+        assert.ok(memberActionVersion);
+        assert.ok(themeVersion);
+
+        fs.writeFileSync(path.join(root, 'public', 'css', 'pages', 'members.css'), '.members { color: navy; }\n');
+        fs.writeFileSync(path.join(root, 'public', 'js', 'pages', 'members', 'action-menu.js'), 'window.memberActionsBuild = 2;\n');
+        fs.writeFileSync(path.join(root, 'public', 'js', 'theme.js'), 'window.themeBuild = 2;\n');
+        const changed = planRuntimeAssetVersions(root);
+        const changedMembersCssVersion = changed.generatedManifest.match(/\/css\/pages\/members\.css\?v=([a-f0-9]{16})/)?.[1];
+        const changedMemberActionVersion = changed.generatedManifest.match(/\/js\/pages\/members\/action-menu\.js\?v=([a-f0-9]{16})/)?.[1];
+        const changedThemeVersion = changed.generatedIndex.match(/\/js\/theme\.js\?v=([a-f0-9]{16})/)?.[1];
+        assert.notEqual(changedMembersCssVersion, membersCssVersion);
+        assert.notEqual(changedMemberActionVersion, memberActionVersion);
+        assert.notEqual(changedThemeVersion, themeVersion);
+        assert.match(changed.generatedManifest, /\/css\/pages\/members\.css\?v=[a-f0-9]{16}/);
+        assert.match(changed.generatedManifest, /\/js\/pages\/members\/action-menu\.js\?v=[a-f0-9]{16}/);
+        assert.match(changed.generatedIndex, /\/js\/theme\.js\?v=[a-f0-9]{16}/);
+    } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('nested runtime-loaded assets are fingerprinted in the generated files and their entrypoint URLs', () => {
+    const root = makeFixture();
+    try {
+        const plan = planRuntimeAssetVersions(root);
+        const loaderPath = path.join(root, 'public', 'js', 'feature-loader.js');
+        const bootstrapPath = path.join(root, 'public', 'js', 'app-shell-bootstrap.js');
+        const storeScript = path.join(root, 'public', 'js', 'pages', 'store', 'bar-pos.js');
+        const loader = plan.generatedAssetFiles.get(loaderPath);
+        const bootstrap = plan.generatedAssetFiles.get(bootstrapPath);
+        const expectedPosHash = cryptoHash(fs.readFileSync(storeScript, 'utf8'));
+        const expectedAppHash = cryptoHash(fs.readFileSync(path.join(root, 'public', 'js', 'app.js'), 'utf8'));
+
+        assert.match(loader, new RegExp(`/js/pages/store/bar-pos\\.js\\?v=${expectedPosHash}`));
+        assert.match(bootstrap, new RegExp(`/js/app\\.js\\?v=${expectedAppHash}`));
+        assert.match(plan.generatedIndex, /feature-loader\.js\?v=[a-f0-9]{16}/);
+        assert.match(plan.generatedIndex, /app-shell-bootstrap\.js\?v=[a-f0-9]{16}/);
     } finally {
         fs.rmSync(root, { recursive: true, force: true });
     }

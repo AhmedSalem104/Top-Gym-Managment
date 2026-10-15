@@ -114,15 +114,15 @@ test('Login V2 uses the canonical primary token and preserves the read-only auth
             expect(state.button.right).toBeLessThanOrEqual(viewport.width);
             expect(state.button.height).toBeGreaterThanOrEqual(44);
 
-            await page.locator('.auth-theme-toggle').focus();
-            await page.keyboard.press('Tab');
             const localeToggle = page.locator('#languageToggleButton');
             await expect(localeToggle).toBeVisible();
-            await expect(localeToggle).toBeFocused();
-            const localeToggleBox = await localeToggle.boundingBox();
-            expect(localeToggleBox.width, `${viewport.name}/${theme}: login language control must remain compact`).toBeLessThan(140);
+            await localeToggle.focus();
+            await page.keyboard.press('Tab');
+            await expect(page.locator('.auth-theme-toggle')).toBeFocused();
             await page.keyboard.press('Tab');
             await expect(page.locator('#loginEmail')).toBeFocused();
+            const localeToggleBox = await localeToggle.boundingBox();
+            expect(localeToggleBox.width, `${viewport.name}/${theme}: login language control must remain compact`).toBeLessThan(140);
             await expect(page.locator('#loginEmail')).toHaveCSS('direction', 'ltr');
             await page.keyboard.press('Tab');
             await expect(page.locator('#loginPassword')).toBeFocused();

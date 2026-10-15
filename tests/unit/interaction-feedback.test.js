@@ -67,14 +67,14 @@ test('critical surfaces load the same feedback layer with context-aware labels',
     const gymRegistration = read('public/register-gym.html');
     const trainerRegistration = read('public/register-trainer.html');
 
-    assert.match(index, /\/js\/ui-feedback\.js\?v=4/);
+    assert.match(index, /\/js\/ui-feedback\.js\?v=[a-f0-9]{16}/);
     assert.match(index, /id="loginSubmit"[^>]*data-feedback-ignore[^>]*data-loading-text="جاري تسجيل الدخول\.\.\."/);
-    assert.match(portal, /\/js\/ui-feedback\.js\?v=4/);
+    assert.match(portal, /\/js\/ui-feedback\.js\?v=[a-f0-9]{16}/);
     assert.match(portal, /id="portalSubmitButton"[^>]*data-loading-text="جاري التحقق من الكود\.\.\."/);
     assert.match(portal, /id="portalOccupancyRefresh"[^>]*data-async-action="true"/);
-    assert.match(platform, /\/js\/ui-feedback\.js\?v=4/);
-    assert.match(gymRegistration, /\/js\/ui-feedback\.js\?v=4/);
-    assert.match(trainerRegistration, /\/js\/ui-feedback\.js\?v=4/);
+    assert.match(platform, /\/js\/ui-feedback\.js\?v=[a-f0-9]{16}/);
+    assert.match(gymRegistration, /\/js\/ui-feedback\.js\?v=[a-f0-9]{16}/);
+    assert.match(trainerRegistration, /\/js\/ui-feedback\.js\?v=[a-f0-9]{16}/);
 });
 
 test('legacy auto-loading bridge excludes immediate controls and preserves compatibility hooks', () => {

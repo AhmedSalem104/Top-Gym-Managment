@@ -561,12 +561,12 @@ function checkPrintAndLazyLoadingSurface() {
     record('STORE-MODULE', index.includes('data-page-tab="store"') && index.includes('id="storeSection"') && manifest.includes("'/js/pages/store/store.js") && store.includes('/api/store/sales') && store.includes('/api/store/customers/search'), 'Store/POS module is wired through lazy loading and member lookup');
     record('UI-PERMISSIONS-CORE', index.includes('/js/core/permissions.js') && authUi.includes('window.topGymPermissions'), 'frontend tab permissions are centralized');
     record('UI-CACHE-BUST', [
-        /\/js\/app-shell-bootstrap\.js\?v=[^"'\s]+/u,
-        /\/js\/core\/feature-manifest\.js\?v=[^"'\s]+/u,
-        /\/js\/core\/dialog-loader\.js\?v=[^"'\s]+/u
+        /\/js\/app-shell-bootstrap\.js\?v=[a-f0-9]{16}/u,
+        /\/js\/core\/feature-manifest\.js\?v=[a-f0-9]{16}/u,
+        /\/js\/core\/dialog-loader\.js\?v=[a-f0-9]{16}/u,
+        /\/js\/feature-loader\.js\?v=[a-f0-9]{16}/u
     ].every((pattern) => pattern.test(index))
-        && /\/js\/feature-loader\.js\?v=freeze-whatsapp-v2/u.test(index)
-        && !/\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u.test(index), 'authenticated shell entrypoints use current explicit cache-busting keys');
+        && !/\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u.test(index), 'authenticated shell entrypoints use content-addressed cache-busting keys');
     const lazyDialogIds = ['libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog'];
     record('UI-LAZY-DIALOGS', lazyDialogIds.every((id) => !index.includes(`id="${id}"`)) && dialogLoader.includes('topGymDialogLoader') && dialogLoader.includes('loadPromises'), 'non-critical dialogs are fragment-loaded and deduplicated on demand');
     const memberPortal = read('public/member-portal.html');

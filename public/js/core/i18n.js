@@ -12,6 +12,8 @@
     const loginScreenArabic = Object.freeze({
         'login.page.title': 'تسجيل الدخول | Logic Fit',
         'login.screen.label': 'بوابة تسجيل الدخول',
+        'login.controls.label': 'إعدادات العرض',
+        'login.features.label': 'مزايا Logic Fit',
         'login.form.label': 'نموذج تسجيل الدخول',
         'login.welcome.title': 'مرحبًا بعودتك',
         'login.welcome.description': 'سجّل الدخول إلى حسابك لمتابعة عملك',
@@ -40,6 +42,7 @@
         'login.recovery.title': 'استعادة الوصول',
         'login.recovery.description': 'لا تتوفر إعادة تعيين ذاتية لكلمة المرور حاليًا. تواصل مع مسؤول حسابك أو فريق Logic Fit لمساعدتك بأمان.',
         'login.recovery.confirm': 'حسنًا',
+        'login.copyright': 'جميع الحقوق محفوظة',
         'login.feature.management': 'إدارة متكاملة',
         'login.feature.management.description': 'لجيمك أو عملك',
         'login.feature.trainers': 'مصممة للمدربين الأحرار',
@@ -56,6 +59,8 @@
     const loginScreenEnglish = Object.freeze({
         'login.page.title': 'Sign in | Logic Fit',
         'login.screen.label': 'Sign-in portal',
+        'login.controls.label': 'Display settings',
+        'login.features.label': 'Logic Fit benefits',
         'login.form.label': 'Sign-in form',
         'login.welcome.title': 'Welcome back',
         'login.welcome.description': 'Sign in to your account to continue your work',
@@ -84,6 +89,7 @@
         'login.recovery.title': 'Recover access',
         'login.recovery.description': 'Self-service password reset is not currently available. Contact your account administrator or the Logic Fit team for secure assistance.',
         'login.recovery.confirm': 'Got it',
+        'login.copyright': 'All rights reserved',
         'login.feature.management': 'Complete management',
         'login.feature.management.description': 'For your gym or business',
         'login.feature.trainers': 'Built for independent trainers',
@@ -7178,6 +7184,8 @@
         document.title = t('login.page.title');
         document.getElementById('authScreen')?.setAttribute('aria-label', t('login.screen.label'));
         document.querySelector('#loginForm')?.setAttribute('aria-label', t('login.form.label'));
+        document.querySelector('#authScreen .auth-reference-controls')?.setAttribute('aria-label', t('login.controls.label'));
+        document.querySelector('#authScreen .auth-reference-features')?.setAttribute('aria-label', t('login.features.label'));
         const textTargets = [
             ['.auth-form-heading h2', 'login.welcome.title'],
             ['.auth-form-heading p', 'login.welcome.description'],
@@ -7199,6 +7207,7 @@
             ['#authRecoveryTitle', 'login.recovery.title'],
             ['#authRecoveryDialog > p', 'login.recovery.description'],
             ['#authRecoveryDialog .auth-dialog-confirm', 'login.recovery.confirm'],
+            ['[data-login-copyright-label]', 'login.copyright'],
             ['.auth-reference-features article:nth-child(1) strong', 'login.feature.management'],
             ['.auth-reference-features article:nth-child(1) small', 'login.feature.management.description'],
             ['.auth-reference-features article:nth-child(2) strong', 'login.feature.trainers'],

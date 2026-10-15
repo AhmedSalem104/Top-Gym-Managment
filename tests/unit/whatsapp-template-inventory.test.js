@@ -30,11 +30,10 @@ test('operational WhatsApp flows use the centralized renderer', () => {
 
 test('the central WhatsApp runtime cache-bust advances with the renderer contract', () => {
     const loader = read('public/js/feature-loader.js');
-    assert.match(loader, /whatsapp-enhancements\.js\?v=15/);
-    assert.doesNotMatch(loader, /whatsapp-enhancements\.js\?v=14/);
-    assert.match(read('public/index.html'), /feature-loader\.js\?v=freeze-whatsapp-v2/);
-    assert.match(read('public/index.html'), /app-shell-bootstrap\.js\?v=membership-type-delete-v1/);
-    assert.match(read('public/js/app-shell-bootstrap.js'), /app\.js\?v=membership-type-delete-v1/);
+    assert.match(loader, /whatsapp-enhancements\.js\?v=[a-f0-9]{16}/);
+    assert.match(read('public/index.html'), /feature-loader\.js\?v=[a-f0-9]{16}/);
+    assert.match(read('public/index.html'), /app-shell-bootstrap\.js\?v=[a-f0-9]{16}/);
+    assert.match(read('public/js/app-shell-bootstrap.js'), /app\.js\?v=[a-f0-9]{16}/);
 });
 
 test('Gym feature loading keeps only the runtime renderer and no management UI', () => {

@@ -23,7 +23,9 @@ test('root public entry renders the real login surface without writes across vie
         return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(body) });
     });
 
-    const evidence = path.join(process.cwd(), 'qa', 'artifacts', 'root-entry-v2-readonly');
+    const evidence = process.env.LOGICFIT_LOGIN_QA_DIR
+        ? path.resolve(process.env.LOGICFIT_LOGIN_QA_DIR, 'root-entry-v2-readonly')
+        : path.join(process.cwd(), 'qa', 'artifacts', 'root-entry-v2-readonly');
     await fs.mkdir(evidence, { recursive: true });
     const matrix = [];
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -52,7 +54,7 @@ test('root public entry renders the real login surface without writes across vie
                 await expect(page.locator('#loginEmail')).toHaveAttribute('placeholder', locale === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter your email address');
                 await expect(page.locator('#loginPassword')).toHaveAttribute('placeholder', locale === 'ar' ? 'أدخل كلمة المرور' : 'Enter your password');
                 await expect(page.locator('.auth-remember span')).toHaveText(locale === 'ar' ? 'تذكرني' : 'Remember me');
-                await expect(page.locator('#authForgotHelp')).toHaveText(locale === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?');
+                await expect(page.locator('#authForgotHelp')).toBeHidden();
                 await expect(page.locator('.auth-submit-label')).toHaveText(locale === 'ar' ? 'تسجيل الدخول' : 'Sign in');
                 const measurements = await page.evaluate(() => ({
                     viewport: document.documentElement.clientWidth,
@@ -99,7 +101,7 @@ test('root public entry renders the real login surface without writes across vie
     await page.screenshot({ path: path.join(evidence, 'root-registration-dialog-390-light-ar.png'), fullPage: true });
     await page.keyboard.press('Escape');
     await expect(page.locator('#authRegistrationDialog')).toBeHidden();
-    await page.locator('#authForgotHelp').click();
+    await page.evaluate(() => document.getElementById('authForgotHelp').click());
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
     await page.screenshot({ path: path.join(evidence, 'root-recovery-dialog-390-light-ar.png'), fullPage: true });
     await page.keyboard.press('Escape');

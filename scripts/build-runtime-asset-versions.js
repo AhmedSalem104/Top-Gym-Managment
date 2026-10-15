@@ -45,6 +45,46 @@ function fingerprintManifestAsset(manifest, assetUrl, version, expectedCount) {
     return output;
 }
 
+function createLocalAssetFingerprinter(projectRoot, sourceOverrides = new Map()) {
+    const publicDirectory = path.resolve(projectRoot, 'public');
+    const pattern = /(["'])(\/(?:css|js|dialogs)\/[^"']+\.(?:css|js|html))(?:\?v=[^"']*)?\1/gi;
+    const outputs = new Map();
+    const resolving = new Set();
+
+    function resolveAsset(assetUrl) {
+        const assetPath = path.resolve(publicDirectory, assetUrl.slice(1));
+        if (!assetPath.startsWith(`${publicDirectory}${path.sep}`)) throw new Error(`Local asset path escapes public/: ${assetUrl}.`);
+        if (outputs.has(assetPath)) return outputs.get(assetPath);
+        if (resolving.has(assetPath)) throw new Error(`Circular local asset reference prevents content fingerprinting: ${assetUrl}.`);
+        if (!fs.existsSync(assetPath) || !fs.statSync(assetPath).isFile()) throw new Error(`Cannot fingerprint missing local asset ${assetUrl}.`);
+
+        resolving.add(assetPath);
+        const source = sourceOverrides.has(assetPath) ? sourceOverrides.get(assetPath) : fs.readFileSync(assetPath, 'utf8');
+        const output = fingerprintText(source);
+        resolving.delete(assetPath);
+        outputs.set(assetPath, output);
+        return output;
+    }
+
+    function fingerprintText(source) {
+        return source.replace(pattern, (_match, quote, assetUrl) => {
+            const output = resolveAsset(assetUrl);
+            const version = crypto.createHash('sha256').update(output.replace(/\r\n?/g, '\n'), 'utf8').digest('hex').slice(0, 16);
+            return `${quote}${assetUrl}?v=${version}${quote}`;
+        });
+    }
+
+    function fingerprintFile(filePath, sourceOverride) {
+        const absolutePath = path.resolve(filePath);
+        const source = sourceOverride ?? (sourceOverrides.has(absolutePath) ? sourceOverrides.get(absolutePath) : fs.readFileSync(absolutePath, 'utf8'));
+        const output = fingerprintText(source);
+        outputs.set(absolutePath, output);
+        return output;
+    }
+
+    return { fingerprintFile, outputs };
+}
+
 function htmlFiles(directory) {
     return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
         const absolute = path.join(directory, entry.name);
@@ -118,7 +158,10 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const withAttendanceStyle = fingerprintManifestAsset(withAttendanceScript, '/css/pages/attendance.css', attendanceStyleVersion, 2);
     const withMemberCardScript = fingerprintManifestAsset(withAttendanceStyle, '/js/member-digital-card.js', memberCardScriptVersion, 3);
     const withMemberCardStyle = fingerprintManifestAsset(withMemberCardScript, '/css/components/member-digital-card.css', memberCardStyleVersion, 3);
-    const manifestContent = withMemberCardStyle.replace(/\r\n?/g, '\n');
+    const sourceOverrides = new Map([[resolvedManifestPath, withMemberCardStyle]]);
+    const assetFingerprinter = createLocalAssetFingerprinter(projectRoot, sourceOverrides);
+    const contentAddressedManifest = assetFingerprinter.fingerprintFile(resolvedManifestPath, withMemberCardStyle);
+    const manifestContent = contentAddressedManifest.replace(/\r\n?/g, '\n');
     const manifestVersion = crypto.createHash('sha256').update(manifestContent, 'utf8').digest('hex').slice(0, 16);
     const versionedAppShellStyleIndex = replaceExactlyOnce(
         versionedAuthSurfaceIndex,
@@ -135,10 +178,16 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const generatedHtmlFiles = new Map();
     htmlFiles(publicDirectory).forEach((filePath) => {
         const source = filePath === resolvedIndexPath ? versionedIndexWithManifest : fs.readFileSync(filePath, 'utf8');
-        const { output, references } = fingerprintHtmlI18n(source, i18nVersion);
-        if (references > 0 && output !== fs.readFileSync(filePath, 'utf8')) generatedHtmlFiles.set(filePath, output);
+        const { output } = fingerprintHtmlI18n(source, i18nVersion);
+        const contentAddressedOutput = assetFingerprinter.fingerprintFile(filePath, output);
+        if (contentAddressedOutput !== fs.readFileSync(filePath, 'utf8')) generatedHtmlFiles.set(filePath, contentAddressedOutput);
     });
-    const versionedIndex = generatedHtmlFiles.get(resolvedIndexPath) || versionedIndexWithManifest;
+    const versionedIndex = generatedHtmlFiles.get(resolvedIndexPath) || assetFingerprinter.fingerprintFile(resolvedIndexPath, versionedIndexWithManifest);
+    const generatedAssetFiles = new Map([...assetFingerprinter.outputs].filter(([filePath, content]) =>
+        filePath !== resolvedManifestPath
+        && !filePath.endsWith('.html')
+        && fs.readFileSync(filePath, 'utf8') !== content
+    ));
 
     return {
         indexPath: resolvedIndexPath,
@@ -146,8 +195,9 @@ function planRuntimeAssetVersions(projectRoot = root) {
         currentIndex: index,
         generatedIndex: versionedIndex,
         currentManifest: manifest,
-        generatedManifest: withMemberCardStyle,
+        generatedManifest: contentAddressedManifest,
         generatedHtmlFiles,
+        generatedAssetFiles,
         portalAnalyticsVersion,
         branchContextVersion,
         appShellStyleVersion,
@@ -161,7 +211,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
         memberCardStyleVersion,
         i18nVersion,
         manifestVersion,
-        stale: index !== versionedIndex || manifest !== withMemberCardStyle || generatedHtmlFiles.size > 0
+        stale: index !== versionedIndex || manifest !== contentAddressedManifest || generatedHtmlFiles.size > 0
     };
 }
 
@@ -179,6 +229,7 @@ function run() {
 
     if (plan.stale) {
         fs.writeFileSync(plan.manifestPath, plan.generatedManifest, 'utf8');
+        for (const [filePath, content] of plan.generatedAssetFiles) fs.writeFileSync(filePath, content, 'utf8');
         for (const [filePath, content] of plan.generatedHtmlFiles) fs.writeFileSync(filePath, content, 'utf8');
     }
     console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; app shell CSS ${plan.appShellStyleVersion}; i18n ${plan.i18nVersion}; SaaS ${plan.saasVersion}; portal analytics ${plan.portalAnalyticsVersion}; library ${plan.libraryVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);

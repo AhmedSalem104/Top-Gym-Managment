@@ -27,7 +27,7 @@ test('Kiosk is scoped to the Gym App shell and keeps a visible exit path', () =>
 
     assert.match(index, /id="globalKioskToggle"[^>]*data-kiosk-toggle/);
     assert.match(index, /id="attendanceKioskButton"[^>]*data-kiosk-toggle/);
-    assert.match(index, /\/js\/kiosk\.js\?v=1/);
+    assert.match(index, /\/js\/kiosk\.js\?v=[a-f0-9]{16}/);
     assert.match(styles, /\.app-shell\.is-kiosk-mode\s*>\s*\.topbar/);
     assert.match(styles, /\.app-shell\.is-kiosk-mode\s*>\s*\.page-tabs/);
     assert.match(styles, /\.kiosk-exit-control/);

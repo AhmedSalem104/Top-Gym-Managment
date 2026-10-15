@@ -17,7 +17,7 @@
     let catalogReady = false;
     let fallbackCountry = '';
 
-    const PHONE_FORMATTER_SOURCE = '/js/vendor/phone-formatter.js?v=display-v1';
+    const PHONE_FORMATTER_SOURCE = '/js/vendor/phone-formatter.js?v=764305e26a5c2675';
 
     function notifyFormatterReady(formatter) {
         if (!formatter || formatterReadyNotified) return formatter;
