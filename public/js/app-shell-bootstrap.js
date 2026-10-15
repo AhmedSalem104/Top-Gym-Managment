@@ -2,7 +2,7 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=membership-type-delete-v1';
+    const source = '/js/app.js?v=253e415cfbd9c780';
     let loadPromise = null;
     let appUsableResolve;
     let appUsableReject;
@@ -51,7 +51,7 @@
     function loadPostAppSupport() {
         const loadFeature = window.topGymLoadFeature;
         if (!loadFeature) return Promise.resolve(null);
-        return loadFeature('/js/button-loading.js?v=5', 'button-loading');
+        return loadFeature('/js/button-loading.js?v=88abcd2063f2b64d', 'button-loading');
     }
 
     // Route modules share the existing app controller's lexical state. They

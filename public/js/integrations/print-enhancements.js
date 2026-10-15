@@ -74,7 +74,7 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=5') + '">' + printBrandVariables();
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=bdeda8defe8bdd53') + '">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = 'إدارة الجيم') {

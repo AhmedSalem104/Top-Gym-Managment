@@ -141,7 +141,7 @@
                 return;
             }
             await ensureTab('phone-inputs');
-            await loadScript('/js/pages/dashboard/analytics.js?v=8', 'dashboard-analytics')
+            await loadScript('/js/pages/dashboard/analytics.js?v=2a0be108e09f0386', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         scheduleIdle(() => void start(), immediate ? 700 : 1600);
@@ -281,7 +281,7 @@
     function scheduleNotificationCenter() {
         const load = async () => {
             if (window.topGymNotificationCenter || !window.topGymAuth?.getUser?.()) return;
-            await loadScript('/js/notification-center.js?v=8', 'notification-center');
+            await loadScript('/js/notification-center.js?v=dce245ca079af1e3', 'notification-center');
         };
         const schedule = () => {
             if ('requestIdleCallback' in window) window.requestIdleCallback(() => void load().catch(() => null), { timeout: 1600 });
@@ -297,7 +297,7 @@
     }
 
     function bindLazyWhatsapp() {
-        const source = '/js/whatsapp-enhancements.js?v=15';
+        const source = '/js/whatsapp-enhancements.js?v=34efee3d85d04bb3';
         const key = 'whatsapp-enhancements';
         const ensureWhatsapp = () => ensureTab('whatsapp-runtime').then(() => loadScript(source, key));
         window.topGymEnsureWhatsapp = ensureWhatsapp;
@@ -450,8 +450,8 @@
             // part of the first authenticated paint. Loading them together
             // after the app controller keeps the critical path deterministic.
             await Promise.allSettled([
-                loadScript('/js/dialog-enhancements.js?v=5', 'dialog-enhancements'),
-                loadScript('/js/table-cards.js?v=3', 'table-cards'),
+                loadScript('/js/dialog-enhancements.js?v=891b00e8fbe9c53b', 'dialog-enhancements'),
+                loadScript('/js/table-cards.js?v=d291147d5c5749ad', 'table-cards'),
                 loadExternalAsset('sweetalert')
             ]);
         };

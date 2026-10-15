@@ -16,8 +16,8 @@
             styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=d7fed7506733aa98', '/css/pages/memberships.css?v=1efd1f7c44647a7a', '/css/pages/attendance.css?v=369306410d060a19'],
             scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/design-enhancements.js?v=7cb3534cdb088420', '/js/pages/members/action-menu.js?v=5fbf53dc6091090c', '/js/pagination.js?v=1b3ed821f3d06ef7', '/js/pages/attendance/attendance.js?v=ea2b366f93949e69']
         },
-        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=fd46e3e838a9f25f', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=810868fa7f6af852'], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/muscle-assets.js?v=b9a3cbb54908d372', '/js/pages/coaching/coaching.js?v=274f2fb5115e3080'] },
-        print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/integrations/print-enhancements.js?v=46028ce97b066afc'] },
+        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=fd46e3e838a9f25f', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=810868fa7f6af852'], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/muscle-assets.js?v=b9a3cbb54908d372', '/js/pages/coaching/coaching.js?v=a02025a1fa3987e9'] },
+        print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/integrations/print-enhancements.js?v=76f46567d705e1fc'] },
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=6f85206e946ae9aa'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=939eace50aaa371b'], scripts: ['/js/pages/reports/reports.js?v=8a5bee2144b303da', '/js/day-pass-reports.js?v=e2c0f146d5770ddf'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=a456214d2b03010c'], scripts: ['/js/pages/management/member-feedback.js?v=7dd9c3dfa910e254'] },
@@ -35,7 +35,7 @@
         intelligence: { dependencies: ['phone-inputs'], styles: ['/css/pages/intelligence.css?v=3b922ec63d5c254b'], scripts: ['/js/pages/intelligence/intelligence.js?v=e1506d50254aa0d4'] },
         store: { dependencies: ['phone-inputs'], styles: ['/css/pages/store.css?v=20477027870a073f', '/css/components/bar-pos.css?v=d45ae279500e2294'], scripts: ['/js/pages/store/store.js?v=47596bcc05fb9954', '/js/pages/store/bar-pos.js?v=dba6b9537485d068'] },
         'smart-assistant': { dependencies: [], styles: [], scripts: ['/js/smart-assistant.js?v=2b9baccaf78d34f7'] },
-        'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=392a385a9ccd12d3'] },
+        'phone-inputs': { dependencies: [], styles: [], scripts: ['/js/core/phone-inputs.js?v=50f9b012b00cdd57'] },
         'whatsapp-runtime': { dependencies: [], styles: [], scripts: ['/js/core/whatsapp-templates.js?v=b3a05b6c3e246d1c'] }
     };
 

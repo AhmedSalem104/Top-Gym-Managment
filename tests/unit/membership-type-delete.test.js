@@ -46,6 +46,6 @@ test('membership types management renders delete action and keeps it on responsi
     assert.match(styles, /\.type-delete-button/);
     const assetVersions = planRuntimeAssetVersions();
     assert.match(index, new RegExp(`feature-manifest\\.js\\?v=${assetVersions.manifestVersion}`));
-    assert.match(index, /app-shell-bootstrap\.js\?v=membership-type-delete-v1/);
-    assert.match(bootstrap, /app\.js\?v=membership-type-delete-v1/);
+    assert.match(index, /app-shell-bootstrap\.js\?v=[a-f0-9]{16}/);
+    assert.match(bootstrap, /app\.js\?v=[a-f0-9]{16}/);
 });

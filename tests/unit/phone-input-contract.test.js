@@ -7,11 +7,12 @@ const root = path.join(__dirname, '..', '..');
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 
 test('phone input contract is Egypt-only, local-first, and cache-busted consistently', () => {
-    assert.match(read('public/js/core/feature-manifest.js'), /core\/phone-inputs\.js\?v=14/);
-    assert.match(read('public/register-gym.html'), /core\/phone-inputs\.js\?v=14/);
-    assert.match(read('public/register-trainer.html'), /core\/phone-inputs\.js\?v=14/);
-    assert.match(read('public/trainer-workspace.html'), /core\/phone-inputs\.js\?v=14/);
-    assert.match(read('public/member-portal.html'), /core\/phone-inputs\.js\?v=14/);
+    const phoneInputVersion = read('public/js/core/feature-manifest.js').match(/core\/phone-inputs\.js\?v=([a-f0-9]{16})/)?.[1];
+    assert.ok(phoneInputVersion, 'phone input runtime uses a content-addressed asset URL');
+    assert.match(read('public/register-gym.html'), new RegExp(`core/phone-inputs\\.js\\?v=${phoneInputVersion}`));
+    assert.match(read('public/register-trainer.html'), new RegExp(`core/phone-inputs\\.js\\?v=${phoneInputVersion}`));
+    assert.match(read('public/trainer-workspace.html'), new RegExp(`core/phone-inputs\\.js\\?v=${phoneInputVersion}`));
+    assert.match(read('public/member-portal.html'), new RegExp(`core/phone-inputs\\.js\\?v=${phoneInputVersion}`));
 
     const script = read('public/js/core/phone-inputs.js');
     assert.match(script, /const LOCAL_PHONE_COUNTRY = 'EG'/);

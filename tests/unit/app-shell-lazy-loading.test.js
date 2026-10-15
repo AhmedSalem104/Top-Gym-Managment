@@ -17,7 +17,7 @@ test('authenticated entry keeps route features out of the initial shell', () => 
     assert.match(index, /\/js\/app-shell-bootstrap\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/feature-manifest\.js\?v=[^"'\s]+/u);
     assert.match(index, /\/js\/core\/dialog-loader\.js\?v=[^"'\s]+/u);
-    assert.match(index, /\/js\/feature-loader\.js\?v=freeze-whatsapp-v2/u);
+    assert.match(index, /\/js\/feature-loader\.js\?v=[a-f0-9]{16}/u);
     assert.doesNotMatch(index, /\/js\/(?:core\/dialog-loader|feature-loader)\.js\?v=phase3-6/u);
     assert.doesNotMatch(index, /\/js\/app\.js\?/u);
     assert.doesNotMatch(index, /notification-center\.js/u);
@@ -37,10 +37,10 @@ test('route loader owns route styles and waits for the shared application state'
 
     assert.match(loader, /function loadStyle\(/u);
     assert.match(loader, /await window\.topGymLoadApp\(\)/u);
-    assert.match(manifest, /\/css\/pages\/members\.css\?v=attendance-compact/u);
-    assert.match(manifest, /\/js\/core\/phone-inputs\.js\?v=14/u);
-    assert.match(loader, /\/js\/notification-center\.js\?v=8/u);
-    assert.match(manifest, /\/js\/pagination\.js\?v=members-branch-scope-v1/u);
+    assert.match(manifest, /\/css\/pages\/members\.css\?v=[a-f0-9]{16}/u);
+    assert.match(manifest, /\/js\/core\/phone-inputs\.js\?v=[a-f0-9]{16}/u);
+    assert.match(loader, /\/js\/notification-center\.js\?v=[a-f0-9]{16}/u);
+    assert.match(manifest, /\/js\/pagination\.js\?v=[a-f0-9]{16}/u);
     assert.match(pagination, /document\.readyState === 'loading'/u);
     assert.match(pagination, /else initializePagination\(\)/u);
     assert.match(pagination, /topGymMembersState/u);
@@ -68,8 +68,8 @@ test('optional UI enhancements are deferred until the authenticated app is ready
     assert.match(loader, /Promise\.allSettled/u);
     assert.match(loader, /topGymDialogLoader/u);
     assert.match(loader, /Promise\.all\(\[\s*\.\.\.\(feature\.styles \|\| \[\]\)\.map/u);
-    assert.match(manifest, /\/dialogs\/coaching\.html\?v=phase4/u);
-    assert.match(manifest, /\/dialogs\/library\.html\?v=phase4/u);
+    assert.match(manifest, /\/dialogs\/coaching\.html\?v=[a-f0-9]{16}/u);
+    assert.match(manifest, /\/dialogs\/library\.html\?v=[a-f0-9]{16}/u);
     assert.match(dialogLoader, /loadPromises = new Map/u);
     assert.match(dialogLoader, /cache: 'force-cache'/u);
 });
