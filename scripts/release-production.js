@@ -196,7 +196,8 @@ function uploadArchive(config, archivePath, archiveName, expectedChecksum) {
 function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = '', transport = 'git') {
     let script;
     try {
-        script = fs.readFileSync(REMOTE_SCRIPT_PATH, 'utf8');
+        // Windows checkouts may use CRLF; the remote runner is parsed by Linux Bash.
+        script = fs.readFileSync(REMOTE_SCRIPT_PATH, 'utf8').replace(/\r\n?/g, '\n');
     } catch (_) {
         fail('Remote release runner is unavailable.', 'RELEASE_REMOTE_RUNNER_MISSING');
     }
