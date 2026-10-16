@@ -672,6 +672,12 @@ body #membersSection .members-toolbar-copy { display: none; }
   width: min(560px, calc(100% - 32px));
 }
 
+#actionDialog .action-dialog-heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
 #actionDialog #dialogTitle {
   margin: 0;
   color: var(--color-text);
@@ -689,27 +695,6 @@ body #membersSection .members-toolbar-copy { display: none; }
 #dialogFields {
   display: grid;
   gap: var(--space-4);
-}
-
-body #actionDialog > form.dialog-body {
-  scroll-padding-bottom: 104px;
-  padding-bottom: calc(var(--space-5) + 104px);
-}
-
-body #actionDialog > form.dialog-body > .dialog-actions {
-  margin-bottom: 0;
-  padding: var(--space-3) var(--space-5);
-}
-
-@media (max-width: 767px) {
-  body #actionDialog > form.dialog-body {
-    padding-bottom: calc(var(--space-4) + 104px);
-  }
-
-  body #actionDialog > form.dialog-body > .dialog-actions {
-    margin-bottom: calc(var(--space-4) * -1);
-    padding-inline: var(--space-4);
-  }
 }
 
 .refund-loading-note,

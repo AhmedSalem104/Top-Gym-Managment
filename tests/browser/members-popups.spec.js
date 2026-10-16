@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs');
 
 const QA_ENTITLEMENTS = {
     tenantType: 'gym',
@@ -173,6 +174,84 @@ test('member action popups keep hidden edit controls, fields and footer inside t
     expect(builder.x + builder.width).toBeLessThanOrEqual(viewport.width + 1);
     expect(builder.y + builder.height).toBeLessThanOrEqual(viewport.height + 1);
     await page.keyboard.press('Escape');
+});
+
+test('renewal dialog keeps the real collection-date field reachable above its in-flow footer', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 560 });
+    const member = {
+        id: 4243,
+        fullName: 'QA Renewal Member',
+        phone: '01012345678',
+        registrationDate: '2026-01-01',
+        membership: {
+            id: 4243, status: 'active', plan: 'gym_only', type: 'monthly',
+            amountPaid: 250, amountRemaining: 50, discountAmount: 0, paymentMethod: 'cash'
+        }
+    };
+    await page.route('**/api/members**', async (route) => {
+        const request = route.request();
+        if (request.method() === 'GET') {
+            return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ members: [member], pagination: { page: 1, pageSize: 5, totalItems: 1, totalPages: 1 } }) });
+        }
+        return route.fulfill({ status: 405, contentType: 'application/json', body: '{"error":"Read-only visual fixture"}' });
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    const renew = page.locator('#membersList [data-action="renew"]').first();
+    await expect(renew).toBeVisible({ timeout: 15000 });
+    await renew.click();
+    const dialog = page.locator('#actionDialog');
+    await expect(dialog).toBeVisible();
+    const body = page.locator('#actionDialogBody');
+    const actualDate = page.locator('#dialogPaidAt');
+    await expect(actualDate).toBeVisible();
+    await expect(page.locator('label[for="dialogPaidAt"]')).toHaveText('تاريخ التحصيل الفعلي');
+    await body.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await actualDate.scrollIntoViewIfNeeded();
+    const geometry = await page.evaluate(() => {
+        const dialogElement = document.getElementById('actionDialog');
+        const bodyElement = document.getElementById('actionDialogBody');
+        const dateField = document.getElementById('dialogPaidAt').closest('.field');
+        const footer = dialogElement.querySelector(':scope > .lf-modal-layout > .dialog-actions');
+        const box = (element) => element.getBoundingClientRect();
+        return {
+            dialog: box(dialogElement).toJSON(), body: box(bodyElement).toJSON(), field: box(dateField).toJSON(),
+            hint: box(dateField.querySelector('.field-hint')).toJSON(), footer: box(footer).toJSON(),
+            bodyScrollHeight: bodyElement.scrollHeight, bodyClientHeight: bodyElement.clientHeight,
+            footerPosition: getComputedStyle(footer).position, documentWidth: document.documentElement.scrollWidth
+        };
+    });
+    expect(geometry.dialog.height).toBeLessThanOrEqual(560);
+    expect(geometry.bodyScrollHeight).toBeGreaterThan(geometry.bodyClientHeight);
+    expect(geometry.field.top).toBeGreaterThanOrEqual(geometry.body.top - 1);
+    expect(geometry.hint.bottom).toBeLessThanOrEqual(geometry.body.bottom + 1);
+    expect(geometry.body.bottom).toBeLessThanOrEqual(geometry.footer.top + 1);
+    expect(geometry.footerPosition).toBe('static');
+    expect(geometry.footer.bottom).toBeLessThanOrEqual(geometry.dialog.bottom + 1);
+    expect(geometry.documentWidth).toBeLessThanOrEqual(390);
+    const screenshotDir = 'qa/artifacts/logicfit-ui-fixes-20261016';
+    fs.mkdirSync(screenshotDir, { recursive: true });
+    await page.screenshot({ path: `${screenshotDir}/renewal-dialog-mobile-ar.png`, fullPage: false });
+    await page.locator('#dialogCancel').click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await renew.click();
+    await expect(dialog).toBeVisible();
+    await expect(actualDate).toBeVisible();
+    const desktopDialogBounds = await dialog.evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        const footer = element.querySelector(':scope > .lf-modal-layout > .dialog-actions').getBoundingClientRect();
+        return { top: rect.top, bottom: rect.bottom, footerBottom: footer.bottom, position: getComputedStyle(element.querySelector(':scope > .lf-modal-layout > .dialog-actions')).position };
+    });
+    expect(desktopDialogBounds.top).toBeGreaterThanOrEqual(0);
+    expect(desktopDialogBounds.bottom).toBeLessThanOrEqual(900);
+    expect(desktopDialogBounds.footerBottom).toBeLessThanOrEqual(desktopDialogBounds.bottom + 1);
+    expect(desktopDialogBounds.position).toBe('static');
+    await page.screenshot({ path: `${screenshotDir}/renewal-dialog-desktop-ar.png`, fullPage: false });
+    await page.locator('#dialogCancel').click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    void testInfo;
 });
 
 test('member form keeps the selected country, valid phone payload and fixed footer', async ({ page }, testInfo) => {
