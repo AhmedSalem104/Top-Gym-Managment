@@ -158,6 +158,22 @@ function remoteTarget(config, fileName) {
     return `${config.user}@${config.host}:/tmp/${fileName}`;
 }
 
+function sanitizeRemoteDiagnostic(value) {
+    return String(value || '')
+        .replace(/\u001b\[[0-?]*[ -/]*[@-~]/g, '')
+        .replace(/-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?-----END [^-]*PRIVATE KEY-----/gi, '[REDACTED PRIVATE KEY]')
+        .replace(/\b(?:gh[pousr]_[A-Za-z0-9_]{12,}|github_pat_[A-Za-z0-9_]{12,}|sk-[A-Za-z0-9_-]{12,})\b/g, '[REDACTED TOKEN]')
+        .replace(/(https?:\/\/)[^\s/@:]+:[^\s/@]+@/gi, '$1[REDACTED]@')
+        .split(/\r?\n/)
+        .map((line) => line
+            .replace(/(authorization\s*:\s*bearer\s+)[^\s,;]+/gi, '$1[REDACTED]')
+            .replace(/((?:password|passwd|token|secret|private[_ -]?key|credential)(?:\s*[:=]\s*|\s+bearer\s+))[^\s,;]+/gi, '$1[REDACTED]')
+            .trim()
+            .slice(0, 360))
+        .filter(Boolean)
+        .slice(-8);
+}
+
 function sshArgs(config) {
     return ['-T', '-i', config.identityPath, '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes', '-o', `UserKnownHostsFile=${config.knownHostsPath}`, '-o', 'ConnectTimeout=15', `${config.user}@${config.host}`];
 }
@@ -217,11 +233,18 @@ function runRemoteRelease(config, script) {
             || /^\{"status":"FAIL","code":"[A-Z0-9_]+","errorName":"[A-Za-z0-9_]+","sqlNumbers":\[[0-9,-]*\]\}$/.test(line)
         );
         if (safeErrors.length) process.stderr.write(`${safeErrors.join('\n')}\n`);
+        const diagnostic = {
+            sshExitCode: Number.isInteger(result.status) ? result.status : null,
+            spawnErrorCode: result.error?.code || null,
+            progress: safeLines.slice(-6),
+            stderr: sanitizeRemoteDiagnostic(result.stderr)
+        };
+        process.stderr.write(`REMOTE_DIAGNOSTIC=${JSON.stringify(diagnostic)}\n`);
         const error = new Error('Production release remote gate failed; previous release was preserved where rollback was possible.');
         error.code = 'RELEASE_REMOTE_FAILED';
         const lastSafeLine = safeLines[safeLines.length - 1] || '';
         error.stage = failure?.[1] || (lastSafeLine ? lastSafeLine.split('=')[0].toLowerCase() : 'remote');
-        error.remoteCode = failure?.[2] || 'unknown';
+        error.remoteCode = failure?.[2] || result.error?.code || (Number.isInteger(result.status) ? String(result.status) : 'unknown');
         throw error;
     }
     return safeLines;
@@ -284,4 +307,4 @@ if (require.main === module) {
     }
 }
 
-module.exports = { ALLOWED_DIRTY_PATHS, evaluateReleaseGates, expandPath, loadReleaseConfig, parseArgs, renderRemoteScript, resolveReleaseSha };
+module.exports = { ALLOWED_DIRTY_PATHS, evaluateReleaseGates, expandPath, loadReleaseConfig, parseArgs, renderRemoteScript, resolveReleaseSha, sanitizeRemoteDiagnostic };
