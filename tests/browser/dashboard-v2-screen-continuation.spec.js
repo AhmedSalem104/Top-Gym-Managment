@@ -70,7 +70,7 @@ async function installReadOnlyDashboardFixture(page) {
         } else if (pathname === '/api/dashboard') {
             payload = { stats: { total: 125, active: 98, expiringSoon: 8, expired: 12, frozen: 7 }, alerts: [] };
         } else if (pathname === '/api/saas/subscription') {
-            payload = { subscription: { status: 'active', plan: { code: 'business', name: plan.name }, startedAt: '2026-01-01' } };
+            payload = { subscription: { status: 'active', plan: { code: 'business', name: plan.name }, startsAt: '2026-01-01' } };
         }
 
         return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
@@ -95,7 +95,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
         await page.evaluate(() => window.topGymAppUsable);
-        await expect(page.locator('#dashboardSection .dashboard-hero')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
         // Apply the canonical page stylesheet in this disposable source-QA page.
         // The generated shell bundle is outside this task's permitted write set.
         await page.addStyleTag({ path: path.resolve(process.cwd(), 'public/css/pages/dashboard.css') });
@@ -105,7 +105,9 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
             const displayed = await page.locator(selector).innerText();
             expect(normalizeLocalizedDigits(displayed)).toBe(expected);
         }
-        await expect(page.locator('.dashboard-hero-buttons [data-page-tab-link="members"]')).toBeVisible();
+        await expect(page.locator('.dashboard-overview-shortcut-actions [data-page-tab-link="members"]')).toBeVisible();
+        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(5);
+        await expect(page.locator('[data-dashboard-member-count]')).toHaveText(/125|١٢٥/);
 
         await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
         const matrix = [];
@@ -163,9 +165,10 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
 
                 const layout = await page.evaluate(() => {
                     const dashboard = document.querySelector('#dashboardSection');
-                    const hero = dashboard.querySelector('.dashboard-hero');
+                    const cards = dashboard.querySelector('.dashboard-overview-cards');
+                    const overviewCards = [...dashboard.querySelectorAll('.dashboard-overview-card')];
                     const stats = [...dashboard.querySelectorAll('[data-skeleton-region="dashboard-stats"] .stat-card')];
-                    const actionButtons = [...dashboard.querySelectorAll('.dashboard-hero-buttons .btn')].filter((button) => getComputedStyle(button).display !== 'none');
+                    const actionButtons = [...dashboard.querySelectorAll('.dashboard-overview-shortcut-actions .btn')].filter((button) => getComputedStyle(button).display !== 'none');
                     const rect = (element) => {
                         const box = element.getBoundingClientRect();
                         return { left: box.left, right: box.right, width: box.width, height: box.height };
@@ -179,26 +182,23 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                         theme: document.documentElement.dataset.theme,
                         locale: document.documentElement.dataset.locale,
                         dashboard: rect(dashboard),
-                        hero: rect(hero),
-                        heroChildren: [...hero.children].map((element) => ({
+                        cards: rect(cards),
+                        cardBoxes: overviewCards.map(rect),
+                        cardCount: overviewCards.length,
+                        cardColumns: getComputedStyle(cards).gridTemplateColumns.split(' ').length,
+                        cardChildren: [...cards.children].map((element) => ({
                             className: element.className,
                             height: rect(element).height,
                             scrollHeight: element.scrollHeight
                         })),
-                        heroColumns: getComputedStyle(hero).gridTemplateColumns,
                         statCount: stats.length,
                         statGridColumns: getComputedStyle(dashboard.querySelector('[data-skeleton-region="dashboard-stats"]')).gridTemplateColumns,
                         statGrid: rect(dashboard.querySelector('[data-skeleton-region="dashboard-stats"]')),
                         statBoxes,
                         actionCount: actionButtons.length,
                         actionBoxes: actionButtons.map(rect),
-                        miniStatsColumns: getComputedStyle(dashboard.querySelector('.dashboard-hero-mini-stats')).gridTemplateColumns.split(' ').length,
-                        miniStats: [...dashboard.querySelectorAll('.dashboard-hero-mini-stat')].map((item) => ({
-                            text: item.innerText.trim(),
-                            clientHeight: item.clientHeight,
-                            scrollHeight: item.scrollHeight,
-                            gridColumn: getComputedStyle(item).gridColumn
-                        }))
+                        memberCount: dashboard.querySelector('[data-dashboard-member-count]')?.textContent.trim(),
+                        memberCountSource: dashboard.querySelector('[data-dashboard-member-count]')?.getAttribute('aria-live')
                     };
                 });
 
@@ -207,8 +207,13 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 expect(layout.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 expect(layout.theme).toBe(theme);
                 expect(layout.locale).toBe(locale);
-                expect(layout.hero.width).toBeGreaterThan(0);
-                expect(layout.hero.height).toBeGreaterThan(0);
+                expect(layout.cards.width).toBeGreaterThan(0);
+                expect(layout.cards.height).toBeGreaterThan(0);
+                expect(layout.cardCount).toBe(5);
+                expect(layout.cardBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1), `${width}px ${locale}/${theme}: overview card exceeds viewport`).toBeTruthy();
+                if (width >= 1440) expect(layout.cardColumns).toBe(5);
+                expect(normalizeLocalizedDigits(layout.memberCount)).toBe('125');
+                expect(layout.memberCountSource).toBe('polite');
                 expect(layout.statCount).toBe(5);
                 expect(
                     layout.statBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1),
@@ -216,9 +221,6 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 ).toBeTruthy();
                 expect(layout.actionCount).toBeGreaterThanOrEqual(2);
                 expect(layout.actionBoxes.every((box) => box.width > 0 && box.height >= 38 && box.left >= -1 && box.right <= width + 1)).toBeTruthy();
-                expect(layout.miniStats).toHaveLength(3);
-                expect(layout.miniStatsColumns).toBe(width <= 360 ? 2 : 3);
-                if (width <= 360) expect(layout.miniStats[2].gridColumn).toBe('1 / -1');
 
                 const visibleControls = await page.locator('#dashboardSection button:visible, #dashboardSection a:visible, #dashboardSection input:visible, #dashboardSection select:visible').evaluateAll((elements) => elements.map((element) => {
                     const box = element.getBoundingClientRect();
@@ -240,7 +242,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 expect(controlOverlaps, `${width}px ${locale}/${theme}: overlapping dashboard controls`).toEqual([]);
 
                 if ([320, 768, 1440].includes(width)) {
-                    const memberShortcut = page.locator('.dashboard-hero-buttons [data-page-tab-link="members"]');
+                    const memberShortcut = page.locator('.dashboard-overview-shortcut-actions [data-page-tab-link="members"]');
                     await memberShortcut.focus();
                     await page.keyboard.press('Tab');
                     const focusState = await page.evaluate(() => ({

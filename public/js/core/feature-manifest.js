@@ -13,11 +13,11 @@
         'member-details': { dependencies: ['phone-inputs'], styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9'], scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/member-details-ui.js?v=0004e4d1eb2a5918', '/js/member-portal-admin.js?v=2cfe4527c5945568', '/js/member-coaching-summary.js?v=e2869bd96612060a'] },
         members: {
             dependencies: ['phone-inputs'],
-            styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=5dc7dbd1147168fc', '/css/pages/memberships.css?v=1efd1f7c44647a7a', '/css/pages/attendance.css?v=369306410d060a19'],
+            styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=61f6a8ef4b0cca05', '/css/pages/memberships.css?v=1efd1f7c44647a7a', '/css/pages/attendance.css?v=369306410d060a19'],
             scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/design-enhancements.js?v=7cb3534cdb088420', '/js/pages/members/action-menu.js?v=5fbf53dc6091090c', '/js/pagination.js?v=1b3ed821f3d06ef7', '/js/pages/attendance/attendance.js?v=ea2b366f93949e69']
         },
-        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=fd46e3e838a9f25f', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=810868fa7f6af852'], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/muscle-assets.js?v=b9a3cbb54908d372', '/js/pages/coaching/coaching.js?v=17504e80068e1447'] },
-        print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/integrations/print-enhancements.js?v=76f46567d705e1fc'] },
+        coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=fd46e3e838a9f25f', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=810868fa7f6af852'], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/muscle-assets.js?v=b9a3cbb54908d372', '/js/pages/coaching/coaching.js?v=611b346b35d60857'] },
+        print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/integrations/print-enhancements.js?v=35430a520b36ca85'] },
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=6f85206e946ae9aa'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=939eace50aaa371b'], scripts: ['/js/pages/reports/reports.js?v=8a5bee2144b303da', '/js/day-pass-reports.js?v=e2c0f146d5770ddf'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=a456214d2b03010c'], scripts: ['/js/pages/management/member-feedback.js?v=7dd9c3dfa910e254'] },

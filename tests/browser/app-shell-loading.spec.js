@@ -95,19 +95,19 @@ test('first dashboard does not pull phone formatter or dashboard enhancements be
     expect(timing.deferred.every((start) => start >= timing.readyAt - 1)).toBeTruthy();
 });
 
-test('dashboard hero renders through its page stylesheet without viewport overflow', async ({ page }, testInfo) => {
+test('dashboard overview cards render through their page stylesheet without viewport overflow', async ({ page }, testInfo) => {
     await installAuthenticatedRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await page.evaluate(() => window.topGymAppUsable);
 
-    const hero = page.locator('#dashboardSection .dashboard-hero').first();
-    await expect(hero).toBeVisible({ timeout: 15000 });
+    const overview = page.locator('#dashboardSection .dashboard-overview-cards');
+    await expect(overview).toBeVisible({ timeout: 15000 });
     const layout = await page.evaluate(() => ({
         viewport: document.documentElement.clientWidth,
         page: document.documentElement.scrollWidth,
         hero: (() => {
-            const element = document.querySelector('#dashboardSection .dashboard-hero');
+            const element = document.querySelector('#dashboardSection .dashboard-overview-cards');
             const rect = element?.getBoundingClientRect();
             return rect ? { width: rect.width, height: rect.height } : null;
         })()
@@ -118,20 +118,20 @@ test('dashboard hero renders through its page stylesheet without viewport overfl
     await page.screenshot({ path: testInfo.outputPath('dashboard-v2.png'), fullPage: true });
 });
 
-test('dashboard hero remains readable in dark theme without viewport overflow', async ({ page }, testInfo) => {
+test('dashboard overview cards remain readable in dark theme without viewport overflow', async ({ page }, testInfo) => {
     await page.addInitScript(() => localStorage.setItem('topgym-theme', 'dark'));
     await installAuthenticatedRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await page.evaluate(() => window.topGymAppUsable);
-    await expect(page.locator('#dashboardSection .dashboard-hero').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
 
     const layout = await page.evaluate(() => ({
         theme: document.documentElement.dataset.theme,
         viewport: document.documentElement.clientWidth,
         page: document.documentElement.scrollWidth,
         hero: (() => {
-            const rect = document.querySelector('#dashboardSection .dashboard-hero')?.getBoundingClientRect();
+            const rect = document.querySelector('#dashboardSection .dashboard-overview-cards')?.getBoundingClientRect();
             return rect ? { width: rect.width, height: rect.height } : null;
         })()
     }));

@@ -61,6 +61,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
 
     await page.locator('#loginRememberMe').check();
     await expect(page.locator('#loginRememberMe')).toBeChecked();
+    await page.locator('.auth-remember').screenshot({ path: path.join(OUTPUT, 'remember-checkbox-selected-ar.png') });
     await page.locator('#loginRememberMe').uncheck();
     await page.locator('#loginPasswordToggle').click();
     await expect(page.locator('#loginPassword')).toHaveAttribute('type', 'text');
@@ -155,6 +156,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                         header: document.querySelector('.auth-reference-controls').getBoundingClientRect().toJSON(),
                         brand: document.querySelector('.auth-branding-lockup').getBoundingClientRect().toJSON(),
                         rememberBox: document.querySelector('#loginRememberMe').getBoundingClientRect().toJSON(),
+                        rememberStyle: (() => { const input = document.querySelector('#loginRememberMe'); const style = getComputedStyle(input); return { height: style.height, minHeight: style.minHeight, boxSizing: style.boxSizing, appearance: style.appearance, display: style.display, flexBasis: style.flexBasis }; })(),
+                        rememberTarget: document.querySelector('#loginRememberMe').closest('label').getBoundingClientRect().toJSON(),
                         marketing: document.querySelector('.auth-marketing-panel').getBoundingClientRect().toJSON(),
                         hero: document.querySelector('.auth-reference-hero-title').getBoundingClientRect().toJSON(),
                         benefits: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
@@ -191,8 +194,9 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                 expect(layout.themePosition).toBe('relative');
                 expect(layout.brand.left, label).toBeGreaterThanOrEqual(layout.loginColumn.left);
                 expect(layout.brand.right, label).toBeLessThanOrEqual(layout.loginColumn.right);
-                expect(layout.rememberBox.width, label).toBe(viewport.width >= 1024 ? 36 : 16);
-                expect(layout.rememberBox.height, label).toBe(viewport.width >= 1024 ? 36 : 16);
+                expect(layout.rememberBox.width, label).toBe(18);
+                expect(layout.rememberBox.height, label).toBe(18);
+                expect(layout.rememberTarget.height, label).toBeGreaterThanOrEqual(44);
                 expect(layout.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 expect(layout.bodyFont).toContain(locale === 'ar' ? 'Tajawal' : 'Geist Variable');
                 expect(layout.headingFont).toContain(locale === 'ar' ? 'Tajawal' : 'Geist Variable');
@@ -208,6 +212,12 @@ test('Login uses central Arabic/English i18n across responsive themes without au
             }
         }
     }
+
+    const remember = page.locator('#loginRememberMe');
+    const initialRememberState = await remember.isChecked();
+    await remember.focus();
+    await page.keyboard.press('Space');
+    await expect(remember).toHaveJSProperty('checked', !initialRememberState);
 
     for (const locale of ['ar', 'en']) {
         const activeLocale = await page.evaluate(() => window.TopGymI18n.get());

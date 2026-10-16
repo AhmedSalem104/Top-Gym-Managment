@@ -237,14 +237,10 @@
 
 
 
-  .dashboard-hero,
 .dashboard-page-actions{
     grid-template-columns: 1fr;
   }
 
-  .dashboard-hero-visual{
-    min-height: 180px;
-  }
 }
 
 @media (max-width: 767px){

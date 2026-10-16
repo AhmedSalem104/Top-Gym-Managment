@@ -141,17 +141,26 @@ test('SaaS panel heading presentation is owned by the SaaS page stylesheet', () 
     assert.doesNotMatch(visual, /\.saas-panel-head/u);
 });
 
-test('Dashboard Hero presentation is owned by the dashboard page, not visual polish', () => {
+test('Dashboard overview cards are owned by the dashboard page and use live data hooks', () => {
     const dashboard = read('public/css/pages/dashboard.css');
     const visual = read('public/css/components/visual-redesign.css');
     const html = read('public/index.html');
+    const app = read('public/js/app.js');
 
     assert.doesNotMatch(visual, /\.dashboard-hero(?:[\s:#.[,]|$)|dashboard-hero-enter/u);
-    assert.match(dashboard, /\.dashboard-hero::before[\s\S]*?logic-fit-login-gym\.webp/u);
-    assert.match(dashboard, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.dashboard-hero/u);
-    assert.match(dashboard, /\.dashboard-hero\s+#dashboardPrintPricingButton\s*\{\s*display:\s*none\s*;?\s*\}/u);
+    assert.doesNotMatch(dashboard, /dashboard-hero|logic-fit-login-gym\.webp/u);
+    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*border-radius:\s*var\(--radius-overview-card\)/u);
+    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*background:\s*var\(--bg-surface\)/u);
+    assert.match(dashboard, /\.dashboard-overview-cards\s*\{[^}]*display:\s*grid/u);
+    assert.match(dashboard, /\.dashboard-overview-card\s*\{[^}]*var\(--radius-overview-card\)/u);
+    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-overview-cards/u);
     assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);
-    assert.match(html, /data-dashboard-hero-subscription="plan"[\s\S]*?data-dashboard-hero-source="statTotal"[\s\S]*?data-dashboard-hero-subscription="date"/u);
+    assert.match(html, /class="dashboard-overview-cards"[\s\S]*?data-dashboard-member-count[\s\S]*?data-dashboard-overview-plan[\s\S]*?data-dashboard-overview-date/u);
+    assert.match(html, /class="dashboard-overview-shell"[\s\S]*?id="dashboardOverviewTitle"[\s\S]*?class="dashboard-overview-cards"/u);
+    assert.match(app, /const rawMemberCount\s*=\s*state\.dashboard\?\.stats\?\.total/u);
+    assert.match(app, /syncDashboardOverviewCards\(\)/u);
+    assert.match(app, /function dashboardSubscriptionValue\(\)[\s\S]*?const candidates = \[[\s\S]*?billing\.subscription[\s\S]*?return candidates\.find/u);
+    assert.doesNotMatch(app, /parseInt\([^)]*dashboard-overview|Number\([^)]*textContent/u);
 });
 
 test('Branch Management presentation is feature-owned, not part of the visual polish layer', () => {
@@ -302,16 +311,23 @@ test('member action dialog presentation is owned by the members page stylesheet'
         '#actionDialog {',
         '#actionDialog #dialogTitle {',
         '#actionDialog #dialogDescription {',
-        '#dialogFields {',
-        'body #actionDialog > form.dialog-body {',
-        'body #actionDialog > form.dialog-body > .dialog-actions {'
+        '#dialogFields {'
     ]) {
         assert.ok(members.includes(selector), `${selector} must be owned by pages/members.css`);
         assert.equal(visual.includes(selector), false, `${selector} must not remain in visual-redesign.css`);
     }
 
-    assert.match(members, /@media\s*\(max-width:\s*767px\)[\s\S]*?body #actionDialog > form\.dialog-body[\s\S]*?body #actionDialog > form\.dialog-body > \.dialog-actions/u,
-        'member action dialog mobile spacing must be owned by pages/members.css');
+    const modalFoundation = read('public/css/components/modal-foundation.css');
+    const html = read('public/index.html');
+    assert.match(modalFoundation, /#actionDialog\s*\{[^}]*max-height:\s*calc\(100dvh\s*-\s*32px\)[^}]*height:\s*fit-content/u,
+        'the shared modal owner must size the action dialog to content');
+    assert.match(modalFoundation, /\.lf-modal-shell\.lf-modal--structured > \.lf-modal-layout > :is\(\.dialog-body, \.dialog-scroll-content\)\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/u,
+        'only the action dialog body may scroll');
+    assert.match(modalFoundation, /#actionDialog > \.lf-modal-layout > \.dialog-actions\s*\{[^}]*border-block-start/u,
+        'the action footer separator must remain inside the dialog');
+    assert.match(html, /<form class="lf-modal-layout" id="actionForm">[\s\S]*?<header class="dialog-header">[\s\S]*?<div class="dialog-body" id="actionDialogBody">[\s\S]*?<footer class="dialog-actions">/u,
+        'the form contract must use explicit header/body/footer regions');
+    assert.doesNotMatch(members, /body #actionDialog > form\.dialog-body\s*\{[^}]*position:\s*sticky/u);
     assert.doesNotMatch(visual, /#actionDialog|#dialogTitle|#dialogDescription|#dialogFields/u,
         'visual-redesign.css must not own member action dialog presentation');
     assert.doesNotMatch(visual, /body \.coaching-builder-dialog > form\.dialog-body/u,
@@ -475,6 +491,26 @@ test('authentication submit geometry is owned by Buttons rather than visual-rede
     assert.equal(hasRootClassSelector(buttons, 'auth-submit'), true);
     assert.equal(hasRootClassSelector(visual, 'auth-submit'), false);
     assert.equal(rulesContainingClass(login, 'auth-submit').some(rule => /min-height:\s*56px/u.test(rule.declarations)), true);
+});
+
+test('login remember-me keeps an 18px visual box inside the shared touch target', () => {
+    const login = read('public/css/pages/login.css');
+    const lastRule = (pattern) => [...login.matchAll(pattern)].at(-1)?.[0] || '';
+    const rule = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember\s*\{[^}]*\}/gu);
+    const checkbox = login.match(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input\s*\{[^}]*appearance:\s*none[^}]*\}/u)?.[0] || '';
+    const checked = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:checked\s*\{[^}]*\}/gu);
+    const mark = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:checked::after\s*\{[^}]*\}/gu);
+    assert.match(rule, /min-height:\s*var\(--ui-touch-target\)/u);
+    assert.match(rule, /gap:\s*var\(--space-2\)/u);
+    assert.match(rule, /font-size:\s*14px/u);
+    assert.match(checkbox, /width:\s*18px/u);
+    assert.match(checkbox, /height:\s*18px/u);
+    assert.match(checkbox, /border-radius:\s*4px/u);
+    assert.match(checkbox, /display:\s*grid/u);
+    assert.match(checked, /background:\s*var\(--primary\)/u);
+    assert.match(mark, /border:\s*solid var\(--text-on-primary\)/u);
+    assert.doesNotMatch(login, /body\.auth-locked \.auth-screen\[data-auth-stage="login"\] \.auth-remember input\s*\{[^}]*height:\s*20px/u);
+    assert.match(login, /\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:focus-visible/u);
 });
 
 test('authentication alerts use Alerts owner and Platform form message stays feature-owned', () => {
