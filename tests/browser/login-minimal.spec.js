@@ -21,14 +21,15 @@ async function mockUnauthenticatedSession(page) {
 
 async function assertLoginSurface(page) {
     await expect(page.locator('#authLoginCard')).toBeVisible();
-    await expect(page.locator('.auth-reference-hero')).toHaveCount(0);
-    await expect(page.locator('.auth-reference-features')).toBeVisible();
+    const desktop = await page.evaluate(() => innerWidth >= 1024);
+    await expect(page.locator('.auth-reference-marketing-copy')).toBeVisible({ visible: desktop });
+    await expect(page.locator('.auth-reference-features')).toBeVisible({ visible: desktop });
     await expect(page.locator('.auth-reference-features article')).toHaveCount(3);
     await expect(page.locator('.auth-reference-controls')).toBeVisible();
     await expect(page.locator('.saas-entry-card')).toBeHidden();
     await expect(page.locator('.auth-reference-security')).toBeHidden();
     await expect(page.locator('.auth-reference-copyright')).toBeHidden();
-    await expect(page.locator('#authLoginCard strong[data-brand-text="brandName"]')).toBeVisible();
+    await expect(page.locator('.auth-reference-controls [data-brand-text="brandName"]')).toBeVisible();
     await expect(page.locator('#loginEmail')).toBeVisible();
     await expect(page.locator('#loginPassword')).toBeVisible();
     await expect(page.locator('#loginPasswordToggle')).toBeVisible();
@@ -42,6 +43,7 @@ async function assertLoginSurface(page) {
         scrollY: window.scrollY,
         documentHeight: document.documentElement.scrollHeight,
         shell: document.querySelector('.auth-shell').getBoundingClientRect().toJSON(),
+        loginColumn: document.querySelector('.auth-login-column').getBoundingClientRect().toJSON(),
         cardShell: document.querySelector('#authLoginCard').getBoundingClientRect().toJSON(),
         direction: getComputedStyle(document.querySelector('.auth-shell')).direction,
         emailDirection: getComputedStyle(document.querySelector('#loginEmail')).direction,
@@ -50,9 +52,13 @@ async function assertLoginSurface(page) {
         marketing: document.querySelector('.auth-marketing-panel').getBoundingClientRect().toJSON(),
         features: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
         featuresWidth: document.querySelector('.auth-reference-features').getBoundingClientRect().width,
-        backgroundImage: getComputedStyle(document.querySelector('.auth-screen'), '::before').backgroundImage,
-        backgroundFilter: getComputedStyle(document.querySelector('.auth-screen'), '::before').filter,
-        overlayImage: getComputedStyle(document.querySelector('.auth-screen'), '::after').backgroundImage,
+        imageSource: document.querySelector('.auth-marketing-image').getAttribute('src'),
+        imageLoaded: document.querySelector('.auth-marketing-image').complete && document.querySelector('.auth-marketing-image').naturalWidth > 0,
+        imageFit: getComputedStyle(document.querySelector('.auth-marketing-image')).objectFit,
+        backgroundFilter: getComputedStyle(document.querySelector('.auth-marketing-image')).filter,
+        dialogBackdropFilter: getComputedStyle(document.querySelector('.auth-choice-dialog'), '::backdrop').backdropFilter,
+        themeVisibleIcons: [...document.querySelectorAll('.auth-theme-toggle .theme-toggle-icon')].filter((icon) => getComputedStyle(icon).display !== 'none').length,
+        localeOptions: document.querySelectorAll('.auth-locale-segmented [data-locale-choice]').length,
         featuresAfterCard: Boolean(document.querySelector('.auth-form-panel').compareDocumentPosition(document.querySelector('.auth-reference-features')) & Node.DOCUMENT_POSITION_FOLLOWING),
         themeToggle: document.querySelector('.auth-theme-toggle').getBoundingClientRect().toJSON(),
         themeInsideCard: Boolean(document.querySelector('#authLoginCard .auth-theme-toggle')),
@@ -85,38 +91,44 @@ async function assertLoginSurface(page) {
     expect(metrics.direction).toBe('rtl');
     expect(metrics.emailDirection).toBe('ltr');
     expect(metrics.card.width).toBeGreaterThan(280);
-    expect(metrics.card.width).toBeLessThanOrEqual(460);
+    expect(metrics.card.width).toBeLessThanOrEqual(metrics.viewport >= 1024 ? 552 : 420);
     expect(metrics.featuresAfterCard).toBe(true);
-    expect(metrics.backgroundImage).toContain('/assets/logic-fit-login-gym.webp');
+    expect(metrics.imageSource).toContain('/assets/logic-fit-login-hero-v5.webp');
+    if (metrics.viewport >= 1024) expect(metrics.imageLoaded).toBe(true);
+    expect(metrics.imageFit).toBe('cover');
     expect(metrics.backgroundFilter).not.toContain('blur(');
     expect(metrics.backgroundFilter).toBe('none');
-    expect(metrics.overlayImage).toContain('gradient');
+    expect(metrics.dialogBackdropFilter).toBe('none');
+    expect(metrics.themeVisibleIcons).toBe(1);
+    expect(metrics.localeOptions).toBe(2);
     expect(metrics.themeInsideCard).toBe(false);
     expect(metrics.themeInsideControls).toBe(true);
     expect(metrics.themeWithinCard, JSON.stringify(metrics)).toBe(false);
     expect(metrics.rememberOnly).toBe(true);
-    expect(metrics.inputHeight).toBe(48);
+    expect(metrics.inputHeight).toBe(metrics.viewport >= 1024 ? 64 : 48);
     expect(metrics.featuresBackground).toBe('rgba(0, 0, 0, 0)');
     expect(metrics.featureIconBackground).toBe('rgba(0, 0, 0, 0)');
     expect(metrics.currentYear).toBe(metrics.expectedYear);
-    expect(metrics.submitHeight).toBe(48);
-    expect(metrics.themeToggle.width).toBe(96);
-    expect(metrics.themeToggle.height).toBe(40);
-    expect(metrics.card.height, JSON.stringify(metrics)).toBeLessThan(650);
+    expect(metrics.submitHeight).toBe(metrics.viewport >= 1024 ? 64 : 48);
+    expect(metrics.themeToggle.width).toBe(metrics.viewport >= 1280 ? 54 : 44);
+    expect(metrics.themeToggle.height).toBe(metrics.viewport >= 1280 ? 48 : 44);
     expect(metrics.submitGap, JSON.stringify(metrics)).toBeGreaterThanOrEqual(12);
-    expect(metrics.submitGap).toBeLessThanOrEqual(32);
-    // Design System V2 Large controls are 44px; the former 54px threshold
-    // belonged to the retired login styling and rejected the approved V2 CTA.
-    expect(metrics.submitHeight).toBeGreaterThanOrEqual(44);
-    expect(metrics.submitHeight).toBeLessThanOrEqual(48);
-    if (metrics.viewport > 980) {
-        expect(metrics.card.left, JSON.stringify(metrics)).toBeLessThan(metrics.viewport / 2);
-        expect(metrics.marketing.left, JSON.stringify(metrics)).toBeGreaterThan(metrics.viewport / 2 - 1);
-        expect(metrics.card.right, JSON.stringify(metrics)).toBeLessThan(metrics.marketing.left);
-        expect(metrics.marketing.width, JSON.stringify(metrics)).toBeGreaterThan(metrics.viewport * 0.35);
+    expect(metrics.submitGap).toBeLessThanOrEqual(48);
+    expect(metrics.submitHeight).toBeGreaterThanOrEqual(metrics.viewport >= 1024 ? 64 : 44);
+    expect(metrics.submitHeight).toBeLessThanOrEqual(metrics.viewport >= 1024 ? 64 : 48);
+    if (metrics.viewport >= 1024) {
+        expect(metrics.marketing.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.573, 0);
+        expect(metrics.loginColumn.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.427, 0);
+        if (metrics.direction === 'rtl') {
+            expect(metrics.card.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.573);
+            expect(metrics.marketing.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.573 + 1);
+        } else {
+            expect(metrics.card.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.427 + 1);
+            expect(metrics.marketing.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.427);
+        }
     } else {
-        expect(metrics.features.top, JSON.stringify(metrics)).toBeGreaterThan(metrics.card.bottom);
-        expect(metrics.featuresWidth).toBeGreaterThanOrEqual(metrics.shell.width - 56);
+        expect(metrics.marketing.width, JSON.stringify(metrics)).toBe(0);
+        expect(metrics.loginColumn.width, JSON.stringify(metrics)).toBe(metrics.viewport);
         expect(Math.abs((metrics.card.left + metrics.card.right) / 2 - metrics.viewport / 2)).toBeLessThanOrEqual(2);
     }
 }
@@ -126,9 +138,9 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
 });
 
-test('login uses a balanced desktop split and stacks the form and product benefits on smaller screens', async ({ page }, testInfo) => {
+test('login uses an RTL/LTR balanced split and hides the image panel below 1024px', async ({ page }, testInfo) => {
     await assertLoginSurface(page);
-    if ((await page.evaluate(() => innerWidth)) > 980) {
+    if ((await page.evaluate(() => innerWidth)) >= 1024) {
         await page.screenshot({ path: testInfo.outputPath('login-desktop-split.png'), fullPage: true });
     }
 });
@@ -142,8 +154,8 @@ test('login keeps its shared theme toggle accessible and visually stable on mobi
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
     await expect(toggle).toHaveAttribute('aria-pressed', before === 'dark' ? 'false' : 'true');
-    await expect(toggle).toHaveCSS('width', '96px');
-    await expect(toggle).toHaveCSS('height', '40px');
+    await expect(toggle).toHaveCSS('width', '44px');
+    await expect(toggle).toHaveCSS('height', '44px');
     const toggleAccent = await toggle.evaluate((element) => getComputedStyle(element, '::before').backgroundImage);
     expect(toggleAccent).not.toContain('124, 58, 237');
     await page.screenshot({ path: testInfo.outputPath('login-390-after-toggle.png'), fullPage: false });

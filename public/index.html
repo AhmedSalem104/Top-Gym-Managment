@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#F5F7FB">
     <meta name="auth-routing-version" content="forced-password-v3">
-    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=be2e90c68f9a0c8e">
+    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=38b0cc82bb242979">
     <script>
         (function () {
             try {
@@ -28,7 +28,14 @@
         <div class="auth-shell">
             <!-- AUTH_ENTRY_CONTROLS_START -->
             <div class="auth-reference-controls" aria-label="إعدادات العرض" data-i18n-switcher>
-                <button class="auth-language-control" id="languageToggleButton" type="button" aria-label="التبديل إلى الإنجليزية" title="التبديل إلى الإنجليزية">EN</button>
+                <!-- AUTH_ENTRY_BRAND_SLOT -->
+                <div class="auth-header-actions">
+                    <div class="auth-locale-segmented" role="group" aria-label="لغة الواجهة" data-locale-segmented>
+                        <button type="button" data-locale-choice="ar" aria-pressed="true" lang="ar" dir="rtl">عربي</button>
+                        <button type="button" data-locale-choice="en" aria-pressed="false" lang="en" dir="ltr">English</button>
+                    </div>
+                    <!-- AUTH_ENTRY_THEME_SLOT -->
+                </div>
             </div>
             <!-- AUTH_ENTRY_CONTROLS_END -->
             <section class="saas-entry-card" id="saasEntryCard" aria-labelledby="saasEntryTitle">
@@ -157,7 +164,7 @@
                         <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit" data-feedback-ignore data-loading-text="جاري تسجيل الدخول..."><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span><svg class="auth-submit-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
                     </form>
                     <div class="auth-registration-entry"><span class="auth-registration-divider" aria-hidden="true"><i>أو</i></span><p>ليس لديك حساب؟ <button class="auth-text-action" id="authRegisterOpen" type="button" aria-haspopup="dialog" aria-controls="authRegistrationDialog">إنشاء حساب جديد</button></p></div>
-                    <p class="auth-footer" dir="rtl">© <span data-current-year></span> <span data-brand-text="brandName">Logic Fit</span> · <span data-login-copyright-label>جميع الحقوق محفوظة</span></p>
+                      <p class="auth-footer">© <span data-current-year></span> <span data-brand-text="brandName">Logic Fit</span> · <span data-login-copyright-label>جميع الحقوق محفوظة</span></p>
                     <dialog class="auth-choice-dialog" id="authRegistrationDialog" aria-labelledby="authRegistrationTitle">
                         <form method="dialog"><button class="auth-choice-close" type="submit" aria-label="إغلاق">×</button></form>
                         <span class="auth-choice-kicker">LOGIC FIT</span><h2 id="authRegistrationTitle">كيف ستستخدم Logic Fit؟</h2><p>اختر مساحة العمل المناسبة لك للمتابعة إلى التسجيل.</p>
@@ -174,6 +181,10 @@
             </div>
             <!-- AUTH_ENTRY_CARD_END -->
             <!-- AUTH_ENTRY_FEATURES_START -->
+            <div class="auth-reference-marketing-copy">
+                <h1 class="auth-reference-hero-title">ناديك. متصل.</h1>
+                <p class="auth-reference-hero-description">مساحة واحدة لإدارة عملك ومدربيك ومشتركيك.</p>
+            </div>
             <section class="auth-reference-features" aria-label="مزايا منصة Logic Fit">
                 <article><span class="auth-reference-feature-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M7 15l3-4 3 2 5-6"/></svg></span><span><strong>إدارة متكاملة</strong><small>لجيمك أو عملك</small></span></article>
                 <article><span class="auth-reference-feature-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0M18 8h4M20 6v4"/></svg></span><span><strong>مصممة للمدربين الأحرار</strong><small>طوّر عملك وابنِ علامتك</small></span></article>
@@ -1205,9 +1216,9 @@
     <script defer src="/js/auth-ui.js?v=5a7faf7a1f2e1ba6"></script>
     <script defer src="/js/branch-context.js?v=e6ab3630df565322"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
-    <script defer src="/js/core/feature-manifest.js?v=9712497acb83b71e"></script>
+    <script defer src="/js/core/feature-manifest.js?v=80769d6dfa1d4a05"></script>
     <script defer src="/js/feature-loader.js?v=0b99a34ba631eb58"></script>
-    <script defer src="/js/core/i18n.js?v=1029f5bda8f22b31"></script>
+    <script defer src="/js/core/i18n.js?v=9fa68f64b6d0ad56"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=636037a6bdc695ba"></script>
     <script defer src="/js/page-tabs.js?v=ff5fe4e8a8f2ceec"></script>
 </body>
