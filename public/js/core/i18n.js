@@ -13,7 +13,11 @@
         'login.page.title': 'تسجيل الدخول | Logic Fit',
         'login.screen.label': 'بوابة تسجيل الدخول',
         'login.controls.label': 'إعدادات العرض',
+        'login.locale.label': 'لغة الواجهة',
+        'login.form.section': 'قسم تسجيل الدخول',
         'login.features.label': 'مزايا Logic Fit',
+        'login.hero.title': 'جيمك. متصل.',
+        'login.hero.description': 'مساحة واحدة لإدارة عملك ومدربيك ومشتركيك.',
         'login.form.label': 'نموذج تسجيل الدخول',
         'login.welcome.title': 'مرحبًا بعودتك',
         'login.welcome.description': 'سجّل الدخول إلى حسابك لمتابعة عملك',
@@ -60,7 +64,11 @@
         'login.page.title': 'Sign in | Logic Fit',
         'login.screen.label': 'Sign-in portal',
         'login.controls.label': 'Display settings',
+        'login.locale.label': 'Interface language',
+        'login.form.section': 'Sign-in section',
         'login.features.label': 'Logic Fit benefits',
+        'login.hero.title': 'Your gym. Connected.',
+        'login.hero.description': 'One workspace for your business, trainers and members.',
         'login.form.label': 'Sign-in form',
         'login.welcome.title': 'Welcome back',
         'login.welcome.description': 'Sign in to your account to continue your work',
@@ -7217,14 +7225,18 @@
             '.auth-screen[data-auth-stage="login"] .auth-account-row',
             '.auth-screen[data-auth-stage="login"] .auth-registration-entry',
             '.auth-screen[data-auth-stage="login"] .auth-reference-features',
+            '.auth-screen[data-auth-stage="login"] .auth-reference-marketing-copy',
             '.auth-screen[data-auth-stage="login"] .auth-choice-dialog'
         ].forEach((selector) => document.querySelectorAll(selector).forEach((element) => { element.style.direction = direction; }));
         document.title = t('login.page.title');
         document.getElementById('authScreen')?.setAttribute('aria-label', t('login.screen.label'));
         document.querySelector('#loginForm')?.setAttribute('aria-label', t('login.form.label'));
         document.querySelector('#authScreen .auth-reference-controls')?.setAttribute('aria-label', t('login.controls.label'));
+        document.querySelector('#authScreen .auth-login-column')?.setAttribute('aria-label', t('login.form.section'));
         document.querySelector('#authScreen .auth-reference-features')?.setAttribute('aria-label', t('login.features.label'));
         const textTargets = [
+            ['.auth-reference-hero-title', 'login.hero.title'],
+            ['.auth-reference-hero-description', 'login.hero.description'],
             ['.auth-form-heading h2', 'login.welcome.title'],
             ['.auth-form-heading p', 'login.welcome.description'],
             ['label[for="loginEmail"]', 'login.email.label'],
@@ -7281,6 +7293,30 @@
     }
 
     function updateLanguageButton() {
+        const segmented = document.querySelector('#authScreen .auth-locale-segmented[data-locale-segmented]');
+        if (segmented) {
+            const target = currentLocale === 'ar' ? 'en' : 'ar';
+            const switchKey = target === 'en' ? 'language.switchToEnglish' : 'language.switchToArabic';
+            segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
+                const locale = button.dataset.localeChoice;
+                button.setAttribute('aria-pressed', String(locale === currentLocale));
+                button.setAttribute('lang', locale);
+                button.setAttribute('dir', localeMeta[locale]?.dir || 'ltr');
+                if (locale === target) {
+                    button.id = 'languageToggleButton';
+                    button.setAttribute('aria-label', t(switchKey));
+                    button.setAttribute('title', t(switchKey));
+                } else {
+                    button.removeAttribute('id');
+                    button.removeAttribute('title');
+                    button.setAttribute('aria-label', locale === 'ar' ? 'العربية' : 'English');
+                }
+            });
+            const host = segmented.closest('.auth-reference-controls');
+            segmented.setAttribute('aria-label', t('login.locale.label'));
+            host?.setAttribute('aria-label', t('login.controls.label'));
+            return;
+        }
         if (!languageButton) return;
         const target = currentLocale === 'ar' ? 'en' : 'ar';
         languageButton.textContent = t('language.short');
@@ -7382,6 +7418,16 @@
                 ? (topbarActions || genericSwitcher || rootLoginActions)
                 : (rootLoginActions || genericSwitcher || topbarActions);
         if (!actions) return;
+        const segmented = loginPage && actions.querySelector('[data-locale-segmented]');
+        if (segmented) {
+            segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
+                if (button.dataset.localeChoiceBound === 'true') return;
+                button.addEventListener('click', () => set(button.dataset.localeChoice));
+                button.dataset.localeChoiceBound = 'true';
+            });
+            updateLanguageButton();
+            return;
+        }
         languageButton = document.getElementById('languageToggleButton');
         if (!languageButton) {
             languageButton = document.createElement('button');

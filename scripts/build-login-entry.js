@@ -73,6 +73,27 @@ function readAuthFeatures(source) {
     return source.slice(start + startMarker.length, end).trim();
 }
 
+function extractDivByClass(markup, className) {
+    const openingPattern = /<div\b[^>]*>/gi;
+    let opening;
+    while ((opening = openingPattern.exec(markup))) {
+        if (!new RegExp(`(?:^|\\s)${className}(?:\\s|$)`).test(opening[0].match(/\bclass="([^"]*)"/i)?.[1] || '')) continue;
+        const tagPattern = /<div\b[^>]*>|<\/div\s*>/gi;
+        tagPattern.lastIndex = opening.index;
+        let depth = 0;
+        let tag;
+        while ((tag = tagPattern.exec(markup))) {
+            depth += /^<div\b/i.test(tag[0]) ? 1 : -1;
+            if (depth === 0) {
+                const element = markup.slice(opening.index, tagPattern.lastIndex);
+                return { element, markup: markup.slice(0, opening.index) + markup.slice(tagPattern.lastIndex) };
+            }
+        }
+        throw new Error(`Unclosed ${className} element in Login entry source`);
+    }
+    throw new Error(`Login entry element .${className} is missing`);
+}
+
 function buildLoginHtml(source, cssVersion) {
     const htmlOpen = source.match(/<html\b[^>]*>/i)?.[0];
     const head = source.match(/<head>[\s\S]*?<\/head>/i)?.[0]
@@ -84,18 +105,31 @@ function buildLoginHtml(source, cssVersion) {
     const authCardMarkup = readAuthCard(source);
     const themeControlMatch = authCardMarkup.match(/<button\b(?=[^>]*\bauth-theme-toggle\b)[^>]*>[\s\S]*?<\/button>/i);
     if (!themeControlMatch) throw new Error('Login theme toggle is missing from the canonical auth card');
-    const authCard = authCardMarkup.replace(themeControlMatch[0], '').replace(/^[\t ]+$/gm, '').trim();
-    const authControls = readAuthControls(source).replace(/<\/div>\s*$/i, `${themeControlMatch[0]}</div>`);
+    const branding = extractDivByClass(authCardMarkup, 'auth-branding-lockup');
+    const authFooterMatch = branding.markup.match(/<p\b(?=[^>]*\bauth-footer\b)[^>]*>[\s\S]*?<\/p>/i);
+    if (!authFooterMatch) throw new Error('Login copyright footer is missing from the canonical auth card');
+    const authCard = branding.markup.replace(themeControlMatch[0], '').replace(authFooterMatch[0], '').replace(/^[\t ]+$/gm, '').trim();
+    const authFooter = authFooterMatch[0];
+    const authControls = readAuthControls(source)
+        .replace('<!-- AUTH_ENTRY_BRAND_SLOT -->', branding.element)
+        .replace('<!-- AUTH_ENTRY_THEME_SLOT -->', themeControlMatch[0]);
     const authFeatures = readAuthFeatures(source);
     const entryLayout = [
         '<div class="auth-entry-layout">',
+        '<section class="auth-login-column" aria-label="نموذج تسجيل الدخول">',
+        authControls,
+        '<div class="auth-login-content">',
         authCard,
-        '<div class="auth-marketing-panel">',
-        authFeatures,
         '</div>',
+        authFooter,
+        '</section>',
+        '<section class="auth-marketing-panel" aria-label="Logic Fit">',
+        '<img class="auth-marketing-image" src="/assets/logic-fit-login-hero-v5.webp" alt="" aria-hidden="true" decoding="async" fetchpriority="high">',
+        authFeatures,
+        '</section>',
         '</div>'
     ].join('\n');
-    const entryContent = [authControls, entryLayout].map((section) => section.split('\n').map((line) => line.trim() ? `            ${line.trimEnd()}` : '').join('\n')).join('\n');
+    const entryContent = [entryLayout].map((section) => section.split('\n').map((line) => line.trim() ? `            ${line.trimEnd()}` : '').join('\n')).join('\n');
     return `<!doctype html>\n${htmlOpen}\n${head}\n${bodyOpen}\n    <section class="auth-screen" id="authScreen" data-auth-stage="login" aria-label="بوابة الجيم">\n        <div class="auth-shell">\n${entryContent}\n        </div>\n    </section>\n    <script defer src="/js/theme.js?v=1"></script>\n    <script defer src="/js/branding.js?v=5"></script>\n    <script defer src="/js/core/permissions.js?v=6"></script>\n    <script defer src="/js/core/i18n.js?v=4"></script>\n    <script defer src="/js/auth-ui.js?v=20"></script>\n</body>\n</html>\n`;
 }
 
