@@ -11,6 +11,9 @@ const systemBrowser = chromeCandidates.find((candidate) => fs.existsSync(candida
 const browserServerCommand = process.env.CI
     ? 'node scripts/serve-browser-qa.js'
     : 'node server.js';
+const qaSuffix = String(process.env.PLAYWRIGHT_QA_SUFFIX || '').trim();
+const jsonReportPath = qaSuffix ? `qa/reports/playwright-${qaSuffix}.json` : 'qa/reports/playwright.json';
+const htmlReportPath = qaSuffix ? `playwright-report/${qaSuffix}` : 'playwright-report';
 
 module.exports = defineConfig({
     testDir: './tests/browser',
@@ -22,7 +25,11 @@ module.exports = defineConfig({
     retries: process.env.CI ? 1 : 0,
     workers: 1,
     reporter: process.env.CI
-        ? [['line'], ['json', { outputFile: 'qa/reports/playwright.json' }]]
+        ? [
+            ['line'],
+            ['json', { outputFile: jsonReportPath }],
+            ['html', { outputFolder: htmlReportPath, open: 'never' }]
+        ]
         : [['list'], ['json', { outputFile: 'qa/reports/playwright.json' }]],
     use: {
         baseURL: 'http://127.0.0.1:4173',

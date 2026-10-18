@@ -36,18 +36,42 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
+  browser-e2e:
+    name: Browser E2E (${{ matrix.project }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop, mobile, tablet-light, mobile320-light]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install Chromium for browser QA
         run: npx playwright install --with-deps chromium
 
-      - name: Run browser UI/UX QA
-        run: npm run qa:gate -- --build --browser
+      - name: Run complete Playwright project
+        env:
+          PLAYWRIGHT_QA_SUFFIX: ${{ matrix.project }}
+        run: npm run test:e2e -- --project=${{ matrix.project }}
 
-      - name: Upload QA report
+      - name: Upload project QA report and artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: top-gym-qa-report
+          name: top-gym-qa-${{ matrix.project }}
           path: |
-            qa/reports/*.json
+            qa/reports/playwright-${{ matrix.project }}.json
             qa/artifacts/
+            playwright-report/${{ matrix.project }}/
           if-no-files-found: ignore
