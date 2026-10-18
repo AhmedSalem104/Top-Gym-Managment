@@ -161,6 +161,9 @@ test('Dashboard overview cards are owned by the dashboard page and use live data
     assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);
     assert.match(html, /class="dashboard-overview-cards"[\s\S]*?data-dashboard-member-count[\s\S]*?data-dashboard-overview-plan[\s\S]*?data-dashboard-overview-date/u);
     assert.match(html, /class="dashboard-overview-shell"[\s\S]*?id="dashboardOverviewTitle"[\s\S]*?class="dashboard-overview-cards"/u);
+    assert.match(html, /class="dashboard-overview-shell"[^>]*\shidden(?:\s|>)/u);
+    const tabs = read('public/js/page-tabs.js');
+    assert.match(tabs, /setHidden\(dashboardOverviewShell, !isDashboard\)/u);
     assert.match(app, /const rawMemberCount\s*=\s*state\.dashboard\?\.stats\?\.total/u);
     assert.match(app, /syncDashboardOverviewCards\(\)/u);
     assert.match(app, /function dashboardSubscriptionValue\(\)[\s\S]*?const candidates = \[[\s\S]*?billing\.subscription[\s\S]*?return candidates\.find/u);

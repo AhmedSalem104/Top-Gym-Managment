@@ -74,6 +74,11 @@
              const dateTime = value ? String(value).slice(0, 10) : '';
              return `<span class="membership-date ${className}"><small>${escapeHtml(label)}</small><time dir="ltr"${dateTime ? ` datetime="${escapeHtml(dateTime)}"` : ''}>${escapeHtml(formatted)}</time></span>`;
          }
+        function memberFreezeMarkup(used, limit) {
+            if (!Number.isFinite(used) || !Number.isFinite(limit)) return `<span class="freeze-usage is-unavailable">${escapeHtml(membersText('freeze.unavailable'))}</span>`;
+            const remaining = Math.max(0, limit - used);
+            return `<span class="freeze-usage${used >= limit ? ' complete' : ''}"><strong><span>${escapeHtml(membersText('freeze.usedLabel'))}:</span><bdi dir="auto">${escapeHtml(membersNumber(used))} ${escapeHtml(membersText('freeze.of'))} ${escapeHtml(membersNumber(limit))}</bdi></strong><span><span>${escapeHtml(membersText('freeze.remainingLabel'))}:</span><bdi dir="auto">${escapeHtml(membersText('freeze.timesRemaining', { count: membersNumber(remaining) }))}</bdi></span></span>`;
+        }
          function membersCurrency(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value); }
          function memberActionLabel(action) { const keys = { details: 'action.details', edit: 'action.edit', renew: 'action.renew', freeze: 'action.freeze', resume: 'action.resume', payment: 'action.payment', print: 'action.print', qr: 'action.qr', delete: 'action.delete', refund: 'action.refund' }; return keys[action] ? membersText(keys[action]) : ACTION_LABELS[action] || action; }
          function refundActionButton(memberId) { const label = memberActionLabel('refund'); return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${escapeHtml(label)}" data-id="${memberId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" type="button">${actionIcon('refund')}</button>`; }
@@ -91,7 +96,7 @@
         const displayPhone = (value, iso = '') => window.LogicFitPhoneInputs?.formatForDisplay?.(value, iso) || String(value || '');
         window.addEventListener('logicfit:phone-formatter-ready', () => {
             if (state.members?.length) renderMembers();
-            if (state.dashboard) renderDashboard();
+            if (state.dashboard && isDashboardViewActive()) renderDashboard();
             const detailsId = $('detailsDialog')?.dataset.memberId;
             if (detailsId) {
                 const member = (state.members || []).find((item) => String(item.id) === String(detailsId));
@@ -722,16 +727,17 @@
                 scheduled = true;
                 window.requestAnimationFrame(() => {
                     scheduled = false;
-                    applyDashboardTranslations();
+                    if (isDashboardViewActive()) applyDashboardTranslations();
                     localizeExpenses(root);
                 });
             };
             new MutationObserver(schedule).observe(root, { childList: true, subtree: true });
             window.addEventListener('topgym:localechange', () => {
-                if (state.dashboard) renderDashboard();
+                if (!isDashboardViewActive()) return;
+            if (state.dashboard && isDashboardViewActive()) renderDashboard();
                 applyDashboardTranslations();
             });
-            applyDashboardTranslations();
+            if (isDashboardViewActive()) applyDashboardTranslations();
         }
 
         function setupMemberTranslations() {
@@ -767,11 +773,14 @@
         }
 
         function syncDashboardOverviewCards() {
+            if (!isDashboardViewActive()) return;
+            const overview = document.querySelector('.dashboard-overview-shell');
+            if (!overview || overview.hidden) return;
             const rawMemberCount = state.dashboard?.stats?.total;
             const memberCount = rawMemberCount === null || rawMemberCount === undefined || rawMemberCount === ''
                 ? null
                 : Number(rawMemberCount);
-            const memberCountValue = document.querySelector('[data-dashboard-member-count]');
+            const memberCountValue = overview.querySelector('[data-dashboard-member-count]');
             if (memberCountValue) {
                 memberCountValue.textContent = memberCount !== null && Number.isFinite(memberCount)
                     ? dashboardNumber(memberCount)
@@ -781,8 +790,8 @@
             const plan = typeof subscription.plan === 'string' ? { name: subscription.plan } : (subscription.plan || {});
             const planName = plan.name || subscription.planName || subscription.plan_name || '—';
             const subscriptionStart = subscription.startsAt || subscription.startDate || subscription.starts_at || subscription.start_date || null;
-            const planValue = document.querySelector('[data-dashboard-overview-plan]');
-            const dateValue = document.querySelector('[data-dashboard-overview-date]');
+            const planValue = overview.querySelector('[data-dashboard-overview-plan]');
+            const dateValue = overview.querySelector('[data-dashboard-overview-date]');
             if (planValue) planValue.textContent = planName;
             if (dateValue) dateValue.textContent = subscriptionStart ? dashboardDate(subscriptionStart) : '—';
         }
@@ -947,7 +956,7 @@
             const sub = member.membership;
             if (!sub) return `<div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
-            const freezeCount = Number(sub.freezeCount || 0);
+            const freezeCount = sub.freezeCount == null ? Number.NaN : Number(sub.freezeCount);
             const status = String(sub.status || '').toLowerCase();
             const freezeButton = status === 'frozen'
                 ? actionButton('resume', member.id, 'btn btn-purple btn-small')
@@ -969,10 +978,10 @@
             const expiryDetail = sub
                 ? sub.status === 'expired' ? sub.daysRemaining == null ? membersText('value.unavailable') : membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDateDmy(sub.freezeEnd) }) : sub.daysRemaining == null ? membersText('value.unavailable') : membersText('remaining.days', { count: days })
                 : membersText('value.unavailable');
-            const amountPaid = Number(sub?.amountPaid || 0);
-            const amountRemaining = Number(sub?.amountRemaining || 0);
+            const amountPaid = sub?.amountPaid == null ? null : Number(sub.amountPaid);
+            const amountRemaining = sub?.amountRemaining == null ? null : Number(sub.amountRemaining);
             const freezeLimit = Number(sub?.freezeLimit || FREEZE_LIMIT);
-            const freezeCount = Number(sub?.freezeCount || 0);
+            const freezeCount = sub?.freezeCount == null ? Number.NaN : Number(sub.freezeCount);
             const membershipCode = memberPortalCodeMarkup(member);
             const subscriptionMarkup = sub
                 ? `<strong class="members-mobile-subscription-title">${escapeHtml(membersListPlanLabel(sub.plan))}<span aria-hidden="true"> · </span>${escapeHtml(membersListTypeLabel(sub.type))}</strong><div class="members-mobile-date-grid">${membersDateMarkup(sub.startDate, membersText('date.start'))}${membersDateMarkup(sub.effectiveEndDate || sub.endDate, membersText('date.end'))}</div><small class="members-mobile-expiry-detail">${escapeHtml(expiryDetail)}</small>`
@@ -985,8 +994,8 @@
                 </div>
                 <dl class="members-mobile-details">
                     <div class="members-mobile-subscription"><dt>${escapeHtml(membersText('card.latestSubscription'))}</dt><dd>${subscriptionMarkup}</dd></div>
-                    <div class="members-mobile-balance"><dt>${escapeHtml(membersText('card.accountLatest'))}</dt><dd><span class="members-mobile-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${sub ? escapeHtml(membersCurrency(amountPaid)) : '—'}</strong></span><span class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${sub ? escapeHtml(membersCurrency(amountRemaining)) : '—'}</strong></span></span></dd></div>
-                    <div class="members-mobile-freeze"><dt>${escapeHtml(membersText('freeze.memberTotal'))}</dt><dd><strong>${sub ? escapeHtml(membersText('freeze.usedOf', { used: membersNumber(freezeCount), limit: membersNumber(freezeLimit) })) : '—'}</strong><small>${sub ? escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) })) : escapeHtml(membersText('value.unavailable'))}</small></dd></div>
+                    <div class="members-mobile-balance"><dt>${escapeHtml(membersText('card.accountLatest'))}</dt><dd><span class="members-mobile-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${Number.isFinite(amountPaid) ? escapeHtml(membersCurrency(amountPaid)) : '—'}</strong></span><span class="${amountRemaining > 0 ? 'has-debt' : Number.isFinite(amountRemaining) ? 'is-settled' : ''}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${Number.isFinite(amountRemaining) ? escapeHtml(membersCurrency(amountRemaining)) : '—'}</strong></span></span></dd></div>
+                    <div class="members-mobile-freeze"><dt>${escapeHtml(membersText('freeze.memberTitle'))}<small>${escapeHtml(membersText('freeze.memberScope'))}</small></dt><dd>${sub ? memberFreezeMarkup(freezeCount, freezeLimit) : '—'}</dd></div>
                 </dl>
                 <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
             </article>`;
@@ -998,14 +1007,13 @@
             const freezeCount = Number(sub.freezeCount || 0);
             const days = sub.daysRemaining == null ? null : Number(sub.daysRemaining);
             const remaining = sub.status === 'expired' ? days == null ? membersText('value.unavailable') : membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDateDmy(sub.freezeEnd) }) : days == null ? membersText('value.unavailable') : membersText('remaining.days', { count: days });
-            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${escapeHtml(membersText('freeze.usedOf', { used: membersNumber(freezeCount), limit: membersNumber(freezeLimit) }))}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span>`;
-            const amountPaid = Number(sub.amountPaid || 0);
-            const amountRemaining = Number(sub.amountRemaining || 0);
-            const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
+            const freezeUsage = memberFreezeMarkup(freezeCount, freezeLimit);
+            const amountPaid = sub.amountPaid == null ? null : Number(sub.amountPaid);
+            const amountRemaining = sub.amountRemaining == null ? null : Number(sub.amountRemaining);
+            const remainingClass = amountRemaining > 0 ? 'has-debt' : Number.isFinite(amountRemaining) ? 'is-settled' : '';
             const subscription = `<div class="member-last-subscription"><strong class="member-subscription-title">${escapeHtml(membersListPlanLabel(sub.plan))}<span aria-hidden="true"> · </span>${escapeHtml(membersListTypeLabel(sub.type))}</strong><div class="member-subscription-dates">${membersDateMarkup(sub.startDate, membersText('date.start'))}${membersDateMarkup(sub.effectiveEndDate || sub.endDate, membersText('date.end'))}</div></div>`;
-            const account = `<div class="member-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${escapeHtml(membersCurrency(amountPaid))}</strong></span><span class="${remainingClass}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${escapeHtml(membersCurrency(amountRemaining))}</strong></span></div>`;
-            const freezeUsed = `<bdi dir="ltr">${escapeHtml(membersNumber(freezeCount))} / ${escapeHtml(membersNumber(freezeLimit))}</bdi> ${escapeHtml(membersText('freeze.usedLabel'))}`;
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td>${subscription}</td><td>${memberStatusBadge(sub.status)}<span class="table-sub member-status-detail">${escapeHtml(remaining)}</span></td><td>${account}</td><td><span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeUsed}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            const account = `<div class="member-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${Number.isFinite(amountPaid) ? escapeHtml(membersCurrency(amountPaid)) : '—'}</strong></span><span class="${remainingClass}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${Number.isFinite(amountRemaining) ? escapeHtml(membersCurrency(amountRemaining)) : '—'}</strong></span></div>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td>${subscription}</td><td>${memberStatusBadge(sub.status)}<span class="table-sub member-status-detail">${escapeHtml(remaining)}</span></td><td>${account}</td><td><div class="member-freeze-cell"><strong>${escapeHtml(membersText('freeze.memberTitle'))}</strong><small>${escapeHtml(membersText('freeze.memberScope'))}</small>${freezeUsage}</div></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
         }
         function renderMembersSummary() {
             const section = document.getElementById('membersSection');
@@ -1045,7 +1053,7 @@
             $('membersList').innerHTML = state.members.length
                 ? isMobile
                     ? `<div class="members-mobile-list">${state.members.map(memberMobileCard).join('')}</div>`
-                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>${escapeHtml(membersText('table.member'))}</th><th>${escapeHtml(membersText('table.latestSubscription'))}</th><th>${escapeHtml(membersText('table.status'))}</th><th>${escapeHtml(membersText('table.account'))}</th><th>${escapeHtml(membersText('table.freezeMember'))}</th><th>${escapeHtml(membersText('table.actions'))}</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
+                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>${escapeHtml(membersText('table.member'))}</th><th>${escapeHtml(membersText('table.latestSubscription'))}</th><th>${escapeHtml(membersText('table.status'))}</th><th>${escapeHtml(membersText('card.accountLatest'))}</th><th>${escapeHtml(membersText('table.freezeMember'))}</th><th>${escapeHtml(membersText('table.actions'))}</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
                 : `<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>${escapeHtml(membersText('empty.title'))}</strong><p>${escapeHtml(membersText('empty.description'))}</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>${escapeHtml(membersText('empty.clear'))}</button></div>`;
         }
 
@@ -2112,10 +2120,11 @@
                     void loadPricingCatalog();
                     void loadMembersOnly();
                 }
-                if (event.detail?.name === 'dashboard'
-                    && !state.dashboard
-                    && window.topGymAuth?.isOwner?.()
-                    && !window.topGymAuth?.getUser?.()?.mustChangePassword) void loadData();
+                if (event.detail?.name === 'dashboard' && window.topGymAuth?.isOwner?.()
+                    && !window.topGymAuth?.getUser?.()?.mustChangePassword) {
+                    if (state.dashboard && state.saasSubscriptionLoaded) renderDashboard();
+                    else void loadData();
+                }
             });
             window.addEventListener('topgym:branch-context-changed', () => {
                 if (isIndependentTrainerTenant()) return;

@@ -67,6 +67,7 @@
   let mobileProfileCodeNode = null;
   let mobileDetailsData = null;
   let mobileDetailsMedia = window.matchMedia?.('(max-width: 767px)') || null;
+  let mobileDetailsLayoutMode = null;
   let mobileMovedElements = [];
   let mobileDetailsMember = null;
 
@@ -174,7 +175,10 @@
       subtitle.textContent = `${formattedPhone}${member?.email ? ` · ${member.email}` : ''}`;
     }
     if (registration) setTranslated(registration, 'registrationDate', { date: dateText(member?.registrationDate) });
-    if (badge) setTranslated(badge, 'member');
+    if (badge) {
+      setTranslated(badge, 'member');
+      updateProfileMembershipBadge(member);
+    }
     if (!banner) return;
 
     const status = subscription?.status || '';
@@ -311,16 +315,9 @@
     return 'overview';
   }
 
-  function updateMobileProfileBadge(member) {
+  function updateProfileMembershipBadge(member) {
     const profileBadge = dialog.querySelector('#detailsMemberBadge');
     if (!profileBadge) return;
-    if (!mobileDetailsBadgeOriginal) {
-      mobileDetailsBadgeOriginal = {
-        text: profileBadge.textContent,
-        status: profileBadge.dataset.membershipStatus || '',
-        i18nKey: profileBadge.dataset.i18n || ''
-      };
-    }
     const status = String(mobileDetailsData?.currentMembership?.status || member?.membership?.status || '').toLowerCase();
     const labels = { active: 'نشط', expiring_soon: 'تنتهي قريبًا', frozen: 'مجمّدة', expired: 'منتهية', cancelled: 'ملغاة' };
     if (labels[status]) {
@@ -335,6 +332,18 @@
       profileBadge.textContent = window.TopGymI18n?.t?.(i18nKeys[status]) || labels[status];
       profileBadge.dataset.membershipStatus = status;
     }
+  }
+
+  function updateMobileProfileBadge(member) {
+    const profileBadge = dialog.querySelector('#detailsMemberBadge');
+    if (profileBadge && !mobileDetailsBadgeOriginal) {
+      mobileDetailsBadgeOriginal = {
+        text: profileBadge.textContent,
+        status: profileBadge.dataset.membershipStatus || '',
+        i18nKey: profileBadge.dataset.i18n || ''
+      };
+    }
+    updateProfileMembershipBadge(member);
     const copy = dialog.querySelector('.member-profile-copy');
     const maskedCode = String(member?.membershipCode?.maskedCode || '').trim();
     if (copy && maskedCode) {
@@ -363,7 +372,7 @@
     panel.className = 'member-detail-attendance details-section';
     panel.dataset.mobileAttendancePanel = 'true';
     const stateKey = checkedIn ? (checkedOut ? 'checkedOutToday' : 'memberInsideGym') : 'noAttendanceToday';
-    panel.innerHTML = `<h4>حضور اليوم</h4><div class="member-detail-attendance-state${checkedIn && !checkedOut ? ' is-inside' : ''}"><span class="member-detail-attendance-indicator" aria-hidden="true"></span><strong ${translatedAttributes(stateKey)}>${translate(stateKey)}</strong></div><div class="member-detail-attendance-times"><div><span>وقت الدخول</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkInAt))}</strong></div><div><span>وقت الانصراف</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkOutAt))}</strong></div></div>${checkedIn ? '' : `<p class="member-detail-attendance-note" ${translatedAttributes('attendanceHint')}>${translate('attendanceHint')}</p>`}`;
+    panel.innerHTML = `<h4 ${translatedAttributes('tabAttendance')}>${translate('tabAttendance')}</h4><div class="member-detail-attendance-state${checkedIn && !checkedOut ? ' is-inside' : ''}"><span class="member-detail-attendance-indicator" aria-hidden="true"></span><strong ${translatedAttributes(stateKey)}>${translate(stateKey)}</strong></div><div class="member-detail-attendance-times"><div><span ${translatedAttributes('checkInTime')}>${translate('checkInTime')}</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkInAt))}</strong></div><div><span ${translatedAttributes('checkOutTime')}>${translate('checkOutTime')}</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkOutAt))}</strong></div></div>${checkedIn ? '' : `<p class="member-detail-attendance-note" ${translatedAttributes('attendanceHint')}>${translate('attendanceHint')}</p>`}`;
     return panel;
   }
 
@@ -385,12 +394,12 @@
   function placeMobileDetailsNode(node) {
     if (!(node instanceof Element) || node.matches('[data-member-details-tabs], [data-member-details-panel], [data-member-details-footer]')) return;
     if (!mobileDetailsNodes.includes(node)) mobileDetailsNodes.push(node);
-    if (node.matches('.member-details-actions')) {
+    if (node.matches('.member-details-actions') && mobileDetailsLayoutMode === 'mobile') {
       moveMobileActionNode(node);
       return;
     }
     content.querySelector(`[data-member-details-panel="${mobileDetailsCategory(node)}"]`)?.append(node);
-    moveMobileFinancialSummary();
+    if (mobileDetailsLayoutMode === 'mobile') moveMobileFinancialSummary();
   }
 
   function moveMobileFinancialSummary() {
@@ -439,10 +448,11 @@
     rememberMobileMove(actions, footer);
   }
 
-  function enableMobileDetails(member) {
+  function enableMemberDetailsTabs(member, isMobile = false) {
     if (mobileDetailsNodes || !content.isConnected) return;
     mobileDetailsNodes = [...content.children];
-    updateMobileProfileBadge(member);
+    mobileDetailsLayoutMode = isMobile ? 'mobile' : 'desktop';
+    if (isMobile) updateMobileProfileBadge(member);
     const tabs = [
       ['overview', 'tabOverviewShort', 'tabOverview'],
       ['subscriptions', 'tabSubscriptionShort', 'tabSubscriptions'],
@@ -469,6 +479,7 @@
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-label', accessibleLabel);
       tab.setAttribute('data-i18n-aria-label', `members.details.${accessibleLabelKey}`);
+      tab.dataset.i18n = `members.details.${labelKey}`;
       tab.title = accessibleLabel;
       tab.dataset.i18nTitle = `members.details.${accessibleLabelKey}`;
       tab.setAttribute('aria-controls', `memberDetailsPanel-${id}`);
@@ -489,24 +500,26 @@
     }
     mobileAttendancePanel = createAttendancePanel(member);
     panels.get('attendance').append(mobileAttendancePanel);
-    const footer = document.createElement('div');
-    footer.className = 'member-details-mobile-footer';
-    footer.dataset.memberDetailsFooter = 'true';
+    const footer = isMobile ? document.createElement('div') : null;
+    if (footer) {
+      footer.className = 'member-details-mobile-footer';
+      footer.dataset.memberDetailsFooter = 'true';
+    }
     content.append(tabList, ...panels.values());
-    dialog.append(footer);
+    if (footer) dialog.append(footer);
     mobileDetailsNodes.forEach(placeMobileDetailsNode);
     const overviewPanel = content.querySelector('[data-member-details-panel="overview"]');
     const currentMembership = overviewPanel?.querySelector('.current-membership-section');
     if (currentMembership) overviewPanel.prepend(currentMembership);
-    moveMobileFinancialSummary();
+    if (isMobile) moveMobileFinancialSummary();
     const scopeDetails = overviewPanel?.querySelector('.member-scope-details');
     const subscriptionsPanel = content.querySelector('[data-member-details-panel="subscriptions"]');
     if (scopeDetails && subscriptionsPanel) rememberMobileMove(scopeDetails, subscriptionsPanel);
     const nestedActions = content.querySelector('.member-details-overview .member-details-actions');
-    if (nestedActions) moveMobileActionNode(nestedActions);
+    if (isMobile && nestedActions) moveMobileActionNode(nestedActions);
     content.addEventListener('click', onMobileDetailsClick);
     content.addEventListener('keydown', onMobileDetailsKeydown);
-    footer.addEventListener('click', onMobileFooterClick);
+    footer?.addEventListener('click', onMobileFooterClick);
     mobileDetailsObserver = new MutationObserver((records) => {
       for (const record of records) record.addedNodes.forEach(placeMobileDetailsNode);
     });
@@ -533,6 +546,7 @@
     mobileDetailsNodes = null;
     mobileAttendancePanel = null;
     mobileDetailsData = null;
+    mobileDetailsLayoutMode = null;
     mobileProfileCodeNode?.remove();
     mobileProfileCodeNode = null;
     if (mobileDetailsBadgeOriginal) {
@@ -579,14 +593,19 @@
   function syncMobileDetailsMode(member) {
     if (member) {
       mobileDetailsMember = member;
-      updateMobileProfileBadge(member);
+      if (mobileDetailsMedia?.matches) updateMobileProfileBadge(member);
     }
     if (!dialog.open) return;
-    if (mobileDetailsMedia?.matches) {
-      enableMobileDetails(member);
-      moveMobileFinancialSummary();
-    } else disableMobileDetails();
+    const isMobile = Boolean(mobileDetailsMedia?.matches);
+    const requestedMode = isMobile ? 'mobile' : 'desktop';
+    if (mobileDetailsNodes && mobileDetailsLayoutMode !== requestedMode) disableMobileDetails();
+    enableMemberDetailsTabs(member || mobileDetailsMember, isMobile);
+    if (isMobile) moveMobileFinancialSummary();
   }
+
+  window.addEventListener('topgym:localechange', () => {
+    content.querySelectorAll('[data-member-details-tab]').forEach((tab) => window.TopGymI18n?.apply?.(tab));
+  });
 
   function openMoreMenu(trigger) {
     closeMoreMenu();

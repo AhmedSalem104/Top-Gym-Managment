@@ -441,6 +441,7 @@
 
     function renderTab(name) {
         const overview = document.querySelector('.overview-grid');
+        const dashboardOverviewShell = document.querySelector('.dashboard-overview-shell');
         const dashboardHero = document.querySelector('.dashboard-page-actions');
         const dashboardSectionHeading = document.querySelector('.dashboard-section-heading');
         const dashboardInitialSkeleton = document.getElementById('dashboardInitialSkeleton');
@@ -491,6 +492,7 @@
 
         setHidden(dashboardHero, !isDashboard);
         setHidden(dashboardSectionHeading, !isDashboard);
+        setHidden(dashboardOverviewShell, !isDashboard);
         setHidden(overview, !isDashboard);
         setHidden(dashboardInitialSkeleton, !isDashboard);
         dashboardInitialSkeleton?.setAttribute('aria-hidden', String(!isDashboard));
