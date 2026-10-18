@@ -20,7 +20,10 @@ module.exports = defineConfig({
     fullyParallel: false,
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 1 : 0,
-    workers: 1,
+    // The browser suite contains 1,200+ cases. Keep local runs deterministic,
+    // but let CI execute independent spec files concurrently so the complete
+    // suite can finish within the workflow's 45-minute job budget.
+    workers: process.env.CI ? 4 : 1,
     reporter: process.env.CI
         ? [['line'], ['json', { outputFile: 'qa/reports/playwright.json' }]]
         : [['list'], ['json', { outputFile: 'qa/reports/playwright.json' }]],
