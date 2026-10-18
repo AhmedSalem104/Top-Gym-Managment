@@ -101,7 +101,7 @@ test('full member print opens the current profile document and exports its real 
     await page.locator('.print-details-button').click();
     const popup = await popupPromise;
     await expect(popup.locator('.print-sheet.print-member-full')).toBeVisible();
-    await expect(popup.locator('link[data-top-gym-print-styles]')).toHaveAttribute('href', /\/css\/print\.css\?v=5$/);
+    await expect(popup.locator('link[data-top-gym-print-styles]')).toHaveAttribute('href', /\/css\/print\.css\?v=[a-f0-9]{16}$/);
     await popup.waitForFunction(() => window.__topGymPrintCalled === true);
     await expect(popup.locator('style[data-top-gym-print-styles-fallback]')).toHaveCount(1);
     await popup.addStyleTag({ content: fs.readFileSync(path.join(__dirname, '../../public/css/print.css'), 'utf8') });

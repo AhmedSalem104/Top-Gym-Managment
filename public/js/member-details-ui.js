@@ -9,14 +9,22 @@
   window.__topGymMemberDetailsUiLoaded = true;
 
   const brandName = () => String(window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit').trim() || 'Logic Fit';
+  const translate = (key, params = {}) => window.TopGymI18n?.t?.(`members.details.${key}`, params) || `members.details.${key}`;
+  const setTranslated = (element, key, params = {}) => {
+    if (!element) return;
+    element.dataset.i18n = `members.details.${key}`;
+    Object.entries(params).forEach(([name, value]) => { element.dataset[`i18nParam${name[0].toUpperCase()}${name.slice(1)}`] = String(value ?? ''); });
+    window.TopGymI18n?.apply?.(element);
+  };
+  const translatedAttributes = (key, params = {}) => `data-i18n="members.details.${key}"${Object.entries(params).map(([name, value]) => ` data-i18n-param-${name}="${escapeHtml(value)}"`).join('')}`;
 
-  const planLabels = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
+  const planLabels = { gym_only: 'gymOnly', gym_cardio: 'gymCardio' };
   const typeLabels = {
-    monthly: 'شهرية',
-    half_month: 'نصف شهر',
-    quarterly: 'ربع سنوية',
-    semiannual: 'نصف سنوية',
-    annual: 'سنوية'
+    monthly: 'monthly',
+    half_month: 'halfMonth',
+    quarterly: 'quarterly',
+    semiannual: 'semiannual',
+    annual: 'annual'
   };
 
   const icons = {
@@ -37,8 +45,12 @@
   const icon = (name) => `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.view}</svg>`;
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
   const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
-  const money = (value) => `${number(value).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
-  const paymentLabels = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', wallet: 'محفظة', other: 'أخرى' };
+  const locale = () => window.TopGymI18n?.get?.() === 'en' ? 'en-EG' : 'ar-EG';
+  const formatNumber = (value, options = {}) => window.TopGymI18n?.format?.('number', value, options) || Number(value).toLocaleString(locale(), options);
+  const money = (value) => window.TopGymI18n?.format?.('currency', number(value), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || `${formatNumber(number(value), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+  const currencyMarkup = (value) => `<span class="member-currency-value" data-i18n-format="currency" data-i18n-value="${escapeHtml(number(value))}" data-i18n-currency="EGP">${escapeHtml(money(value))}</span>`;
+  const paymentLabels = { cash: 'cash', card: 'card', transfer: 'transfer', wallet: 'wallet', other: 'other' };
+  const translatedValue = (group, key, fallback = '—') => key && group[key] ? translate(group[key]) : fallback;
   let storePurchasesRequestId = 0;
   let activeMoreMenu = null;
    let activeMoreTrigger = null;
@@ -66,8 +78,7 @@
 
   function dateText(value) {
     if (!value) return '—';
-    const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+    return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { day: '2-digit', month: '2-digit', year: 'numeric' }) || String(value);
   }
 
   function initials(name) {
@@ -129,7 +140,7 @@
     return (Array.isArray(items) ? items : [])
       .map((item) => String(item?.name || '').trim())
       .filter(Boolean)
-      .join('، ');
+      .join(locale() === 'en-EG' ? ', ' : '، ');
   }
 
   function renderMemberScope(member, subscription) {
@@ -162,8 +173,8 @@
       const formattedPhone = displayPhone(member?.phone, member?.phoneCountry) || '—';
       subtitle.textContent = `${formattedPhone}${member?.email ? ` · ${member.email}` : ''}`;
     }
-    if (registration) registration.textContent = `تاريخ التسجيل: ${dateText(member?.registrationDate)}`;
-    if (badge) badge.textContent = 'عضو';
+    if (registration) setTranslated(registration, 'registrationDate', { date: dateText(member?.registrationDate) });
+    if (badge) setTranslated(badge, 'member');
     if (!banner) return;
 
     const status = subscription?.status || '';
@@ -172,15 +183,15 @@
     let text = '';
     let tone = 'warning';
     if (status === 'expiring_soon' || (status === 'active' && days !== null && days <= 3)) {
-      title = 'قريبة الانتهاء';
-      text = days === 0 ? 'ينتهي الاشتراك اليوم' : days > 0 ? `ينتهي الاشتراك خلال ${days} يوم` : 'ينتهي الاشتراك قريبًا';
+      title = translate('expiringSoon');
+      text = days === 0 ? translate('expiryToday') : days > 0 ? translate('expiringInDays', { count: days }) : translate('expiringSoonText');
     } else if (status === 'expired') {
-      title = 'الاشتراك منتهي';
-      text = `انتهى الاشتراك في ${dateText(subscription?.effectiveEndDate || subscription?.endDate)}`;
+      title = translate('expired');
+      text = translate('expiredOn', { date: dateText(subscription?.effectiveEndDate || subscription?.endDate) });
       tone = 'danger';
     } else if (status === 'frozen') {
-      title = 'الاشتراك مجمد';
-      text = subscription?.freezeEnd ? `يستمر التجميد حتى ${dateText(subscription.freezeEnd)}` : 'العضوية مجمدة حاليًا';
+      title = translate('frozen');
+      text = subscription?.freezeEnd ? translate('freezeUntil', { date: dateText(subscription.freezeEnd) }) : translate('frozenNow');
       tone = 'info';
     }
     banner.hidden = !title;
@@ -224,7 +235,10 @@
 
   function actionButton(action, label, className = '') {
     const requiredPermission = actionPermissions[action] || '';
-    return `<button class="member-details-action ${className}" type="button" data-member-detail-action="${action}"${requiredPermission ? ` data-required-permission="${requiredPermission}"` : ''} aria-label="${label}" title="${label}">${icon(action)}<span>${label}</span></button>`;
+    const labelKey = ({ renew: 'renew', view: 'view', print: 'print', freeze: 'freezeAction', resume: 'resume' })[action];
+    const translated = labelKey ? ` data-i18n-aria-label="members.details.${labelKey}" data-i18n-title="members.details.${labelKey}"` : '';
+    const content = labelKey ? `<span ${translatedAttributes(labelKey)}>${translate(labelKey)}</span>` : `<span>${label}</span>`;
+    return `<button class="member-details-action ${className}" type="button" data-member-detail-action="${action}"${requiredPermission ? ` data-required-permission="${requiredPermission}"` : ''} aria-label="${label}" title="${label}"${translated}>${icon(action)}${content}</button>`;
   }
 
   function closeMoreMenu({ restoreFocus = false } = {}) {
@@ -338,7 +352,7 @@
   function formatAttendanceTime(value) {
     if (!value) return '—';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ar-EG', { hour: '2-digit', minute: '2-digit' }).format(date);
+    return window.TopGymI18n?.format?.('time', value, { hour: '2-digit', minute: '2-digit' }) || String(value);
   }
 
   function createAttendancePanel(member) {
@@ -348,7 +362,8 @@
     const panel = document.createElement('section');
     panel.className = 'member-detail-attendance details-section';
     panel.dataset.mobileAttendancePanel = 'true';
-    panel.innerHTML = `<h4>حضور اليوم</h4><div class="member-detail-attendance-state${checkedIn && !checkedOut ? ' is-inside' : ''}"><span class="member-detail-attendance-indicator" aria-hidden="true"></span><strong>${checkedIn ? (checkedOut ? 'تم تسجيل الانصراف اليوم' : 'العضو داخل الجيم الآن') : 'لا يوجد حضور مسجل اليوم'}</strong></div><div class="member-detail-attendance-times"><div><span>وقت الدخول</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkInAt))}</strong></div><div><span>وقت الانصراف</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkOutAt))}</strong></div></div>${checkedIn ? '' : '<p class="member-detail-attendance-note">ستظهر حالة الدخول والانصراف هنا بعد تسجيل حركة اليوم.</p>'}`;
+    const stateKey = checkedIn ? (checkedOut ? 'checkedOutToday' : 'memberInsideGym') : 'noAttendanceToday';
+    panel.innerHTML = `<h4>حضور اليوم</h4><div class="member-detail-attendance-state${checkedIn && !checkedOut ? ' is-inside' : ''}"><span class="member-detail-attendance-indicator" aria-hidden="true"></span><strong ${translatedAttributes(stateKey)}>${translate(stateKey)}</strong></div><div class="member-detail-attendance-times"><div><span>وقت الدخول</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkInAt))}</strong></div><div><span>وقت الانصراف</span><strong dir="ltr">${escapeHtml(formatAttendanceTime(attendance.checkOutAt))}</strong></div></div>${checkedIn ? '' : `<p class="member-detail-attendance-note" ${translatedAttributes('attendanceHint')}>${translate('attendanceHint')}</p>`}`;
     return panel;
   }
 
@@ -384,21 +399,22 @@
     const financialSummary = mobileDetailsData?.financialSummary || {};
     const subscription = resolveSubscription(mobileDetailsMember, mobileDetailsData);
     const values = [
-      { label: 'إجمالي المستحق', value: financialSummary.totalDue ?? subscription?.amountDue, tone: '' },
-      { label: 'إجمالي المدفوع', value: financialSummary.totalPaid ?? subscription?.amountPaid, tone: 'paid' },
-      { label: 'إجمالي المتبقي', value: financialSummary.totalRemaining ?? subscription?.amountRemaining, tone: 'remaining' }
+      { label: 'financialTotalDue', value: financialSummary.totalDue ?? subscription?.amountDue, tone: '' },
+      { label: 'financialTotalPaid', value: financialSummary.totalPaid ?? subscription?.amountPaid, tone: 'paid' },
+      { label: 'financialTotalRemaining', value: financialSummary.totalRemaining ?? subscription?.amountRemaining, tone: 'remaining' }
     ].filter((item) => item.value !== undefined && item.value !== null && item.value !== '');
     if (!values.length) return;
     let summarySection = overviewPanel.querySelector('.member-details-overview-financial');
     summarySection = document.createElement('section');
     summarySection.className = 'member-details-overview-financial';
-    summarySection.setAttribute('aria-label', 'الرصيد المالي');
-    summarySection.innerHTML = '<h4>الرصيد المالي</h4><div class="member-details-overview-financial-grid"></div>';
+    summarySection.setAttribute('aria-label', translate('overviewFinancial'));
+    summarySection.setAttribute('data-i18n-aria-label', 'members.details.overviewFinancial');
+    summarySection.innerHTML = `<h4 ${translatedAttributes('overviewFinancial')}>${translate('overviewFinancial')}</h4><div class="member-details-overview-financial-grid"></div>`;
     const summaryGrid = summarySection.querySelector('.member-details-overview-financial-grid');
     values.forEach(({ label, value, tone }) => {
       const card = document.createElement('div');
       card.className = `member-details-overview-financial-card${tone ? ` ${tone}` : ''}`;
-      card.innerHTML = `<span>${label}</span><strong dir="ltr">${escapeHtml(money(value))}</strong>`;
+      card.innerHTML = `<span ${translatedAttributes(label)}>${translate(label)}</span><strong dir="ltr">${currencyMarkup(value)}</strong>`;
       summaryGrid.append(card);
     });
     const overview = overviewPanel.querySelector('.member-details-overview') || overviewPanel;
@@ -428,20 +444,23 @@
     mobileDetailsNodes = [...content.children];
     updateMobileProfileBadge(member);
     const tabs = [
-      ['overview', 'ملخص', 'نظرة عامة'],
-      ['subscriptions', 'اشتراك', 'الاشتراكات'],
-      ['attendance', 'حضور', 'الحضور'],
-      ['account', 'حساب', 'الحساب'],
-      ['store', 'متجر', 'المتجر'],
-      ['training', 'تدريب', 'التدريب والتغذية']
+      ['overview', 'tabOverviewShort', 'tabOverview'],
+      ['subscriptions', 'tabSubscriptionShort', 'tabSubscriptions'],
+      ['attendance', 'tabAttendanceShort', 'tabAttendance'],
+      ['account', 'tabAccountShort', 'tabAccount'],
+      ['store', 'tabStoreShort', 'tabStore'],
+      ['training', 'tabTrainingShort', 'tabTraining']
     ];
     const tabList = document.createElement('div');
     tabList.className = 'member-details-tabs';
     tabList.dataset.memberDetailsTabs = 'true';
     tabList.setAttribute('role', 'tablist');
-    tabList.setAttribute('aria-label', 'أقسام تفاصيل المشترك');
+    tabList.setAttribute('aria-label', translate('tabsAccessible'));
+    tabList.setAttribute('data-i18n-aria-label', 'members.details.tabsAccessible');
     const panels = new Map();
-    for (const [id, label, accessibleLabel] of tabs) {
+    for (const [id, labelKey, accessibleLabelKey] of tabs) {
+      const label = translate(labelKey);
+      const accessibleLabel = translate(accessibleLabelKey);
       const tab = document.createElement('button');
       tab.type = 'button';
       tab.className = 'member-details-tab';
@@ -449,7 +468,9 @@
       tab.id = `memberDetailsTab-${id}`;
       tab.setAttribute('role', 'tab');
       tab.setAttribute('aria-label', accessibleLabel);
+      tab.setAttribute('data-i18n-aria-label', `members.details.${accessibleLabelKey}`);
       tab.title = accessibleLabel;
+      tab.dataset.i18nTitle = `members.details.${accessibleLabelKey}`;
       tab.setAttribute('aria-controls', `memberDetailsPanel-${id}`);
       tab.setAttribute('aria-selected', String(id === 'overview'));
       tab.tabIndex = id === 'overview' ? 0 : -1;
@@ -637,26 +658,26 @@
     const status = String(subscription.status || '').toLowerCase();
     const canFreeze = ['active', 'expiring_soon'].includes(status) && freezeCount < freezeLimit;
     const freezeAction = status === 'frozen'
-      ? actionButton('resume', 'استئناف', 'member-details-action-secondary')
-      : canFreeze ? actionButton('freeze', 'تجميد', 'member-details-action-secondary') : '';
+      ? actionButton('resume', translate('resume'), 'member-details-action-secondary')
+      : canFreeze ? actionButton('freeze', translate('freezeAction'), 'member-details-action-secondary') : '';
     const isCancelled = status === 'cancelled';
-    const paymentAction = isCancelled ? '' : '<button type="button" data-member-detail-action="payment" data-required-permission="payments.create">' + icon('payment') + '<span>تسجيل دفعة</span></button>';
+    const paymentAction = isCancelled ? '' : `<button type="button" data-member-detail-action="payment" data-required-permission="payments.create">${icon('payment')}<span ${translatedAttributes('recordPayment')}>${translate('recordPayment')}</span></button>`;
     const canRefund = window.topGymAuth?.isOwner?.() === true && number(subscription.amountPaid) > 0;
-    const refundAction = canRefund ? '<button type="button" data-member-detail-action="refund" data-owner-only>' + icon('refund') + '<span>استرجاع الاشتراك</span></button>' : '';
+    const refundAction = canRefund ? `<button type="button" data-member-detail-action="refund" data-owner-only>${icon('refund')}<span ${translatedAttributes('refundSubscription')}>${translate('refundSubscription')}</span></button>` : '';
     const overview = document.createElement('div');
     overview.className = 'member-details-overview';
     overview.innerHTML = `<div class="member-details-overview-heading"><span>ملخص العضوية</span><small>الحالة والمدة والتجميد</small></div><div class="member-details-stats" aria-label="ملخص الاشتراك">
-      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('subscription')}</span><span class="member-detail-stat-copy"><small>الاشتراك</small><strong>${escapeHtml(planLabels[subscription.plan] || subscription.plan || '—')}</strong><em>${escapeHtml(typeLabels[subscription.type] || subscription.type || '—')}</em></span></article>
-      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('calendar')}</span><span class="member-detail-stat-copy"><small>تاريخ الانتهاء</small><strong class="member-ltr-value">${escapeHtml(dateText(subscription.effectiveEndDate || subscription.endDate))}</strong><em>${days === null ? '—' : days >= 0 ? `${days} يوم متبقي` : `منتهية منذ ${Math.abs(days)} يوم`}</em></span></article>
-      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('freeze')}</span><span class="member-detail-stat-copy"><small>التجميد</small><strong class="member-ltr-value">${freezeCount}/${freezeLimit}</strong><em>متبقي ${Math.max(0, freezeLimit - freezeCount)} مرات</em></span></article>
-      <article class="member-detail-stat${remaining > 0 ? ' has-outstanding' : ''}"><span class="member-detail-stat-icon">${icon('wallet')}</span><span class="member-detail-stat-copy"><small>الحساب</small><strong class="member-ltr-value">${escapeHtml(money(subscription.amountDue))}</strong><em${remaining > 0 ? ' class="outstanding-text"' : ''}>${remaining > 0 ? `المتبقي ${escapeHtml(money(remaining))}` : 'الحساب مسدد'}</em></span></article>
+      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('subscription')}</span><span class="member-detail-stat-copy"><small>الاشتراك</small><strong>${escapeHtml(translatedValue(planLabels, subscription.plan, subscription.plan || '—'))}</strong><em>${escapeHtml(translatedValue(typeLabels, subscription.type, subscription.type || '—'))}</em></span></article>
+      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('calendar')}</span><span class="member-detail-stat-copy"><small>تاريخ الانتهاء</small><strong class="member-ltr-value">${escapeHtml(dateText(subscription.effectiveEndDate || subscription.endDate))}</strong><em ${days === null ? '' : days >= 0 ? translatedAttributes('daysRemaining', { count: formatNumber(days) }) : translatedAttributes('daysExpired', { count: formatNumber(Math.abs(days)) })}>${days === null ? '—' : days >= 0 ? translate('daysRemaining', { count: days }) : translate('daysExpired', { count: Math.abs(days) })}</em></span></article>
+      <article class="member-detail-stat"><span class="member-detail-stat-icon">${icon('freeze')}</span><span class="member-detail-stat-copy"><small>التجميد</small><strong class="member-ltr-value">${freezeCount}/${freezeLimit}</strong><em ${translatedAttributes('freezesRemaining', { count: formatNumber(Math.max(0, freezeLimit - freezeCount)) })}>${translate('freezesRemaining', { count: Math.max(0, freezeLimit - freezeCount) })}</em></span></article>
+      <article class="member-detail-stat${remaining > 0 ? ' has-outstanding' : ''}"><span class="member-detail-stat-icon">${icon('wallet')}</span><span class="member-detail-stat-copy"><small>الحساب</small><strong class="member-ltr-value">${currencyMarkup(subscription.amountDue)}</strong><em${remaining > 0 ? ' class="outstanding-text"' : ''}>${remaining > 0 ? `<span ${translatedAttributes('remainingLabel')}>${translate('remainingLabel')}</span> ${currencyMarkup(remaining)}` : `<span ${translatedAttributes('settledLabel')}>${translate('settledLabel')}</span>`}</em></span></article>
     </div>
     <section class="member-details-actions" aria-labelledby="memberDetailsActionsTitle"><h4 id="memberDetailsActionsTitle">الإجراءات</h4><div class="member-details-action-grid">
-       ${actionButton('renew', 'تجديد', 'member-details-action-primary member-details-action-renew')}
-      ${actionButton('view', 'عرض', 'member-details-action-secondary')}
-      ${actionButton('print', 'طباعة', 'member-details-action-secondary')}
+       ${actionButton('renew', translate('renew'), 'member-details-action-primary member-details-action-renew')}
+      ${actionButton('view', translate('view'), 'member-details-action-secondary')}
+      ${actionButton('print', translate('print'), 'member-details-action-secondary')}
        ${freezeAction}
-       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-haspopup="menu" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}${window.topGymAuth?.isOwner?.() === true ? `<button type="button" data-member-detail-action="qr" data-owner-only>${icon('qr')}<span>بطاقة العضوية</span></button>` : ''}<button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
+       <span class="member-details-more"><button class="member-details-action member-details-action-more" type="button" data-member-detail-action="more" aria-haspopup="menu" aria-expanded="false" aria-controls="memberDetailsMoreMenu" aria-label="المزيد" title="المزيد" data-i18n-aria-label="members.details.more" data-i18n-title="members.details.more">${icon('more')}</button><span class="member-details-more-menu" id="memberDetailsMoreMenu" hidden>${paymentAction}${window.topGymAuth?.isOwner?.() === true ? `<button type="button" data-member-detail-action="qr" data-owner-only>${icon('qr')}<span>بطاقة العضوية</span></button>` : ''}<button type="button" data-member-detail-action="edit" data-required-permission="members.update">${icon('view')}<span>تعديل البيانات</span></button>${refundAction}</span></span>
        </div></section>`;
     overview.querySelector('[data-member-detail-action="qr"]')?.remove();
     if (hasRequiredPermissions('members.read,memberships.read,attendance.read')) {
@@ -700,8 +721,9 @@
       content.append(section);
       return;
     }
-    const rows = (purchases || []).map((item) => `<tr><td><strong dir="ltr">${escapeHtml(item.saleNumber || '—')}</strong><span class="table-sub">${escapeHtml(dateText(item.saleDate))}</span></td><td>${escapeHtml(item.items || '—')}</td><td><strong class="member-ltr-value">${escapeHtml(money(item.totalAmount))}</strong><span class="table-sub">مدفوع ${escapeHtml(money(item.paidAmount))} · متبقي ${escapeHtml(money(item.remainingAmount))}</span></td><td>${escapeHtml(paymentLabels[item.paymentMethod] || item.paymentMethod || '—')}</td><td><span class="badge ${escapeHtml(item.status || 'completed')}">${item.status === 'cancelled' ? 'ملغاة' : 'مكتملة'}</span></td></tr>`).join('');
-    section.innerHTML = `<div class="member-store-purchases-head"><div><span class="member-store-purchases-kicker">مبيعات منفصلة عن العضوية</span><h4>مشتريات المتجر</h4><p>سجل مشتريات العضو من متجر ${brandName()} دون خلطها باشتراك العضوية.</p></div><strong>${number((purchases || []).length)} فاتورة</strong></div><div class="history-scroll">${rows ? `<table class="history-table member-store-purchases-table"><thead><tr><th>الفاتورة والتاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="history-empty">لا توجد مشتريات متجر مسجلة لهذا العضو.</div>'}</div>`;
+    const rows = (purchases || []).map((item) => `<tr><td><strong dir="ltr">${escapeHtml(item.saleNumber || '—')}</strong><span class="table-sub">${escapeHtml(dateText(item.saleDate))}</span></td><td>${escapeHtml(item.items || '—')}</td><td><strong class="member-ltr-value">${currencyMarkup(item.totalAmount)}</strong><span class="table-sub"><span ${translatedAttributes('paidLabel')}>${translate('paidLabel')}</span> ${currencyMarkup(item.paidAmount)} · <span ${translatedAttributes('remainingLabel')}>${translate('remainingLabel')}</span> ${currencyMarkup(item.remainingAmount)}</span></td><td>${escapeHtml(translatedValue(paymentLabels, item.paymentMethod, item.paymentMethod || '—'))}</td><td><span class="badge ${escapeHtml(item.status || 'completed')}" ${translatedAttributes(item.status === 'cancelled' ? 'cancelled' : 'completed')}>${translate(item.status === 'cancelled' ? 'cancelled' : 'completed')}</span></td></tr>`).join('');
+    const purchaseCount = number((purchases || []).length);
+    section.innerHTML = `<div class="member-store-purchases-head"><div><span class="member-store-purchases-kicker">مبيعات منفصلة عن العضوية</span><h4>مشتريات المتجر</h4><p ${translatedAttributes('storeDescription', { brand: brandName() })}>${translate('storeDescription', { brand: brandName() })}</p></div><strong ${translatedAttributes('invoiceCount', { count: formatNumber(purchaseCount) })}>${translate('invoiceCount', { count: purchaseCount })}</strong></div><div class="history-scroll">${rows ? `<table class="history-table member-store-purchases-table"><thead><tr><th>الفاتورة والتاريخ</th><th>المنتجات</th><th>الإجمالي</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="history-empty">لا توجد مشتريات متجر مسجلة لهذا العضو.</div>'}</div>`;
     content.append(section);
   }
 

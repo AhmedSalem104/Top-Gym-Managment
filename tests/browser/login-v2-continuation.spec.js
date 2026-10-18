@@ -84,6 +84,10 @@ test('Login V2 uses the canonical primary token and preserves the read-only auth
                 const root = document.documentElement;
                 const body = document.body;
                 const button = document.querySelector('#loginSubmit');
+                const input = document.querySelector('.auth-input-wrap');
+                const themeToggle = document.querySelector('.auth-theme-toggle');
+                const loginColumn = document.querySelector('.auth-login-column');
+                const marketing = document.querySelector('.auth-marketing-panel');
                 const pageSurface = document.querySelector('.auth-screen');
                 const expected = document.createElement('span');
                 expected.style.backgroundColor = 'var(--login-primary)';
@@ -97,6 +101,10 @@ test('Login V2 uses the canonical primary token and preserves the read-only auth
                     documentWidth: root.scrollWidth,
                     bodyWidth: body.scrollWidth,
                     viewportWidth: innerWidth,
+                    loginColumnWidth: loginColumn.getBoundingClientRect().width,
+                    marketingWidth: marketing.getBoundingClientRect().width,
+                    inputHeight: input.getBoundingClientRect().height,
+                    themeToggle: themeToggle.getBoundingClientRect().toJSON(),
                     buttonBackground: getComputedStyle(button).backgroundColor,
                     buttonBackgroundImage: getComputedStyle(button).backgroundImage,
                     expectedPrimary,
@@ -108,21 +116,38 @@ test('Login V2 uses the canonical primary token and preserves the read-only auth
             expect(state.direction).toBe('rtl');
             expect(state.documentWidth, `${viewport.name}/${theme}: document overflow`).toBeLessThanOrEqual(viewport.width);
             expect(state.bodyWidth, `${viewport.name}/${theme}: body overflow`).toBeLessThanOrEqual(viewport.width);
+            expect(state.inputHeight).toBe(48);
+            expect(state.button.height).toBe(48);
+            expect(state.themeToggle.width).toBe(48);
+            expect(state.themeToggle.height).toBe(48);
+            if (viewport.width >= 1024) {
+                expect(state.loginColumnWidth).toBeCloseTo(viewport.width * 0.5, 0);
+                expect(state.marketingWidth).toBeCloseTo(viewport.width * 0.5, 0);
+            } else {
+                expect(state.loginColumnWidth).toBe(viewport.width);
+                expect(state.marketingWidth).toBe(0);
+            }
             expect(state.buttonBackgroundImage).toBe('none');
             expect(state.buttonBackground).toBe(state.expectedPrimary);
             expect(state.button.left).toBeGreaterThanOrEqual(0);
             expect(state.button.right).toBeLessThanOrEqual(viewport.width);
             expect(state.button.height).toBeGreaterThanOrEqual(44);
 
-            const localeToggle = page.locator('#languageToggleButton');
-            await expect(localeToggle).toBeVisible();
-            await localeToggle.focus();
+            const localeArabic = page.locator('.auth-locale-segmented [data-locale-choice="ar"]');
+            const localeEnglish = page.locator('.auth-locale-segmented [data-locale-choice="en"]');
+            await expect(localeArabic).toBeVisible();
+            await expect(localeEnglish).toBeVisible();
+            await expect(page.locator('.auth-locale-segmented [data-locale-choice]')).toHaveCount(2);
+            await localeArabic.focus();
+            await expect(localeArabic).toBeFocused();
+            await page.keyboard.press('Tab');
+            await expect(localeEnglish).toBeFocused();
             await page.keyboard.press('Tab');
             await expect(page.locator('.auth-theme-toggle')).toBeFocused();
             await page.keyboard.press('Tab');
             await expect(page.locator('#loginEmail')).toBeFocused();
-            const localeToggleBox = await localeToggle.boundingBox();
-            expect(localeToggleBox.width, `${viewport.name}/${theme}: login language control must remain compact`).toBeLessThan(140);
+            const localeGroupBox = await page.locator('.auth-locale-segmented').boundingBox();
+            expect(localeGroupBox.width, `${viewport.name}/${theme}: segmented locale control must remain compact`).toBeLessThan(180);
             await expect(page.locator('#loginEmail')).toHaveCSS('direction', 'ltr');
             await page.keyboard.press('Tab');
             await expect(page.locator('#loginPassword')).toBeFocused();

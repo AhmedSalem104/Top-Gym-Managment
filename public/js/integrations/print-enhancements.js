@@ -1,11 +1,37 @@
         (() => {
             const list = document.getElementById('membersList');
-            const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
-            const EVENT_LABELS = { created: 'إضافة اشتراك', updated: 'تعديل بيانات', renewed: 'تجديد اشتراك', frozen: 'تجميد العضوية', resumed: 'استئناف العضوية', payment_updated: 'تحديث الدفع' };
-            const PAYMENT_LABELS = { cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' };
-            const PAYMENT_TRANSACTION_LABELS = { subscription: 'اشتراك', payment: 'دفعة', adjustment: 'تسوية' };
-            const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };
-            const TYPE_LABELS = { monthly: 'شهرية', half_month: 'نصف شهر', quarterly: 'ربع سنوية', semiannual: 'نصف سنوية', annual: 'سنوية', 'two month': 'شهرين', custom_mslzyl8m: 'شهرين' };
+            function printLocale() {
+                return window.TopGymI18n?.get?.() === 'en' ? 'en' : 'ar';
+            }
+
+            function printText(key, params = {}) {
+                return window.TopGymI18n?.t?.(`print.member.${key}`, params) || key;
+            }
+
+            function localizedDomainLabel(value, labelKeys, fallback = '—') {
+                if (!value) return fallback;
+                const key = labelKeys[value];
+                if (key) {
+                    const translated = window.TopGymI18n?.t?.(key);
+                    if (translated && translated !== key) return translated;
+                }
+                return String(value);
+            }
+
+            const PLAN_LABEL_KEYS = { gym_only: 'members.details.gymOnly', gym_cardio: 'members.details.gymCardio' };
+            const TYPE_LABEL_KEYS = {
+                monthly: 'members.details.monthly', half_month: 'members.details.halfMonth',
+                quarterly: 'members.details.quarterly', semiannual: 'members.details.semiannual', annual: 'members.details.annual',
+                'two month': 'reports.plan.twoMonths', custom_mslzyl8m: 'reports.plan.twoMonths'
+            };
+            const PAYMENT_LABEL_KEYS = {
+                cash: 'members.details.cash', card: 'members.details.card', transfer: 'members.details.transfer',
+                wallet: 'members.details.wallet', other: 'members.details.other'
+            };
+            const STATUS_LABEL_KEYS = {
+                active: 'members.details.active', expiring_soon: 'members.details.expiringSoon',
+                expired: 'members.details.expired', frozen: 'members.details.frozen', cancelled: 'members.details.cancelledStatus'
+            };
 
             function printPaperColor() {
                 return window.topGymThemeValue?.('--qr-paper')
@@ -30,18 +56,19 @@
                 const raw = String(value);
                 const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00`) : new Date(raw);
                 if (Number.isNaN(date.getTime())) return raw;
-                return new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+                return new Intl.DateTimeFormat(`${printLocale()}-EG-u-ca-gregory`, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
             }
 
             function printDateTime(value) {
                 if (!value) return '—';
                 const date = new Date(value);
                 if (Number.isNaN(date.getTime())) return String(value);
-                return new Intl.DateTimeFormat('ar-EG-u-ca-gregory', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
+                return new Intl.DateTimeFormat(`${printLocale()}-EG-u-ca-gregory`, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
             }
 
             function money(value) {
-                return `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+                return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    || `${Number(value || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
             }
 
             function assetUrl(path) {
@@ -74,27 +101,28 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=41fb06ec99c1abe8') + '">' + printBrandVariables();
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=abbd420dc55de00d') + '">' + printBrandVariables();
             }
 
-            function printBrandMarkup(subtitle = 'إدارة الجيم') {
+            function printBrandMarkup(subtitle = null) {
                 const config = branding();
                 const logo = config.assets?.printLogo?.url || config.assets?.primaryLogo?.url || '/assets/logic-fit-logo-horizontal.svg?v=1';
-                return '<div class="print-brand"><img class="print-logo" src="' + assetUrl(logo) + '" alt="' + escapeHtml(brandName()) + '"><div class="print-brand-copy"><h1 class="print-brand-title">' + escapeHtml(brandName()) + '</h1><span class="print-brand-subtitle">' + escapeHtml(subtitle) + '</span></div></div>';
+                return '<div class="print-brand"><img class="print-logo" src="' + assetUrl(logo) + '" alt="' + escapeHtml(brandName()) + '"><div class="print-brand-copy"><h1 class="print-brand-title">' + escapeHtml(brandName()) + '</h1><span class="print-brand-subtitle">' + escapeHtml(subtitle || printText('brand.subtitle')) + '</span></div></div>';
             }
 
-            function printFooterMarkup(context = 'إدارة الجيم', generatedSystem = false) {
+            function printFooterMarkup(context = null, generatedSystem = false) {
                 const config = branding();
                 const footer = config.documents?.footer || 'إدارة أذكى، أداء أفضل.';
-                return '<footer class="print-footer"><div class="print-footer-management"><strong>' + escapeHtml(config.identity?.companyName || brandName()) + '</strong><span>' + escapeHtml(context) + ' · ' + escapeHtml(generatedSystem ? `From ${brandName()} System` : footer) + '</span></div><span class="print-signature">اعتماد الإدارة</span></footer>';
+                const generatedBy = printText('footer.generatedBy', { brand: brandName() });
+                return '<footer class="print-footer"><div class="print-footer-management"><strong>' + escapeHtml(config.identity?.companyName || brandName()) + '</strong><span>' + escapeHtml(context || printText('brand.subtitle')) + ' · ' + escapeHtml(generatedSystem ? generatedBy : footer) + '</span></div><span class="print-signature">' + escapeHtml(printText('footer.signature')) + '</span></footer>';
             }
 
-            function planLabel(value) { return PLAN_LABELS[value] || value || '—'; }
-            function typeLabel(value) { return TYPE_LABELS[value] || value || '—'; }
-            function paymentLabel(value) { return PAYMENT_LABELS[value] || value || '—'; }
-            function statusLabel(value) { return STATUS_LABELS[value] || value || '—'; }
+            function planLabel(value) { return localizedDomainLabel(value, PLAN_LABEL_KEYS); }
+            function typeLabel(value) { return localizedDomainLabel(value, TYPE_LABEL_KEYS); }
+            function paymentLabel(value) { return localizedDomainLabel(value, PAYMENT_LABEL_KEYS); }
+            function statusLabel(value) { return localizedDomainLabel(value, STATUS_LABEL_KEYS); }
             function currentMembership(data) { return data.memberships?.[data.memberships.length - 1] || null; }
-            function scopeNames(items) { return (Array.isArray(items) ? items : []).map((item) => String(item?.name || '').trim()).filter(Boolean).join('، ') || 'غير محدد'; }
+            function scopeNames(items) { return (Array.isArray(items) ? items : []).map((item) => String(item?.name || '').trim()).filter(Boolean).join(printLocale() === 'en' ? ', ' : '، ') || printText('value.notSpecified'); }
 
             function infoItem(label, value) {
                 return `<div class="print-info-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
@@ -109,12 +137,25 @@
                 const values = [];
                 if (details.membershipPlan) values.push(planLabel(details.membershipPlan));
                 if (details.membershipType) values.push(typeLabel(details.membershipType));
-                if (details.startDate) values.push(`من ${printDate(details.startDate)}`);
-                if (details.endDate) values.push(`إلى ${printDate(details.endDate)}`);
-                if (details.amountDue !== undefined) values.push(`مستحق ${money(details.amountDue)}`);
-                if (details.amountPaid !== undefined) values.push(`مدفوع ${money(details.amountPaid)}`);
-                if (details.days) values.push(`${details.days} يوم`);
-                return values.join(' · ') || 'تم تسجيل العملية في سجل العضو.';
+                if (details.startDate) values.push(printText('value.from', { date: printDate(details.startDate) }));
+                if (details.endDate) values.push(printText('value.to', { date: printDate(details.endDate) }));
+                if (details.amountDue !== undefined) values.push(printText('value.due', { amount: money(details.amountDue) }));
+                if (details.amountPaid !== undefined) values.push(printText('value.paid', { amount: money(details.amountPaid) }));
+                if (details.days) values.push(printText('value.dayCount', { count: window.TopGymI18n?.format?.('number', details.days) || details.days }));
+                return values.join(' · ') || printText('value.operationRecorded');
+            }
+
+            function eventLabel(value) {
+                const keys = {
+                    created: 'operation.created', updated: 'operation.updated', renewed: 'operation.renewed',
+                    frozen: 'operation.frozen', resumed: 'operation.resumed', payment_updated: 'operation.paymentUpdated'
+                };
+                return keys[value] ? printText(keys[value]) : value || printText('table.operation');
+            }
+
+            function transactionLabel(value) {
+                const keys = { subscription: 'operation.transactionSubscription', payment: 'operation.transactionPayment', adjustment: 'operation.transactionAdjustment' };
+                return keys[value] ? printText(keys[value]) : value || printText('table.operation');
             }
 
             function membershipHistory(data) {
@@ -122,84 +163,86 @@
                     <td><span class="print-table-main">${escapeHtml(planLabel(item.plan))}</span><span class="print-table-sub">${escapeHtml(typeLabel(item.type))}</span></td>
                     <td>${escapeHtml(scopeNames(item.scope?.branches))}</td>
                     <td>${escapeHtml(scopeNames(item.scope?.sections))}</td>
-                    <td>${escapeHtml(printDate(item.startDate))}<span class="print-table-sub">حتى ${escapeHtml(printDate(item.effectiveEndDate))}</span></td>
+                    <td>${escapeHtml(printDate(item.startDate))}<span class="print-table-sub">${escapeHtml(printText('value.until', { date: printDate(item.effectiveEndDate) }))}</span></td>
                     <td><span class="print-status ${escapeHtml(item.status)}">${escapeHtml(statusLabel(item.status))}</span></td>
-                    <td>${escapeHtml(money(item.amountDue))}<span class="print-table-sub">متبقي ${escapeHtml(money(item.amountRemaining))}</span></td>
+                    <td>${escapeHtml(money(item.amountDue))}<span class="print-table-sub">${escapeHtml(printText('value.remaining', { amount: money(item.amountRemaining) }))}</span></td>
                     <td>${escapeHtml(printDate(item.paidAt))}</td>
                 </tr>`).join('');
-                return rows || '<tr><td colspan="5"><div class="print-empty">لا توجد اشتراكات مسجلة.</div></td></tr>';
+                return rows || `<tr><td colspan="5"><div class="print-empty">${escapeHtml(printText('empty.memberships'))}</div></td></tr>`;
             }
 
             function freezeHistory(data) {
                 const rows = (data.freezes || []).map((item) => `<tr>
                     <td>${escapeHtml(printDate(item.startDate))}</td>
                     <td>${escapeHtml(printDate(item.endDate))}</td>
-                    <td>${escapeHtml(item.resumedDate ? printDate(item.resumedDate) : 'نشط')}</td>
-                    <td>${escapeHtml(`${item.days || 0} يوم`)}</td>
+                    <td>${escapeHtml(item.resumedDate ? printDate(item.resumedDate) : printText('value.active'))}</td>
+                    <td>${escapeHtml(printText('value.dayCount', { count: window.TopGymI18n?.format?.('number', item.days || 0) || item.days || 0 }))}</td>
                     <td>${escapeHtml(item.reason || '—')}</td>
                 </tr>`).join('');
-                return rows || '<tr><td colspan="5"><div class="print-empty">لا توجد عمليات تجميد.</div></td></tr>';
+                return rows || `<tr><td colspan="5"><div class="print-empty">${escapeHtml(printText('empty.freezes'))}</div></td></tr>`;
             }
 
             function eventHistory(data) {
                 const rows = (data.events || []).map((event) => `<tr>
                     <td>${escapeHtml(printDateTime(event.createdAt))}</td>
-                    <td>${escapeHtml(EVENT_LABELS[event.eventType] || event.eventType || 'عملية')}</td>
+                    <td>${escapeHtml(eventLabel(event.eventType))}</td>
                     <td>${escapeHtml(eventSummary(event))}</td>
                 </tr>`).join('');
-                return rows || '<tr><td colspan="3"><div class="print-empty">لا توجد عمليات مسجلة.</div></td></tr>';
+                return rows || `<tr><td colspan="3"><div class="print-empty">${escapeHtml(printText('empty.events'))}</div></td></tr>`;
             }
 
             function paymentHistory(data) {
                 const rows = (data.payments || []).map((payment) => `<tr>
                     <td>${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</td>
                     <td>${escapeHtml(printDateTime(payment.transactionDate || payment.createdAt))}</td>
-                    <td>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || payment.transactionType || 'دفعة')}</td>
+                    <td>${escapeHtml(transactionLabel(payment.transactionType))}</td>
                     <td>${escapeHtml(planLabel(payment.plan))}<span class="print-table-sub">${escapeHtml(typeLabel(payment.type))}</span></td>
                     <td>${escapeHtml(money(payment.amountPaid))}</td>
                     <td>${escapeHtml(money(payment.amountRemaining))}</td>
                     <td>${escapeHtml(paymentLabel(payment.paymentMethod))}</td>
                     <td>${escapeHtml(payment.notes || '—')}</td>
                 </tr>`).join('');
-                return rows || '<tr><td colspan="8"><div class="print-empty">لا توجد مدفوعات أو إيصالات مسجلة.</div></td></tr>';
+                return rows || `<tr><td colspan="8"><div class="print-empty">${escapeHtml(printText('empty.payments'))}</div></td></tr>`;
             }
 
             function buildPrintDocument(data, mode) {
                 const member = data.member || {};
                 const membership = currentMembership(data);
-                const title = mode === 'full' ? 'ملف العضوية الكامل' : mode === 'new' ? 'إيصال اشتراك جديد' : 'إيصال الاشتراك';
-                const memberName = member.fullName || 'عضو الجيم';
+                const title = printText(mode === 'full' ? 'document.fullProfileTitle' : mode === 'new' ? 'document.newMembershipTitle' : 'document.membershipTitle');
+                const memberName = member.fullName || printText('value.memberFallback');
                 const memberInfo = `<section class="print-section">
-                    <div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>بيانات المشترك</h2></div></div>
+                    <div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.customerData'))}</span><h2>${escapeHtml(printText('section.memberData'))}</h2></div></div>
                     <div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(memberName))}</span><div class="print-member-copy"><h2>${escapeHtml(memberName)}</h2><p>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}${member.email ? ` · ${escapeHtml(member.email)}` : ''}</p></div></div>
-                    <div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ التسجيل', printDate(member.registrationDate))}${infoItem('البريد الإلكتروني', member.email || '—')}${infoItem('ملاحظات العضو', member.notes || '—')}</div>
+                    <div class="print-info-grid">${infoItem(printText('field.memberNumber'), `#${member.id || '—'}`)}${infoItem(printText('field.registrationDate'), printDate(member.registrationDate))}${infoItem(printText('field.email'), member.email || '—')}${infoItem(printText('field.memberNotes'), member.notes || '—')}</div>
                 </section>`;
                 const membershipScope = membership?.scope || {};
-                const membershipAccessInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">نطاق العضوية والبوابة</span><h2>تفاصيل الوصول</h2></div></div><div class="print-info-grid">${infoItem('الفرع', scopeNames(membershipScope.branches))}${infoItem('القسم', scopeNames(membershipScope.sections))}${infoItem('كود بوابة العضوية', member.membershipCode?.maskedCode || 'غير متاح')}${infoItem('رابط بوابة العضوية', member.membershipCodePortalUrl || 'غير متاح')}</div></section>`;
+                const membershipAccessInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.accessScope'))}</span><h2>${escapeHtml(printText('section.accessDetails'))}</h2></div></div><div class="print-info-grid">${infoItem(printText('field.branch'), scopeNames(membershipScope.branches))}${infoItem(printText('field.section'), scopeNames(membershipScope.sections))}${infoItem(printText('field.portalCode'), member.membershipCode?.maskedCode || printText('value.notAvailable'))}${infoItem(printText('field.portalLink'), member.membershipCodePortalUrl || printText('value.notAvailable'))}</div></section>`;
                 const membershipInfo = membership ? `<section class="print-section">
-                    <div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العضوية</span><h2>${mode === 'new' ? 'تفاصيل الاشتراك الجديد' : 'الاشتراك الحالي'}</h2></div><span class="print-status ${escapeHtml(membership.status)}">${escapeHtml(statusLabel(membership.status))}</span></div>
-                    <div class="print-info-grid">${infoItem('الباقة', planLabel(membership.plan))}${infoItem('نوع العضوية', typeLabel(membership.type))}${infoItem('تاريخ البداية', printDate(membership.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership.effectiveEndDate))}${infoItem('الأيام المتبقية', membership.status === 'expired' ? `منتهية منذ ${Math.abs(Number(membership.daysRemaining || 0))} يوم` : `${Number(membership.daysRemaining || 0)} يوم`)}${infoItem('التجميد', `${Number(membership.freezeCount || 0)}/${Number(membership.freezeLimit || 3)}`)}${infoItem('تاريخ الدفع', printDate(membership.paidAt))}${infoItem('طريقة الدفع', paymentLabel(membership.paymentMethod))}</div>
-                    <div class="print-billing-grid">${billingItem('السعر الأساسي', money(membership.listPrice))}${billingItem('الخصم', money(membership.discountAmount))}${billingItem('المستحق', money(membership.amountDue))}${billingItem('المتبقي', money(membership.amountRemaining), 'remaining')}</div>
-                    ${membership.notes ? `<p class="print-notes"><strong>ملاحظات الاشتراك:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
-                </section>` : '<section class="print-section"><div class="print-empty">لا يوجد اشتراك مسجل لهذا العضو.</div></section>';
-                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل المالي</span><h2>سجل المدفوعات والإيصالات</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem('إجمالي المستحق', money(data.financialSummary?.totalDue))}${billingItem('إجمالي المدفوع', money(data.financialSummary?.totalPaid))}${billingItem('إجمالي المتبقي', money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem('عدد الإيصالات', String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>رقم الإيصال</th><th>التاريخ</th><th>العملية</th><th>الاشتراك</th><th>قيمة العملية</th><th>المتبقي</th><th>طريقة الدفع</th><th>ملاحظات</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
-                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">السجل الكامل</span><h2>سجل الاشتراكات والتجديدات</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>الباقة والمدة</th><th>الفرع</th><th>القسم</th><th>الفترة</th><th>الحالة</th><th>الحساب</th><th>الدفع</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
-                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل التجميد</span><h2>عمليات التجميد</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>البداية</th><th>النهاية</th><th>الاستئناف</th><th>المدة</th><th>السبب</th></tr></thead><tbody>${freezeHistory(data)}</tbody></table></div></section>
-                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">سجل النشاط</span><h2>كل العمليات المسجلة</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>التفاصيل</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
-                const printHeader = `<header class="print-header">${printBrandMarkup('إدارة العضويات والاشتراكات')}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>رقم العضو: #${escapeHtml(member.id || '—')}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
-                const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet${mode === 'full' ? ' print-member-full' : ''}">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipAccessInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
+                    <div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.membershipDetails'))}</span><h2>${escapeHtml(printText(mode === 'new' ? 'section.newMembershipDetails' : 'section.currentMembership'))}</h2></div><span class="print-status ${escapeHtml(membership.status)}">${escapeHtml(statusLabel(membership.status))}</span></div>
+                    <div class="print-info-grid">${infoItem(printText('field.plan'), planLabel(membership.plan))}${infoItem(printText('field.membershipType'), typeLabel(membership.type))}${infoItem(printText('field.startDate'), printDate(membership.startDate))}${infoItem(printText('field.endDate'), printDate(membership.effectiveEndDate))}${infoItem(printText('field.daysRemaining'), membership.status === 'expired' ? printText('value.expiredSince', { count: window.TopGymI18n?.format?.('number', Math.abs(Number(membership.daysRemaining || 0))) || Math.abs(Number(membership.daysRemaining || 0)) }) : printText('value.dayCount', { count: window.TopGymI18n?.format?.('number', Number(membership.daysRemaining || 0)) || Number(membership.daysRemaining || 0) }))}${infoItem(printText('field.freeze'), `${Number(membership.freezeCount || 0)}/${Number(membership.freezeLimit || 3)}`)}${infoItem(printText('field.paymentDate'), printDate(membership.paidAt))}${infoItem(printText('field.paymentMethod'), paymentLabel(membership.paymentMethod))}</div>
+                    <div class="print-billing-grid">${billingItem(printText('field.basePrice'), money(membership.listPrice))}${billingItem(printText('field.discount'), money(membership.discountAmount))}${billingItem(printText('field.amountDue'), money(membership.amountDue))}${billingItem(printText('field.amountRemaining'), money(membership.amountRemaining), 'remaining')}</div>
+                    ${membership.notes ? `<p class="print-notes"><strong>${escapeHtml(printText('field.membershipNotes'))}:</strong> ${escapeHtml(membership.notes)}</p>` : ''}
+                </section>` : `<section class="print-section"><div class="print-empty">${escapeHtml(printText('value.noMembership'))}</div></section>`;
+                const history = mode === 'full' ? `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.financialHistory'))}</span><h2>${escapeHtml(printText('section.paymentHistory'))}</h2></div></div><div class="print-billing-grid print-payment-summary">${billingItem(printText('field.totalDue'), money(data.financialSummary?.totalDue))}${billingItem(printText('field.totalPaid'), money(data.financialSummary?.totalPaid))}${billingItem(printText('field.totalRemaining'), money(data.financialSummary?.totalRemaining), 'remaining')}${billingItem(printText('field.receiptCount'), String(data.financialSummary?.paidTransactionCount || 0))}</div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>${escapeHtml(printText('table.receiptNumber'))}</th><th>${escapeHtml(printText('table.date'))}</th><th>${escapeHtml(printText('table.operation'))}</th><th>${escapeHtml(printText('table.membership'))}</th><th>${escapeHtml(printText('table.transactionAmount'))}</th><th>${escapeHtml(printText('table.remaining'))}</th><th>${escapeHtml(printText('table.paymentMethod'))}</th><th>${escapeHtml(printText('table.notes'))}</th></tr></thead><tbody>${paymentHistory(data)}</tbody></table></div></section>
+                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.completeHistory'))}</span><h2>${escapeHtml(printText('section.membershipHistory'))}</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>${escapeHtml(printText('table.planAndDuration'))}</th><th>${escapeHtml(printText('table.branch'))}</th><th>${escapeHtml(printText('table.section'))}</th><th>${escapeHtml(printText('table.period'))}</th><th>${escapeHtml(printText('table.status'))}</th><th>${escapeHtml(printText('table.account'))}</th><th>${escapeHtml(printText('table.payment'))}</th></tr></thead><tbody>${membershipHistory(data)}</tbody></table></div></section>
+                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.freezeHistory'))}</span><h2>${escapeHtml(printText('section.freezeOperations'))}</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>${escapeHtml(printText('table.start'))}</th><th>${escapeHtml(printText('table.end'))}</th><th>${escapeHtml(printText('table.resumption'))}</th><th>${escapeHtml(printText('table.duration'))}</th><th>${escapeHtml(printText('table.reason'))}</th></tr></thead><tbody>${freezeHistory(data)}</tbody></table></div></section>
+                    <section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.activityHistory'))}</span><h2>${escapeHtml(printText('section.allRecordedOperations'))}</h2></div></div><div class="print-table-wrap"><table class="print-table"><thead><tr><th>${escapeHtml(printText('table.date'))}</th><th>${escapeHtml(printText('table.operation'))}</th><th>${escapeHtml(printText('table.details'))}</th></tr></thead><tbody>${eventHistory(data)}</tbody></table></div></section>` : '';
+                const printHeader = `<header class="print-header">${printBrandMarkup(printText('brand.managementContext'))}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(printText('meta.memberNumber'))}: #${escapeHtml(member.id || '—')}</span><span>${escapeHtml(printText('meta.printedAt'))}: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
+                const printFooter = printFooterMarkup(printText('brand.managementContext'));
+                const locale = printLocale();
+                return `<!doctype html><html lang="${locale}" dir="${locale === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet${mode === 'full' ? ' print-member-full' : ''}">${printHeader}<div class="print-accent"></div>${memberInfo}${membershipAccessInfo}${membershipInfo}${history}${printFooter}</main></body></html>`;
             }
 
             function buildPaymentReceiptDocument(data, payment) {
                 const member = data.member || {};
                 const membership = (data.memberships || []).find((item) => Number(item.id) === Number(payment.membershipId)) || currentMembership(data);
-                const title = 'إيصال دفع';
-                const printHeader = `<header class="print-header">${printBrandMarkup('إدارة العضويات والاشتراكات')}<div class="print-document-meta"><strong>${title}</strong><span>رقم الإيصال: ${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</span><span>تاريخ الطباعة: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
-                const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">بيانات العميل</span><h2>إيصال استلام دفعة</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || 'عضو الجيم')}</h2><p>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</p></div></div><div class="print-info-grid">${infoItem('رقم العضو', `#${member.id || '—'}`)}${infoItem('تاريخ العملية', printDateTime(payment.transactionDate || payment.createdAt))}${infoItem('الباقة', planLabel(payment.plan))}${infoItem('النوع', typeLabel(payment.type))}</div></section>`;
-                const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">تفاصيل العملية</span><h2>${escapeHtml(PAYMENT_TRANSACTION_LABELS[payment.transactionType] || 'دفعة')}</h2></div></div><div class="print-info-grid">${infoItem('طريقة الدفع', paymentLabel(payment.paymentMethod))}${infoItem('تاريخ الاشتراك', printDate(membership?.startDate))}${infoItem('تاريخ الانتهاء', printDate(membership?.effectiveEndDate))}${infoItem('المستحق', money(payment.amountDue))}</div><div class="print-receipt-amount"><span>قيمة العملية</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>الرصيد المتبقي بعد العملية: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>ملاحظات:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
-                const printFooter = printFooterMarkup('إدارة العضويات والاشتراكات');
-                return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
+                const title = printText('document.paymentReceiptTitle');
+                const printHeader = `<header class="print-header">${printBrandMarkup(printText('brand.managementContext'))}<div class="print-document-meta"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(printText('meta.receiptNumber'))}: ${escapeHtml(payment.receiptNumber || `TG-${String(payment.id).padStart(6, '0')}`)}</span><span>${escapeHtml(printText('meta.printedAt'))}: ${escapeHtml(printDate(new Date()))}</span></div></header>`;
+                const memberInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.customerData'))}</span><h2>${escapeHtml(printText('document.paymentReceiptTitle'))}</h2></div><span class="print-receipt-id">${escapeHtml(payment.receiptNumber || '—')}</span></div><div class="print-member-hero"><span class="print-member-avatar">${escapeHtml(initials(member.fullName))}</span><div class="print-member-copy"><h2>${escapeHtml(member.fullName || printText('value.memberFallback'))}</h2><p>${escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—')}</p></div></div><div class="print-info-grid">${infoItem(printText('field.memberNumber'), `#${member.id || '—'}`)}${infoItem(printText('table.operation'), printDateTime(payment.transactionDate || payment.createdAt))}${infoItem(printText('field.plan'), planLabel(payment.plan))}${infoItem(printText('field.membershipType'), typeLabel(payment.type))}</div></section>`;
+                const paymentInfo = `<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">${escapeHtml(printText('section.membershipDetails'))}</span><h2>${escapeHtml(transactionLabel(payment.transactionType))}</h2></div></div><div class="print-info-grid">${infoItem(printText('field.paymentMethod'), paymentLabel(payment.paymentMethod))}${infoItem(printText('field.startDate'), printDate(membership?.startDate))}${infoItem(printText('field.endDate'), printDate(membership?.effectiveEndDate))}${infoItem(printText('field.amountDue'), money(payment.amountDue))}</div><div class="print-receipt-amount"><span>${escapeHtml(printText('table.transactionAmount'))}</span><strong>${escapeHtml(money(payment.amountPaid))}</strong><small>${escapeHtml(printText('field.amountRemaining'))}: ${escapeHtml(money(payment.amountRemaining))}</small></div>${payment.notes ? `<p class="print-notes"><strong>${escapeHtml(printText('table.notes'))}:</strong> ${escapeHtml(payment.notes)}</p>` : ''}</section>`;
+                const printFooter = printFooterMarkup(printText('brand.managementContext'));
+                const locale = printLocale();
+                return `<!doctype html><html lang="${locale}" dir="${locale === 'ar' ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)} - ${escapeHtml(brandName())}</title></head><body><main class="print-sheet">${printHeader}<div class="print-accent"></div>${memberInfo}${paymentInfo}${printFooter}</main></body></html>`;
             }
 
             function decoratePrintDocumentHtml(html) {
@@ -260,26 +303,63 @@
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
                 const holder = document.createElement('div');
-                holder.dir = 'rtl';
-                holder.style.cssText = `position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;`;
+                const pdfStylesheet = parsed.head?.querySelector('[data-top-gym-print-styles]')?.cloneNode(true);
                 const brandVariables = parsed.head?.querySelector('[data-top-gym-print-brand]')?.cloneNode(true);
-                if (brandVariables) holder.append(brandVariables);
+                let stylesheetLoaded = false;
+                holder.dir = 'rtl';
+                holder.className = 'print-pdf-host';
+                // Keep the source node in the viewport's origin. html2canvas can
+                // miscalculate page offsets for elements positioned far outside
+                // the viewport, which yields blank leading areas and clipped pages.
+                holder.style.cssText = `position:fixed;left:0;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;opacity:0;pointer-events:none;`;
+                if (brandVariables) {
+                    brandVariables.textContent = brandVariables.textContent.replace(/:root/g, '.print-pdf-host');
+                    holder.append(brandVariables);
+                }
                 holder.append(sheet);
                 document.body.append(holder);
                 try {
+                    if (pdfStylesheet) {
+                        await new Promise((resolve) => {
+                            pdfStylesheet.onload = () => { stylesheetLoaded = true; resolve(); };
+                            pdfStylesheet.onerror = resolve;
+                            document.head.append(pdfStylesheet);
+                        });
+                    }
+                    if (!stylesheetLoaded) throw new Error('تعذر تحميل تنسيقات مستند PDF.');
                     if (document.fonts?.ready) await document.fonts.ready;
                     if (document.fonts?.load) await Promise.all(['400 10pt Cairo', '700 10pt Cairo', '800 16pt Cairo'].map((font) => document.fonts.load(font).catch(() => [])));
                     await Promise.all([...holder.querySelectorAll('img')].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
                     const blob = await window.html2pdf().set({
-                        margin: [8, 8, 8, 8],
+                        margin: [6, 8, 6, 8],
                         image: { type: 'jpeg', quality: .98 },
-                        html2canvas: { scale: 2, useCORS: true, backgroundColor: printPaperColor(), logging: false, letterRendering: true },
+                        html2canvas: {
+                            scale: 2,
+                            useCORS: true,
+                            scrollX: 0,
+                            scrollY: 0,
+                            windowHeight: Math.max(window.innerHeight, Math.ceil(sheet.getBoundingClientRect().height)),
+                            backgroundColor: printPaperColor(),
+                            logging: false,
+                            letterRendering: true,
+                            onclone: (clonedDocument) => {
+                                const clonedHost = clonedDocument.querySelector('.print-pdf-host');
+                                if (clonedHost) {
+                                    clonedHost.style.position = 'fixed';
+                                    clonedHost.style.left = '0';
+                                    clonedHost.style.top = '0';
+                                    clonedHost.style.opacity = '1';
+                                    clonedHost.style.zIndex = 'auto';
+                                }
+                            }
+                        },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
                     }).from(sheet).outputPdf('blob');
                     const filename = `${String(brandName()).replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'Gym'}-${String(data.member?.id || memberId)}-${mode}.pdf`;
                     return { data, file: new File([blob], filename, { type: 'application/pdf' }) };
                 } finally {
+                    pdfStylesheet?.remove();
                     holder.remove();
                 }
             }
@@ -298,20 +378,86 @@
                     : '—';
             }
 
+            function coachingPrintText(key, params = {}) {
+                return window.TopGymI18n?.t?.(`print.coaching.${key}`, params) || key;
+            }
+
+            function coachingPrintDocumentAttributes() {
+                const locale = printLocale();
+                return { locale, direction: locale === 'en' ? 'ltr' : 'rtl' };
+            }
+
+            function coachingPrintNumber(value, digits = 0) {
+                const parsed = Number(value);
+                if (!Number.isFinite(parsed)) return '—';
+                return window.TopGymI18n?.format?.('number', parsed, { maximumFractionDigits: digits, minimumFractionDigits: digits })
+                    || parsed.toLocaleString(printLocale() === 'en' ? 'en-EG' : 'ar-EG', { maximumFractionDigits: digits, minimumFractionDigits: digits });
+            }
+
+            function coachingServingUnit(value) {
+                const unit = String(value || '').trim();
+                const normalized = unit.toLowerCase();
+                const unitKeys = {
+                    g: 'gram', gram: 'gram', grams: 'gram', 'جرام': 'gram', 'غرام': 'gram',
+                    kg: 'kilogram', kilogram: 'kilogram', kilograms: 'kilogram', 'كجم': 'kilogram', 'كيلوجرام': 'kilogram',
+                    ml: 'milliliter', milliliter: 'milliliter', milliliters: 'milliliter', 'مل': 'milliliter', 'ملليلتر': 'milliliter',
+                    l: 'liter', liter: 'liter', liters: 'liter', 'لتر': 'liter',
+                    cup: 'cup', cups: 'cup', 'كوب': 'cup',
+                    tbsp: 'tablespoon', tablespoon: 'tablespoon', tablespoons: 'tablespoon', 'ملعقة كبيرة': 'tablespoon',
+                    tsp: 'teaspoon', teaspoon: 'teaspoon', teaspoons: 'teaspoon', 'ملعقة صغيرة': 'teaspoon',
+                    piece: 'piece', pieces: 'piece', 'حبة': 'piece'
+                };
+                const key = unitKeys[normalized];
+                return key ? coachingPrintText(`servingUnit.${key}`) : unit;
+            }
+
             function coachingStatusLabel(value) {
-                return { active: 'نشطة', draft: 'مسودة', paused: 'متوقفة', completed: 'مكتملة', archived: 'مؤرشفة' }[value] || value || '—';
+                const labels = { active: 'status.active', draft: 'status.draft', paused: 'status.paused', completed: 'status.completed', archived: 'status.archived' };
+                return labels[value] ? coachingPrintText(labels[value]) : value || '—';
             }
 
             function coachingGoalLabel(value) {
-                return { lose: 'خسارة وزن', maintain: 'تثبيت الوزن', gain: 'زيادة وزن' }[value] || value || '—';
+                const labels = { lose: 'goal.lose', maintain: 'goal.maintain', gain: 'goal.gain' };
+                return labels[value] ? coachingPrintText(labels[value]) : value || '—';
+            }
+
+            function coachingWorkoutGoalLabel(value) {
+                const labels = { muscle: 'goal.muscle', strength: 'goal.strength', fat_loss: 'goal.fatLoss', fatLoss: 'goal.fatLoss', general_fitness: 'goal.generalFitness', generalFitness: 'goal.generalFitness', endurance: 'goal.endurance' };
+                return labels[value] ? coachingPrintText(labels[value]) : value || '—';
+            }
+
+            function coachingWorkoutLevelLabel(value) {
+                const labels = { beginner: 'level.beginner', intermediate: 'level.intermediate', advanced: 'level.advanced' };
+                return labels[value] ? coachingPrintText(labels[value]) : value || '—';
+            }
+
+            function coachingPrintReps(exercise) {
+                const min = exercise?.repsMin;
+                const max = exercise?.repsMax;
+                if (min === null || min === undefined || min === '') return '—';
+                const first = coachingPrintNumber(min);
+                if (max === null || max === undefined || max === '' || Number(max) === Number(min)) return first;
+                return first + '–' + coachingPrintNumber(max);
             }
 
             function coachingActivityLabel(value) {
-                return { sedentary: 'قليل جدًا', light: 'خفيف', moderate: 'متوسط', high: 'مرتفع', very_high: 'مرتفع جدًا' }[value] || value || '—';
+                const labels = { sedentary: 'activity.sedentary', light: 'activity.light', moderate: 'activity.moderate', high: 'activity.high', very_high: 'activity.veryHigh' };
+                return labels[value] ? coachingPrintText(labels[value]) : value || '—';
+            }
+
+            function coachingGenderLabel(value) {
+                if (value === 'female') return coachingPrintText('gender.female');
+                if (value === 'male') return coachingPrintText('gender.male');
+                return value || '—';
             }
 
             function coachingValue(value, fallback = '—') {
                 return value === null || value === undefined || value === '' ? fallback : String(value);
+            }
+
+            function coachingLocalizedValue(arabicValue, englishValue, fallback = '') {
+                const selected = printLocale() === 'en' ? englishValue || arabicValue : arabicValue || englishValue;
+                return selected || fallback;
             }
 
             function coachingList(value) {
@@ -320,14 +466,16 @@
                 return [String(value).trim()].filter(Boolean);
             }
 
-            function coachingListMarkup(value, emptyLabel = 'لا توجد بيانات مسجلة.') {
+            function coachingListMarkup(value, emptyLabel = coachingPrintText('noData')) {
                 const values = coachingList(value);
                 if (!values.length) return '<span class="print-system-muted">' + escapeHtml(emptyLabel) + '</span>';
                 return '<ul class="print-system-list">' + values.map((item) => '<li>' + escapeHtml(item) + '</li>').join('') + '</ul>';
             }
 
             function coachingItemName(item) {
-                return item?.nameAr || item?.name || item?.nameEn || 'عنصر بدون اسم';
+                const english = printLocale() === 'en';
+                return (english ? item?.nameEn || item?.name || item?.nameAr : item?.nameAr || item?.name || item?.nameEn)
+                    || coachingPrintText('exerciseName');
             }
 
             function exercisePrintSource(item, phase = 'start') {
@@ -350,7 +498,9 @@
                 const start = exercisePrintSource(item, 'start');
                 const end = exercisePrintSource(item, 'end');
                 if (!start && !end) return '';
-                return '<div class="print-exercise-gallery">' + (start ? '<figure>' + exercisePrintImage(item, 'start', 'print-exercise-detail-image', 'البداية') + '<figcaption>البداية</figcaption></figure>' : '') + (end ? '<figure>' + exercisePrintImage(item, 'end', 'print-exercise-detail-image', 'النهاية') + '<figcaption>النهاية</figcaption></figure>' : '') + '</div>';
+                const startLabel = coachingPrintText('image.start');
+                const endLabel = coachingPrintText('image.end');
+                return '<div class="print-exercise-gallery">' + (start ? '<figure>' + exercisePrintImage(item, 'start', 'print-exercise-detail-image', startLabel) + '<figcaption>' + escapeHtml(startLabel) + '</figcaption></figure>' : '') + (end ? '<figure>' + exercisePrintImage(item, 'end', 'print-exercise-detail-image', endLabel) + '<figcaption>' + escapeHtml(endLabel) + '</figcaption></figure>' : '') + '</div>';
             }
 
             async function preloadPrintImages(items = []) {
@@ -430,8 +580,8 @@
 
             function normalizeCoachingDraft(draft, type, catalog = {}, clientLabel = '') {
                 const system = JSON.parse(JSON.stringify(draft || {}));
-                system.memberName = system.memberName || clientLabel || 'العميل المحدد';
-                system.name = system.name || `${type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب'} - ${system.memberName} · From ${brandName()} System`;
+                system.memberName = system.memberName || clientLabel || coachingPrintText('client');
+                system.name = system.name || `${coachingPrintText(type === 'diet' ? 'document.diet' : 'document.workout')} - ${system.memberName} · ${brandName()}`;
                 if (type === 'workout') {
                     const exercises = catalog.exercises || [];
                     system.routines = (system.routines || []).map((routine) => ({
@@ -447,12 +597,15 @@
                 system.meals = (system.meals || []).map((meal) => ({
                     ...meal,
                     items: (meal.items || []).map((item) => {
-                        const food = foods.find((candidate) => String(candidate.id) === String(item.foodId)) || {};
+                        const food = foods.find((candidate) => String(candidate.id) === String(item.foodId));
+                        // Drafts may already contain a complete food snapshot. Do not replace
+                        // it with empty catalog defaults when printing without a loaded catalog.
+                        if (!food) return { ...item };
                         const factor = Number(item.assignedQuantity || 0) / (Number(food.servingSize || 100) || 100);
                         return {
                             ...item,
-                            nameAr: food.nameAr || food.name,
-                            nameEn: food.nameEn,
+                            nameAr: food.nameAr || food.name || item.nameAr || item.name,
+                            nameEn: food.nameEn || item.nameEn,
                             calories: Number(food.calories || 0) * factor,
                             protein: Number(food.protein || 0) * factor,
                             carbs: Number(food.carbs || 0) * factor,
@@ -465,17 +618,17 @@
             }
 
             function coachingHeader(title, system) {
-                const memberName = system.memberName || system.fullName || 'العميل';
+                const memberName = coachingLocalizedValue(system.memberName, system.memberNameEn, system.fullName || coachingPrintText('client'));
                 const memberPhone = displayPhone(system.memberPhone || system.phone, system.memberPhoneCountry || system.phoneCountry) || '—';
-                const documentId = system.id ? '#' + system.id : 'مسودة';
-                return '<header class="print-header">' + printBrandMarkup('إدارة التدريب والتغذية الرياضية') + '<div class="print-document-meta"><strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(memberName) + ' · ' + escapeHtml(memberPhone) + '</span><span>' + escapeHtml(documentId) + ' · ' + escapeHtml(printDate(new Date())) + '</span></div></header>';
+                const documentId = system.id ? '#' + system.id : coachingPrintText('documentId.draft');
+                return '<header class="print-header">' + printBrandMarkup(coachingPrintText('brand.subtitle')) + '<div class="print-document-meta"><strong>' + escapeHtml(title) + '</strong><span><bdi>' + escapeHtml(memberName) + '</bdi> · <bdi>' + escapeHtml(memberPhone) + '</bdi></span><span><bdi>' + escapeHtml(documentId) + '</bdi> · ' + escapeHtml(printDate(new Date())) + '</span></div></header>';
             }
 
             function coachingMemberHero(system, type) {
-                const memberName = system.memberName || system.fullName || 'العميل';
+                const memberName = coachingLocalizedValue(system.memberName, system.memberNameEn, system.fullName || coachingPrintText('client'));
                 const memberPhone = displayPhone(system.memberPhone || system.phone, system.memberPhoneCountry || system.phoneCountry) || '—';
-                const title = type === 'diet' ? 'خطة التغذية المعتمدة' : 'برنامج التدريب المعتمد';
-                return '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(memberName) + '</h2><p>' + escapeHtml(memberPhone) + (system.memberEmail ? ' · ' + escapeHtml(system.memberEmail) : '') + '</p></div><div class="print-system-hero-title"><span>' + escapeHtml(title) + '</span><strong>' + escapeHtml(system.name || 'نظام جديد') + '</strong></div></section>';
+                const title = coachingPrintText(type === 'diet' ? 'approved.diet' : 'approved.workout');
+                return '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">' + escapeHtml(coachingPrintText('clientFile')) + '</span><h2><bdi>' + escapeHtml(memberName) + '</bdi></h2><p><bdi>' + escapeHtml(memberPhone) + '</bdi>' + (system.memberEmail ? ' · <bdi>' + escapeHtml(system.memberEmail) + '</bdi>' : '') + '</p></div><div class="print-system-hero-title"><span>' + escapeHtml(title) + '</span><strong><bdi>' + escapeHtml(coachingLocalizedValue(system.name, system.nameEn, coachingPrintText('newSystem'))) + '</bdi></strong></div></section>';
             }
 
             function coachingKpi(label, value, detail = '') {
@@ -483,7 +636,7 @@
             }
 
             function coachingInfo(label, value, className = '') {
-                return '<div class="print-system-info ' + className + '"><span>' + escapeHtml(label) + '</span><strong>' + escapeHtml(coachingValue(value)) + '</strong></div>';
+                return '<div class="print-system-info ' + className + '"><span>' + escapeHtml(label) + '</span><strong><bdi>' + escapeHtml(coachingValue(value)) + '</bdi></strong></div>';
             }
 
             function workoutPrintSections(system, libraryItems) {
@@ -500,23 +653,27 @@
                     const reps = ((Number(exercise.repsMin) || 0) + (Number(exercise.repsMax) || Number(exercise.repsMin) || 0)) / 2;
                     volume += Number(exercise.sets || 0) * reps * Number(exercise.weightKg || 0);
                     const detail = detailFor(exercise);
-                    const muscle = detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? 'عضلة #' + detail.targetMuscleId : 'غير محددة');
+                    const muscle = detail.targetMuscleNameEn && printLocale() === 'en' ? detail.targetMuscleNameEn : detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? coachingPrintText('muscleById', { id: detail.targetMuscleId }) : coachingPrintText('undeterminedMuscle'));
                     muscles[muscle] = (muscles[muscle] || 0) + Number(exercise.sets || 0);
                 }));
                 const muscleEntries = Object.entries(muscles).sort(([, first], [, second]) => second - first);
                 const maxMuscleSets = Math.max(1, ...muscleEntries.map(([, count]) => count));
                 const distribution = muscleEntries.length
-                    ? '<div class="print-system-distribution">' + muscleEntries.map(([name, count]) => '<div class="print-system-bar"><div><span>' + escapeHtml(name) + '</span><b>' + coachingNumber(count) + ' مجموعة</b></div><i><em></em></i></div>').join('') + '</div>'
-                    : '<div class="print-empty">لم يتم تحديد توزيع العضلات.</div>';
+                    ? '<div class="print-system-distribution">' + muscleEntries.map(([name, count]) => '<div class="print-system-bar"><div><span>' + escapeHtml(name) + '</span><b>' + coachingPrintNumber(count) + ' ' + escapeHtml(coachingPrintText('exerciseSet')) + '</b></div><i><em></em></i></div>').join('') + '</div>'
+                    : '<div class="print-empty">' + escapeHtml(coachingPrintText('noMuscleDistribution')) + '</div>';
                 const routineSections = routines.length ? routines.map((routine, routineIndex) => {
-                    const rows = (routine.exercises || []).map((exercise) => {
+                    const localizedExercises = (routine.exercises || []).map((exercise) => ({
+                        ...exercise,
+                        notes: coachingLocalizedValue(exercise.notes, exercise.notesEn)
+                    }));
+                    const rows = localizedExercises.map((exercise) => {
                         const detail = detailFor(exercise);
-                        const muscle = detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? 'عضلة #' + detail.targetMuscleId : 'غير محددة');
-                        const intensity = [exercise.rir == null ? '' : 'RIR ' + exercise.rir, exercise.rpe == null ? '' : 'RPE ' + exercise.rpe].filter(Boolean).join(' · ');
-                        return '<tr><td><span class="print-table-main">' + escapeHtml(coachingItemName(detail)) + '</span>' + (exercise.notes ? '<span class="print-table-sub">' + escapeHtml(exercise.notes) + '</span>' : '') + '</td><td>' + escapeHtml(muscle) + '</td><td dir="ltr">' + coachingNumber(exercise.sets) + '</td><td dir="ltr">' + escapeHtml(coachingReps(exercise)) + '</td><td dir="ltr">' + (exercise.weightKg === null || exercise.weightKg === undefined || exercise.weightKg === '' ? '—' : coachingNumber(exercise.weightKg, 1) + ' كجم') + '</td><td dir="ltr">' + (exercise.restSeconds == null ? '—' : coachingNumber(exercise.restSeconds) + ' ث') + '</td><td dir="ltr">' + escapeHtml(exercise.tempo || intensity || '—') + '</td><td dir="ltr">' + escapeHtml(exercise.supersetGroupId || '—') + '</td></tr>';
+                        const muscle = detail.targetMuscleNameEn && printLocale() === 'en' ? detail.targetMuscleNameEn : detail.targetMuscleNameAr || detail.targetMuscleName || (detail.targetMuscleId ? coachingPrintText('muscleById', { id: detail.targetMuscleId }) : coachingPrintText('undeterminedMuscle'));
+                        const intensity = [exercise.rir == null ? '' : 'RIR ' + coachingPrintNumber(exercise.rir), exercise.rpe == null ? '' : 'RPE ' + coachingPrintNumber(exercise.rpe)].filter(Boolean).join(' · ');
+                        return '<tr><td><span class="print-table-main"><bdi>' + escapeHtml(coachingItemName(detail)) + '</bdi></span>' + (exercise.notes ? '<span class="print-table-sub"><bdi>' + escapeHtml(exercise.notes) + '</bdi></span>' : '') + '</td><td><bdi>' + escapeHtml(muscle) + '</bdi></td><td dir="ltr">' + coachingPrintNumber(exercise.sets) + '</td><td dir="ltr">' + escapeHtml(coachingPrintReps(exercise)) + '</td><td dir="ltr">' + (exercise.weightKg === null || exercise.weightKg === undefined || exercise.weightKg === '' ? '—' : coachingPrintNumber(exercise.weightKg, 1) + ' ' + escapeHtml(coachingPrintText('unit.kg'))) + '</td><td dir="ltr">' + (exercise.restSeconds == null ? '—' : coachingPrintNumber(exercise.restSeconds) + ' ' + escapeHtml(coachingPrintText('unit.seconds'))) + '</td><td dir="ltr">' + escapeHtml(exercise.tempo || intensity || '—') + '</td><td dir="ltr"><bdi>' + escapeHtml(exercise.supersetGroupId || '—') + '</bdi></td></tr>';
                     }).join('');
-                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">اليوم ' + coachingNumber(routineIndex + 1) + '</span><h2>' + escapeHtml(routine.name || 'اليوم ' + (routineIndex + 1)) + '</h2></div><span class="print-system-count">' + coachingNumber((routine.exercises || []).length) + ' تمرين · ' + coachingNumber((routine.exercises || []).reduce((sum, item) => sum + Number(item.sets || 0), 0)) + ' مجموعات</span></div>' + (routine.notes ? '<p class="print-notes print-system-note">' + escapeHtml(routine.notes) + '</p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>التمرين</th><th>العضلة</th><th>مجموعات</th><th>تكرارات</th><th>الوزن</th><th>الراحة</th><th>الوتيرة / الجهد</th><th>سوبر سيت</th></tr></thead><tbody>' + (rows || '<tr><td colspan="8"><div class="print-empty">لا توجد تمارين.</div></td></tr>') + '</tbody></table></div></section>';
-                }).join('') : '<section class="print-section"><div class="print-empty">لا توجد أيام تدريب محفوظة.</div></section>';
+                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('day', { count: coachingPrintNumber(routineIndex + 1) })) + '</span><h2><bdi>' + escapeHtml(coachingLocalizedValue(routine.name, routine.nameEn, coachingPrintText('day', { count: coachingPrintNumber(routineIndex + 1) }))) + '</bdi></h2></div><span class="print-system-count">' + coachingPrintNumber((routine.exercises || []).length) + ' ' + escapeHtml(coachingPrintText('exercises')) + ' · ' + coachingPrintNumber((routine.exercises || []).reduce((sum, item) => sum + Number(item.sets || 0), 0)) + ' ' + escapeHtml(coachingPrintText('sets')) + '</span></div>' + (routine.notes ? '<p class="print-notes print-system-note"><bdi>' + escapeHtml(coachingLocalizedValue(routine.notes, routine.notesEn)) + '</bdi></p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>' + escapeHtml(coachingPrintText('exerciseName')) + '</th><th>' + escapeHtml(coachingPrintText('muscle')) + '</th><th>' + escapeHtml(coachingPrintText('sets')) + '</th><th>' + escapeHtml(coachingPrintText('reps')) + '</th><th>' + escapeHtml(coachingPrintText('weight')) + '</th><th>' + escapeHtml(coachingPrintText('rest')) + '</th><th>' + escapeHtml(coachingPrintText('tempoEffort')) + '</th><th>' + escapeHtml(coachingPrintText('superset')) + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="8"><div class="print-empty">' + escapeHtml(coachingPrintText('noExercises')) + '</div></td></tr>') + '</tbody></table></div></section>';
+                }).join('') : '<section class="print-section"><div class="print-empty">' + escapeHtml(coachingPrintText('noTrainingDays')) + '</div></section>';
                 const references = [];
                 const referenceKeys = new Set();
                 routines.forEach((routine) => (routine.exercises || []).forEach((exercise) => {
@@ -526,8 +683,14 @@
                     referenceKeys.add(key);
                     references.push(detail);
                 }));
-                const referenceMarkup = references.length ? '<section class="print-section print-system-reference-section"><div class="print-section-title"><div><span class="print-section-kicker">مرجع الأداء</span><h2>تعليمات التمارين والنصائح</h2></div><span class="print-system-count">' + coachingNumber(references.length) + ' تمرين</span></div><div class="print-system-reference-grid">' + references.map((item) => '<article class="print-system-reference"><h3>' + escapeHtml(coachingItemName(item)) + '</h3><div class="print-system-reference-meta">' + escapeHtml(item.targetMuscleNameAr || item.targetMuscleName || 'عضلة غير محددة') + ' · ' + escapeHtml(item.equipment || 'معدات غير محددة') + ' · ' + escapeHtml(item.difficulty || 'مستوى غير محدد') + '</div><div class="print-system-reference-columns"><div><b>طريقة الأداء</b>' + coachingListMarkup(item.instructionsAr || item.instructions) + '</div><div><b>نصيحة</b>' + coachingListMarkup(item.tipsAr || item.tips) + '</div><div><b>أخطاء شائعة</b>' + coachingListMarkup(item.commonMistakesAr || item.commonMistakes) + '</div></div></article>').join('') + '</div></section>' : '';
-                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملخص البرنامج</span><h2>الحمل التدريبي وتوزيع العضلات</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi('الأيام التدريبية', coachingNumber(routines.length)) + coachingKpi('إجمالي التمارين', coachingNumber(exerciseCount)) + coachingKpi('إجمالي المجموعات', coachingNumber(setCount)) + coachingKpi('الحجم التقريبي', coachingNumber(volume) + ' كجم', 'حسب الوزن والتكرارات المدخلة') + '</div><div class="print-system-overview-grid"><div><h3>البيانات الأساسية</h3><div class="print-system-info-grid">' + coachingInfo('الهدف', system.goal) + coachingInfo('المستوى', system.level) + coachingInfo('أيام أسبوعيًا', system.daysPerWeek) + coachingInfo('المدة', system.durationWeeks ? coachingNumber(system.durationWeeks) + ' أسبوع' : '—') + coachingInfo('البداية', printDate(system.startDate)) + coachingInfo('النهاية', printDate(system.endDate)) + coachingInfo('الحالة', coachingStatusLabel(system.status)) + coachingInfo('الإصدار', system.version) + '</div></div><div><h3>توزيع العضلات</h3>' + distribution + '</div></div>' + (system.description ? '<div class="print-system-callout"><b>وصف البرنامج</b><p>' + escapeHtml(system.description) + '</p></div>' : '') + '</section>' + routineSections + referenceMarkup + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات الإدارة</span><h2>ملاحظات البرنامج</h2></div></div><p class="print-notes">' + escapeHtml(system.notes) + '</p></section>' : '');
+                const referenceMarkup = references.length ? '<section class="print-section print-system-reference-section"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('performanceReference')) + '</span><h2>' + escapeHtml(coachingPrintText('exerciseInstructions')) + '</h2></div><span class="print-system-count">' + coachingPrintNumber(references.length) + ' ' + escapeHtml(coachingPrintText('exercises')) + '</span></div><div class="print-system-reference-grid">' + references.map((item) => {
+                    const muscle = item.targetMuscleNameEn && printLocale() === 'en' ? item.targetMuscleNameEn : item.targetMuscleNameAr || item.targetMuscleName || coachingPrintText('undeterminedMuscle');
+                    const instructions = printLocale() === 'en' ? item.instructionsEn || item.instructions : item.instructionsAr || item.instructions;
+                    const tips = printLocale() === 'en' ? item.tipsEn || item.tips : item.tipsAr || item.tips;
+                    const mistakes = printLocale() === 'en' ? item.commonMistakesEn || item.commonMistakes : item.commonMistakesAr || item.commonMistakes;
+                    return '<article class="print-system-reference"><h3><bdi>' + escapeHtml(coachingItemName(item)) + '</bdi></h3><div class="print-system-reference-meta"><bdi>' + escapeHtml(muscle) + '</bdi> · <bdi>' + escapeHtml(item.equipment || coachingPrintText('equipmentUndetermined')) + '</bdi> · <bdi>' + escapeHtml(item.difficulty || coachingPrintText('levelUndetermined')) + '</bdi></div><div class="print-system-reference-columns"><div><b>' + escapeHtml(coachingPrintText('howToPerform')) + '</b>' + coachingListMarkup(instructions) + '</div><div><b>' + escapeHtml(coachingPrintText('tip')) + '</b>' + coachingListMarkup(tips) + '</div><div><b>' + escapeHtml(coachingPrintText('commonMistakes')) + '</b>' + coachingListMarkup(mistakes) + '</div></div></article>';
+                }).join('') + '</div></section>' : '';
+                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('programSummary')) + '</span><h2>' + escapeHtml(coachingPrintText('trainingLoad')) + '</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi(coachingPrintText('trainingDays'), coachingPrintNumber(routines.length)) + coachingKpi(coachingPrintText('exerciseTotal'), coachingPrintNumber(exerciseCount)) + coachingKpi(coachingPrintText('setTotal'), coachingPrintNumber(setCount)) + coachingKpi(coachingPrintText('approxVolume'), coachingPrintNumber(volume) + ' ' + coachingPrintText('unit.kg'), coachingPrintText('basedOnInputs')) + '</div><div class="print-system-overview-grid"><div><h3>' + escapeHtml(coachingPrintText('basicDetails')) + '</h3><div class="print-system-info-grid">' + coachingInfo(coachingPrintText('goal'), coachingWorkoutGoalLabel(system.goal)) + coachingInfo(coachingPrintText('level'), coachingWorkoutLevelLabel(system.level)) + coachingInfo(coachingPrintText('daysPerWeek'), coachingPrintNumber(system.daysPerWeek)) + coachingInfo(coachingPrintText('duration'), system.durationWeeks ? coachingPrintNumber(system.durationWeeks) + ' ' + coachingPrintText('weeks') : '—') + coachingInfo(coachingPrintText('start'), printDate(system.startDate)) + coachingInfo(coachingPrintText('end'), printDate(system.endDate)) + coachingInfo(coachingPrintText('status'), coachingStatusLabel(system.status)) + coachingInfo(coachingPrintText('version'), system.version) + '</div></div><div><h3>' + escapeHtml(coachingPrintText('muscleDistribution')) + '</h3>' + distribution + '</div></div>' + (system.description ? '<div class="print-system-callout"><b>' + escapeHtml(coachingPrintText('programDescription')) + '</b><p><bdi>' + escapeHtml(system.description) + '</bdi></p></div>' : '') + '</section>' + routineSections + referenceMarkup + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('managementNotes')) + '</span><h2>' + escapeHtml(coachingPrintText('programNotes')) + '</h2></div></div><p class="print-notes"><bdi>' + escapeHtml(system.notes) + '</bdi></p></section>' : '');
             }
 
             function dietPrintSections(system) {
@@ -548,18 +711,23 @@
                         total.fats += Number(item.fats || 0);
                         return total;
                     }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
-                    const rows = (meal.items || []).map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.nameAr || item.nameEn || 'طعام غير محدد') + '</span>' + (item.notes ? '<span class="print-table-sub">' + escapeHtml(item.notes) + '</span>' : '') + '</td><td dir="ltr">' + coachingNumber(item.assignedQuantity, 1) + ' ' + escapeHtml(item.servingUnit || '') + '</td><td dir="ltr">' + coachingNumber(item.calories, 1) + '</td><td dir="ltr">' + coachingNumber(item.protein, 1) + ' ج</td><td dir="ltr">' + coachingNumber(item.carbs, 1) + ' ج</td><td dir="ltr">' + coachingNumber(item.fats, 1) + ' ج</td></tr>').join('');
-                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">وجبة ' + coachingNumber(mealIndex + 1) + '</span><h2>' + escapeHtml(meal.name || 'وجبة ' + (mealIndex + 1)) + '</h2></div><span class="print-system-count">' + escapeHtml(meal.mealTime || 'بدون موعد') + ' · ' + coachingNumber(mealTotals.calories, 1) + ' سعر</span></div>' + (meal.notes ? '<p class="print-notes print-system-note">' + escapeHtml(meal.notes) + '</p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>الطعام</th><th>الكمية</th><th>السعرات</th><th>البروتين</th><th>الكربوهيدرات</th><th>الدهون</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6"><div class="print-empty">لا توجد أطعمة.</div></td></tr>') + '</tbody></table></div></section>';
-                }).join('') : '<section class="print-section"><div class="print-empty">لا توجد وجبات محفوظة.</div></section>';
+                    const rows = (meal.items || []).map((item) => {
+                        const foodName = printLocale() === 'en' ? item.nameEn || item.name || item.nameAr : item.nameAr || item.name || item.nameEn;
+                        return '<tr><td><span class="print-table-main"><bdi>' + escapeHtml(foodName || coachingPrintText('fallback.food')) + '</bdi></span>' + (item.notes ? '<span class="print-table-sub"><bdi>' + escapeHtml(coachingLocalizedValue(item.notes, item.notesEn)) + '</bdi></span>' : '') + '</td><td dir="ltr">' + coachingPrintNumber(item.assignedQuantity, 1) + ' <bdi>' + escapeHtml(coachingServingUnit(item.servingUnit)) + '</bdi></td><td dir="ltr">' + coachingPrintNumber(item.calories, 1) + '</td><td dir="ltr">' + coachingPrintNumber(item.protein, 1) + ' ' + escapeHtml(coachingPrintText('grams')) + '</td><td dir="ltr">' + coachingPrintNumber(item.carbs, 1) + ' ' + escapeHtml(coachingPrintText('grams')) + '</td><td dir="ltr">' + coachingPrintNumber(item.fats, 1) + ' ' + escapeHtml(coachingPrintText('grams')) + '</td></tr>';
+                    }).join('');
+                    const mealLabel = coachingPrintText('meal', { count: coachingPrintNumber(mealIndex + 1) });
+                    return '<section class="print-section print-system-routine"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(mealLabel) + '</span><h2><bdi>' + escapeHtml(coachingLocalizedValue(meal.name, meal.nameEn, mealLabel)) + '</bdi></h2></div><span class="print-system-count"><bdi>' + escapeHtml(meal.mealTime || coachingPrintText('noMealTime')) + '</bdi> · ' + coachingPrintNumber(mealTotals.calories, 1) + ' ' + escapeHtml(coachingPrintText('calorieUnit')) + '</span></div>' + (meal.notes ? '<p class="print-notes print-system-note"><bdi>' + escapeHtml(coachingLocalizedValue(meal.notes, meal.notesEn)) + '</bdi></p>' : '') + '<div class="print-table-wrap"><table class="print-table print-system-table"><thead><tr><th>' + escapeHtml(coachingPrintText('food')) + '</th><th>' + escapeHtml(coachingPrintText('quantity')) + '</th><th>' + escapeHtml(coachingPrintText('calories')) + '</th><th>' + escapeHtml(coachingPrintText('protein')) + '</th><th>' + escapeHtml(coachingPrintText('carbs')) + '</th><th>' + escapeHtml(coachingPrintText('fats')) + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="6"><div class="print-empty">' + escapeHtml(coachingPrintText('noFood')) + '</div></td></tr>') + '</tbody></table></div></section>';
+                }).join('') : '<section class="print-section"><div class="print-empty">' + escapeHtml(coachingPrintText('noMeals')) + '</div></section>';
                 const calculator = system.calculator || {};
-                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملخص الخطة</span><h2>الأهداف الغذائية والقيم المحسوبة</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi('السعرات المستهدفة', coachingNumber(system.targetCalories) + ' سعر') + coachingKpi('السعرات المحسوبة', coachingNumber(totals.calories, 1) + ' سعر') + coachingKpi('عدد الوجبات', coachingNumber(meals.length)) + coachingKpi('عدد الأطعمة', coachingNumber(meals.reduce((sum, meal) => sum + (meal.items || []).length, 0))) + '</div><div class="print-system-overview-grid"><div><h3>الأهداف اليومية</h3><div class="print-system-info-grid">' + coachingInfo('الهدف', coachingGoalLabel(system.calorieGoal)) + coachingInfo('تعديل السعرات', coachingNumber(system.calorieAdjustment) + ' سعر') + coachingInfo('البروتين المستهدف', coachingNumber(system.targetProtein, 1) + ' ج') + coachingInfo('الكربوهيدرات المستهدفة', coachingNumber(system.targetCarbs, 1) + ' ج') + coachingInfo('الدهون المستهدفة', coachingNumber(system.targetFats, 1) + ' ج') + coachingInfo('البداية', printDate(system.startDate)) + coachingInfo('النهاية', printDate(system.endDate)) + coachingInfo('الحالة', coachingStatusLabel(system.status)) + '</div></div><div><h3>حاسبة الاحتياج اليومي</h3><div class="print-system-info-grid">' + coachingInfo('الوزن', calculator.weightKg ? coachingNumber(calculator.weightKg, 1) + ' كجم' : '—') + coachingInfo('الطول', calculator.heightCm ? coachingNumber(calculator.heightCm, 1) + ' سم' : '—') + coachingInfo('العمر', calculator.age ? coachingNumber(calculator.age) + ' سنة' : '—') + coachingInfo('النوع', calculator.gender === 'female' ? 'أنثى' : calculator.gender === 'male' ? 'ذكر' : calculator.gender) + coachingInfo('النشاط', coachingActivityLabel(calculator.activity)) + coachingInfo('BMR · معدل الأيض الأساسي', calculator.bmr ? coachingNumber(calculator.bmr) + ' سعر' : '—') + coachingInfo('TDEE · الاحتياج اليومي', calculator.tdee ? coachingNumber(calculator.tdee) + ' سعر' : '—') + coachingInfo('الإصدار', system.version) + '</div></div></div>' + (system.description ? '<div class="print-system-callout"><b>وصف الخطة</b><p>' + escapeHtml(system.description) + '</p></div>' : '') + '<div class="print-system-total"><span>إجمالي الماكروز المحسوبة</span><strong>البروتين ' + coachingNumber(totals.protein, 1) + ' ج · الكربوهيدرات ' + coachingNumber(totals.carbs, 1) + ' ج · الدهون ' + coachingNumber(totals.fats, 1) + ' ج</strong></div></section>' + mealSections + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات الإدارة</span><h2>ملاحظات الخطة</h2></div></div><p class="print-notes">' + escapeHtml(system.notes) + '</p></section>' : '');
+                return '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('dietSummary')) + '</span><h2>' + escapeHtml(coachingPrintText('nutritionGoals')) + '</h2></div></div><div class="print-system-kpi-grid">' + coachingKpi(coachingPrintText('targetCalories'), coachingPrintNumber(system.targetCalories) + ' ' + coachingPrintText('calorieUnit')) + coachingKpi(coachingPrintText('calculatedCalories'), coachingPrintNumber(totals.calories, 1) + ' ' + coachingPrintText('calorieUnit')) + coachingKpi(coachingPrintText('mealCount'), coachingPrintNumber(meals.length)) + coachingKpi(coachingPrintText('foodCount'), coachingPrintNumber(meals.reduce((sum, meal) => sum + (meal.items || []).length, 0))) + '</div><div class="print-system-overview-grid"><div><h3>' + escapeHtml(coachingPrintText('dailyGoals')) + '</h3><div class="print-system-info-grid">' + coachingInfo(coachingPrintText('goal'), coachingGoalLabel(system.calorieGoal)) + coachingInfo(coachingPrintText('calorieAdjustment'), coachingPrintNumber(system.calorieAdjustment) + ' ' + coachingPrintText('calorieUnit')) + coachingInfo(coachingPrintText('proteinTarget'), coachingPrintNumber(system.targetProtein, 1) + ' ' + coachingPrintText('grams')) + coachingInfo(coachingPrintText('carbsTarget'), coachingPrintNumber(system.targetCarbs, 1) + ' ' + coachingPrintText('grams')) + coachingInfo(coachingPrintText('fatsTarget'), coachingPrintNumber(system.targetFats, 1) + ' ' + coachingPrintText('grams')) + coachingInfo(coachingPrintText('start'), printDate(system.startDate)) + coachingInfo(coachingPrintText('end'), printDate(system.endDate)) + coachingInfo(coachingPrintText('status'), coachingStatusLabel(system.status)) + '</div></div><div><h3>' + escapeHtml(coachingPrintText('dailyNeedsCalculator')) + '</h3><div class="print-system-info-grid">' + coachingInfo(coachingPrintText('weightKg'), calculator.weightKg ? coachingPrintNumber(calculator.weightKg, 1) + ' ' + coachingPrintText('unit.kg') : '—') + coachingInfo(coachingPrintText('heightCm'), calculator.heightCm ? coachingPrintNumber(calculator.heightCm, 1) + ' ' + coachingPrintText('unit.cm') : '—') + coachingInfo(coachingPrintText('age'), calculator.age ? coachingPrintNumber(calculator.age) + ' ' + coachingPrintText('unit.years') : '—') + coachingInfo(coachingPrintText('gender'), coachingGenderLabel(calculator.gender)) + coachingInfo(coachingPrintText('activity'), coachingActivityLabel(calculator.activity)) + coachingInfo(coachingPrintText('bmr'), calculator.bmr ? coachingPrintNumber(calculator.bmr) + ' ' + coachingPrintText('calorieUnit') : '—') + coachingInfo(coachingPrintText('tdee'), calculator.tdee ? coachingPrintNumber(calculator.tdee) + ' ' + coachingPrintText('calorieUnit') : '—') + coachingInfo(coachingPrintText('version'), system.version) + '</div></div></div>' + (system.description ? '<div class="print-system-callout"><b>' + escapeHtml(coachingPrintText('dietDescription')) + '</b><p><bdi>' + escapeHtml(system.description) + '</bdi></p></div>' : '') + '<div class="print-system-total"><span>' + escapeHtml(coachingPrintText('totalMacros')) + '</span><strong>' + escapeHtml(coachingPrintText('macroSummary', { protein: coachingPrintNumber(totals.protein, 1), carbs: coachingPrintNumber(totals.carbs, 1), fats: coachingPrintNumber(totals.fats, 1) })) + '</strong></div></section>' + mealSections + (system.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + escapeHtml(coachingPrintText('adminNotes')) + '</span><h2>' + escapeHtml(coachingPrintText('planNotes')) + '</h2></div></div><p class="print-notes"><bdi>' + escapeHtml(system.notes) + '</bdi></p></section>' : '');
             }
 
             function buildCoachingSystemDocument(system, type, libraryItems = []) {
-                const title = type === 'diet' ? 'خطة تغذية رياضية' : 'برنامج تدريب رياضي';
+                const locale = printLocale();
+                const title = coachingPrintText(type === 'diet' ? 'document.diet' : 'document.workout');
                 const content = type === 'diet' ? dietPrintSections(system) : workoutPrintSections(system, libraryItems);
-                const footer = printFooterMarkup('إدارة التدريب والتغذية الرياضية', true);
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
+                const footer = printFooterMarkup(coachingPrintText('footer.generated'), true);
+                return '<!doctype html><html lang="' + locale + '" dir="' + (locale === 'ar' ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(title) + ' - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(title, system) + '<div class="print-accent"></div>' + coachingMemberHero(system, type) + content + footer + '</main></body></html>';
             }
 
             async function fetchCoachingSystem(id, type) {
@@ -576,8 +744,10 @@
                 return { system, libraryItems };
             }
 
-            function writePrintLoading(printWindow, label = 'جاري تجهيز مستند الطباعة…') {
-                writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-loading">' + escapeHtml(label) + '</div></body></html>');
+            function writePrintLoading(printWindow, label = '') {
+                const locale = printLocale();
+                const loading = locale === 'en' ? 'Preparing print document…' : 'جاري تجهيز مستند الطباعة…';
+                writeWindow(printWindow, '<!doctype html><html lang="' + locale + '" dir="' + (locale === 'ar' ? 'rtl' : 'ltr') + '"><head><meta charset="utf-8"></head><body><div class="print-loading">' + escapeHtml(label || loading) + '</div></body></html>');
             }
 
             function notifyPrint(message, type = 'success') {
@@ -598,18 +768,59 @@
                 const sheet = parsed.querySelector('.print-sheet');
                 if (!sheet) throw new Error('تعذر تجهيز قالب PDF.');
                 const holder = document.createElement('div');
-                holder.dir = 'rtl';
-                holder.style.cssText = `position:fixed;left:-100000px;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;`;
+                const sourceStylesheet = parsed.head?.querySelector('[data-top-gym-print-styles]');
+                const sourceBrandStyle = parsed.head?.querySelector('[data-top-gym-print-brand]');
+                const pdfStylesheet = sourceStylesheet?.cloneNode(true);
+                const pdfBrandStyle = sourceBrandStyle?.cloneNode(true);
+                let stylesheetLoaded = false;
+                holder.dir = parsed.documentElement.dir || 'rtl';
+                holder.lang = parsed.documentElement.lang || 'ar';
+                holder.className = 'print-pdf-host';
+                holder.style.cssText = `position:fixed;left:0;top:0;width:190mm;min-height:1px;overflow:visible;background:${printPaperColor()};z-index:-1;opacity:0;pointer-events:none;`;
+                if (pdfBrandStyle) {
+                    pdfBrandStyle.textContent = pdfBrandStyle.textContent.replace(/:root/g, '.print-pdf-host');
+                    holder.append(pdfBrandStyle);
+                }
                 holder.append(sheet);
                 document.body.append(holder);
                 try {
+                    // The standalone HTML contains a stylesheet link, but only
+                    // its .print-sheet node is attached to this live document.
+                    // Load the same canonical print stylesheet here so html2canvas
+                    // captures the designed document rather than unstyled markup.
+                    if (pdfStylesheet) {
+                        await new Promise((resolve) => {
+                            pdfStylesheet.onload = () => { stylesheetLoaded = true; resolve(); };
+                            pdfStylesheet.onerror = resolve;
+                            document.head.append(pdfStylesheet);
+                        });
+                    }
+                    if (!stylesheetLoaded) throw new Error('تعذر تحميل تنسيقات مستند PDF.');
                     if (document.fonts?.ready) await document.fonts.ready;
                     await Promise.all([...holder.querySelectorAll('img')].map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.onload = resolve; image.onerror = resolve; })));
                     const pdfOptions = {
-                        margin: [8, 8, 8, 8],
+                        margin: [6, 8, 6, 8],
                         filename,
                         image: { type: 'jpeg', quality: .98 },
-                        html2canvas: { scale: 2, useCORS: true, backgroundColor: printPaperColor(), logging: false, letterRendering: true },
+                        html2canvas: {
+                            scale: 2,
+                            useCORS: true,
+                            scrollX: 0,
+                            scrollY: 0,
+                            windowHeight: Math.max(window.innerHeight, Math.ceil(sheet.getBoundingClientRect().height)),
+                            backgroundColor: printPaperColor(),
+                            logging: false,
+                            letterRendering: true,
+                            onclone: (clonedDocument) => {
+                                const clonedHost = clonedDocument.querySelector('.print-pdf-host');
+                                if (clonedHost) {
+                                    clonedHost.style.left = '0';
+                                    clonedHost.style.top = '0';
+                                    clonedHost.style.opacity = '1';
+                                    clonedHost.style.zIndex = 'auto';
+                                }
+                            }
+                        },
                         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                         pagebreak: { mode: ['css', 'legacy'] }
                     };
@@ -620,6 +831,7 @@
                     }
                     return await worker.outputPdf('blob');
                 } finally {
+                    pdfStylesheet?.remove();
                     holder.remove();
                 }
             }
@@ -720,7 +932,7 @@
                     notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
                     return;
                 }
-                writePrintLoading(printWindow, 'جاري تجهيز النظام للطباعة…');
+                writePrintLoading(printWindow, printLocale() === 'en' ? 'Preparing plan for printing…' : 'جاري تجهيز النظام للطباعة…');
                 try {
                     const result = await fetchCoachingSystem(id, type);
                     writeWindow(printWindow, buildCoachingSystemDocument(result.system, type, result.libraryItems));
@@ -743,7 +955,7 @@
                     return;
                 }
                 try {
-                    writePrintLoading(printWindow, 'جاري تجهيز مسودة النظام للطباعة…');
+                    writePrintLoading(printWindow, printLocale() === 'en' ? 'Preparing plan draft for printing…' : 'جاري تجهيز مسودة النظام للطباعة…');
                     writeCoachingDraft(printWindow, draft, type, catalog, clientLabel);
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(async () => { await waitForPrintWindowFonts(printWindow); await waitForPrintWindowImages(printWindow); printWindow.focus(); printWindow.print(); }, 100);
@@ -770,20 +982,36 @@
             }
 
             function buildCoachingOverviewDocument(overview) {
-                const member = overview.member || {};
+                const member = {
+                    ...(overview.member || {}),
+                    notes: coachingLocalizedValue(overview.member?.notes, overview.member?.notesEn)
+                };
                 const progress = overview.progress || {};
                 const workouts = overview.workoutPrograms || [];
                 const diets = overview.dietPlans || [];
-                const workoutRows = workouts.map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.name) + '</span><span class="print-table-sub">' + escapeHtml(item.goal || '—') + ' · ' + escapeHtml(item.level || '—') + '</span></td><td>' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">حتى ' + escapeHtml(printDate(item.endDate)) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + coachingNumber(item.exerciseCount || item.exercises) + ' تمرين</td></tr>').join('');
-                const dietRows = diets.map((item) => '<tr><td><span class="print-table-main">' + escapeHtml(item.name) + '</span><span class="print-table-sub">' + coachingNumber(item.targetCalories) + ' سعر</span></td><td>' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">حتى ' + escapeHtml(printDate(item.endDate)) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + coachingNumber(item.mealsPerDay || item.mealCount) + ' وجبات</td></tr>').join('');
-                const measurementRows = (overview.measurements || []).map((item) => '<tr><td dir="ltr">' + escapeHtml(item.measuredAt || '—') + '</td><td dir="ltr">' + (item.weightKg == null ? '—' : coachingNumber(item.weightKg, 1) + ' كجم') + '</td><td dir="ltr">' + (item.heightCm == null ? '—' : coachingNumber(item.heightCm, 1) + ' سم') + '</td><td dir="ltr">' + (item.bodyFatPercent == null ? '—' : coachingNumber(item.bodyFatPercent, 1) + '%') + '</td></tr>').join('');
-                const sessionRows = (overview.workoutSessions || []).map((item) => '<tr><td>' + escapeHtml(item.programName || 'جلسة تدريب') + '</td><td>' + escapeHtml(item.routineName || '—') + '</td><td>' + escapeHtml(item.status === 'completed' ? 'مكتملة' : item.status || '—') + '</td><td dir="ltr">' + escapeHtml(item.startedAt || item.createdAt || '—') + '</td></tr>').join('');
-                const mealRows = (overview.mealLogs || []).map((item) => '<tr><td>' + escapeHtml(item.foodName || 'طعام') + '</td><td>' + escapeHtml(item.mealName || '—') + '</td><td dir="ltr">' + coachingNumber(item.calories, 1) + '</td><td dir="ltr">' + escapeHtml(item.consumedAt || '—') + '</td></tr>').join('');
-                const section = (kicker, title, head, rows, empty) => '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + kicker + '</span><h2>' + title + '</h2></div></div>' + coachingOverviewTable(head, rows, empty) + '</section>';
-                const system = { id: member.id, memberName: member.fullName, memberPhone: member.phone, memberPhoneCountry: member.phoneCountry, name: 'ملف التدريب والتغذية' };
-                const hero = '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">ملف العميل</span><h2>' + escapeHtml(member.fullName || 'العميل') + '</h2><p>' + escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—') + (member.email ? ' · ' + escapeHtml(member.email) : '') + '</p></div><div class="print-system-hero-title"><span>التنفيذ والمتابعة</span><strong>' + escapeHtml(member.registrationDate ? printDate(member.registrationDate) : 'ملف نشط') + '</strong></div></section>';
-                const footer = printFooterMarkup('إدارة التدريب والتغذية الرياضية', true);
-                return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ملف التدريب والتغذية - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader('ملف التدريب والتغذية الكامل', system) + '<div class="print-accent"></div>' + hero + '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi('برامج التدريب', coachingNumber(workouts.length)) + coachingKpi('خطط التغذية', coachingNumber(diets.length)) + coachingKpi('القياسات', coachingNumber((overview.measurements || []).length)) + coachingKpi('الجلسات المكتملة', coachingNumber(progress.completedSessions || progress.sessionCount)) + coachingKpi('تسجيلات الوجبات', coachingNumber(progress.mealLogCount)) + coachingKpi('الوزن الحالي', progress.currentWeight == null ? '—' : coachingNumber(progress.currentWeight, 1) + ' كجم') + '</div></section>' + section('الأنظمة المحفوظة', 'برامج التدريب', '<th>البرنامج والهدف</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', workoutRows, 'لا توجد برامج تدريب.') + section('الأنظمة المحفوظة', 'خطط التغذية', '<th>الخطة والسعرات</th><th>الفترة</th><th>الحالة</th><th>المحتوى</th>', dietRows, 'لا توجد خطط تغذية.') + section('المتابعة البدنية', 'القياسات المسجلة', '<th>التاريخ</th><th>الوزن</th><th>الطول</th><th>نسبة الدهون</th>', measurementRows, 'لا توجد قياسات.') + section('التنفيذ', 'جلسات التدريب', '<th>البرنامج</th><th>اليوم</th><th>الحالة</th><th>وقت البدء</th>', sessionRows, 'لا توجد جلسات.') + section('التنفيذ', 'سجل الوجبات', '<th>الطعام</th><th>الوجبة</th><th>السعرات</th><th>وقت التسجيل</th>', mealRows, 'لا توجد وجبات مسجلة.') + (member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">ملاحظات العميل</span><h2>ملاحظات الملف</h2></div></div><p class="print-notes">' + escapeHtml(member.notes) + '</p></section>' : '') + footer + '</main></body></html>';
+                const { locale, direction } = coachingPrintDocumentAttributes();
+                const label = (key, params) => escapeHtml(coachingPrintText(`overview.${key}`, params));
+                const value = (item, key, fallback = '—', englishKey = `${key}En`) => escapeHtml(coachingValue(coachingLocalizedValue(item?.[key], item?.[englishKey], fallback), fallback));
+                const workoutRows = workouts.map((item) => '<tr><td><span class="print-table-main"><bdi>' + value(item, 'name') + '</bdi></span><span class="print-table-sub"><bdi>' + escapeHtml(coachingWorkoutGoalLabel(item.goal)) + ' · ' + escapeHtml(coachingWorkoutLevelLabel(item.level)) + '</bdi></span></td><td dir="ltr">' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">' + escapeHtml(printText('value.until', { date: printDate(item.endDate) })) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + escapeHtml(coachingPrintText('overview.exerciseCount', { count: coachingPrintNumber(item.exerciseCount ?? item.exercises ?? 0) })) + '</td></tr>').join('');
+                const dietRows = diets.map((item) => '<tr><td><span class="print-table-main"><bdi>' + value(item, 'name') + '</bdi></span><span class="print-table-sub">' + escapeHtml(coachingPrintText('overview.calorieValue', { count: coachingPrintNumber(item.targetCalories) })) + '</span></td><td dir="ltr">' + escapeHtml(printDate(item.startDate)) + '<span class="print-table-sub">' + escapeHtml(printText('value.until', { date: printDate(item.endDate) })) + '</span></td><td>' + escapeHtml(coachingStatusLabel(item.status)) + '</td><td dir="ltr">' + escapeHtml(coachingPrintText('overview.mealCount', { count: coachingPrintNumber(item.mealsPerDay ?? item.mealCount ?? 0) })) + '</td></tr>').join('');
+                const measurements = overview.measurements || [];
+                const sessions = overview.workoutSessions || [];
+                const mealLogs = overview.mealLogs || [];
+                const measurementRows = measurements.map((item) => '<tr><td dir="ltr">' + escapeHtml(item.measuredAt ? printDate(item.measuredAt) : '—') + '</td><td dir="ltr">' + (item.weightKg == null ? '—' : coachingPrintNumber(item.weightKg, 1) + ' ' + label('weightUnit')) + '</td><td dir="ltr">' + (item.heightCm == null ? '—' : coachingPrintNumber(item.heightCm, 1) + ' ' + label('heightUnit')) + '</td><td dir="ltr">' + (item.bodyFatPercent == null ? '—' : coachingPrintNumber(item.bodyFatPercent, 1) + '%') + '</td></tr>').join('');
+                const sessionRows = sessions.map((item) => '<tr><td><bdi>' + value(item, 'programName', coachingPrintText('overview.session')) + '</bdi></td><td><bdi>' + value(item, 'routineName') + '</bdi></td><td>' + escapeHtml(item.status === 'completed' ? coachingPrintText('overview.statusCompleted') : coachingValue(item.status)) + '</td><td dir="ltr">' + escapeHtml(printDateTime(item.startedAt || item.createdAt)) + '</td></tr>').join('');
+                const mealRows = mealLogs.map((item) => '<tr><td><bdi>' + value(item, 'foodName', coachingPrintText('overview.food')) + '</bdi></td><td><bdi>' + value(item, 'mealName') + '</bdi></td><td dir="ltr">' + coachingPrintNumber(item.calories, 1) + '</td><td dir="ltr">' + escapeHtml(printDateTime(item.consumedAt)) + '</td></tr>').join('');
+                const section = (kicker, title, head, rows, empty) => '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + label(kicker) + '</span><h2>' + label(title) + '</h2></div></div>' + coachingOverviewTable(head, rows, coachingPrintText(`overview.${empty}`)) + '</section>';
+                const system = { id: member.id, memberName: member.fullName, memberPhone: member.phone, memberPhoneCountry: member.phoneCountry, name: coachingPrintText('overview.name') };
+                const hero = '<section class="print-section print-system-hero"><div class="print-system-hero-copy"><span class="print-section-kicker">' + escapeHtml(coachingPrintText('clientFile')) + '</span><h2><bdi>' + value(member, 'fullName', coachingPrintText('client')) + '</bdi></h2><p><bdi>' + escapeHtml(displayPhone(member.phone, member.phoneCountry) || '—') + '</bdi>' + (member.email ? ' · <bdi>' + escapeHtml(member.email) + '</bdi>' : '') + '</p></div><div class="print-system-hero-title"><span>' + escapeHtml(coachingPrintText('overview.followUp')) + '</span><strong>' + escapeHtml(member.registrationDate ? printDate(member.registrationDate) : coachingPrintText('overview.activeFile')) + '</strong></div></section>';
+                const footer = printFooterMarkup(coachingPrintText('brand.subtitle'), true);
+                const kpis = '<section class="print-section"><div class="print-system-kpi-grid">' + coachingKpi(coachingPrintText('overview.workouts'), coachingPrintNumber(workouts.length)) + coachingKpi(coachingPrintText('overview.diets'), coachingPrintNumber(diets.length)) + coachingKpi(coachingPrintText('overview.measurements'), coachingPrintNumber(measurements.length)) + coachingKpi(coachingPrintText('overview.sessionsTitle'), coachingPrintNumber(progress.completedSessions ?? progress.sessionCount ?? 0)) + coachingKpi(coachingPrintText('overview.mealLogsTitle'), coachingPrintNumber(progress.mealLogCount ?? mealLogs.length)) + coachingKpi(coachingPrintText('overview.currentWeight'), progress.currentWeight == null ? '—' : coachingPrintNumber(progress.currentWeight, 1) + ' ' + coachingPrintText('unit.kg')) + '</div></section>';
+                const workoutSection = section('savedSystems', 'workouts', '<th>' + label('workoutGoal') + '</th><th>' + label('period') + '</th><th>' + coachingPrintText('status') + '</th><th>' + label('content') + '</th>', workoutRows, 'workoutEmpty');
+                const dietSection = section('savedSystems', 'diets', '<th>' + label('dietCalories') + '</th><th>' + label('period') + '</th><th>' + coachingPrintText('status') + '</th><th>' + label('content') + '</th>', dietRows, 'dietEmpty');
+                const measurementSection = section('measurements', 'measurementsTitle', '<th>' + label('date') + '</th><th>' + label('weight') + '</th><th>' + label('height') + '</th><th>' + label('bodyFat') + '</th>', measurementRows, 'measurementsEmpty');
+                const sessionSection = section('sessions', 'sessionsTitle', '<th>' + coachingPrintText('programSummary') + '</th><th>' + label('day') + '</th><th>' + coachingPrintText('status') + '</th><th>' + label('loggedAt') + '</th>', sessionRows, 'sessionsEmpty');
+                const mealSection = section('sessions', 'mealLogsTitle', '<th>' + label('food') + '</th><th>' + label('meal') + '</th><th>' + label('calories') + '</th><th>' + label('loggedAt') + '</th>', mealRows, 'mealLogsEmpty');
+                const notes = member.notes ? '<section class="print-section"><div class="print-section-title"><div><span class="print-section-kicker">' + label('clientNotes') + '</span><h2>' + label('notesTitle') + '</h2></div></div><p class="print-notes"><bdi>' + escapeHtml(member.notes) + '</bdi></p></section>' : '';
+                return '<!doctype html><html lang="' + locale + '" dir="' + direction + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + escapeHtml(coachingPrintText('overview.document')) + ' - ' + escapeHtml(brandName()) + '</title></head><body><main class="print-sheet print-system-document">' + coachingHeader(coachingPrintText('overview.document'), system) + '<div class="print-accent"></div>' + hero + kpis + workoutSection + dietSection + measurementSection + sessionSection + mealSection + notes + footer + '</main></body></html>';
             }
 
             async function printCoachingOverview(memberId, existingWindow = null) {
@@ -792,14 +1020,15 @@
                     notifyPrint('يرجى السماح بالنوافذ المنبثقة لإتمام الطباعة.', 'error');
                     return;
                 }
-                writePrintLoading(printWindow, 'جاري تجهيز ملف التدريب والتغذية…');
+                writePrintLoading(printWindow, coachingPrintText('loading.overview'));
                 try {
                     const overview = await fetchPrintJson('/api/clients/' + encodeURIComponent(memberId) + '/training-overview');
                     writeWindow(printWindow, buildCoachingOverviewDocument(overview));
                     printWindow.onafterprint = () => printWindow.close();
                     window.setTimeout(async () => { await waitForPrintWindowFonts(printWindow); printWindow.focus(); printWindow.print(); }, 450);
                 } catch (error) {
-                    writeWindow(printWindow, '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(error.message || 'تعذر تجهيز الملف.') + '</div></body></html>');
+                    const { locale, direction } = coachingPrintDocumentAttributes();
+                    writeWindow(printWindow, '<!doctype html><html lang="' + locale + '" dir="' + direction + '"><head><meta charset="utf-8"></head><body><div class="print-error">' + escapeHtml(coachingPrintText('error.overview')) + '</div></body></html>');
                 }
             }
 

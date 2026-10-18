@@ -105,26 +105,25 @@ async function assertLoginSurface(page) {
     expect(metrics.themeInsideControls).toBe(true);
     expect(metrics.themeWithinCard, JSON.stringify(metrics)).toBe(false);
     expect(metrics.rememberOnly).toBe(true);
-    expect(metrics.inputHeight).toBe(metrics.viewport >= 1024 ? 64 : 48);
+    expect(metrics.inputHeight).toBe(48);
     expect(metrics.featuresBackground).toBe('rgba(0, 0, 0, 0)');
     expect(metrics.featureIconBackground).toBe('rgba(0, 0, 0, 0)');
     expect(metrics.currentYear).toBe(metrics.expectedYear);
-    expect(metrics.submitHeight).toBe(metrics.viewport >= 1024 ? 64 : 48);
-    expect(metrics.themeToggle.width).toBe(metrics.viewport >= 1280 ? 54 : 44);
-    expect(metrics.themeToggle.height).toBe(metrics.viewport >= 1280 ? 48 : 44);
+    expect(metrics.submitHeight).toBe(48);
+    expect(metrics.themeToggle.width).toBe(48);
+    expect(metrics.themeToggle.height).toBe(48);
     expect(metrics.submitGap, JSON.stringify(metrics)).toBeGreaterThanOrEqual(12);
     expect(metrics.submitGap).toBeLessThanOrEqual(48);
-    expect(metrics.submitHeight).toBeGreaterThanOrEqual(metrics.viewport >= 1024 ? 64 : 44);
-    expect(metrics.submitHeight).toBeLessThanOrEqual(metrics.viewport >= 1024 ? 64 : 48);
+    expect(metrics.submitHeight).toBe(48);
     if (metrics.viewport >= 1024) {
-        expect(metrics.marketing.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.573, 0);
-        expect(metrics.loginColumn.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.427, 0);
+        expect(metrics.marketing.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.5, 0);
+        expect(metrics.loginColumn.width, JSON.stringify(metrics)).toBeCloseTo(metrics.viewport * 0.5, 0);
         if (metrics.direction === 'rtl') {
-            expect(metrics.card.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.573);
-            expect(metrics.marketing.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.573 + 1);
+            expect(metrics.card.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.5);
+            expect(metrics.marketing.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.5 + 1);
         } else {
-            expect(metrics.card.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.427 + 1);
-            expect(metrics.marketing.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.427);
+            expect(metrics.card.right, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport * 0.5 + 1);
+            expect(metrics.marketing.left, JSON.stringify(metrics)).toBeGreaterThanOrEqual(metrics.viewport * 0.5);
         }
     } else {
         expect(metrics.marketing.width, JSON.stringify(metrics)).toBe(0);
@@ -154,8 +153,8 @@ test('login keeps its shared theme toggle accessible and visually stable on mobi
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
     await expect(toggle).toHaveAttribute('aria-pressed', before === 'dark' ? 'false' : 'true');
-    await expect(toggle).toHaveCSS('width', '44px');
-    await expect(toggle).toHaveCSS('height', '44px');
+    await expect(toggle).toHaveCSS('width', '48px');
+    await expect(toggle).toHaveCSS('height', '48px');
     const toggleAccent = await toggle.evaluate((element) => getComputedStyle(element, '::before').backgroundImage);
     expect(toggleAccent).not.toContain('124, 58, 237');
     await page.screenshot({ path: testInfo.outputPath('login-390-after-toggle.png'), fullPage: false });

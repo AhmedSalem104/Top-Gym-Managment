@@ -96,6 +96,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
         await page.evaluate(() => window.topGymAppUsable);
         await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
+        const overviewCardOwners = await page.locator('body .dashboard-overview-cards').evaluateAll((elements) => elements.map((element) => Boolean(element.closest('#dashboardSection'))));
+        expect(overviewCardOwners, 'The five overview cards must be rendered only inside the Dashboard overview section.').toEqual([true]);
         // Apply the canonical page stylesheet in this disposable source-QA page.
         // The generated shell bundle is outside this task's permitted write set.
         await page.addStyleTag({ path: path.resolve(process.cwd(), 'public/css/pages/dashboard.css') });
@@ -151,6 +153,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                         bodyLang: document.body.lang,
                         htmlDir: document.documentElement.dir,
                         bodyDir: document.body.dir,
+                        unresolvedAnalyticsKeys: [...(document.querySelector('#dashboardAnalytics')?.innerText || '').matchAll(/\bdashboard\.analytics\.[A-Za-z0-9_.]+\b/g)].map((match) => match[0]),
                         untranslatedArabic
                     };
                 });
@@ -159,6 +162,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 expect(localeState.bodyDir).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 expect(localeState.htmlLang).toBe(locale);
                 expect(localeState.bodyLang).toBe(localeState.htmlLang);
+                expect(localeState.unresolvedAnalyticsKeys, `${width}px ${locale}/${theme}: unresolved dashboard analytics translation keys`).toEqual([]);
                 if (locale === 'en') {
                     localeState.untranslatedArabic.forEach((gap) => localizationGaps.set(`${gap.selector}|${gap.text}`, gap));
                 }

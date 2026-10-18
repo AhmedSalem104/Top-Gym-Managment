@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 const { hasClassSelector, hasRootClassSelector, rulesContainingClass, rulesWithRootClass, selectorsContainingClass } = require('../helpers/css-selector-ownership');
 
@@ -58,6 +60,16 @@ test('distinguishes a component root rule from a valid descendant extension', ()
     const css = 'body .members-panel h3 { color: red; } .table-wrap:hover { color: blue; }';
     assert.equal(hasRootClassSelector(css, 'members-panel'), false);
     assert.equal(hasRootClassSelector(css, 'table-wrap'), true);
+});
+
+test('attendance mode actions inherit their flex display from the canonical grouped owner', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../public/css/pages/attendance.css'), 'utf8');
+    const displayRules = rulesWithRootClass(source, 'attendance-mode-actions')
+        .filter((rule) => /(?:^|;)\s*display\s*:/iu.test(rule.declarations));
+
+    assert.equal(displayRules.length, 1);
+    assert.match(displayRules[0].declarations, /display:\s*flex\s*;/iu);
+    assert.doesNotMatch(displayRules[0].declarations, /!important/iu);
 });
 
 test('associates declarations with exact class tokens through nested at-rules', () => {
