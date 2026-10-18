@@ -80,7 +80,10 @@ test('Platform Admin central i18n preserves panel, hash, filter state and perfor
                     if (panel === 'payment-methods') await expect(page.locator('#platformPaymentMethodsTableBody')).toContainText('Fixture transfer');
                     if (panel === 'backups') await expect(page.locator('#platformBackupsTableBody')).toContainText(locale === 'en' ? 'Daily platform backup' : 'نسخة يومية للمنصة');
                     if (panel === 'audit') await expect(page.locator('#auditTableBody')).toContainText('read_only_fixture');
-                    if (panel === 'settings') await expect(active).toContainText(locale === 'en' ? 'Platform settings sections' : 'أقسام إعدادات المنصة');
+                    if (panel === 'settings') {
+                        await expect(active).toContainText(locale === 'en' ? 'Platform settings sections' : 'أقسام إعدادات المنصة');
+                        await expect(active.locator('.platform-settings-overview-head .eyebrow')).toHaveText(locale === 'en' ? 'Settings' : 'الإعدادات');
+                    }
 
                     const hashBefore = await page.evaluate(() => location.hash);
                     const panelBefore = await page.locator('.platform-view.active').getAttribute('data-platform-panel');
@@ -88,6 +91,9 @@ test('Platform Admin central i18n preserves panel, hash, filter state and perfor
                     await languageButton.click();
                     const nextLocale = locale === 'ar' ? 'en' : 'ar';
                     await expect(page.locator('html')).toHaveAttribute('lang', nextLocale);
+                    if (panel === 'settings') {
+                        await expect(active.locator('.platform-settings-overview-head .eyebrow')).toHaveText(nextLocale === 'en' ? 'Settings' : 'الإعدادات');
+                    }
                     await expect(page.locator('.platform-view.active')).toHaveAttribute('data-platform-panel', panelBefore);
                     await expect.poll(() => page.evaluate(() => location.hash)).toBe(hashBefore);
                     expect(requests.length, `${panel}: locale toggle must not refetch or write`).toBe(requestCountBefore);

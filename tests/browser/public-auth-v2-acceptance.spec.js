@@ -95,12 +95,20 @@ test('Login V2 remains compact, theme-safe, keyboard-operable, and read-only acr
             const geometry = await page.evaluate(() => {
                 const card = document.querySelector('.auth-form-panel').getBoundingClientRect();
                 const submit = document.querySelector('#loginSubmit').getBoundingClientRect();
+                const input = document.querySelector('.auth-input-wrap').getBoundingClientRect();
+                const loginColumn = document.querySelector('.auth-login-column').getBoundingClientRect();
+                const marketing = document.querySelector('.auth-marketing-panel').getBoundingClientRect();
                 const style = getComputedStyle(document.querySelector('.auth-form-panel'));
                 return {
                     direction: getComputedStyle(document.querySelector('.auth-screen')).direction,
+                    loginColumnWidth: loginColumn.width,
+                    marketingWidth: marketing.width,
+                    loginColumnLeft: loginColumn.left,
+                    marketingLeft: marketing.left,
                     cardLeft: card.left,
                     cardRight: card.right,
                     radius: style.borderTopLeftRadius,
+                    inputHeight: input.height,
                     submitHeight: submit.height,
                     emailDirection: getComputedStyle(document.querySelector('#loginEmail')).direction
                 };
@@ -109,8 +117,18 @@ test('Login V2 remains compact, theme-safe, keyboard-operable, and read-only acr
             expect(geometry.emailDirection).toBe('ltr');
             expect(geometry.cardLeft).toBeGreaterThanOrEqual(0);
             expect(geometry.cardRight).toBeLessThanOrEqual(viewport.width + 1);
-            expect(geometry.submitHeight).toBeGreaterThanOrEqual(44);
-            expect(geometry.radius).toBe('16px');
+            expect(geometry.inputHeight).toBe(48);
+            expect(geometry.submitHeight).toBe(48);
+            expect(geometry.radius).toBe('0px');
+            if (viewport.width >= 1024) {
+                expect(geometry.loginColumnWidth).toBeCloseTo(viewport.width * 0.5, 0);
+                expect(geometry.marketingWidth).toBeCloseTo(viewport.width * 0.5, 0);
+                expect(geometry.loginColumnLeft).toBeCloseTo(viewport.width * 0.5, 0);
+                expect(geometry.marketingLeft).toBeCloseTo(0, 0);
+            } else {
+                expect(geometry.loginColumnWidth).toBe(viewport.width);
+                expect(geometry.marketingWidth).toBe(0);
+            }
 
             await page.locator('.auth-theme-toggle').focus();
             expect(await page.locator('.auth-theme-toggle').evaluate((element) => element.matches(':focus-visible'))).toBe(true);

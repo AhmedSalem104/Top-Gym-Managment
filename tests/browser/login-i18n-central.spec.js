@@ -16,6 +16,14 @@ const OUTPUT = process.env.LOGICFIT_LOGIN_QA_DIR
     ? path.resolve(process.env.LOGICFIT_LOGIN_QA_DIR, 'login-i18n-central')
     : path.resolve(__dirname, '../../qa/artifacts/login-i18n-central');
 
+async function selectLocale(page, locale) {
+    const currentLocale = await page.evaluate(() => window.TopGymI18n.get());
+    if (currentLocale !== locale) {
+        await page.locator(`.auth-locale-segmented [data-locale-choice="${locale}"]`).click();
+    }
+    await expect(page.locator('html')).toHaveAttribute('lang', locale);
+}
+
 test('Login uses central Arabic/English i18n across responsive themes without auth writes', async ({ page }) => {
     test.setTimeout(150_000);
     const blockedWrites = [];
@@ -36,7 +44,9 @@ test('Login uses central Arabic/English i18n across responsive themes without au
     await page.goto('/login.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#authLoginCard')).toBeVisible();
     await expect(page.locator('#loginForm')).toBeVisible();
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('.auth-locale-segmented')).toBeVisible();
+    await expect(page.locator('.auth-locale-segmented [data-locale-choice="ar"]')).toBeVisible();
+    await expect(page.locator('.auth-locale-segmented [data-locale-choice="en"]')).toBeVisible();
     await expect.poll(() => page.evaluate(() => Boolean(window.TopGymI18n))).toBe(true);
     await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
 
@@ -106,8 +116,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
         for (const theme of ['light', 'dark']) {
             await page.evaluate((value) => window.TopGymTheme.set(value), theme);
             for (const locale of ['ar', 'en']) {
-                const activeLocale = await page.evaluate(() => window.TopGymI18n.get());
-                if (activeLocale !== locale) await page.locator('#languageToggleButton').click();
+                await selectLocale(page, locale);
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
                 await expect(page.locator('.auth-form-heading h2')).toHaveText(locale === 'ar' ? 'مرحبًا بعودتك' : 'Welcome back');
@@ -127,9 +136,8 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                     const root = document.documentElement;
                     const body = document.body;
                     const panel = document.querySelector('.auth-form-panel');
-                    const language = document.getElementById('languageToggleButton');
                     const languageGroup = document.querySelector('.auth-locale-segmented');
-                    const languageRect = language.getBoundingClientRect();
+                    const languageRect = languageGroup.getBoundingClientRect();
                     const languageHit = document.elementFromPoint(
                         languageRect.left + languageRect.width / 2,
                         languageRect.top + languageRect.height / 2
@@ -143,7 +151,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                         theme: root.dataset.theme,
                         visibleThemeIcon: [...document.querySelectorAll('.auth-theme-toggle .theme-toggle-icon')].find((icon) => getComputedStyle(icon).display !== 'none')?.classList.contains('theme-toggle-icon-light') ? 'light' : 'dark',
                         locale: root.lang,
-                        languageReceivesPointer: languageHit === language,
+                        languageReceivesPointer: languageGroup.contains(languageHit),
                         themePosition: getComputedStyle(themeControl).position,
                         direction: root.dir,
                         bodyFont: getComputedStyle(body).fontFamily,
@@ -163,7 +171,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                         benefits: document.querySelector('.auth-reference-features').getBoundingClientRect().toJSON(),
                         emailField: document.querySelector('.auth-input-wrap').getBoundingClientRect().toJSON(),
                         cardWidth: panel.getBoundingClientRect().width,
-                        language: languageGroup.getBoundingClientRect().toJSON(),
+                        language: languageRect.toJSON(),
                         submit: button.getBoundingClientRect().toJSON()
                     };
                 });
@@ -172,14 +180,15 @@ test('Login uses central Arabic/English i18n across responsive themes without au
                 expect(layout.body, `${label} body overflow`).toBeLessThanOrEqual(viewport.width + 1);
                 expect(layout.cardWidth, label).toBeGreaterThan(280);
                 if (viewport.width >= 1024) {
-                    expect(layout.loginColumn.width, label).toBeCloseTo(viewport.width * 0.427, 0);
-                    expect(layout.marketing.width, label).toBeCloseTo(viewport.width * 0.573, 0);
+                    expect(layout.loginColumn.width, label).toBeCloseTo(viewport.width * 0.5, 0);
+                    expect(layout.marketing.width, label).toBeCloseTo(viewport.width * 0.5, 0);
                     expect(layout.panel.left, label).toBeGreaterThanOrEqual(layout.loginColumn.left);
                     expect(layout.panel.right, label).toBeLessThanOrEqual(layout.loginColumn.right);
-                    expect(layout.marketing.left, label).toBeCloseTo(locale === 'ar' ? 0 : viewport.width * 0.427, 0);
+                    expect(layout.marketing.left, label).toBeCloseTo(locale === 'ar' ? 0 : viewport.width * 0.5, 0);
                     expect(layout.hero.top, label).toBeGreaterThan(viewport.height * 0.35);
                     expect(layout.benefits.bottom, label).toBeLessThan(Math.max(viewport.height, layout.screen.height) - 24);
-                    expect(layout.emailField.height, label).toBe(64);
+                    expect(layout.emailField.height, label).toBe(48);
+                    expect(layout.submit.height, label).toBe(48);
                     if (viewport.width >= 1440) expect(layout.hero.height, label).toBeLessThan(76);
                 } else {
                     expect(layout.marketing.width, label).toBe(0);
@@ -220,8 +229,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
     await expect(remember).toHaveJSProperty('checked', !initialRememberState);
 
     for (const locale of ['ar', 'en']) {
-        const activeLocale = await page.evaluate(() => window.TopGymI18n.get());
-        if (activeLocale !== locale) await page.locator('#languageToggleButton').click();
+        await selectLocale(page, locale);
         await page.locator('#authRegisterOpen').click();
         await expect(page.locator('#authRegistrationDialog')).toBeVisible();
         await expect(page.locator('#authRegistrationTitle')).toHaveText(locale === 'ar' ? 'كيف ستستخدم Logic Fit؟' : 'How will you use Logic Fit?');

@@ -94,6 +94,7 @@ test('External trainees central Arabic/English matrix preserves state without lo
     await expect(section.locator('#traineesTitle')).toHaveText('المتدربون غير المشتركين');
     await expect(section.locator('.external-trainees-table thead')).toContainText('المتدرب');
     await expect.poll(() => apiRequests.filter((entry) => entry.path === '/api/external-trainees').length).toBe(1);
+    await expect.poll(() => apiRequests.filter((entry) => ['/api/notifications', '/api/notifications/unread-count'].includes(entry.path)).length).toBe(2);
     await page.waitForLoadState('networkidle');
     const settledApiRequests = apiRequests.map((request) => `${request.method} ${request.path}${request.search}`);
     await search.evaluate((input) => { input.value = 'draft search survives'; });
@@ -125,6 +126,7 @@ test('External trainees central Arabic/English matrix preserves state without lo
 
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+                await expect.poll(() => list.locator('.external-trainees-table').evaluate((table) => getComputedStyle(table).direction)).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 await expect(section.locator('#traineesTitle')).toHaveText(locale === 'ar' ? 'المتدربون غير المشتركين' : 'External trainees');
                 await expect(section.locator('.coaching-kicker')).toHaveText(locale === 'ar' ? 'إدارة التدريب والتغذية' : 'Training & nutrition management');
                 await expect(section.locator('#addExternalTraineeButton')).toContainText(locale === 'ar' ? 'إضافة متدرب خارجي' : 'Add external trainee');

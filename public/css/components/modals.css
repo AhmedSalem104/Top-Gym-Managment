@@ -324,14 +324,14 @@ body .swal2-popup .swal2-actions > a.btn {
 }
 
 body .swal2-popup .swal2-actions > button.swal2-confirm,
-body .swal2-popup .swal2-actions > button.btn-primary,
-body .swal2-popup .swal2-actions > button.btn-danger {
+body .swal2-popup .swal2-actions > button.btn-primary {
   background: var(--color-primary) !important;
   color: var(--text-on-primary) !important;
 }
 
 body .swal2-popup .swal2-actions > button.btn-danger {
   background: var(--color-danger) !important;
+  color: var(--text-on-primary) !important;
 }
 
 body .swal2-popup .swal2-actions > button.swal2-cancel,

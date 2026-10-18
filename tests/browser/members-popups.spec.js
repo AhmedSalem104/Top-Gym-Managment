@@ -651,7 +651,7 @@ test('members table keeps responsive overflow inside its scroll container', asyn
         expect(metrics.wrapperScrolls).toBe(false);
         expect(metrics.actionWrap).toBe('wrap');
     } else {
-        expect(metrics.tableMinWidth).toBe('1240px');
+        expect(metrics.tableMinWidth).toBe('1320px');
     }
 });
 

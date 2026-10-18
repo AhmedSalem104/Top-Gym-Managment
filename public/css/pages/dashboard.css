@@ -1932,6 +1932,7 @@
 }
 
 @media (max-width: 767px) {
+  .dashboard-section-heading { margin-top: 2px; }
   .dashboard-overview-shell { gap: var(--space-3); padding: var(--space-3); }
   .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
   .dashboard-overview-welcome,

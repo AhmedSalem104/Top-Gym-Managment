@@ -917,26 +917,14 @@ body .topbar-controls > .branch-context-shell .branch-context-field + .branch-co
   border-inline-start: 1px solid color-mix(in srgb, var(--sidebar-divider) 58%, transparent);
   border-radius: 8px;
 }
-body .topbar-controls > .branch-context-shell .branch-context-field:hover{
-  width: 50%;
-  min-width: 0 !important;
-  max-width: 50%;
-  flex: 0 0 50%;
-  transform: none !important;
-}
-body .topbar-controls > .branch-context-shell .branch-context-field:focus-within{
-  width: 50%;
-  min-width: 0 !important;
-  max-width: 50%;
-  flex: 0 0 50%;
-  transform: none !important;
-}
+body .topbar-controls > .branch-context-shell .branch-context-field:hover,
+body .topbar-controls > .branch-context-shell .branch-context-field:focus-within,
 body .topbar-controls > .branch-context-shell .branch-context-field.is-open{
   width: 50%;
-  min-width: 0 !important;
+  min-width: 0;
   max-width: 50%;
   flex: 0 0 50%;
-  transform: none !important;
+  transform: none;
 }
 body .topbar-controls > .branch-context-shell .branch-context-field{
   box-sizing: border-box;
@@ -944,7 +932,7 @@ body .topbar-controls > .branch-context-shell .branch-context-field{
 body .topbar-controls > .branch-context-shell .branch-context-field{
   width: 50%;
   max-width: 50%;
-  min-width: 0 !important;
+  min-width: 0;
   flex: 0 0 50%;
 }
 body .topbar-controls > .branch-context-shell .branch-context-field-copy{
@@ -985,9 +973,6 @@ body .topbar-controls > .branch-context-shell .branch-context-field-icon{
   }
 }
 
-body .app-shell > .topbar:has(.branch-context-field.is-open){
-  z-index: calc(var(--z-overlay) + 1);
-}
 body .app-shell > .topbar:has(.branch-context-field.is-open){
   z-index: calc(var(--z-overlay) + 1);
 }

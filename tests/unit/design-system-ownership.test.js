@@ -97,12 +97,16 @@ test('page and section heading presentation has canonical typography, layout, an
     const typography = read('public/css/typography.css');
     const layout = read('public/css/layout.css');
     const responsive = read('public/css/responsive.css');
+    const dashboard = read('public/css/pages/dashboard.css');
+    const theme = read('public/css/theme.css');
 
     assert.match(typography, /body \.page-header h2,[\s\S]*?font-size:\s*var\(--font-size-page-title\)[\s\S]*?font-weight:\s*var\(--weight-semibold\)/u);
     assert.match(typography, /body \.page-header p,[\s\S]*?color:\s*var\(--color-text-muted\)[\s\S]*?line-height:\s*1\.6/u);
     assert.match(layout, /\.section-heading\s*\{[^}]*min-height:\s*44px[^}]*var\(--space-4\)[^}]*var\(--border-secondary\)[^}]*var\(--space-3\)/u);
     assert.match(responsive, /\.section-heading\s*\{[^}]*align-items:\s*flex-start[^}]*flex-direction:\s*column[^}]*gap:\s*var\(--space-3\)/u);
     assert.doesNotMatch(visual, /body \.page-header h2|body \.section-heading|body \.members-panel h3/u);
+    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-section-heading\s*\{[^}]*margin-top:\s*2px/u);
+    assert.doesNotMatch(theme, /\.dashboard-section-heading/u, 'dashboard-specific responsive styling belongs to the dashboard page owner');
 });
 
 test('shared mobile content grids collapse in the responsive owner, not visual polish', () => {
@@ -206,6 +210,12 @@ test('branch/section dropdown styling and Navbar shell composition have canonica
         assert.equal(rulesContainingClass(visual, selectorClass).length, 0,
             `${selectorClass} must not remain in components/visual-redesign.css`);
     }
+
+    assert.equal((context.match(/body \.app-shell > \.topbar:has\(\.branch-context-field\.is-open\)/gu) || []).length, 1,
+        'the open branch-context topbar stacking rule must have one canonical declaration');
+    assert.match(context,
+        /body \.topbar-controls > \.branch-context-shell \.branch-context-field:hover,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field:focus-within,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field\.is-open\s*\{[^}]*min-width: 0;[^}]*transform: none;/u,
+        'the compact Navbar branch/section states share one non-important sizing rule');
 
     for (const source of [main, appShell]) {
         const navigationIndex = source.indexOf('@import url("./components/navigation-shell.css");');
@@ -432,6 +442,18 @@ test('dynamically-created Coaching dialogs opt into the central structured contr
     ]) {
         assert.match(coaching, new RegExp(`dialog\\.id = '${id}'[\\s\\S]*?dialog\\.className = 'coaching-small-dialog`, 'u'), `${id} should use the shared Coaching dialog component class`);
     }
+});
+
+test('SweetAlert destructive actions have one semantic danger owner instead of a shadowed primary rule', () => {
+    const modals = read('public/css/components/modals.css');
+    const primaryRule = modals.match(/body \.swal2-popup \.swal2-actions > button\.swal2-confirm,[\s\S]*?\{([^}]*)\}/u);
+    const dangerRule = modals.match(/body \.swal2-popup \.swal2-actions > button\.btn-danger\s*\{([^}]*)\}/u);
+
+    assert.ok(primaryRule, 'the confirm and primary buttons keep their canonical primary styling');
+    assert.doesNotMatch(primaryRule[0], /button\.btn-danger/u, 'destructive actions must not be classified as primary');
+    assert.ok(dangerRule, 'the destructive button has a dedicated semantic owner');
+    assert.match(dangerRule[1], /background:\s*var\(--color-danger\)\s*!important/u);
+    assert.match(dangerRule[1], /color:\s*var\(--text-on-primary\)\s*!important/u);
 });
 
 test('all static native dialogs are hydrated by the central runtime and have canonical size metadata', () => {
@@ -727,6 +749,18 @@ test('payment receipt amounts use primary semantics while outstanding balances r
     assert.match(print, /\.print-receipt-amount\s*\{[^}]*border-color:\s*var\(--print-brand-border\)[^}]*background:\s*var\(--print-brand-surface\)/u);
     assert.match(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*var\(--print-brand-primary\)/u);
     assert.doesNotMatch(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*#c53030/u);
+});
+
+test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {
+    const phone = read('public/css/components/phone-inputs.css');
+    const attendance = read('public/css/pages/attendance.css');
+
+    assert.match(phone, /\.phone-input-error\[hidden\]\s*\{[^}]*display:\s*block\s*!important/u,
+        'the phone component owns its stable hidden feedback slot');
+    assert.match(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*height:\s*0;[^}]*visibility:\s*hidden;/u,
+        'Attendance may retain its local zero-height layout adjustment');
+    assert.doesNotMatch(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*display\s*:/u,
+        'Attendance must not duplicate the phone component display invariant');
 });
 
 test('style validator checks generated bundles but does not report them as duplicate token owners', () => {

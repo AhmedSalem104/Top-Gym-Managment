@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 
 const workoutId = 88401;
@@ -9,48 +11,19 @@ const memberName = 'عضو اختبار التقارير';
 const workoutName = 'برنامج قوة اصطناعي';
 const dietName = 'خطة تغذية اصطناعية';
 
-function syntheticPdf() {
-    const objects = [
-        '<< /Type /Catalog /Pages 2 0 R >>',
-        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-        '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-        '<< /Length 47 >>\nstream\nBT /F1 12 Tf 24 96 Td (Synthetic QA PDF) Tj ET\nendstream'
-    ];
-    let pdf = '%PDF-1.4\n';
-    const offsets = [0];
-    objects.forEach((object, index) => {
-        offsets.push(Buffer.byteLength(pdf, 'binary'));
-        pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-    });
-    const xrefOffset = Buffer.byteLength(pdf, 'binary');
-    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-    offsets.slice(1).forEach((offset) => { pdf += `${String(offset).padStart(10, '0')} 00000 n \n`; });
-    pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-    return pdf;
-}
-
-function pdfEngineFixture() {
-    const source = JSON.stringify(syntheticPdf());
-    return `(() => {
-        const bytes = ${source};
-        window.html2pdf = () => {
-            const worker = {
-                set() { return this; },
-                from() { return this; },
-                outputPdf: async () => new Blob([bytes], { type: 'application/pdf' }),
-                save: async () => undefined
-            };
-            return worker;
-        };
-    })();`;
-}
-
-test('Reports coaching and nutrition PDF buttons download synthetic PDFs without external or write requests', async ({ page }, testInfo) => {
+test('Reports coaching and nutrition actions generate actual PDFs without external writes', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'PDF binary/output verification runs in the desktop Chromium project.');
     const unexpectedWrites = [];
     const blockedExternal = [];
     const apiReads = [];
+    const pdfEngineResponses = [];
+    const printStylesheetResponses = [];
+    page.on('response', (response) => {
+        if (response.url() === 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js') {
+            pdfEngineResponses.push(response.status());
+        }
+        if (response.url().includes('/css/print.css?')) printStylesheetResponses.push(response.status());
+    });
 
     await page.context().route('**/*', async (route) => {
         const request = route.request();
@@ -59,7 +32,7 @@ test('Reports coaching and nutrition PDF buttons download synthetic PDFs without
 
         if (url.origin !== 'http://127.0.0.1:4173') {
             if (url.href === 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js') {
-                return route.fulfill({ status: 200, contentType: 'text/javascript; charset=utf-8', body: pdfEngineFixture() });
+                return route.continue();
             }
             if (url.href === 'https://cdn.jsdelivr.net/npm/sweetalert2@11') {
                 return route.fulfill({
@@ -132,16 +105,49 @@ test('Reports coaching and nutrition PDF buttons download synthetic PDFs without
         const button = page.locator(`[data-report-coaching-action="pdf"][data-report-coaching-id="${item.id}"][data-report-coaching-type="${item.type}"]`);
         await expect(button).toBeVisible();
         const downloadPromise = page.waitForEvent('download');
+        const pdfLayoutPromise = page.waitForFunction(() => {
+            const host = document.querySelector('.print-pdf-host');
+            const sheet = host?.querySelector('.print-sheet');
+            if (!host || !sheet) return false;
+            return true;
+        }, { timeout: 10_000 }).then(() => page.evaluate(() => {
+            const sheet = document.querySelector('.print-pdf-host .print-sheet');
+            const rect = sheet.getBoundingClientRect();
+            const styles = getComputedStyle(sheet);
+            return {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width,
+                height: rect.height,
+                computedWidth: styles.width,
+                fontFamily: styles.fontFamily,
+                hasPrintAccent: Boolean(sheet.querySelector('.print-accent')),
+                childPositions: [...sheet.children].map((child) => ({
+                    className: typeof child.className === 'string' ? child.className : child.tagName,
+                    top: Math.round(child.getBoundingClientRect().top - rect.top),
+                    height: Math.round(child.getBoundingClientRect().height)
+                }))
+            };
+        }));
         await button.click();
+        const pdfLayout = await pdfLayoutPromise;
+        expect(pdfLayout.x).toBe(0);
+        expect(pdfLayout.y).toBe(0);
+        expect(Number.parseFloat(pdfLayout.computedWidth)).toBeCloseTo(718.11, 1);
+        expect(pdfLayout.fontFamily).toContain('Logic Fit Print Arabic');
+        expect(pdfLayout.childPositions[0].top).toBe(0);
         const download = await downloadPromise;
         expect(download.suggestedFilename()).toMatch(item.file);
         const stream = await download.createReadStream();
         const chunks = [];
         for await (const chunk of stream) chunks.push(chunk);
         const bytes = Buffer.concat(chunks);
-        expect(bytes.subarray(0, 8).toString('ascii')).toBe('%PDF-1.4');
+        expect(bytes.subarray(0, 8).toString('ascii')).toMatch(/^%PDF-1\./u);
         expect(bytes.toString('binary')).toContain('%%EOF');
-        expect(bytes.length).toBeGreaterThan(200);
+        expect(bytes.length).toBeGreaterThan(20_000);
+        const artifactDirectory = path.resolve(process.env.COACHING_DOWNLOAD_EVIDENCE_DIR || 'qa/artifacts/reports-coaching-pdf-real');
+        fs.mkdirSync(artifactDirectory, { recursive: true });
+        await download.saveAs(path.join(artifactDirectory, download.suggestedFilename()));
         expect(await button.getAttribute('data-report-coaching-type')).toBe(item.type);
     }
 
@@ -149,6 +155,8 @@ test('Reports coaching and nutrition PDF buttons download synthetic PDFs without
     expect(apiReads).toContain(`/api/workoutprograms/${workoutId}`);
     expect(apiReads).toContain(`/api/dietplans/${dietId}`);
     expect(apiReads).toContain(`/api/library/exercises/${exerciseId}`);
+    expect(pdfEngineResponses).toContain(200);
+    expect(printStylesheetResponses).toContain(200);
     expect(unexpectedWrites).toEqual([]);
     expect(blockedExternal).toEqual([]);
 });

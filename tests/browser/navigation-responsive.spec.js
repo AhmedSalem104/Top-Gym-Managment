@@ -431,7 +431,7 @@ test('shared navigation stays below the header without clipping across locale, t
     }
 });
 
-test('mobile topbar has two explicit rows and a single-icon theme action; Login keeps its in-card switch', async ({ page, context }, testInfo) => {
+test('mobile topbar has two explicit rows and a single-icon theme action; Login uses a square theme button', async ({ page, context }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
@@ -494,21 +494,22 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
                 const style = getComputedStyle(element);
                 const icons = [...element.querySelectorAll('.theme-toggle-icon')].map((icon) => ({
                     display: getComputedStyle(icon).display,
+                    theme: icon.classList.contains('theme-toggle-icon-dark') ? 'dark' : 'light',
                     rect: icon.getBoundingClientRect().toJSON()
                 }));
-                const track = getComputedStyle(element, '::before');
-                const touchTarget = getComputedStyle(element, '::after');
+        const before = getComputedStyle(element, '::before');
+        const after = getComputedStyle(element, '::after');
                 return {
                     width: rect.width,
                     height: rect.height,
+            localeHeight: element.closest('.auth-reference-controls')?.querySelector('[data-locale-segmented]')?.getBoundingClientRect().height,
                     radius: style.borderRadius,
                     columns: style.gridTemplateColumns,
                     direction: style.direction,
                     background: style.backgroundColor,
                     border: style.borderColor,
-                    track: { width: track.width, height: track.height, left: track.left, right: track.right },
-                    touchTarget: { height: touchTarget.height, top: touchTarget.top },
-                    icons: icons.map((icon) => ({ display: icon.display, x: icon.rect.x - rect.x, y: icon.rect.y - rect.y, width: icon.rect.width, height: icon.rect.height }))
+            pseudo: { before: before.display, after: after.display },
+            icons: icons.map((icon) => ({ display: icon.display, theme: icon.theme, x: icon.rect.x - rect.x, y: icon.rect.y - rect.y, width: icon.rect.width, height: icon.rect.height }))
                 };
             });
 
@@ -523,7 +524,13 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
             expect(state.themePressed).toBe(String(theme === 'dark'));
             expect(state.themeState).toBe(theme);
             expect(state.themeControlCount).toBe(1);
-            expect(loginGeometry.touchTarget).toEqual({ height: '44px', top: '-2px' });
+            expect(loginGeometry.width).toBe(48);
+            expect(loginGeometry.height).toBe(48);
+            expect(loginGeometry.localeHeight).toBe(48);
+            expect(loginGeometry.pseudo).toEqual({ before: 'none', after: 'none' });
+            const visibleLoginIcons = loginGeometry.icons.filter((icon) => icon.display !== 'none');
+            expect(visibleLoginIcons).toHaveLength(1);
+            expect(visibleLoginIcons[0].theme).toBe(theme);
             expect(state.notification.width).toBe(44);
             expect(state.notification.x).toBeLessThan(state.theme.x);
             expect(state.theme.x).toBeLessThan(state.kiosk.x);
@@ -589,8 +596,8 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
         const loginRect = await loginToggle.boundingBox();
         expect(appRect.width).toBe(44);
         expect(appRect.height).toBe(44);
-        expect(loginRect.width).toBe(96);
-        expect(loginRect.height).toBeCloseTo(40, 2);
+        expect(loginRect.width).toBe(48);
+        expect(loginRect.height).toBeCloseTo(48, 2);
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`topbar-desktop-1366-${theme}.png`), fullPage: false });
     }

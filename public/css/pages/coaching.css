@@ -74,6 +74,10 @@
   border-spacing: 0;
 }
 
+/* The shared table scroll wrapper is intentionally LTR, so the table itself
+   must follow the document locale explicitly rather than inherit the wrapper. */
+html[dir="ltr"] .external-trainees-table-wrap > .external-trainees-table { direction: ltr; }
+
 .external-trainees-table th,
 .external-trainees-table td {
   min-width: 0;
