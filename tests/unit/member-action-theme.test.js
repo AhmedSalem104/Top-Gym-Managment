@@ -7,16 +7,17 @@ const test = require('node:test');
 
 const source = fs.readFileSync(path.join(__dirname, '../../public/css/pages/members.css'), 'utf8');
 const iconSource = fs.readFileSync(path.join(__dirname, '../../public/css/components/icons.css'), 'utf8');
-const modalSource = fs.readFileSync(path.join(__dirname, '../../public/css/components/modal-foundation.css'), 'utf8');
-
 test('subscriber action and more-menu icons share the same visual box on desktop and mobile', () => {
     assert.match(iconSource, /\.action-icon,\s*\.action-menu-icon\s*\{[^}]*width:\s*17px;[^}]*height:\s*17px;[^}]*flex-basis:\s*17px;/u);
     assert.match(source, /\.members-mobile-actions \.table-action-visible \.action-icon,\s*\.members-mobile-actions \.action-menu-toggle \.action-menu-icon\s*\{\s*width:\s*16px;\s*height:\s*16px;\s*flex:\s*0 0 16px;/u);
 });
 
-test('mobile filter sheet uses the shared full-screen modal variant', () => {
-    assert.match(modalSource, /\.lf-modal-shell\.lf-modal--mobile-fullscreen\s*\{[^}]*inset:\s*0;[^}]*width:\s*100vw;[^}]*height:\s*100dvh;[^}]*max-height:\s*100dvh;/u);
-    assert.match(fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8'), /id="membersFiltersDialog"[^>]*lf-modal--mobile-fullscreen/u);
+test('mobile member filters use a content-sized bottom sheet rather than full-screen modal', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
+    assert.match(source, /@media \(max-width: 767px\)\s*\{[^}]*\.members-filter-dialog\s*\{[^}]*inset-block:\s*auto max\(12px, env\(safe-area-inset-bottom\)\);[^}]*max-height:\s*min\(78dvh, calc\(100dvh - 24px - env\(safe-area-inset-bottom\)\)\);/u);
+    assert.match(source, /\.members-filter-dialog \.dialog-body\s*\{\s*height:\s*auto;\s*max-height:\s*inherit;/u);
+    assert.match(html, /id="membersFiltersDialog"[^>]*lf-modal--structured/u);
+    assert.doesNotMatch(html, /id="membersFiltersDialog"[^>]*lf-modal--mobile-fullscreen/u);
 });
 
 test('subscriber row action geometry is theme-independent, with one mobile size', () => {

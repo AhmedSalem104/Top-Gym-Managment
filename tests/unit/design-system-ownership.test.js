@@ -279,6 +279,7 @@ test('superseded branch-context positioning layer is removed while desktop and m
     const visual = read('public/css/components/visual-redesign.css');
     const navigation = read('public/css/components/navigation-shell.css');
     const mobile = read('public/css/components/mobile-topbar.css');
+    const html = read('public/index.html');
 
     assert.doesNotMatch(visual, /width:\s*min\(430px,\s*calc\(100%\s*-\s*500px\)\)/u);
     assert.doesNotMatch(visual, /box-shadow:\s*0 12px 28px rgb\(2 6 23 \/ \.18\)/u);
@@ -286,8 +287,12 @@ test('superseded branch-context positioning layer is removed while desktop and m
         'branch context selectors stay in document flow so they cannot cover adjacent shell actions');
     assert.doesNotMatch(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*absolute/u,
         'desktop and tablet context must not overlay the action row');
-    assert.match(mobile, /#branchContextShell\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u,
-        'the explicit two-column mobile context layout remains in its owner');
+    assert.match(mobile, /\.topbar-mobile-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0,\s*1fr\) 96px/u,
+        'the mobile navigation, single context button and action group remain in one grid row');
+    assert.match(mobile, /\.topbar-mobile-row > #branchContextShell\s*\{[^}]*display:\s*block[^}]*width:\s*auto/u,
+        'the mobile context selector is a single compact row item');
+    assert.match(html, /id="branchContextMobileTrigger"/u,
+        'the mobile context item exposes one trigger for branch and section selection');
     assert.match(navigation, /\.app-shell > \.topbar \.topbar-inner/u,
         'the application shell remains the owner for topbar structure');
 });
