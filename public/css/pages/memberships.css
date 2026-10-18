@@ -829,6 +829,7 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 /* Member details card ---------------------------------------------------- */
 #detailsDialog {
   width: min(760px, calc(100% - 32px));
+  height: min(88dvh, 960px);
   max-height: calc(100dvh - 32px);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
@@ -836,17 +837,40 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 }
 
 #detailsDialog > .dialog-body {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   gap: var(--space-5);
-  max-height: calc(100dvh - 32px);
+  max-height: none;
+  overflow: hidden;
   background: var(--bg-app);
   padding: var(--space-6);
 }
 
+#detailsDialog > .dialog-body > .member-details-head,
+#detailsDialog > .dialog-body > .member-expiry-banner {
+  flex: 0 0 auto;
+}
+
+#detailsDialog #detailsContent {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
 #detailsDialog > .dialog-body > .member-details-head {
+  box-sizing: border-box;
+  min-width: 0;
   top: calc(var(--space-6) * -1);
   min-height: 100px;
   align-items: center;
-  margin: calc(var(--space-6) * -1) calc(var(--space-6) * -1) 0;
+  margin-block: calc(var(--space-6) * -1) 0;
+  margin-inline: calc(-1 * var(--space-6) + var(--space-1));
   border-bottom: 1px solid var(--border-secondary);
   background: var(--bg-surface);
   padding: var(--space-4) var(--space-6);
@@ -1434,19 +1458,22 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 @media (max-width: 600px) {
   #detailsDialog {
     width: calc(100% - 24px);
+    height: min(88dvh, 760px);
     max-height: calc(100dvh - 24px);
     border-radius: var(--radius-lg);
   }
 
   #detailsDialog > .dialog-body {
-    max-height: calc(100dvh - 24px);
+    min-height: 0;
+    max-height: none;
     padding: 18px;
   }
 
   #detailsDialog > .dialog-body > .member-details-head {
     top: -18px;
     min-height: 82px;
-    margin: -18px -18px 0;
+    margin-block: -18px 0;
+    margin-inline: calc(var(--space-4) * -1);
     padding: 14px 18px;
   }
 
@@ -2092,11 +2119,9 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 /* Member profile uses one tabbed composition at every viewport; mobile adds
    its compact action footer and condensed tab sizing below. */
 #detailsDialog .member-details-tabs {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: var(--z-sticky);
   display: grid;
   min-width: 0;
+  grid-row: 1;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: var(--space-1);
   border: 1px solid var(--border-secondary);
@@ -2140,10 +2165,19 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 #detailsDialog .member-details-tab-panel:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
 #detailsDialog .member-details-tab-panel {
   display: grid;
+  box-sizing: border-box;
   min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  grid-row: 2;
   align-content: start;
   gap: var(--space-3);
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-block: var(--space-1) var(--space-2);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 #detailsDialog .member-details-tab-panel[hidden] { display: none; }
 #detailsDialog .member-details-tab-panel > .details-section,
@@ -2157,7 +2191,7 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
     flex: 1 1 auto;
     gap: var(--space-3);
   }
-  #detailsDialog #detailsContent { min-width: 0; gap: var(--space-3); }
+  #detailsDialog #detailsContent { min-width: 0; min-height: 0; gap: var(--space-3); }
   body #detailsDialog > .dialog-body > .member-details-head {
     position: relative;
     grid-template-columns: minmax(0, 1fr);
@@ -2165,7 +2199,7 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   }
   #detailsDialog .member-details-tabs {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 3px;
     min-width: 0;
     border: 1px solid var(--border-secondary);
@@ -2176,9 +2210,9 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   }
   #detailsDialog .member-details-tab {
     min-height: 46px;
-    padding: 4px 2px;
-    font-size: clamp(var(--font-2xs), 2.8vw, var(--font-xs));
-    white-space: nowrap;
+    padding: 4px var(--space-2);
+    font-size: var(--font-xs);
+    white-space: normal;
   }
   #detailsDialog .member-details-tab-panel > .details-section,
   #detailsDialog .member-details-tab-panel > .member-details-overview { min-width: 0; }
@@ -2304,7 +2338,7 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 
 @media (max-width: 359px) {
   #detailsDialog .member-details-tabs { gap: 2px; padding: 2px; }
-  #detailsDialog .member-details-tab { min-height: 44px; padding-inline: 1px; font-size: var(--font-2xs); }
+  #detailsDialog .member-details-tab { min-height: 44px; padding-inline: var(--space-1); font-size: var(--font-xs); }
   #detailsDialog .member-details-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #detailsDialog .member-details-stats .member-detail-stat { min-height: 72px; }
   #detailsDialog .details-summary-card { min-height: 60px; }

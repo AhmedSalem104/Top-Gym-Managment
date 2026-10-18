@@ -181,6 +181,41 @@ test('member identity, dates, account and member-wide freezes remain aligned in 
                 }, theme);
                 const firstMember = page.locator('#membersList .members-mobile-card[data-member-id="731"]:visible, #membersList .members-table tbody tr[data-member-id="731"]:visible').first();
                 await expect(firstMember).toBeVisible();
+                if (width >= 768) {
+                    const cellAlignment = await firstMember.locator('td').evaluateAll((cells) => cells.map((cell) => getComputedStyle(cell).textAlign));
+                    expect(cellAlignment).toEqual(['center', 'center', 'center', 'center', 'center', 'center']);
+                    const identityGeometry = await firstMember.locator('td:first-child').evaluate((cell) => {
+                        const cellRect = cell.getBoundingClientRect();
+                        const name = cell.querySelector('.table-member-name');
+                        const nameRect = name?.getBoundingClientRect();
+                        return {
+                            cellWidth: cellRect.width,
+                            nameVisible: Boolean(nameRect && nameRect.width > 0 && nameRect.left >= cellRect.left && nameRect.right <= cellRect.right),
+                            nameAlignment: name ? getComputedStyle(name).textAlign : null
+                        };
+                    });
+                    expect(identityGeometry.cellWidth).toBeGreaterThanOrEqual(280);
+                    expect(identityGeometry.nameVisible).toBe(true);
+                    expect(identityGeometry.nameAlignment).toBe('center');
+                    if (width < 1600) {
+                        const actionsPosition = await firstMember.locator('td:last-child').evaluate((cell) => getComputedStyle(cell).position);
+                        expect(actionsPosition).toBe('static');
+                    }
+                    const compositionAlignment = await firstMember.locator('.member-identity-copy, .table-member-phone, .member-code-preview, .member-last-subscription, .membership-date, .membership-date [dir="ltr"], .member-account-values > span, .member-freeze-cell, .freeze-usage > strong, .freeze-usage > span, .freeze-usage [dir="ltr"], .member-status-detail').evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).textAlign));
+                    expect(compositionAlignment.every((alignment) => alignment === 'center')).toBe(true);
+                    await firstMember.hover();
+                    const hoverSurface = await firstMember.evaluate((row) => ({
+                        row: getComputedStyle(row).backgroundColor,
+                        cells: [...row.cells].map((cell) => getComputedStyle(cell).backgroundColor)
+                    }));
+                    expect(hoverSurface.cells.every((color) => color === hoverSurface.row), JSON.stringify(hoverSurface)).toBe(true);
+                    await page.mouse.move(0, 0);
+                } else {
+                    const accountSurface = await firstMember.locator('.members-mobile-balance').evaluate((node) => getComputedStyle(node).backgroundColor);
+                    expect(accountSurface).not.toBe('rgba(0, 0, 0, 0)');
+                    const accountAlignment = await firstMember.locator('.members-mobile-account-values > span').evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).textAlign));
+                    expect(accountAlignment).toEqual(['center', 'center']);
+                }
                 const dateTexts = await firstMember.locator('.membership-date time').allTextContents();
                 expect(dateTexts).toEqual(['01/09/2026', '12/11/2026']);
                 await expect(firstMember).toContainText(locale === 'ar' ? 'إجمالي سجلاته' : 'All records');
@@ -201,15 +236,16 @@ test('member identity, dates, account and member-wide freezes remain aligned in 
 
 test('member details use accessible tabs on desktop and mobile, including the dedicated training/nutrition panel', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The focused details layout matrix runs once with explicit responsive viewports.');
+    test.setTimeout(180_000);
     const output = path.resolve(process.cwd(), 'qa/artifacts/member-details-tabs-20261018');
     await fs.mkdir(output, { recursive: true });
     const membershipCss = await fs.readFile(path.resolve(process.cwd(), 'public/css/pages/memberships.css'), 'utf8');
     const coachingCss = await fs.readFile(path.resolve(process.cwd(), 'public/css/pages/coaching.css'), 'utf8');
     const requests = await installReadOnlyMemberFixtures(page);
 
-    for (const width of [390, 1440]) {
-        await page.setViewportSize({ width, height: 900 });
-        for (const [locale, theme] of [['ar', 'light'], ['en', 'dark']]) {
+    for (const { width, height } of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+        await page.setViewportSize({ width, height });
+        for (const [locale, theme] of [['ar', 'light'], ['ar', 'dark'], ['en', 'light'], ['en', 'dark']]) {
             await page.goto(`/index.html?memberDetailsTabs=${width}-${locale}-${theme}#members`, { waitUntil: 'networkidle' });
             await page.addStyleTag({ content: membershipCss });
             await page.addStyleTag({ content: coachingCss });
@@ -220,6 +256,30 @@ test('member details use accessible tabs on desktop and mobile, including the de
             await openVisibleMemberAction(page, 'details');
             const dialog = page.locator('#detailsDialog');
             await expect(dialog).toBeVisible();
+            const fixedFrame = async () => dialog.evaluate((node) => {
+                const rect = (element) => {
+                    const bounds = element.getBoundingClientRect();
+                    return [bounds.x, bounds.y, bounds.width, bounds.height].map((value) => Math.round(value * 10) / 10);
+                };
+                const body = node.querySelector(':scope > .dialog-body');
+                const tabs = node.querySelector('.member-details-tabs');
+                const content = node.querySelector('#detailsContent');
+                const activePanel = node.querySelector('[data-member-details-panel]:not([hidden])');
+                return {
+                    dialog: rect(node),
+                    header: rect(node.querySelector('.member-details-head')),
+                    tabs: rect(tabs),
+                    content: rect(content),
+                    scrollOwners: {
+                        dialog: getComputedStyle(node).overflowY,
+                        body: getComputedStyle(body).overflowY,
+                        content: getComputedStyle(content).overflowY,
+                        panel: getComputedStyle(node.querySelector('[data-member-details-panel]:not([hidden])')).overflowY
+                    },
+                    widths: [node, body, content, activePanel].map((element) => ({ client: element.clientWidth, scroll: element.scrollWidth }))
+                };
+            });
+            const initialFrame = await fixedFrame();
             const tabs = dialog.locator('[data-member-details-tab]');
             await expect(tabs).toHaveCount(6);
             const tab = dialog.locator('[data-member-details-tab="training"]');
@@ -228,6 +288,15 @@ test('member details use accessible tabs on desktop and mobile, including the de
             await expect(tab).toHaveAttribute('aria-selected', 'true');
             const trainingPanel = dialog.locator('[data-member-details-panel="training"]');
             await expect(trainingPanel).toBeVisible();
+            const trainingFrame = await fixedFrame();
+            expect(trainingFrame.dialog).toEqual(initialFrame.dialog);
+            expect(trainingFrame.header).toEqual(initialFrame.header);
+            expect(trainingFrame.tabs).toEqual(initialFrame.tabs);
+            expect(trainingFrame.content).toEqual(initialFrame.content);
+            expect(trainingFrame.scrollOwners).toMatchObject({ dialog: 'hidden', body: 'hidden', content: 'hidden', panel: 'auto' });
+            for (const width of trainingFrame.widths) {
+                expect(width.scroll, `unexpected horizontal overflow ${JSON.stringify(trainingFrame.widths)}`).toBeLessThanOrEqual(width.client + 1);
+            }
             await expect(trainingPanel.locator('[data-member-training-panel]')).toBeVisible();
             await expect(trainingPanel.locator('.member-training-head h4')).toHaveText(locale === 'ar' ? 'التدريب والتغذية' : 'Training and nutrition');
             const trainingLabels = await trainingPanel.locator('.member-training-head, .member-progress-line').allTextContents();
@@ -243,8 +312,43 @@ test('member details use accessible tabs on desktop and mobile, including the de
             const overviewTab = dialog.locator('[data-member-details-tab="overview"]');
             await overviewTab.click();
             await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+            const overviewFrame = await fixedFrame();
+            expect(overviewFrame.dialog).toEqual(initialFrame.dialog);
+            expect(overviewFrame.header).toEqual(initialFrame.header);
+            expect(overviewFrame.tabs).toEqual(initialFrame.tabs);
+            expect(overviewFrame.content).toEqual(initialFrame.content);
             await expect(trainingPanel).toBeHidden();
             await page.screenshot({ path: path.join(output, `overview-${width}-${locale}-${theme}.png`), fullPage: false });
+
+            await tab.click();
+            const longContent = await trainingPanel.evaluate((panel) => {
+                const section = document.createElement('section');
+                section.className = 'details-section';
+                const heading = document.createElement('h4');
+                heading.textContent = 'QA long-content scroll check';
+                section.append(heading);
+                for (let index = 0; index < 18; index += 1) {
+                    const paragraph = document.createElement('p');
+                    paragraph.textContent = `Long-content fixture ${index + 1}: ${'member training details remain readable and wrap within the available tab panel. '.repeat(8)}`;
+                    section.append(paragraph);
+                }
+                panel.append(section);
+                return { scrollHeight: panel.scrollHeight, clientHeight: panel.clientHeight };
+            });
+            expect(longContent.scrollHeight).toBeGreaterThan(longContent.clientHeight);
+            await trainingPanel.evaluate((panel) => { panel.scrollTop = panel.scrollHeight; });
+            expect(await trainingPanel.evaluate((panel) => panel.scrollTop)).toBeGreaterThan(0);
+            expect(await trainingPanel.evaluate((panel) => {
+                const lastParagraph = panel.lastElementChild?.lastElementChild;
+                return lastParagraph && lastParagraph.getBoundingClientRect().bottom <= panel.getBoundingClientRect().bottom + 1;
+            })).toBe(true);
+            await overviewTab.click();
+            await tab.click();
+            expect(await trainingPanel.evaluate((panel) => panel.scrollTop)).toBe(0);
+            const longFrame = await fixedFrame();
+            expect(longFrame.dialog).toEqual(initialFrame.dialog);
+            expect(longFrame.tabs).toEqual(initialFrame.tabs);
+            expect(longFrame.widths.every(({ scroll, client }) => scroll <= client + 1)).toBe(true);
             await page.locator('#detailsClose').click();
         }
     }

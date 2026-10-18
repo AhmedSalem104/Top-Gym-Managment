@@ -387,6 +387,7 @@
     });
     content.querySelectorAll('[data-member-details-panel]').forEach((panel) => {
       panel.hidden = panel.dataset.memberDetailsPanel !== tabId;
+      if (!panel.hidden) panel.scrollTop = 0;
     });
     if (focus) tab.focus({ preventScroll: true });
   }

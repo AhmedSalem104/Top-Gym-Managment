@@ -437,12 +437,16 @@ table .action-group {
 }
 
 .members-table > tbody > tr:hover {
-  background: var(--color-primary-soft);
+  background: var(--color-surface-muted);
 }
 
 .members-table > tbody > tr > td,
 .members-table > tbody > tr:nth-child(even) > td:last-child,
 .members-table > tbody > tr:hover > td:last-child {
+  background: inherit;
+}
+
+.members-table > tbody > tr:hover > td {
   background: inherit;
 }
 

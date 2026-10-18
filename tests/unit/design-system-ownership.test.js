@@ -712,13 +712,16 @@ test('empty spanning rows are excluded from sticky action-column treatment', () 
     }
 });
 
-test('Members table composition is feature-owned while generic table behavior stays centralized', () => {
+test('Members desktop table styling applies with responsive-card decoration while shared hover stays centralized', () => {
     const members = read('public/css/pages/members.css');
     const visual = read('public/css/components/visual-redesign.css');
     const tables = read('public/css/components/tables.css');
 
-    assert.match(members, /\.members-table:not\(\.table-card-layout\)\s*\{[^}]*min-width:\s*1320px[^}]*table-layout:\s*fixed/u);
+    assert.match(members, /@media\s*\(min-width:\s*768px\)[\s\S]*?\.members-table\s*\{[^}]*min-width:\s*1320px[^}]*table-layout:\s*fixed/u);
+    assert.doesNotMatch(members, /\.members-table:not\(\.table-card-layout\)/u);
+    assert.match(members, /#membersSection\s+\.members-table\s+th,[\s\S]*?text-align:\s*center/u);
     assert.match(tables, /table,\s*\.data-table,\s*\.members-table,\s*\.history-table\s*\{[^}]*table-layout:\s*auto/u);
+    assert.match(tables, /\.members-table\s*>\s*tbody\s*>\s*tr:hover\s*\{\s*background:\s*var\(--color-surface-muted\)/u);
     assert.doesNotMatch(visual, /\.members-table(?:\b|\s|:|#)|#membersSection\s+\.members-table/u);
 });
 
