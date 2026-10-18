@@ -54,6 +54,26 @@
          function membersText(key, params = {}) { return window.TopGymI18n?.t?.(`members.${key}`, params) || params.fallback || key; }
          function membersNumber(value) { return window.TopGymI18n?.format?.('number', Number(value || 0)) || Number(value || 0).toLocaleString('ar-EG'); }
          function membersDate(value) { if (!value) return '—'; return window.TopGymI18n?.format?.('date', String(value).slice(0, 10), { dateStyle: 'medium' }) || formatDate(value); }
+         function membersDateDmy(value) {
+             if (!value) return membersText('value.unavailable');
+             const match = String(value).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/u);
+             return match ? `${match[3]}/${match[2]}/${match[1]}` : membersText('value.unavailable');
+         }
+         function displayedMembership(member) { return member.latestRecordedMembership ?? member.membership ?? null; }
+         function membersListPlanLabel(plan) {
+             const keys = { gym_only: 'plan.gymOnly', gym_cardio: 'plan.gymCardio' };
+             return keys[plan] ? membersText(keys[plan]) : planLabel(plan);
+         }
+         function membersListTypeLabel(type) {
+             const keys = { monthly: 'type.monthly', half_month: 'type.halfMonth', quarterly: 'type.quarterly', semiannual: 'type.semiannual', annual: 'type.annual' };
+             const code = resolvedTypeCode(type);
+             return keys[code] ? membersText(keys[code]) : typeLabel(type);
+         }
+         function membersDateMarkup(value, label, className = '') {
+             const formatted = membersDateDmy(value);
+             const dateTime = value ? String(value).slice(0, 10) : '';
+             return `<span class="membership-date ${className}"><small>${escapeHtml(label)}</small><time dir="ltr"${dateTime ? ` datetime="${escapeHtml(dateTime)}"` : ''}>${escapeHtml(formatted)}</time></span>`;
+         }
          function membersCurrency(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value); }
          function memberActionLabel(action) { const keys = { details: 'action.details', edit: 'action.edit', renew: 'action.renew', freeze: 'action.freeze', resume: 'action.resume', payment: 'action.payment', print: 'action.print', qr: 'action.qr', delete: 'action.delete', refund: 'action.refund' }; return keys[action] ? membersText(keys[action]) : ACTION_LABELS[action] || action; }
          function refundActionButton(memberId) { const label = memberActionLabel('refund'); return `<button class="btn btn-light btn-small icon-action rounded-lg shadow-none transition-colors refund-action" data-action="refund" data-required-permission="payments.refund" data-label="${escapeHtml(label)}" data-id="${memberId}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" type="button">${actionIcon('refund')}</button>`; }
@@ -937,7 +957,7 @@
             return `<div class="table-actions">${actionButton('details', member.id, 'btn btn-details btn-small')}${actionButton('edit', member.id)}${actionButton('renew', member.id, 'btn btn-primary btn-small')}${freezeButton}${actionButton('payment', member.id)}${actionButton('print', member.id)}${actionButton('delete', member.id, 'btn btn-danger btn-small')}</div>`;
         }
         function memberMobileCard(member) {
-            const sub = member.membership;
+            const sub = displayedMembership(member);
             const name = escapeHtml(member.fullName || 'عضو');
             const phone = displayPhone(member.phone, member.phoneCountry);
             const phoneMarkup = member.phone
@@ -947,13 +967,16 @@
             const status = sub ? memberStatusBadge(membershipStatus) : memberStatusBadge('expired', membersText('noMembership'));
             const days = Number(sub?.daysRemaining || 0);
             const expiryDetail = sub
-                ? sub.status === 'expired' ? membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDate(sub.freezeEnd) }) : membersText('remaining.days', { count: days })
-                : '—';
+                ? sub.status === 'expired' ? sub.daysRemaining == null ? membersText('value.unavailable') : membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDateDmy(sub.freezeEnd) }) : sub.daysRemaining == null ? membersText('value.unavailable') : membersText('remaining.days', { count: days })
+                : membersText('value.unavailable');
+            const amountPaid = Number(sub?.amountPaid || 0);
             const amountRemaining = Number(sub?.amountRemaining || 0);
-            const balance = sub
-                ? `<div class="members-mobile-balance"><dt>${escapeHtml(membersText('card.balance'))}</dt><dd class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}">${escapeHtml(membersCurrency(amountRemaining))}</dd></div>`
-                : '';
+            const freezeLimit = Number(sub?.freezeLimit || FREEZE_LIMIT);
+            const freezeCount = Number(sub?.freezeCount || 0);
             const membershipCode = memberPortalCodeMarkup(member);
+            const subscriptionMarkup = sub
+                ? `<strong class="members-mobile-subscription-title">${escapeHtml(membersListPlanLabel(sub.plan))}<span aria-hidden="true"> · </span>${escapeHtml(membersListTypeLabel(sub.type))}</strong><div class="members-mobile-date-grid">${membersDateMarkup(sub.startDate, membersText('date.start'))}${membersDateMarkup(sub.effectiveEndDate || sub.endDate, membersText('date.end'))}</div><small class="members-mobile-expiry-detail">${escapeHtml(expiryDetail)}</small>`
+                : `<strong class="members-mobile-subscription-title">${escapeHtml(membersText('noMembership'))}</strong><div class="members-mobile-date-grid">${membersDateMarkup(null, membersText('date.start'))}${membersDateMarkup(null, membersText('date.end'))}</div>`;
             return `<article class="members-mobile-card" data-member-id="${escapeHtml(member.id)}">
                 <div class="members-mobile-card-head">
                     <span class="member-card-avatar" aria-hidden="true">${escapeHtml(memberInitials(member.fullName))}</span>
@@ -961,23 +984,28 @@
                     ${status}
                 </div>
                 <dl class="members-mobile-details">
-                    <div><dt>${escapeHtml(membersText('card.subscription'))}</dt><dd>${sub ? `${escapeHtml(planLabel(sub.plan))}<small>${escapeHtml(typeLabel(sub.type))}</small>` : '—'}</dd></div>
-                    <div><dt>${escapeHtml(membersText('card.expiry'))}</dt><dd>${sub ? `${escapeHtml(membersDate(sub.effectiveEndDate))}<small>${escapeHtml(expiryDetail)}</small>` : '—'}</dd></div>
-                    ${balance}
+                    <div class="members-mobile-subscription"><dt>${escapeHtml(membersText('card.latestSubscription'))}</dt><dd>${subscriptionMarkup}</dd></div>
+                    <div class="members-mobile-balance"><dt>${escapeHtml(membersText('card.accountLatest'))}</dt><dd><span class="members-mobile-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${sub ? escapeHtml(membersCurrency(amountPaid)) : '—'}</strong></span><span class="${amountRemaining > 0 ? 'has-debt' : 'is-settled'}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${sub ? escapeHtml(membersCurrency(amountRemaining)) : '—'}</strong></span></span></dd></div>
+                    <div class="members-mobile-freeze"><dt>${escapeHtml(membersText('freeze.memberTotal'))}</dt><dd><strong>${sub ? escapeHtml(membersText('freeze.usedOf', { used: membersNumber(freezeCount), limit: membersNumber(freezeLimit) })) : '—'}</strong><small>${sub ? escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) })) : escapeHtml(membersText('value.unavailable'))}</small></dd></div>
                 </dl>
                 <div class="members-mobile-actions">${memberActionsMarkup(member)}</div>
             </article>`;
         }
         function memberTableRow(member) {
-            const sub = member.membership;
-            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">${escapeHtml(membersText('registration', { date: membersDate(member.registrationDate) }))}</span>${memberPortalCodeMarkup(member)}</td><td>—</td><td>${memberStatusBadge('expired', membersText('noMembership'))}</td><td>—</td><td>—</td><td>—</td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            const sub = displayedMembership(member);
+            if (!sub) return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td><div class="member-last-subscription"><strong>${escapeHtml(membersText('noMembership'))}</strong><div class="member-subscription-dates">${membersDateMarkup(null, membersText('date.start'))}${membersDateMarkup(null, membersText('date.end'))}</div></div></td><td>${memberStatusBadge('expired', membersText('noMembership'))}</td><td>—</td><td>—</td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
             const freezeLimit = Number(sub.freezeLimit || FREEZE_LIMIT);
             const freezeCount = Number(sub.freezeCount || 0);
-            const remaining = sub.status === 'expired' ? membersText('remaining.expired', { count: Math.abs(sub.daysRemaining || 0) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDate(sub.freezeEnd) }) : membersText('remaining.days', { count: sub.daysRemaining });
-            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${membersNumber(freezeCount)}/${membersNumber(freezeLimit)}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span>`;
+            const days = sub.daysRemaining == null ? null : Number(sub.daysRemaining);
+            const remaining = sub.status === 'expired' ? days == null ? membersText('value.unavailable') : membersText('remaining.expired', { count: Math.abs(days) }) : sub.status === 'frozen' ? membersText('remaining.frozenUntil', { date: membersDateDmy(sub.freezeEnd) }) : days == null ? membersText('value.unavailable') : membersText('remaining.days', { count: days });
+            const freezeUsage = `<span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${escapeHtml(membersText('freeze.usedOf', { used: membersNumber(freezeCount), limit: membersNumber(freezeLimit) }))}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span>`;
+            const amountPaid = Number(sub.amountPaid || 0);
             const amountRemaining = Number(sub.amountRemaining || 0);
             const remainingClass = amountRemaining > 0 ? 'has-debt' : 'is-settled';
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a><span class="table-sub">${escapeHtml(membersText('registration', { date: membersDate(member.registrationDate) }))}</span>${memberPortalCodeMarkup(member)}</td><td><span class="table-main">${escapeHtml(planLabel(sub.plan))}</span><span class="table-sub">${escapeHtml(typeLabel(sub.type))}</span></td><td>${memberStatusBadge(sub.status)}</td><td><span class="table-main">${escapeHtml(membersDate(sub.effectiveEndDate))}</span><span class="table-sub">${escapeHtml(remaining)}</span></td><td>${freezeUsage}</td><td><span class="table-money">${escapeHtml(membersCurrency(sub.amountDue))}</span><span class="table-sub ${remainingClass}">${escapeHtml(membersText('balance.remaining', { amount: membersCurrency(amountRemaining) }))}</span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            const subscription = `<div class="member-last-subscription"><strong class="member-subscription-title">${escapeHtml(membersListPlanLabel(sub.plan))}<span aria-hidden="true"> · </span>${escapeHtml(membersListTypeLabel(sub.type))}</strong><div class="member-subscription-dates">${membersDateMarkup(sub.startDate, membersText('date.start'))}${membersDateMarkup(sub.effectiveEndDate || sub.endDate, membersText('date.end'))}</div></div>`;
+            const account = `<div class="member-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${escapeHtml(membersCurrency(amountPaid))}</strong></span><span class="${remainingClass}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${escapeHtml(membersCurrency(amountRemaining))}</strong></span></div>`;
+            const freezeUsed = `<bdi dir="ltr">${escapeHtml(membersNumber(freezeCount))} / ${escapeHtml(membersNumber(freezeLimit))}</bdi> ${escapeHtml(membersText('freeze.usedLabel'))}`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td>${subscription}</td><td>${memberStatusBadge(sub.status)}<span class="table-sub member-status-detail">${escapeHtml(remaining)}</span></td><td>${account}</td><td><span class="freeze-usage${freezeCount >= freezeLimit ? ' complete' : ''}"><strong>${freezeUsed}</strong><span>${escapeHtml(membersText('freeze.remaining', { count: Math.max(0, freezeLimit - freezeCount) }))}</span></span></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
         }
         function renderMembersSummary() {
             const section = document.getElementById('membersSection');
@@ -1017,7 +1045,7 @@
             $('membersList').innerHTML = state.members.length
                 ? isMobile
                     ? `<div class="members-mobile-list">${state.members.map(memberMobileCard).join('')}</div>`
-                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>${escapeHtml(membersText('table.member'))}</th><th>${escapeHtml(membersText('table.subscription'))}</th><th>${escapeHtml(membersText('table.status'))}</th><th>${escapeHtml(membersText('table.expiry'))}</th><th>${escapeHtml(membersText('table.freeze'))}</th><th>${escapeHtml(membersText('table.account'))}</th><th>${escapeHtml(membersText('table.actions'))}</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
+                    : `<div class="table-scroll"><table class="members-table"><thead><tr><th>${escapeHtml(membersText('table.member'))}</th><th>${escapeHtml(membersText('table.latestSubscription'))}</th><th>${escapeHtml(membersText('table.status'))}</th><th>${escapeHtml(membersText('table.account'))}</th><th>${escapeHtml(membersText('table.freezeMember'))}</th><th>${escapeHtml(membersText('table.actions'))}</th></tr></thead><tbody>${state.members.map(memberTableRow).join('')}</tbody></table></div>`
                 : `<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>${escapeHtml(membersText('empty.title'))}</strong><p>${escapeHtml(membersText('empty.description'))}</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>${escapeHtml(membersText('empty.clear'))}</button></div>`;
         }
 

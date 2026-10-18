@@ -81,6 +81,8 @@ The full method/path declarations are in the listed route modules; the following
 | Platform Admin | `platform-admin.routes.js`, `platform-admin-service.js` | PlatformAdmin; explicit tenant target | tenant lifecycle, plans, overrides, subscriptions, users, backups, audit, payment methods | READY_WITH_CLIENT_ADAPTATION |
 | Backup | `backup.routes.js`, backup services | Owner/cron/platform | private archive lifecycle and restore; not a normal mobile workflow | WEB_SPECIFIC |
 
+The authenticated staff `GET /api/members` and `GET /api/members/:id` responses retain the existing `membership` field as the operational membership projection used by current actions. They also expose nullable `latestRecordedMembership`, selected from persisted membership rows by `created_at DESC, id DESC`, with that same row's plan, term, dates, effective end/status, payment amounts, and the existing member-wide freeze count/limit. The details endpoint's `memberships` array remains the complete history. This is an additive read projection; it adds no request, permission, workflow, or mutation behavior.
+
 ## Current consumers and mobile notes
 
 Web consumers are in `public/js/` and are not a mobile contract by themselves. Mobile must use the same server paths and response semantics, replace cookie/session transport only through an approved server-compatible strategy, and add contract tests before implementation. Browser-only downloads, print, hash routes, and DOM-driven dialogs are `WEB_SPECIFIC` unless a user workflow is explicitly mapped in `09-MOBILE-INFORMATION-ARCHITECTURE.md`.
@@ -252,6 +254,7 @@ The following table is the machine-extracted method/path index used for the comp
 | PUT | `/api/memberships/:id/branches` | `src/routes/members.routes.js` |
 | POST | `/api/memberships/:id/payments` | `src/routes/members.routes.js` |
 | DELETE | `/api/members/:id` | `src/routes/members.routes.js` |
+
 | GET | `/api/member-portal/subscription-requests` | `src/routes/member-subscription.routes.js` |
 | POST | `/api/member-portal/subscription-requests` | `src/routes/member-subscription.routes.js` |
 | POST | `/api/member-portal/subscription-requests/:requestId/proof` | `src/routes/member-subscription.routes.js` |

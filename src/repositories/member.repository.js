@@ -58,7 +58,8 @@ WITH latest_membership AS (
         m.notes AS membershipNotes,
         m.cancelled_at AS cancelledAt,
         m.cancellation_reason AS cancellationReason,
-        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY CASE WHEN m.cancelled_at IS NULL THEN 0 ELSE 1 END, m.end_date DESC, m.id DESC) AS membershipRank
+        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY CASE WHEN m.cancelled_at IS NULL THEN 0 ELSE 1 END, m.end_date DESC, m.id DESC) AS membershipRank,
+        ROW_NUMBER() OVER (PARTITION BY m.member_id ORDER BY m.created_at DESC, m.id DESC) AS latestRecordedRank
     FROM dbo.memberships AS m
     WHERE 1=1${membershipScope}
 ),
@@ -119,6 +120,28 @@ SELECT
     lm.cancelledAt,
     lm.cancellationReason,
     DATEADD(day, ISNULL(ft.freezeDays, 0), lm.endDate) AS effectiveEndDate,
+    recorded.membershipId AS latestRecordedMembershipId,
+    recorded.membershipPlan AS latestRecordedMembershipPlan,
+    recorded.membershipType AS latestRecordedMembershipType,
+    recorded.startDate AS latestRecordedStartDate,
+    recorded.endDate AS latestRecordedEndDate,
+    DATEADD(day, ISNULL(recordedFreeze.freezeDays, 0), recorded.endDate) AS latestRecordedEffectiveEndDate,
+    recorded.cancelledAt AS latestRecordedCancelledAt,
+    recordedFreezeRow.freezeStart AS latestRecordedFreezeStart,
+    recordedFreezeRow.freezeEnd AS latestRecordedFreezeEnd,
+    CASE
+        WHEN recorded.membershipId IS NULL THEN NULL
+        WHEN recorded.cancelledAt IS NOT NULL THEN 'cancelled'
+        WHEN recordedFreezeRow.currentFreezeMembershipId IS NOT NULL THEN 'frozen'
+        WHEN DATEADD(day, ISNULL(recordedFreeze.freezeDays, 0), recorded.endDate) < @today THEN 'expired'
+        WHEN DATEDIFF(day, @today, DATEADD(day, ISNULL(recordedFreeze.freezeDays, 0), recorded.endDate)) BETWEEN 0 AND 7 THEN 'expiring_soon'
+        ELSE 'active'
+    END AS latestRecordedStatus,
+    CASE WHEN recorded.membershipId IS NULL THEN NULL
+         ELSE DATEDIFF(day, @today, DATEADD(day, ISNULL(recordedFreeze.freezeDays, 0), recorded.endDate)) END AS latestRecordedDaysRemaining,
+    ISNULL(fc.freezeCount, 0) AS latestRecordedFreezeCount,
+    ISNULL(recordedPayment.amountPaid, 0) AS latestRecordedAmountPaid,
+    ISNULL(recordedPayment.amountRemaining, 0) AS latestRecordedAmountRemaining,
     cf.freezeId,
     cf.freezeStart,
     cf.freezeEnd,
@@ -143,10 +166,15 @@ SELECT
 FROM dbo.members AS b
 LEFT JOIN latest_membership AS lm
     ON lm.membershipMemberId = b.id AND lm.membershipRank = 1
+LEFT JOIN latest_membership AS recorded
+    ON recorded.membershipMemberId = b.id AND recorded.latestRecordedRank = 1
 LEFT JOIN freeze_totals AS ft ON ft.freezeMembershipId = lm.membershipId
+LEFT JOIN freeze_totals AS recordedFreeze ON recordedFreeze.freezeMembershipId = recorded.membershipId
 LEFT JOIN freeze_counts AS fc ON fc.freezeCountMemberId = b.id
 LEFT JOIN current_freeze AS cf ON cf.currentFreezeMembershipId = lm.membershipId
+LEFT JOIN current_freeze AS recordedFreezeRow ON recordedFreezeRow.currentFreezeMembershipId = recorded.membershipId
 LEFT JOIN payment_summary AS ps ON ps.paymentMembershipId = lm.membershipId
+LEFT JOIN payment_summary AS recordedPayment ON recordedPayment.paymentMembershipId = recorded.membershipId
 ${memberScope}
 )
 `;
@@ -174,6 +202,20 @@ const MEMBER_ROW_COLUMNS = [
     'cancelledAt',
     'cancellationReason',
     'effectiveEndDate',
+    'latestRecordedMembershipId',
+    'latestRecordedMembershipPlan',
+    'latestRecordedMembershipType',
+    'latestRecordedStartDate',
+    'latestRecordedEndDate',
+    'latestRecordedEffectiveEndDate',
+    'latestRecordedCancelledAt',
+    'latestRecordedFreezeStart',
+    'latestRecordedFreezeEnd',
+    'latestRecordedStatus',
+    'latestRecordedDaysRemaining',
+    'latestRecordedFreezeCount',
+    'latestRecordedAmountPaid',
+    'latestRecordedAmountRemaining',
     'freezeId',
     'freezeStart',
     'freezeEnd',
