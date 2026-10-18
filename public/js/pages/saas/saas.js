@@ -6,7 +6,17 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
     const t = (key, params) => window.TopGymI18n?.t(key, params) || key;
     const formatNumber = (value, options) => window.TopGymI18n?.format('number', value, options) ?? new Intl.NumberFormat('ar-EG', options).format(Number(value));
-    const formatDate = (value) => window.TopGymI18n?.format('date', value, { dateStyle: 'medium' }) || (value ? String(value) : t('saasBilling.summary.notSpecified'));
+    function formatDate(value) {
+        if (!value) return t('saasBilling.summary.notSpecified');
+        const raw = String(value);
+        const dateOnly = /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/u.exec(raw);
+        if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+        const parsed = new Date(raw);
+        if (Number.isNaN(parsed.getTime())) return raw;
+        const parts = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).formatToParts(parsed);
+        const part = (type) => parts.find((item) => item.type === type)?.value || '';
+        return `${part('day')}/${part('month')}/${part('year')}`;
+    }
     const state = { billing: null, plans: [], requests: [], pendingRequest: null, optimisticRequests: new Map(), requestsPagination: {}, requestPage: 1, loaded: false, loading: false, refreshAfterLoad: false, submitting: false, termSelections: {}, uiMessageKey: null };
 
     function notify(message, error = false, type = '') {
@@ -46,41 +56,6 @@
         const terms = planTerms(plan);
         if (!terms.length) return `<p class="saas-muted">${escapeHtml(t('saasBilling.plans.termUnavailable'))}</p>`;
         return `<label class="saas-term-control"><span>${escapeHtml(t('saasBilling.plans.term'))}</span><select data-saas-term-plan="${escapeHtml(plan.id)}" aria-label="${escapeHtml(t('saasBilling.plans.termFor', { name: plan.name }))}">${terms.map((term) => `<option value="${escapeHtml(term.code)}" ${term.code === selected ? 'selected' : ''}>${escapeHtml(termLabel(term))} — ${escapeHtml(money(termAmountDue(term), term.currency))}</option>`).join('')}</select></label>`;
-    }
-
-    const featureLabelKeys = Object.freeze({
-        dashboard: 'dashboard', members: 'members', attendance: 'attendance', coaching: 'coaching', nutrition: 'nutrition', ai: 'ai', library: 'library',
-        pricing: 'pricing', payments: 'payments', finance: 'finance', day_passes: 'day_passes', reports: 'reports', store: 'store', inventory: 'inventory',
-        branches: 'branches', bar: 'bar', portal: 'portal', branding: 'branding', team: 'team', backup: 'backup', audit: 'audit', clients: 'clients',
-        assessments: 'assessments', progress: 'progress', goals: 'goals', sessions: 'sessions', packages: 'packages', notifications: 'notifications',
-        tasks: 'tasks', templates: 'templates', prioritySupport: 'prioritySupport'
-    });
-    function featureLabel(key) { const mapped = featureLabelKeys[key]; return mapped ? t(`saasBilling.feature.${mapped}`) : key; }
-
-    function planFeaturesMarkup(plan) {
-        const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
-        const enabled = catalog.filter((feature) => plan.features?.[feature.key] !== false);
-        if (!enabled.length) return `<li class="saas-plan-feature-empty">${escapeHtml(t('saasBilling.plans.featuresEmpty'))}</li>`;
-        return enabled.map((feature) => `<li data-saas-feature-key="${escapeHtml(feature.key)}"><span class="saas-plan-feature-check" aria-hidden="true">✓</span><span>${escapeHtml(featureLabel(feature.key))}</span></li>`).join('');
-    }
-
-    function enhancePlanFeatureComparison(availablePlans, currentPlanId) {
-        const catalog = state.billing?.featureCatalog || state.billing?.entitlements?.featureCatalog || [];
-        if (!catalog.length) return;
-        const current = availablePlans.find((plan) => String(plan.id) === String(currentPlanId));
-        document.querySelectorAll('[data-saas-plan-card]').forEach((card) => {
-            const plan = availablePlans.find((item) => String(item.id) === String(card.dataset.saasPlanCard));
-            if (!plan) return;
-            const list = document.createElement('div');
-            list.className = 'saas-plan-entitlements';
-            list.innerHTML = catalog.map((feature) => {
-                const enabled = plan.features?.[feature.key] !== false;
-                const currentEnabled = current ? current.features?.[feature.key] !== false : false;
-                const delta = enabled && !currentEnabled && current ? ` · ${t('saasBilling.plans.upgrade')}` : '';
-                return `<span class="saas-entitlement ${enabled ? 'is-enabled' : 'is-disabled'}" title="${escapeHtml(feature.description)}">${enabled ? '✓' : '×'} ${escapeHtml(feature.key)}${delta}</span>`;
-            }).join('');
-            card.appendChild(list);
-        });
     }
 
     function showMessage(message, error = false, messageKey = null) {
@@ -226,13 +201,9 @@
         if (!host) return;
         if (!billing?.tenant) { host.innerHTML = `<div class="saas-loading-block">${escapeHtml(t('saasBilling.summary.gymNotFound'))}</div>`; return; }
         const daysRemaining = subscription?.daysRemaining;
-        const durationDays = subscription?.startsAt && subscription?.expiresAt
-            ? Math.max(1, Math.ceil((new Date(subscription.expiresAt).getTime() - new Date(subscription.startsAt).getTime()) / 86400000))
-            : null;
-        const progress = durationDays && daysRemaining != null
-            ? Math.max(0, Math.min(100, ((durationDays - Number(daysRemaining)) / durationDays) * 100))
-            : 0;
-        host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>${escapeHtml(t('saasBilling.summary.gym'))}</span><strong data-i18n-preserve>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr" data-i18n-preserve>${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>${escapeHtml(t('saasBilling.summary.status'))}</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${escapeHtml(subscription ? statusLabel(subscription.status) : t('saasBilling.summary.noSubscription'))}</strong><div class="saas-summary-progress" aria-hidden="true"><span style="width:${progress}%"></span></div><p>${daysRemaining == null ? escapeHtml(t('saasBilling.summary.expiryUnknown')) : escapeHtml(t('saasBilling.summary.daysRemaining', { count: Math.max(0, daysRemaining) }))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.currentPlan'))}</span><strong data-i18n-preserve>${escapeHtml(plan?.name || t('saasBilling.summary.noPlan'))}</strong><p>${escapeHtml(plan?.billingPeriod === 'yearly' ? t('saasBilling.summary.yearlyCycle') : plan?.billingPeriod === 'monthly' ? t('saasBilling.summary.monthlyCycle') : t('saasBilling.summary.subscriptionDetails'))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.startDate'))}</span><strong>${escapeHtml(subscription?.startsAt ? date(subscription.startsAt) : t('saasBilling.summary.notSpecified'))}</strong><p>${escapeHtml(subscription?.expiresAt ? t('saasBilling.summary.until', { date: date(subscription.expiresAt) }) : t('saasBilling.summary.openSubscription'))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.memberUsage'))}</span><strong>${escapeHtml(formatNumber(Number(billing.usage?.members || 0)))}</strong><p>${escapeHtml(t('saasBilling.summary.limitMembers', { count: limit(plan?.maxMembers) }))}</p></article>`;
+        const startsAt = subscription?.startsAt || subscription?.startDate || null;
+        const expiresAt = subscription?.expiresAt || subscription?.endDate || null;
+        host.innerHTML = `<article class="saas-summary-card saas-summary-gym"><span>${escapeHtml(t('saasBilling.summary.gym'))}</span><strong data-i18n-preserve>${escapeHtml(billing.tenant.name)}</strong><p dir="ltr" data-i18n-preserve>${escapeHtml(billing.tenant.slug)}</p></article><article class="saas-summary-card saas-summary-status"><div class="saas-summary-card-top"><span>${escapeHtml(t('saasBilling.summary.status'))}</span>${subscription ? statusMarkup(subscription.status) : statusMarkup('expired')}</div><strong>${escapeHtml(subscription ? statusLabel(subscription.status) : t('saasBilling.summary.noSubscription'))}</strong><p>${daysRemaining == null ? escapeHtml(t('saasBilling.summary.expiryUnknown')) : escapeHtml(t('saasBilling.summary.daysRemaining', { count: Math.max(0, daysRemaining) }))}</p></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.currentPlan'))}</span><strong data-i18n-preserve>${escapeHtml(plan?.name || t('saasBilling.summary.noPlan'))}</strong><p>${escapeHtml(plan?.billingPeriod === 'yearly' ? t('saasBilling.summary.yearlyCycle') : plan?.billingPeriod === 'monthly' ? t('saasBilling.summary.monthlyCycle') : t('saasBilling.summary.subscriptionDetails'))}</p></article><article class="saas-summary-card saas-summary-dates"><div><span>${escapeHtml(t('saasBilling.summary.startDate'))}</span><strong><bdi dir="ltr">${escapeHtml(startsAt ? date(startsAt) : t('saasBilling.summary.notSpecified'))}</bdi></strong></div><div><span>${escapeHtml(t('saasBilling.summary.endDate'))}</span><strong><bdi dir="ltr">${escapeHtml(expiresAt ? date(expiresAt) : t('saasBilling.summary.notSpecified'))}</bdi></strong></div></article><article class="saas-summary-card"><span>${escapeHtml(t('saasBilling.summary.memberUsage'))}</span><strong>${escapeHtml(formatNumber(Number(billing.usage?.members || 0)))}</strong><p>${escapeHtml(t('saasBilling.summary.limitMembers', { count: limit(plan?.maxMembers) }))}</p></article>`;
         renderRequestContext();
     }
 
@@ -269,10 +240,6 @@
         const pending = latest.find((request) => ['pending', 'under_review'].includes(String(request.status || '').toLowerCase())) || null;
         renderPendingRequest(pending);
         return pending;
-    }
-
-    function planIcon(plan) {
-        return '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 10-12h-7l0-8Z"/></svg>';
     }
 
     function renderPlans(plans) {
@@ -328,7 +295,7 @@
             const isCurrent = String(plan.id) === String(currentPlanId);
             const isSelected = String(plan.id) === String(selectedId);
             const term = selectedTerm(plan);
-            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? `aria-current="true" data-current-label="${escapeHtml(t('saasBilling.plans.current'))}"` : ''}><div class="saas-plan-card-heading"><span class="saas-plan-card-icon">${planIcon(plan)}</span><div><h5 data-i18n-preserve>${escapeHtml(plan.name)}</h5><span class="saas-muted" data-i18n-preserve>${escapeHtml(plan.description || '')}</span></div></div>${termSelectMarkup(plan)}<div class="saas-plan-price">${money(term.price, term.currency)} <small>/ ${escapeHtml(termName(term.code) || term.code)}</small></div><ul class="saas-plan-limits"><li><span>${escapeHtml(t('saasBilling.plans.members'))}</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.clients'))}</span><strong>${limit(plan.maxClients)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.users'))}</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.aiMonthly'))}</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.branches'))}</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.storage'))}</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><div class="saas-plan-features"><span class="saas-plan-features-title">${escapeHtml(t('saasBilling.plans.features'))}</span><ul>${planFeaturesMarkup(plan)}</ul></div><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${escapeHtml(t(isCurrent ? 'saasBilling.plans.current' : 'saasBilling.plans.select'))}</button></article>`;
+            return `<article class="saas-plan-card ${isSelected ? 'is-selected' : ''} ${isCurrent ? 'is-current' : ''}" data-saas-plan-card="${plan.id}" ${isCurrent ? `aria-current="true" data-current-label="${escapeHtml(t('saasBilling.plans.current'))}"` : ''}>${isCurrent ? `<span class="saas-plan-current-badge">${escapeHtml(t('saasBilling.plans.current'))}</span>` : ''}<div class="saas-plan-card-heading"><h5 data-i18n-preserve>${escapeHtml(plan.name)}</h5><span class="saas-muted" data-i18n-preserve>${escapeHtml(plan.description || '')}</span></div>${termSelectMarkup(plan)}<div class="saas-plan-price">${money(termAmountDue(term), term.currency)} <small>/ ${escapeHtml(termLabel(term))}</small></div><ul class="saas-plan-limits"><li><span>${escapeHtml(t('saasBilling.plans.members'))}</span><strong>${limit(plan.maxMembers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.clients'))}</span><strong>${limit(plan.maxClients)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.users'))}</span><strong>${limit(plan.maxUsers)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.aiMonthly'))}</span><strong>${limit(plan.maxAiGenerations)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.branches'))}</span><strong>${limit(plan.maxBranches)}</strong></li><li><span>${escapeHtml(t('saasBilling.plans.storage'))}</span><strong>${limit(plan.maxStorageMb)} MB</strong></li></ul><button class="btn ${isCurrent ? 'btn-current-plan' : 'btn-light'} btn-small" type="button" data-saas-select-plan="${plan.id}" ${isCurrent ? 'disabled aria-pressed="true"' : ''}>${escapeHtml(t(isCurrent ? 'saasBilling.plans.current' : 'saasBilling.plans.select'))}</button></article>`;
         }).join('');
         host.querySelectorAll('[data-saas-term-plan]').forEach((termSelect) => {
             const plan = availablePlans.find((item) => String(item.id) === termSelect.dataset.saasTermPlan);
@@ -504,7 +471,10 @@
         const host = $('saasRequestsList');
         if (!host) return;
         if (!requests?.length) { host.innerHTML = `<tr><td colspan="7"><div class="saas-empty">${escapeHtml(t('saasBilling.requests.empty'))}</div></td></tr>`; return; }
-        host.innerHTML = requests.map((request) => `<tr><td data-label="${escapeHtml(t('saasBilling.requests.date'))}">${escapeHtml(date(request.createdAt))}</td><td data-label="${escapeHtml(t('saasBilling.requests.plan'))}"><span data-i18n-preserve>${escapeHtml(request.plan?.name || '—')}</span></td><td data-label="${escapeHtml(t('saasBilling.requests.duration'))}" data-saas-request-duration="true">${escapeHtml(t('saasBilling.plans.duration', { count: Number(request.durationMonths || 0) }))}</td><td data-label="${escapeHtml(t('saasBilling.requests.amount'))}">${money(request.amount, request.currency)}</td><td data-label="${escapeHtml(t('saasBilling.requests.status'))}">${statusMarkup(request.status)}</td><td data-label="${escapeHtml(t('saasBilling.requests.proof'))}">${request.proof ? `<a class="btn btn-light btn-small" data-saas-payment-proof href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">${escapeHtml(t('saasBilling.requests.showProof'))}</a>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noProof'))}</span>`}</td><td data-label="${escapeHtml(t('saasBilling.requests.reviewNotes'))}">${request.reviewNotes ? `<span class="saas-muted" data-i18n-preserve>${escapeHtml(request.reviewNotes)}</span>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noNotes'))}</span>`}</td></tr>`).join('');
+        host.innerHTML = requests.map((request) => {
+            const createdAt = request.createdAt || request.created_at || '';
+            return `<tr><td data-label="${escapeHtml(t('saasBilling.requests.date'))}"><time datetime="${escapeHtml(createdAt)}" dir="ltr">${escapeHtml(date(createdAt))}</time></td><td data-label="${escapeHtml(t('saasBilling.requests.plan'))}"><span data-i18n-preserve>${escapeHtml(request.plan?.name || '—')}</span></td><td data-label="${escapeHtml(t('saasBilling.requests.duration'))}" data-saas-request-duration="true">${escapeHtml(t('saasBilling.plans.duration', { count: Number(request.durationMonths || 0) }))}</td><td data-label="${escapeHtml(t('saasBilling.requests.amount'))}">${money(request.amount, request.currency)}</td><td data-label="${escapeHtml(t('saasBilling.requests.status'))}">${statusMarkup(request.status)}</td><td data-label="${escapeHtml(t('saasBilling.requests.proof'))}">${request.proof ? `<a class="btn btn-light btn-small" data-saas-payment-proof href="/api/saas/payment-proofs/${request.proof.id}/file" target="_blank" rel="noreferrer">${escapeHtml(t('saasBilling.requests.showProof'))}</a>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noProof'))}</span>`}</td><td data-label="${escapeHtml(t('saasBilling.requests.reviewNotes'))}">${request.reviewNotes ? `<span class="saas-muted" data-i18n-preserve>${escapeHtml(request.reviewNotes)}</span>` : `<span class="saas-muted">${escapeHtml(t('saasBilling.requests.noNotes'))}</span>`}</td></tr>`;
+        }).join('');
     }
 
     function ensureRequestPagination() {

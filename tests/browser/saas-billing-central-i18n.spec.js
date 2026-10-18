@@ -178,8 +178,8 @@ test('SaaS billing central i18n retains billing/form data and performs no locale
                 await expect(dialog.locator('label[for="saasRequestNotes"] .saas-muted')).toHaveText(locale === 'en' ? 'Optional' : 'اختياري');
                 await expect(dialog.locator('label[for="saasPaymentProof"] .saas-muted')).toHaveText(locale === 'en' ? 'Image or PDF up to 4MB' : 'أي صورة أو PDF حتى 4MB');
                 const currentBadge = await section.locator('[data-saas-plan-card="9101"]').evaluate((card) => ({
-                    label: card.dataset.currentLabel,
-                    renderedLabel: getComputedStyle(card, '::before').content.replace(/^['"]|['"]$/gu, '')
+                    label: card.querySelector('.saas-plan-current-badge')?.textContent.trim(),
+                    renderedLabel: card.querySelector('.saas-plan-current-badge')?.textContent.trim()
                 }));
                 expect(currentBadge.label).toBe(locale === 'en' ? 'Current plan' : 'الباقة الحالية');
                 expect(currentBadge.renderedLabel).toBe(currentBadge.label);
