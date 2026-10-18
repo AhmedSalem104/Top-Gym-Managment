@@ -92,6 +92,14 @@ async function installReadOnlyMemberFixtures(page, members = MEMBERS) {
             };
         } else if (pathname === `/api/members/${members[0]?.id}/details`) {
             payload = { member: members[0], currentMembership: members[0].membership, memberships: [], freezes: [], events: [] };
+        } else if (pathname === `/api/clients/${members[0]?.id}/coaching-summary`) {
+            payload = {
+                workoutPrograms: [{ id: 881, name: 'QA Strength Plan', status: 'active', exerciseCount: 8 }],
+                dietPlans: [{ id: 882, name: 'QA Nutrition Plan', status: 'draft', itemCount: 5 }],
+                measurementCount: 6,
+                completedSessions: 12,
+                mealLogCount: 9
+            };
         }
 
         return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
@@ -151,6 +159,97 @@ async function installCurrentMembersStyles(page, cssSource) {
     // without writing generated CSS artifacts into the worktree.
     await page.addStyleTag({ content: cssSource });
 }
+
+test('member identity, dates, account and member-wide freezes remain aligned in locale/theme/viewport matrix', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The focused visual matrix is captured once using explicit responsive viewports.');
+    const output = path.resolve(process.cwd(), 'qa/artifacts/members-alignment-20261018');
+    await fs.mkdir(output, { recursive: true });
+    const css = await fs.readFile(path.resolve(process.cwd(), 'public/css/pages/members.css'), 'utf8');
+    await installReadOnlyMemberFixtures(page);
+    await page.goto('/index.html?membersAlignment=1#members', { waitUntil: 'networkidle' });
+    await expect(page.locator('#membersList')).toContainText(MEMBERS[0].fullName);
+    await installCurrentMembersStyles(page, css);
+
+    for (const width of [360, 390, 768, 1440]) {
+        await page.setViewportSize({ width, height: width < 400 ? 844 : 960 });
+        for (const locale of LOCALES) {
+            await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), locale);
+            for (const theme of THEMES) {
+                await page.evaluate((mode) => {
+                    document.documentElement.dataset.theme = mode;
+                    document.body.dataset.theme = mode;
+                }, theme);
+                const firstMember = page.locator('#membersList .members-mobile-card[data-member-id="731"]:visible, #membersList .members-table tbody tr[data-member-id="731"]:visible').first();
+                await expect(firstMember).toBeVisible();
+                const dateTexts = await firstMember.locator('.membership-date time').allTextContents();
+                expect(dateTexts).toEqual(['01/09/2026', '12/11/2026']);
+                await expect(firstMember).toContainText(locale === 'ar' ? 'إجمالي سجلاته' : 'All records');
+                await expect(firstMember).toContainText(locale === 'ar' ? 'المتبقي' : 'Remaining');
+                const overflow = await firstMember.evaluate((element) => element.scrollWidth > element.clientWidth);
+                expect(overflow, `${width}px ${locale}/${theme}: member record must not overflow`).toBe(false);
+
+                if ((width === 360 && locale === 'ar' && theme === 'light')
+                    || (width === 390 && locale === 'en' && theme === 'dark')
+                    || (width === 768 && locale === 'ar' && theme === 'dark')
+                    || (width === 1440 && locale === 'en' && theme === 'light')) {
+                    await page.screenshot({ path: path.join(output, `members-${width}-${locale}-${theme}.png`), fullPage: false });
+                }
+            }
+        }
+    }
+});
+
+test('member details use accessible tabs on desktop and mobile, including the dedicated training/nutrition panel', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The focused details layout matrix runs once with explicit responsive viewports.');
+    const output = path.resolve(process.cwd(), 'qa/artifacts/member-details-tabs-20261018');
+    await fs.mkdir(output, { recursive: true });
+    const membershipCss = await fs.readFile(path.resolve(process.cwd(), 'public/css/pages/memberships.css'), 'utf8');
+    const coachingCss = await fs.readFile(path.resolve(process.cwd(), 'public/css/pages/coaching.css'), 'utf8');
+    const requests = await installReadOnlyMemberFixtures(page);
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const [locale, theme] of [['ar', 'light'], ['en', 'dark']]) {
+            await page.goto(`/index.html?memberDetailsTabs=${width}-${locale}-${theme}#members`, { waitUntil: 'networkidle' });
+            await page.addStyleTag({ content: membershipCss });
+            await page.addStyleTag({ content: coachingCss });
+            await page.evaluate(async ({ locale: selectedLocale, mode }) => {
+                await window.TopGymI18n.set(selectedLocale, { persist: false });
+                window.TopGymTheme.set(mode);
+            }, { locale, mode: theme });
+            await openVisibleMemberAction(page, 'details');
+            const dialog = page.locator('#detailsDialog');
+            await expect(dialog).toBeVisible();
+            const tabs = dialog.locator('[data-member-details-tab]');
+            await expect(tabs).toHaveCount(6);
+            const tab = dialog.locator('[data-member-details-tab="training"]');
+            await expect(tab).toBeVisible();
+            await tab.click();
+            await expect(tab).toHaveAttribute('aria-selected', 'true');
+            const trainingPanel = dialog.locator('[data-member-details-panel="training"]');
+            await expect(trainingPanel).toBeVisible();
+            await expect(trainingPanel.locator('[data-member-training-panel]')).toBeVisible();
+            await expect(trainingPanel.locator('.member-training-head h4')).toHaveText(locale === 'ar' ? 'التدريب والتغذية' : 'Training and nutrition');
+            const trainingLabels = await trainingPanel.locator('.member-training-head, .member-progress-line').allTextContents();
+            expect(trainingLabels.join(' ')).toMatch(locale === 'ar' ? /متابعة الأداء|القياسات/ : /Performance tracking|Measurements/);
+            await expect(trainingPanel).toContainText('QA Strength Plan');
+            await expect(trainingPanel).toContainText('QA Nutrition Plan');
+            await expect(trainingPanel).toContainText(locale === 'ar' ? 'نشط' : 'Active');
+            await expect(trainingPanel).toContainText(locale === 'ar' ? 'مسودة' : 'Draft');
+            const panelGeometry = await trainingPanel.evaluate((element) => ({ clientWidth: element.clientWidth, scrollWidth: element.scrollWidth }));
+            expect(panelGeometry.scrollWidth).toBeLessThanOrEqual(panelGeometry.clientWidth + 1);
+            await page.screenshot({ path: path.join(output, `training-${width}-${locale}-${theme}.png`), fullPage: false });
+
+            const overviewTab = dialog.locator('[data-member-details-tab="overview"]');
+            await overviewTab.click();
+            await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+            await expect(trainingPanel).toBeHidden();
+            await page.screenshot({ path: path.join(output, `overview-${width}-${locale}-${theme}.png`), fullPage: false });
+            await page.locator('#detailsClose').click();
+        }
+    }
+    expect(requests.filter(({ method }) => !['GET', 'HEAD', 'OPTIONS'].includes(method))).toEqual([]);
+});
 
 test('Members list, search, filters, table and mobile cards render in V2 across viewport and theme matrix', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One deterministic browser captures the full responsive matrix.');
@@ -532,11 +631,14 @@ test('member list presents the newest recorded membership snapshot without chang
         ]);
         if (!mobile) {
             const headers = await page.locator('.members-table thead th').allTextContents();
-            expect(headers).toEqual(['العضو', 'آخر اشتراك', 'الحالة', 'الحساب', 'تجميد العضو', 'الإجراءات']);
+            expect(headers.slice(0, 3)).toEqual(['العضو', 'آخر اشتراك', 'الحالة']);
+            expect(headers[3]).toBe(await page.evaluate(() => window.TopGymI18n.t('members.card.accountLatest')));
+            expect(headers.slice(4)).toEqual(['تجميد العضو', 'الإجراءات']);
             await expect(firstMember.locator('.status-badge-with-icon')).toHaveClass(/expired/);
-            await expect(firstMember.locator('.freeze-usage')).toContainText('مستخدم');
-            await expect(firstMember.locator('.freeze-usage bdi[dir="ltr"]')).toContainText('/');
-            await expect(firstMember.locator('.freeze-usage')).toContainText('مرات تجميد');
+            await expect(firstMember.locator('.member-freeze-cell')).toContainText('إجمالي سجلاته');
+            await expect(firstMember.locator('.freeze-usage')).toContainText('المستخدم');
+            await expect(firstMember.locator('.freeze-usage bdi[dir="auto"]')).toContainText('من');
+            await expect(firstMember.locator('.freeze-usage')).toContainText('مرات');
             const freezeAction = firstMember.locator('[data-action="freeze"]');
             await expect(freezeAction).toHaveCount(1);
             const actionsMenu = firstMember.locator('.action-menu-toggle');

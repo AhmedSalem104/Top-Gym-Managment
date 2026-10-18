@@ -11,21 +11,25 @@
 
     const cache = new Map();
     const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+    const translate = (key, params = {}) => window.TopGymI18n?.t?.(`members.details.coaching.${key}`, params) || key;
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (character) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[character]));
-    const statusLabels = {
-        draft: 'مسودة', active: 'نشطة', paused: 'متوقفة', completed: 'مكتملة', archived: 'مؤرشفة'
+    const statusLabels = { draft: 'draft', active: 'active', paused: 'paused', completed: 'completed', archived: 'archived' };
+    const statusLabel = (status) => {
+        const key = statusLabels[String(status || '').toLowerCase()];
+        return key ? translate(`status.${key}`) : translate('status.unknown');
     };
     const icon = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8v8M18 8v8M3 11h18M8 5h8v14H8z"/></svg>';
 
     function action(actionName, label, memberId, className = 'btn btn-light btn-small', entityId = '') {
         const entityAttribute = entityId ? ` data-id="${entityId}"` : '';
-        return `<button class="${className}" type="button" data-member-coaching-action="${actionName}" data-member-id="${memberId}"${entityAttribute} aria-label="${label}" title="${label}">${label}</button>`;
+        const safeLabel = escapeHtml(label);
+        return `<button class="${className}" type="button" data-member-coaching-action="${actionName}" data-member-id="${memberId}"${entityAttribute} aria-label="${safeLabel}" title="${safeLabel}">${safeLabel}</button>`;
     }
 
     function systemActions(type, memberId, entityId) {
-        return `<div class="member-training-system-actions">${action(`edit-${type}`, 'تعديل', memberId, 'btn btn-light btn-small', entityId)}${action(`print-${type}`, 'طباعة', memberId, 'btn btn-light btn-small', entityId)}${action(`pdf-${type}`, 'PDF', memberId, 'btn btn-light btn-small', entityId)}${action(`delete-${type}`, 'حذف', memberId, 'btn btn-danger btn-small', entityId)}</div>`;
+        return `<div class="member-training-system-actions">${action(`edit-${type}`, translate('action.edit'), memberId, 'btn btn-light btn-small', entityId)}${action(`print-${type}`, translate('action.print'), memberId, 'btn btn-light btn-small', entityId)}${action(`pdf-${type}`, translate('action.pdf'), memberId, 'btn btn-light btn-small', entityId)}${action(`delete-${type}`, translate('action.delete'), memberId, 'btn btn-danger btn-small', entityId)}</div>`;
     }
 
     function renderPanel(memberId, data) {
@@ -37,10 +41,11 @@
         const workouts = data.workoutPrograms || [];
         const diets = data.dietPlans || [];
         const systems = [
-            ...workouts.map((item) => `<div class="member-training-system"><span class="system-type workout">${icon} تدريب</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.exerciseCount)} تمرين · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${systemActions('workout', memberId, item.id)}</div>`),
-            ...diets.map((item) => `<div class="member-training-system"><span class="system-type diet">${icon} تغذية</span><strong>${escapeHtml(item.name)}</strong><small>${number(item.itemCount)} طعام · ${escapeHtml(statusLabels[item.status] || item.status || 'غير محددة')}</small>${systemActions('diet', memberId, item.id)}</div>`)
+            ...workouts.map((item) => `<div class="member-training-system"><span class="system-type workout">${icon} ${escapeHtml(translate('type.workout'))}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(translate('meta.workout', { count: number(item.exerciseCount), status: statusLabel(item.status) }))}</small>${systemActions('workout', memberId, item.id)}</div>`),
+            ...diets.map((item) => `<div class="member-training-system"><span class="system-type diet">${icon} ${escapeHtml(translate('type.diet'))}</span><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(translate('meta.diet', { count: number(item.itemCount), status: statusLabel(item.status) }))}</small>${systemActions('diet', memberId, item.id)}</div>`)
         ].join('');
-        panel.innerHTML = `<div class="member-training-head"><div><span>امتداد ملف العميل</span><h4>التدريب والتغذية</h4><small>ملخص سريع، وتُحمّل أدوات الإدارة الكاملة عند طلبها فقط.</small></div><div class="member-training-actions">${action('profile', 'فتح المتابعة', memberId)}${action('new-workout', '+ تدريب', memberId, 'btn btn-primary btn-small')}${action('new-diet', '+ تغذية', memberId)}</div></div><div class="member-training-systems">${systems || '<div class="profile-empty">لا توجد أنظمة مرتبطة بهذا العميل حتى الآن.</div>'}</div><div class="member-progress-line"><span>القياسات: <b>${number(data.measurementCount)}</b></span><span>الجلسات المكتملة: <b>${number(data.completedSessions)}</b></span><span>تسجيلات الوجبات: <b>${number(data.mealLogCount)}</b></span></div>`;
+        panel.setAttribute('aria-label', translate('title'));
+        panel.innerHTML = `<div class="member-training-head"><div><span>${escapeHtml(translate('eyebrow'))}</span><h4>${escapeHtml(translate('title'))}</h4><small>${escapeHtml(translate('description'))}</small></div><div class="member-training-actions">${action('profile', translate('action.profile'), memberId)}${action('new-workout', translate('action.newWorkout'), memberId, 'btn btn-primary btn-small')}${action('new-diet', translate('action.newDiet'), memberId)}</div></div><div class="member-training-systems">${systems || `<div class="profile-empty">${escapeHtml(translate('empty'))}</div>`}</div><div class="member-progress-line"><span>${escapeHtml(translate('measurementCount'))}<b>${number(data.measurementCount)}</b></span><span>${escapeHtml(translate('completedSessions'))}<b>${number(data.completedSessions)}</b></span><span>${escapeHtml(translate('mealLogCount'))}<b>${number(data.mealLogCount)}</b></span></div>`;
         if (!panel.isConnected) content.appendChild(panel);
     }
 
@@ -56,7 +61,7 @@
         const panel = content.querySelector('[data-member-training-panel]') || document.createElement('section');
         panel.className = 'member-training-panel member-training-panel-summary';
         panel.dataset.memberTrainingPanel = 'true';
-        panel.innerHTML = '<div class="loading">جاري تحميل ملخص التدريب والتغذية…</div>';
+        panel.innerHTML = `<div class="loading">${escapeHtml(translate('loading'))}</div>`;
         if (!panel.isConnected) content.appendChild(panel);
         try {
             const data = await window.topGymApi.request(`/api/clients/${encodeURIComponent(key)}/coaching-summary`);
@@ -64,7 +69,7 @@
             renderPanel(memberId, data);
             return data;
         } catch (error) {
-            panel.innerHTML = `<div class="coaching-empty error"><strong>تعذر تحميل ملخص التدريب والتغذية</strong><span>${escapeHtml(error.message)}</span><button class="btn btn-light btn-small" type="button" data-member-coaching-retry="${escapeHtml(key)}">إعادة المحاولة</button></div>`;
+            panel.innerHTML = `<div class="coaching-empty error"><strong>${escapeHtml(translate('error'))}</strong><span>${escapeHtml(error.message)}</span><button class="btn btn-light btn-small" type="button" data-member-coaching-retry="${escapeHtml(key)}">${escapeHtml(translate('retry'))}</button></div>`;
             return null;
         }
     }
@@ -73,6 +78,12 @@
         const detail = event.detail || {};
         const memberId = detail.member?.id || detail.details?.member?.id;
         if (memberId) void loadSummary(memberId);
+    });
+
+    window.addEventListener('topgym:localechange', () => {
+        const memberId = document.getElementById('detailsDialog')?.dataset.memberId;
+        const cached = memberId ? cache.get(String(memberId)) : null;
+        if (cached && document.getElementById('detailsDialog')?.open) renderPanel(memberId, cached.data);
     });
 
     document.addEventListener('click', (event) => {

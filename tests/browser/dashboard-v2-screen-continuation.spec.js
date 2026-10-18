@@ -80,6 +80,28 @@ async function installReadOnlyDashboardFixture(page) {
 }
 
 test.describe('Dashboard V2 visual continuation (read-only)', () => {
+    test('overview cards are exclusive to Dashboard for direct routes, reload and browser history', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'Route-scope browser verification runs once in the desktop project.');
+        const runtime = await installReadOnlyDashboardFixture(page);
+
+        await page.goto('/index.html?overviewRouteScope=1#members', { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
+        const overview = page.locator('.dashboard-overview-shell');
+        await expect(overview).toBeHidden();
+        await expect(page.locator('#membersSection')).toBeVisible();
+
+        await page.evaluate(() => { window.location.hash = '#dashboard'; });
+        await expect(overview).toBeVisible();
+        await page.evaluate(() => { window.location.hash = '#members'; });
+        await expect(overview).toBeHidden();
+        await page.goBack();
+        await expect(overview).toBeVisible();
+
+        await page.goto('/index.html?overviewRouteScopeReload=1#members', { waitUntil: 'domcontentloaded' });
+        await expect(overview).toBeHidden();
+        expect(runtime.writes).toEqual([]);
+    });
+
     test('preserves dashboard information and fits the locale/theme/viewport matrix', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'The complete 7-width × 2-locale × 2-theme matrix is captured once in the desktop project.');
         test.setTimeout(120_000);

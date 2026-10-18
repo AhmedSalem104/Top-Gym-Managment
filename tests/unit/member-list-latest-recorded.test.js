@@ -28,4 +28,20 @@ test('member list presentation formats date-only values as ASCII DD/MM/YYYY with
     assert.match(helper, /match\[3\].*match\[2\].*match\[1\]/u);
     assert.doesNotMatch(helper, /new Date|Intl\.DateTimeFormat/u);
     assert.match(app, /<time dir="ltr"[\s\S]*?datetime=/u);
+    assert.match(app, /function memberFreezeMarkup\(used, limit\)/u);
+    assert.match(app, /freeze\.memberTitle/u);
+    assert.match(app, /freeze\.memberScope/u);
+    assert.match(app, /card\.accountLatest/u);
+    assert.match(app, /Number\.isFinite\(amountRemaining\) \? escapeHtml\(membersCurrency\(amountRemaining\)\) : '—'/u);
+});
+
+test('dashboard overview is hidden and only revealed for the exact dashboard tab', () => {
+    const html = read('public/index.html');
+    const tabs = read('public/js/page-tabs.js');
+    const app = read('public/js/app.js');
+
+    assert.match(html, /class="dashboard-overview-shell"[^>]*\shidden(?:\s|>)/u);
+    assert.match(tabs, /const dashboardOverviewShell = document\.querySelector\('\.dashboard-overview-shell'\)/u);
+    assert.match(tabs, /setHidden\(dashboardOverviewShell, !isDashboard\)/u);
+    assert.match(app, /const overview = document\.querySelector\('\.dashboard-overview-shell'\)[\s\S]*?if \(!overview \|\| overview\.hidden\) return/u);
 });
