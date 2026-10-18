@@ -84,7 +84,9 @@ async function installTenantApi(page, tenantType) {
     return calls;
 }
 
-test('Gym plan UI exposes four terms and only Gym-compatible feature labels', async ({ page }) => {
+test('Gym plan cards hide feature lists without changing entitlements or term pricing', async ({ page }) => {
+    expect(billingFor('gym').featureCatalog.some((feature) => feature.key === 'members')).toBe(true);
+    expect(billingFor('gym').plans.every((plan) => typeof plan.features.members === 'boolean')).toBe(true);
     await installTenantApi(page, 'gym');
     await page.goto('/index.html#saas-billing', { waitUntil: 'domcontentloaded' });
     await page.evaluate(async () => {
@@ -100,8 +102,7 @@ test('Gym plan UI exposes four terms and only Gym-compatible feature labels', as
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(4);
     await expect(page.locator('#saasPlansList [data-saas-term-plan]')).toHaveCount(4);
-    await expect(page.locator('#saasPlansList [data-saas-feature-key="clients"]')).toHaveCount(0);
-    await expect(page.locator('#saasPlansList [data-saas-feature-key="members"]')).toHaveCount(4);
+    await expect(page.locator('#saasPlansList .saas-plan-features, #saasPlansList .saas-plan-entitlements, #saasPlansList [data-saas-feature-key]')).toHaveCount(0);
 
     const basic = page.locator('[data-saas-plan-card="12"]');
     await basic.locator('[data-saas-term-plan]').selectOption('quarterly');

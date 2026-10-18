@@ -2,7 +2,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 
-const WIDTHS = [320, 390, 768, 1440];
+const WIDTHS = [320, 390, 768, 1024, 1440, 1920];
 const THEMES = ['light', 'dark'];
 const LOCALES = ['ar', 'en'];
 const OUTPUT = path.resolve(process.cwd(), 'qa/artifacts/saas-billing-v2-visual');
@@ -17,14 +17,15 @@ const terms = [
 const plans = [
     { id: 9101, code: 'qa-basic', name: 'Basic', description: 'Synthetic visual fixture', price: 599, currency: 'EGP', billingPeriod: 'monthly', isActive: true, availableForNewSubscriptions: true, compatibleTenantTypes: ['gym'], terms, maxMembers: 500, maxClients: 100, maxUsers: 5, maxBranches: 2, maxAiGenerations: 100, maxStorageMb: 1024, features: { members: true, attendance: true, reports: true } },
     { id: 9102, code: 'qa-pro', name: 'Pro', description: 'Synthetic visual fixture', price: 999, currency: 'EGP', billingPeriod: 'monthly', isActive: true, availableForNewSubscriptions: true, compatibleTenantTypes: ['gym'], terms: terms.map((term, index) => ({ ...term, price: [999, 2699, 4999, 8999][index] })), maxMembers: 1500, maxClients: 300, maxUsers: 15, maxBranches: 5, maxAiGenerations: 400, maxStorageMb: 5120, features: { members: true, attendance: true, reports: true } },
-    { id: 9103, code: 'qa-business', name: 'Business', description: 'Synthetic visual fixture', price: 1499, currency: 'EGP', billingPeriod: 'monthly', isActive: true, availableForNewSubscriptions: true, compatibleTenantTypes: ['gym'], terms: terms.map((term, index) => ({ ...term, price: [1499, 3999, 7499, 13499][index] })), maxMembers: null, maxClients: null, maxUsers: null, maxBranches: null, maxAiGenerations: 900, maxStorageMb: 10240, features: { members: true, attendance: true, reports: true } }
+    { id: 9103, code: 'qa-business', name: 'Business', description: 'Synthetic visual fixture', price: 1499, currency: 'EGP', billingPeriod: 'monthly', isActive: true, availableForNewSubscriptions: true, compatibleTenantTypes: ['gym'], terms: terms.map((term, index) => ({ ...term, price: [1499, 3999, 7499, 13499][index] })), maxMembers: null, maxClients: null, maxUsers: null, maxBranches: null, maxAiGenerations: 900, maxStorageMb: 10240, features: { members: true, attendance: true, reports: true } },
+    { id: 9106, code: 'qa-enterprise', name: 'Enterprise', description: 'Synthetic visual fixture', price: 2499, currency: 'EGP', billingPeriod: 'monthly', isActive: true, availableForNewSubscriptions: true, compatibleTenantTypes: ['gym'], terms: terms.map((term, index) => ({ ...term, price: [2499, 6799, 12499, 22499][index] })), maxMembers: null, maxClients: null, maxUsers: null, maxBranches: null, maxAiGenerations: null, maxStorageMb: 20480, features: { members: true, attendance: true, reports: true } }
 ];
 
 const billingFixture = {
     tenant: { id: 9100, name: 'Read-only QA Gym', slug: 'read-only-qa-gym', tenantType: 'gym', status: 'active' },
     subscription: { id: 9104, status: 'active', startsAt: '2026-01-01T00:00:00Z', expiresAt: '2027-01-01T00:00:00Z', termCodeSnapshot: 'monthly', durationMonthsSnapshot: 1, priceSnapshot: 599, plan: plans[0] },
     plans,
-    featureCatalog: [],
+    featureCatalog: [{ key: 'members', description: 'Members entitlement retained in the API fixture', tenantTypes: ['gym'], limitKeys: ['maxMembers'] }],
     usage: { members: 24, clients: 2, users: 2, branches: 1, aiGenerations: 3, storageBytes: 1048576 },
     requests: [{ id: 9105, createdAt: '2026-10-01T09:00:00Z', plan: { name: 'Basic' }, durationMonths: 3, amount: 1599, currency: 'EGP', status: 'approved', proof: null, reviewNotes: 'Synthetic fixture only' }],
     requestsPagination: { page: 1, pages: 1, total: 1 }
@@ -79,8 +80,11 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
     });
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasBillingSection')).toBeVisible();
-    await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(3);
+    await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(4);
+    await expect(page.locator('#saasPlansList .saas-plan-current-badge')).toHaveCount(1);
+    await expect(page.locator('#saasPlansList .saas-plan-features, #saasPlansList .saas-plan-entitlements, #saasPlansList [data-saas-feature-key]')).toHaveCount(0);
     await expect(page.locator('#saasRequestsList tr')).toHaveCount(1);
+    await expect(page.locator('.saas-summary-dates bdi')).toHaveCount(2);
 
     for (const width of WIDTHS) {
         await page.setViewportSize({ width, height: width <= 390 ? 900 : 960 });
@@ -100,6 +104,7 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
                     const writingControlState = [...(form?.querySelectorAll('input,select,textarea,button') || [])]
                         .map((element) => ({ id: element.id, value: element.value, disabled: element.disabled }));
                     const historyCells = [...(root?.querySelectorAll('#saasRequestsList td') || [])];
+                    const dates = [...(root?.querySelectorAll('.saas-summary-dates bdi, #saasRequestsList time') || [])];
                     const cellOverflow = historyCells
                         .filter((element) => element.scrollWidth > element.clientWidth + 1)
                         .map((element) => element.dataset.label || element.textContent.trim());
@@ -115,6 +120,9 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
                         bodyWidth: document.body.scrollWidth,
                         screenWidth: root?.getBoundingClientRect().width,
                         planCount: cards.length,
+                        planColumns: getComputedStyle(planList).gridTemplateColumns.split(' ').length,
+                        planFeatureMarkupCount: planList?.querySelectorAll('.saas-plan-features, .saas-plan-entitlements, [data-saas-feature-key]').length || 0,
+                        dates: dates.map((element) => ({ text: element.textContent.trim(), direction: element.dir })),
                         planListClientWidth: planList?.clientWidth,
                         planListScrollWidth: planList?.scrollWidth,
                         historyLayout: (() => {
@@ -136,7 +144,14 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
 
                 expect(state.documentWidth, `${width}px ${theme}/${locale} document overflow`).toBeLessThanOrEqual(width);
                 expect(state.bodyWidth, `${width}px ${theme}/${locale} body overflow`).toBeLessThanOrEqual(width);
-                expect(state.planCount).toBe(3);
+                expect(state.planCount).toBe(4);
+                expect(state.planFeatureMarkupCount).toBe(0);
+                expect(state.planColumns).toBe(width >= 1280 ? 4 : width >= 561 ? 2 : 1);
+                expect(state.dates).toHaveLength(3);
+                for (const item of state.dates) {
+                    expect(item.direction).toBe('ltr');
+                    expect(item.text).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+                }
                 expect(state.requestTableRows).toBe(1);
                 expect(state.lang).toBe(locale);
                 expect(state.dir).toBe(locale === 'ar' ? 'rtl' : 'ltr');
