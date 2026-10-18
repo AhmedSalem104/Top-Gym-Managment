@@ -26,41 +26,52 @@
 
     function mountContextShell() {
         const shell = $('branchContextShell');
-        const controls = document.querySelector('.topbar-controls');
-        const actions = controls?.querySelector(':scope > .topbar-mobile-row')
-            || controls?.querySelector(':scope > .topbar-quick-actions');
-        if (shell && controls && shell.parentElement !== controls) controls.insertBefore(shell, actions || controls.firstChild);
+        const row = document.querySelector('.topbar-mobile-row');
+        const actions = row?.querySelector(':scope > .topbar-mobile-actions');
+        if (shell && row && shell.parentElement !== row) row.insertBefore(shell, actions || null);
     }
 
-    function initMobileTopbarActions() {
-        const proxies = [...document.querySelectorAll('[data-mobile-topbar-action]')];
-        if (!proxies.length) return;
+    function updateMobileContextTrigger() {
+        const trigger = $('branchContextMobileTrigger');
+        const branch = $('branchContextSelect');
+        const section = $('sectionContextSelect');
+        if (!trigger || !branch || !section) return;
+        const branchName = branch.selectedOptions[0]?.textContent?.trim() || translate('context.allBranches', 'كل الفروع');
+        const sectionName = section.hidden || section.disabled
+            ? translate('context.allSections', 'كل الأقسام')
+            : section.selectedOptions[0]?.textContent?.trim() || translate('context.allSections', 'كل الأقسام');
+        $('branchContextMobileBranch').textContent = branchName;
+        $('branchContextMobileSection').textContent = sectionName;
+        const label = translateShared('shell.context', 'سياق العمل');
+        trigger.setAttribute('aria-label', `${label}: ${branchName}، ${sectionName}`);
+        trigger.title = `${branchName} · ${sectionName}`;
+    }
 
-        const accountBar = $('authAccountBar');
-        const sync = (proxy) => {
-            const target = $(proxy.dataset.mobileTopbarAction);
-            const accountUnavailable = proxy.dataset.mobileTopbarAction === 'authLogoutButton' && accountBar?.hidden;
-            proxy.hidden = !target || target.hidden || Boolean(accountUnavailable);
-            proxy.disabled = !target || Boolean(target.disabled);
-            if (target?.hasAttribute('aria-pressed')) proxy.setAttribute('aria-pressed', target.getAttribute('aria-pressed'));
-            else proxy.removeAttribute('aria-pressed');
+    function initMobileContextTrigger() {
+        const shell = $('branchContextShell');
+        const trigger = $('branchContextMobileTrigger');
+        if (!shell || !trigger) return;
+        const close = (restoreFocus = true) => {
+            shell.removeAttribute('data-context-open');
+            trigger.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) trigger.focus({ preventScroll: true });
         };
-
-        proxies.forEach((proxy) => {
-            const target = $(proxy.dataset.mobileTopbarAction);
-            sync(proxy);
-            proxy.addEventListener('click', () => {
-                const currentTarget = $(proxy.dataset.mobileTopbarAction);
-                if (!proxy.hidden && !proxy.disabled && currentTarget && !currentTarget.disabled && !currentTarget.hidden) currentTarget.click();
-            });
-            if (target) new MutationObserver(() => sync(proxy)).observe(target, {
-                attributes: true,
-                attributeFilter: ['hidden', 'disabled', 'aria-pressed']
-            });
-            if (proxy.dataset.mobileTopbarAction === 'authLogoutButton' && accountBar) {
-                new MutationObserver(() => sync(proxy)).observe(accountBar, { attributes: true, attributeFilter: ['hidden'] });
-            }
+        trigger.addEventListener('click', () => {
+            const open = shell.dataset.contextOpen === 'true';
+            shell.dataset.contextOpen = String(!open);
+            trigger.setAttribute('aria-expanded', String(!open));
+            if (!open) window.requestAnimationFrame(() => shell.querySelector('.branch-context-trigger:not(:disabled)')?.focus({ preventScroll: true }));
+            else close(false);
         });
+        document.addEventListener('pointerdown', (event) => {
+            if (shell.dataset.contextOpen === 'true' && !shell.contains(event.target)) close(false);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || shell.dataset.contextOpen !== 'true') return;
+            event.preventDefault();
+            close();
+        });
+        updateMobileContextTrigger();
     }
 
     function syncContextBar() {
@@ -189,6 +200,7 @@
         const selectedLabel = selectedOption?.textContent?.trim() || '—';
         const valueElement = trigger.querySelector('[data-context-value]');
         if (valueElement) valueElement.textContent = selectedLabel;
+        updateMobileContextTrigger();
         const isSection = field.dataset.contextField === 'section';
         const contextLabel = translate(isSection ? 'context.section' : 'context.branch', isSection ? 'القسم' : 'الفرع');
         trigger.setAttribute('aria-label', translate(isSection ? 'context.currentSection' : 'context.currentBranch', `${contextLabel} الحالي: {{name}}`, { name: selectedLabel }));
@@ -549,7 +561,6 @@
     }
 
     function bind() {
-        initMobileTopbarActions();
         window.addEventListener('topgym:localechange', refreshBranchLocale);
         document.addEventListener('keydown', closeOpenContextFields, true);
         document.addEventListener('pointerdown', (event) => {
@@ -558,6 +569,7 @@
             });
         }, true);
         mountContextShell();
+        initMobileContextTrigger();
         ensureBranchTab();
         ensureBranchPanel();
         ensureContextDropdown($('branchContextSelect'), document.querySelector('[data-context-field="branch"]'));
@@ -580,6 +592,7 @@
         $('sectionContextSelect')?.addEventListener('change', (event) => {
             const value = event.currentTarget.value;
             writeStoredSection(value);
+            updateMobileContextTrigger();
             window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', { detail: {
                 branchId: $('branchContextSelect')?.value ? Number($('branchContextSelect').value) : null,
                 sectionId: value ? Number(value) : null

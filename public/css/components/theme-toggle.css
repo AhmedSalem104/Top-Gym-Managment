@@ -1,12 +1,12 @@
 /* The login switch is owned by pages/login.css so authenticated users do not
    download public-entry presentation rules in the critical application shell. */
 @media (prefers-reduced-motion: reduce) {
-  .app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button {
+  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button {
     transition: none;
   }
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button {
   box-sizing: border-box;
   width: 44px;
   min-width: 44px;
@@ -20,29 +20,41 @@
   transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button .ui-icon {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .ui-icon {
   display: block;
   width: 20px;
   height: 20px;
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button[data-theme-state="dark"] {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button[data-theme-state="dark"] {
   color: var(--nav-action-cyan);
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button:hover,
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button:focus-visible {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:hover,
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:focus-visible {
   border-color: var(--primary-border);
   background: var(--primary-soft);
   color: var(--sidebar-text);
   transform: translateY(-1px);
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button:focus-visible {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-.app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button:active {
+.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:active {
   transform: translateY(0);
+}
+
+@media (max-width: 1199px) {
+  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .topbar-theme-icon-button,
+  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .kiosk-toggle-button,
+  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .topbar-language-toggle {
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding-inline: var(--space-3);
+  }
 }

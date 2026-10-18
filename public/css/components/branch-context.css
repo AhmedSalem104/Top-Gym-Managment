@@ -17,6 +17,9 @@
   isolation: isolate;
 }
 
+.branch-context-mobile-trigger { display: none; }
+.branch-context-fields { display: contents; }
+
 .branch-context-kicker {
   display: inline-flex;
   min-width: 110px;
@@ -505,6 +508,9 @@ body .app-shell > .topbar #branchContextShell .branch-context-trigger{
   text-align: start;
   transform: none;
   transition: color var(--transition-fast);
+}
+body .app-shell > .topbar #branchContextShell[data-context-open="true"] .branch-context-trigger {
+  color: var(--color-text);
 }
 body .app-shell > .topbar #branchContextShell .branch-context-trigger:hover{
   transform: none;

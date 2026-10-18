@@ -252,6 +252,38 @@
   display: none;
 }
 
+.sidebar-account-actions {
+  order: 100;
+  width: 100%;
+  flex: 0 0 auto;
+  margin-block-start: auto;
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--sidebar-divider);
+}
+
+.sidebar-account-actions[hidden] { display: none; }
+.sidebar-account-actions .auth-logout-button { width: 100%; justify-content: flex-start; }
+.sidebar-account-actions .auth-logout-button > span { display: inline; }
+
+@media (min-width: 768px) {
+  .app-shell > .page-tabs:not(.is-hovered):not(.sidebar-pinned):not(:focus-within) .sidebar-account-actions {
+    width: 56px;
+    min-width: 56px;
+    align-self: center;
+  }
+
+  .app-shell > .page-tabs:not(.is-hovered):not(.sidebar-pinned):not(:focus-within) .sidebar-account-actions .auth-logout-button {
+    width: 56px;
+    min-width: 56px;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .app-shell > .page-tabs:not(.is-hovered):not(.sidebar-pinned):not(:focus-within) .sidebar-account-actions .auth-logout-button > span {
+    display: none;
+  }
+}
+
 .auth-account-identity {
   min-width: 0;
   gap: var(--space-2);

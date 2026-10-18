@@ -55,7 +55,10 @@ function branchFixtures() {
         branches,
         activeBranches: branches,
         defaultBranch: branches[0],
-        sections: [],
+        sections: [
+            { id: 8201, branchId: 8101, type: 'men', name: 'Men', active: true },
+            { id: 8202, branchId: 8101, type: 'women', name: 'Women', active: true }
+        ],
         branchLimit: 5,
         hasMultipleActiveBranches: true,
         canUseAllBranches: true
@@ -229,6 +232,120 @@ async function assertBranchesLayout(page, width, theme, testInfo) {
 }
 
 test.describe('real dynamically-created branches page V2', () => {
+    test('Gym topbar keeps context and daily actions on one row across locales, themes and widths', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'A single isolated browser context exercises the responsive matrix.');
+        const runtime = await installIsolatedRuntime(page);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+        await expect(page.locator('#branchContextShell')).toBeVisible();
+        await expect(page.locator('#authAccountBar')).toBeVisible();
+
+        for (const width of [320, 390, 430, 768, 900, 1024, 1440]) {
+            await page.setViewportSize({ width, height: width < 600 ? 820 : 900 });
+            for (const locale of ['ar', 'en']) {
+                await page.evaluate((value) => window.TopGymI18n.set(value), locale);
+                for (const theme of THEMES) {
+                    await page.evaluate((value) => window.TopGymTheme?.set?.(value) || (document.documentElement.dataset.theme = value), theme);
+                    const row = page.locator('.topbar-mobile-row');
+                    const context = page.locator('#branchContextShell');
+                    const menu = page.locator('#mobileNavToggle');
+                    const notification = page.locator('.topbar-quick-actions .notification-center-trigger');
+                    const more = page.locator('.topbar-more-trigger');
+                    await expect(context).toBeVisible();
+
+                    if (width < 768) {
+                        await expect(menu).toBeVisible();
+                        await expect(notification).toBeVisible();
+                        await expect(more).toBeVisible();
+                        const geometry = await page.evaluate(() => {
+                            const rect = (selector) => {
+                                const { x, y, width: w, height, right } = document.querySelector(selector).getBoundingClientRect();
+                                return { x, y, width: w, height, right, centerY: y + height / 2 };
+                            };
+                            return {
+                                row: rect('.topbar-mobile-row'),
+                                menu: rect('#mobileNavToggle'),
+                                context: rect('#branchContextShell'),
+                                actions: rect('.topbar-mobile-actions'),
+                                quick: rect('.topbar-quick-actions'),
+                                summary: rect('.topbar-more-trigger'),
+                                notification: rect('.topbar-quick-actions .notification-center-trigger'),
+                                more: rect('.topbar-more-trigger'),
+                                documentWidth: document.documentElement.scrollWidth
+                            };
+                        });
+                        expect(geometry.row.height, `one topbar row at ${width}px`).toBeLessThanOrEqual(52);
+                        expect(Math.abs(geometry.menu.centerY - geometry.context.centerY)).toBeLessThanOrEqual(1);
+                        expect(Math.abs(geometry.context.centerY - geometry.notification.centerY)).toBeLessThanOrEqual(1);
+                        expect(Math.abs(geometry.notification.centerY - geometry.more.centerY)).toBeLessThanOrEqual(1);
+                        if (locale === 'ar') {
+                            expect(geometry.menu.x).toBeGreaterThan(geometry.context.x);
+                            expect(geometry.context.x).toBeGreaterThan(geometry.notification.x);
+                            expect(geometry.notification.x).toBeGreaterThan(geometry.more.x);
+                        } else {
+                            expect(geometry.menu.x).toBeLessThan(geometry.context.x);
+                            expect(geometry.context.x).toBeLessThan(geometry.notification.x);
+                            expect(geometry.notification.x).toBeLessThan(geometry.more.x);
+                        }
+                        expect(geometry.documentWidth).toBeLessThanOrEqual(width);
+
+                        await more.click();
+                        await expect(page.locator('#languageToggleButton')).toBeVisible();
+                        await expect(page.locator('#themeToggleButton')).toBeVisible();
+                        await expect(page.locator('#globalKioskToggle')).toBeVisible();
+                        if (width === 390 && locale === 'ar' && theme === 'light') {
+                            await page.screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-${locale}-${theme}-more-open.png`) });
+                        }
+                        for (const selector of ['#languageToggleButton', '#themeToggleButton', '#globalKioskToggle']) {
+                            const box = await page.locator(selector).boundingBox();
+                            expect(box.width, `${selector} touch width at ${width}px`).toBeGreaterThanOrEqual(44);
+                            expect(box.height, `${selector} touch height at ${width}px`).toBeGreaterThanOrEqual(44);
+                        }
+                        await page.keyboard.press('Escape');
+                        await expect(page.locator('.topbar-more-menu')).not.toHaveAttribute('open', '');
+
+                        const contextTrigger = page.locator('#branchContextMobileTrigger');
+                        await contextTrigger.click();
+                        await expect(contextTrigger).toHaveAttribute('aria-expanded', 'true');
+                        await expect(page.locator('#branchContextFields [data-context-field="branch"] .branch-context-trigger')).toBeVisible();
+                        await expect(page.locator('#branchContextFields [data-context-field="section"] .branch-context-trigger')).toBeVisible();
+                        const openContextColor = await page.locator('#branchContextFields [data-context-field="branch"] .branch-context-trigger').evaluate((button) => getComputedStyle(button).color);
+                        expect(openContextColor).not.toBe(await page.locator('#branchContextFields').evaluate((panel) => getComputedStyle(panel).backgroundColor));
+                        if (width === 390 && locale === 'ar' && theme === 'light') {
+                            await page.screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-${locale}-${theme}-context-open.png`) });
+                        }
+                        await page.keyboard.press('Escape');
+                        await expect(contextTrigger).toHaveAttribute('aria-expanded', 'false');
+                        if ([320, 390].includes(width) && locale === 'ar' && theme === 'light') {
+                            await page.locator('.topbar').screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-${locale}-${theme}.png`) });
+                        }
+                    } else {
+                        await expect(menu).toBeHidden();
+                        await expect(page.locator('#branchContextMobileTrigger')).toBeHidden();
+                        if (width < 1024) {
+                            await expect(more).toBeVisible();
+                            await more.click();
+                            await expect(page.locator('#languageToggleButton')).toBeVisible();
+                            await page.keyboard.press('Escape');
+                        } else {
+                            await expect(more).toBeHidden();
+                            await expect(page.locator('#languageToggleButton')).toBeVisible();
+                            await expect(page.locator('#themeToggleButton')).toBeVisible();
+                            await expect(page.locator('#globalKioskToggle')).toBeVisible();
+                        }
+                        if (width === 1440 && locale === 'ar' && theme === 'light') {
+                            await page.locator('.topbar').screenshot({ path: testInfo.outputPath(`topbar-desktop-${width}-${locale}-${theme}.png`) });
+                            await page.screenshot({ path: testInfo.outputPath(`gym-shell-desktop-${width}-${locale}-${theme}.png`), fullPage: true });
+                        }
+                    }
+                }
+            }
+        }
+
+        expect(runtime.writes).toEqual([]);
+        expect(runtime.externalEgress).toEqual([]);
+    });
+
     test('renders branch fixtures without overflow across viewports and themes', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'A single deterministic viewport/theme sweep runs in the desktop project.');
         const runtime = await installIsolatedRuntime(page);

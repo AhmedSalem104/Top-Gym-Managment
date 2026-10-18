@@ -1525,11 +1525,13 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   min-height: 0;
   flex-direction: column;
   padding: 0;
+  overflow: visible;
 }
 
 .members-filter-dialog-header {
   display: flex;
-  min-height: 76px;
+  min-height: 0;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -1539,13 +1541,14 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
 
 .members-filter-dialog-header h3 { color: var(--color-text); font-size: var(--font-lg); }
 .members-filter-dialog-header p { margin-top: var(--space-1); color: var(--color-text-muted); font-size: var(--font-xs); }
-.members-filter-dialog-fields { min-height: 0; overflow-y: auto; padding: var(--space-4) var(--space-5); }
+.members-filter-dialog-fields { min-height: 0; flex: 0 1 auto; overflow-y: auto; padding: var(--space-4) var(--space-5); }
 .members-filter-dialog-fields .members-filter-fields { display: grid; gap: var(--space-4); }
 .members-filter-dialog-fields .members-filter-field { min-width: 0; width: 100%; }
 .members-filter-dialog-fields .members-filter-field > span { display: block; font-size: var(--font-xs); }
 .members-filter-dialog-footer {
   display: flex;
-  min-height: 72px;
+  min-height: 0;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -1556,19 +1559,20 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
 
 @media (max-width: 767px) {
   .members-filter-dialog {
-    width: 100%;
-    max-width: none;
-    height: 100dvh;
-    max-height: 100dvh;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
+    inset-block: auto max(12px, env(safe-area-inset-bottom));
+    width: min(calc(100% - 24px), 480px);
+    max-width: 480px;
+    max-height: min(78dvh, calc(100dvh - 24px - env(safe-area-inset-bottom)));
+    margin-inline: auto;
+    border-radius: var(--radius-lg);
   }
-  .members-filter-dialog .dialog-body { height: 100%; }
-  .members-filter-dialog-header { min-height: 84px; padding: max(var(--space-4), env(safe-area-inset-top)) var(--space-4) var(--space-4); }
-  .members-filter-dialog-fields { flex: 1 1 auto; padding: var(--space-4); }
-  .members-filter-dialog-footer { min-height: 76px; padding: var(--space-3) var(--space-4) max(var(--space-3), env(safe-area-inset-bottom)); }
-.members-filter-dialog-footer > .btn { min-height: 48px; }
+  .members-filter-dialog .dialog-body { height: auto; max-height: inherit; }
+  .members-filter-dialog-header { padding: var(--space-3) var(--space-4); }
+  .members-filter-dialog-header p { display: none; }
+  .members-filter-dialog-fields { flex: 0 1 auto; padding: var(--space-3) var(--space-4); }
+  .members-filter-dialog-fields .members-filter-fields { gap: var(--space-3); padding: 0; }
+  .members-filter-dialog-footer { justify-content: stretch; gap: var(--space-2); padding: var(--space-3) var(--space-4) max(var(--space-3), env(safe-area-inset-bottom)); }
+  .members-filter-dialog-footer > .btn { min-width: 0; min-height: 44px; flex: 1 1 0; }
 }
 
 .members-list > .members-empty-state {
@@ -1601,9 +1605,9 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
 .members-empty-state .btn { margin-block-start: var(--space-2); }
 
 @media (max-width: 359px) {
-  .members-mobile-card-head { grid-template-columns: 36px minmax(0, 1fr); }
-  .members-mobile-card-head > .status-badge-with-icon { grid-column: 2; justify-self: start; }
+  .members-mobile-card-head { grid-template-columns: 36px minmax(0, 1fr) auto; gap: var(--space-1); }
   .members-mobile-card-head .member-card-avatar { width: 36px; height: 36px; }
+  .members-mobile-card-head .status-badge-with-icon { max-width: 76px; font-size: var(--font-xs); }
   .members-mobile-actions .table-actions { gap: var(--space-1); }
   .members-mobile-actions .table-actions > .table-action-visible { gap: var(--space-1); padding-inline: var(--space-1); }
 }

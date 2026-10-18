@@ -1,318 +1,221 @@
-/* Responsive shell composition. Desktop retains the existing inline toolbar;
-   phone widths use two explicit rows, never flex-wrap to create rows. */
+/* Mobile topbar layout owner. Desktop keeps the current controls inline;
+   phones use one explicit command row with the existing controls. */
 .topbar-mobile-row,
-.topbar-mobile-actions {
-  display: contents;
+.topbar-mobile-actions,
+.topbar-more-menu,
+.topbar-more-items { display: contents; }
+
+.topbar-more-trigger { display: none; }
+.topbar-more-actions { display: flex; align-items: center; gap: var(--space-2); }
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .app-shell > .topbar .topbar-inner {
+    width: calc(100% - 32px);
+    min-height: 64px;
+    flex-wrap: nowrap;
+    gap: var(--space-3);
+  }
+  .app-shell > .topbar .topbar-brand-area { flex: 0 1 180px; }
+  .app-shell > .topbar .topbar-brand-area .brand-copy p { display: none; }
+  .app-shell > .topbar .topbar-controls {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .app-shell > .topbar .topbar-mobile-row > #branchContextShell { max-width: min(42vw, 380px); }
+  .app-shell > .topbar .topbar-mobile-actions {
+    display: flex; min-width: 0; flex: 0 0 auto; align-items: center; gap: var(--space-2);
+  }
+  .app-shell > .topbar .topbar-mobile-actions > .topbar-quick-actions { order: 1; margin: 0; }
+  .app-shell > .topbar .topbar-mobile-actions > .topbar-more-menu { order: 2; }
+  html[dir="rtl"] .app-shell > .topbar .topbar-mobile-actions { direction: rtl; }
+  html[dir="ltr"] .app-shell > .topbar .topbar-mobile-actions { direction: ltr; }
 }
 
-.mobile-topbar-action {
-  display: none;
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-shell > .topbar .topbar-more-menu { position: relative; display: block; flex: 0 0 44px; }
+  .app-shell > .topbar .topbar-more-trigger {
+    display: inline-grid;
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--sidebar-divider);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    list-style: none;
+  }
+  .app-shell > .topbar .topbar-more-trigger::-webkit-details-marker { display: none; }
+  .app-shell > .topbar .topbar-more-menu:not([open]) > .topbar-more-items { display: none; }
+  .app-shell > .topbar .topbar-more-menu[open] > .topbar-more-items {
+    position: absolute;
+    z-index: var(--z-dropdown, 1000);
+    inset-block-start: calc(100% + var(--space-2));
+    inset-inline-end: 0;
+    display: grid;
+    min-width: 240px;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+  }
+  .app-shell > .topbar .topbar-more-menu:not([open]) > .topbar-more-items { display: none; }
 }
 
 @media (max-width: 767px) {
   .app-shell > .topbar .topbar-inner {
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    padding-inline: 12px;
+    box-sizing: border-box; width: 100%; min-width: 0;
+    padding-inline: var(--space-3); padding-block: var(--space-2);
   }
-
   .app-shell > .topbar .topbar-controls {
-    display: grid;
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    flex: 1 1 100%;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    align-items: stretch;
-    justify-content: stretch;
-    gap: 12px;
-    flex-wrap: nowrap;
+    display: flex; box-sizing: border-box; width: 100%; min-width: 0; flex: 1 1 auto;
+    align-items: center; flex-wrap: nowrap; gap: var(--space-2);
   }
-
   .app-shell > .topbar .topbar-mobile-row {
-    display: grid;
-    min-width: 0;
-    grid-row: 1;
-    grid-template-columns: 44px minmax(0, 1fr);
-    grid-template-rows: 44px;
-    align-items: center;
-    gap: 8px;
-    direction: inherit;
+    display: grid; width: 100%; min-width: 0;
+    grid-template-columns: 44px minmax(0, 1fr) 96px; align-items: center;
+    gap: var(--space-2); direction: inherit;
   }
-
   .app-shell > .topbar #mobileNavToggle {
-    display: inline-grid;
-    box-sizing: border-box;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    flex: 0 0 44px;
-    place-items: center;
-    padding: 0;
+    display: inline-grid; box-sizing: border-box; width: 44px; min-width: 44px;
+    height: 44px; min-height: 44px; place-items: center; padding: 0;
   }
-
-  .app-shell > .topbar #mobileNavToggle .ui-icon,
-  .app-shell > .topbar .mobile-topbar-action .ui-icon {
-    display: block;
-    width: 20px;
-    height: 20px;
-    flex: 0 0 20px;
-  }
-
+  .app-shell > .topbar #mobileNavToggle .ui-icon { width: 20px; height: 20px; }
   .app-shell > .topbar .topbar-mobile-actions {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    justify-content: flex-start;
-    flex-direction: row;
-    gap: 8px;
-    direction: ltr;
+    display: flex; min-width: 0; align-items: center; justify-content: flex-end;
+    gap: var(--space-2); direction: ltr; flex-direction: row;
   }
-
+  html[dir="rtl"] .app-shell > .topbar .topbar-mobile-actions { direction: rtl; }
+  html[dir="ltr"] .app-shell > .topbar .topbar-mobile-actions { direction: ltr; flex-direction: row; }
   .app-shell > .topbar .topbar-quick-actions {
-    display: flex;
-    min-width: 44px;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    order: 1;
-    gap: 8px;
-    margin: 0;
+    display: flex; min-width: 44px; align-items: center; justify-content: center; order: 1;
+    gap: var(--space-2); margin: 0;
   }
-
   .app-shell > .topbar .topbar-quick-actions .notification-center-trigger,
-  .app-shell > .topbar .mobile-topbar-action {
-    display: inline-grid;
-    box-sizing: border-box;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    flex: 0 0 44px;
-    place-items: center;
-    padding: 0;
+  .app-shell > .topbar .topbar-more-trigger {
+    display: inline-grid; box-sizing: border-box; width: 44px; min-width: 44px;
+    height: 44px; min-height: 44px; place-items: center; padding: 0;
+    border: 1px solid var(--sidebar-divider); border-radius: var(--radius-md);
+    background: transparent; color: var(--nav-action-neutral); cursor: pointer; list-style: none;
   }
-
-  .app-shell > .topbar .mobile-topbar-action {
-    display: inline-grid;
-    order: 3;
-    border: 1px solid var(--sidebar-divider);
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--nav-action-neutral);
-    cursor: pointer;
-    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger .ui-icon,
+  .app-shell > .topbar .topbar-more-trigger .ui-icon { display: block; width: 20px; height: 20px; }
+  .app-shell > .topbar .topbar-more-menu { position: relative; display: block; flex: 0 0 44px; order: 2; }
+  .app-shell > .topbar .topbar-more-trigger::-webkit-details-marker { display: none; }
+  .app-shell > .topbar .topbar-more-trigger:hover,
+  .app-shell > .topbar .topbar-more-trigger:focus-visible,
+  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:hover,
+  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:focus-visible {
+    border-color: var(--primary-border); background: var(--sidebar-hover-bg); color: var(--sidebar-text);
   }
-
-  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="globalKioskToggle"] {
-    color: var(--nav-action-blue);
+  .app-shell > .topbar .topbar-more-trigger:focus-visible,
+  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger:focus-visible {
+    outline: 2px solid var(--border-focus); outline-offset: 2px;
   }
-
-  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="authLogoutButton"] {
-    order: 4;
+  .app-shell > .topbar .topbar-more-items {
+    position: absolute; z-index: var(--z-dropdown, 1000);
+    inset-block-start: calc(100% + var(--space-2)); inset-inline-end: 0;
+    display: grid; min-width: 208px; max-width: min(88vw, 320px);
+    gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-lg);
   }
-
-  .app-shell > .topbar .mobile-topbar-action[data-mobile-topbar-action="globalKioskToggle"][aria-pressed="true"] {
-    border-color: var(--primary-border);
-    background: var(--primary-soft);
-    color: var(--info-text);
+  .app-shell > .topbar .topbar-more-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  .app-shell > .topbar .topbar-more-actions > .btn {
+    width: 100%; min-height: 44px; justify-content: flex-start; font-size: var(--font-sm);
   }
-
-  .app-shell > .topbar .mobile-topbar-action:hover:not(:disabled),
-  .app-shell > .topbar .mobile-topbar-action:focus-visible {
-    border-color: var(--primary-border);
-    background: var(--sidebar-hover-bg);
-    color: var(--sidebar-text);
+  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button,
+  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button,
+  .app-shell > .topbar .topbar-more-items > .topbar-language-toggle {
+    display: inline-flex; width: 100%; min-width: 0; height: 44px; min-height: 44px;
+    justify-content: flex-start; gap: var(--space-3); padding-inline: var(--space-3);
+    border: 1px solid var(--border-secondary); border-radius: var(--radius-md);
+    background: var(--color-surface); color: var(--color-text); font-size: var(--font-sm);
   }
-
-  .app-shell > .topbar .mobile-topbar-action:focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .visually-hidden,
+  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button .visually-hidden {
+    position: static; width: auto; height: auto; margin: 0; overflow: visible;
+    clip: auto; clip-path: none; white-space: nowrap;
   }
-
-  .app-shell > .topbar .mobile-topbar-action:disabled,
-  .app-shell > .topbar .mobile-topbar-action[hidden] {
-    cursor: not-allowed;
-    opacity: .55;
+  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .ui-icon,
+  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button .ui-icon {
+    width: 18px; height: 18px; flex: 0 0 18px;
   }
-
-  .app-shell > .topbar .mobile-topbar-action[hidden] {
-    display: none;
+  .app-shell > .topbar #branchContextShell[hidden] { display: none; }
+  .app-shell > .topbar .topbar-mobile-row > #branchContextShell {
+    position: relative; display: block; width: auto; min-width: 0; min-height: 44px;
+    align-self: stretch; padding: 0; border: 0; border-radius: 0;
+    background: transparent; box-shadow: none; isolation: auto;
   }
-
-  @media (max-width: 374px) {
-    .app-shell > .topbar .topbar-mobile-actions,
-    .app-shell > .topbar .topbar-quick-actions {
-      gap: 4px;
-    }
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger {
+    display: flex; box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px;
+    align-items: center; gap: var(--space-2); padding-inline: var(--space-2);
+    border: 1px solid var(--sidebar-divider); border-radius: var(--radius-md);
+    background: var(--sidebar-hover-bg); color: var(--sidebar-text); cursor: pointer; text-align: start;
   }
-
-  .app-shell > .topbar .topbar-mobile-actions > .topbar-theme-icon-button {
-    order: 2;
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger:focus-visible {
+    outline: 2px solid var(--border-focus); outline-offset: 2px;
   }
-
-  body .app-shell > .topbar .topbar-controls > #globalKioskToggle,
-  body .app-shell > .topbar .topbar-controls > #authAccountBar {
-    display: none;
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon {
+    display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; color: var(--color-primary);
   }
-
-  .app-shell > .topbar #branchContextShell[hidden] {
-    display: none;
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon svg { width: 20px; height: 20px; }
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-copy {
+    display: grid; min-width: 0; flex: 1 1 auto; gap: 1px;
   }
-
-  .app-shell > .topbar .topbar-controls > #branchContextShell {
-    position: relative;
-    inset: auto;
-    display: grid;
-    box-sizing: border-box;
-    width: 100%;
-    max-width: none;
-    min-width: 0;
-    min-height: 44px;
-    grid-row: 2;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: center;
-    gap: 0;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    transform: none;
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-copy > span {
+    overflow: hidden; font-size: var(--font-xs); line-height: 1.3;
+    text-overflow: ellipsis; white-space: nowrap;
   }
-
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-copy > span + span { color: var(--sidebar-text-muted); }
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger > .branch-context-trigger-chevron {
+    width: 7px; height: 7px; flex: 0 0 7px;
+  }
+  .app-shell > .topbar #branchContextShell .branch-context-fields {
+    position: absolute; z-index: var(--z-dropdown, 1000);
+    inset-block-start: calc(100% + var(--space-2)); inset-inline-start: 0;
+    display: none; width: min(320px, 78vw); max-width: calc(100vw - 24px); min-width: 0; gap: var(--space-3);
+    padding: var(--space-3); border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-lg);
+  }
+  .app-shell > .topbar #branchContextShell[data-context-open="true"] .branch-context-fields { display: grid; }
   .app-shell > .topbar #branchContextShell .branch-context-kicker,
   .app-shell > .topbar #branchContextShell .branch-context-divider,
-  .app-shell > .topbar #branchContextShell .branch-context-status {
-    display: none;
-  }
-
+  .app-shell > .topbar #branchContextShell .branch-context-status { display: none; }
   .app-shell > .topbar #branchContextShell .branch-context-field {
-    position: relative;
-    display: flex;
-    box-sizing: border-box;
-    width: auto;
-    max-width: none;
-    min-width: 0;
-    min-height: 44px;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;
-    padding-inline: 4px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    transform: none;
-    transition: background-color var(--transition-fast), color var(--transition-fast);
+    display: grid; min-width: 0; gap: var(--space-1); padding: 0;
   }
-
-  body .app-shell > .topbar #branchContextShell .branch-context-field + .branch-context-field[data-context-field="section"] {
-    border-inline-start: 0;
-  }
-
-  .app-shell > .topbar #branchContextShell [data-context-field="section"]::before {
-    position: absolute;
-    inset-block: 10px;
-    inset-inline-start: 0;
-    width: 1px;
-    background: var(--sidebar-divider);
-    content: "";
-  }
-
-  .app-shell > .topbar #branchContextShell .branch-context-field:hover,
-  .app-shell > .topbar #branchContextShell .branch-context-field:focus-within,
-  .app-shell > .topbar #branchContextShell .branch-context-field.is-open {
-    background: var(--sidebar-hover-bg);
-    transform: none;
-  }
-
-  .app-shell > .topbar #branchContextShell .branch-context-field-icon {
-    display: grid;
-    box-sizing: border-box;
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
-    place-items: center;
-  }
-
-  .app-shell > .topbar #branchContextShell .branch-context-field-icon > svg {
-    display: block;
-    width: 20px;
-    height: 20px;
-  }
-
   .app-shell > .topbar #branchContextShell .branch-context-field-copy {
-    display: flex;
-    min-width: 0;
-    flex: 1 1 auto;
-    align-items: center;
-    gap: 0;
+    display: grid; min-width: 0; gap: var(--space-1);
   }
-
   .app-shell > .topbar #branchContextShell .branch-context-field-copy > small {
-    display: none;
+    display: block; color: var(--color-text-muted); font-size: var(--font-xs);
   }
-
-  .app-shell > .topbar #branchContextShell .branch-context-field-copy select {
-    position: absolute;
-    width: 1px;
-    min-width: 1px;
-    max-width: 1px;
-    height: 1px;
-    min-height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-
+  .app-shell > .topbar #branchContextShell .branch-context-field-icon { display: none; }
   .app-shell > .topbar #branchContextShell .branch-context-trigger {
-    display: flex;
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    max-width: none;
-    min-height: 44px;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px;
-    padding: 0;
-    color: var(--sidebar-text);
-    font-size: var(--font-sm);
-    text-align: start;
-    white-space: nowrap;
+    min-height: 44px; padding-inline: var(--space-3); border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md); background: var(--color-surface);
   }
-
-  .app-shell > .topbar #branchContextShell .branch-context-trigger > [data-context-value] {
-    display: block;
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    unicode-bidi: plaintext;
-    white-space: nowrap;
-  }
-
-  .app-shell > .topbar #branchContextShell .branch-context-trigger-chevron {
-    width: 7px;
-    height: 7px;
-    flex: 0 0 7px;
-  }
-
   .app-shell > .topbar #branchContextShell .branch-context-menu {
-    z-index: var(--z-dropdown, 1000);
-    inset-block-start: calc(100% + 4px);
-    width: max-content;
-    min-width: min(100%, 160px);
-    max-width: min(86vw, 300px);
+    inset-block-start: calc(100% + var(--space-1)); width: 100%; max-width: 100%;
   }
+  .app-shell > .topbar .topbar-controls > #globalKioskToggle,
+  .app-shell > .topbar .topbar-controls > #authAccountBar { display: none; }
+}
+
+@media (max-width: 374px) {
+  .app-shell > .topbar .topbar-mobile-row { gap: var(--space-1); }
+  .app-shell > .topbar .topbar-mobile-actions { gap: var(--space-1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell > .topbar .mobile-topbar-action,
-  .app-shell > .topbar #branchContextShell .branch-context-field {
-    transition: none;
-  }
+  .app-shell > .topbar .topbar-mobile-row *,
+  .app-shell > .topbar .topbar-more-menu * { transition: none; }
 }

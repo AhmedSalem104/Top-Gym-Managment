@@ -4739,6 +4739,7 @@
             'shell.context': 'سياق العمل',
             'shell.context.subtitle': 'الفرع والقسم',
             'shell.menu': 'فتح القائمة',
+            'shell.more': 'المزيد',
             'shell.addMember': 'إضافة مشترك',
             'shell.pricing': 'الأسعار',
             'shell.refresh': 'تحديث البيانات',
@@ -6956,6 +6957,7 @@
             'shell.context': 'Workspace context',
             'shell.context.subtitle': 'Branch and section',
             'shell.menu': 'Open navigation',
+            'shell.more': 'More',
             'shell.addMember': 'Add member',
             'shell.pricing': 'Pricing',
             'shell.refresh': 'Refresh data',
@@ -8779,7 +8781,7 @@
     function installLanguageButton() {
         const loginPage = document.body?.dataset.authEntry === 'login';
         const authenticated = document.body?.dataset.topGymAuthenticated === 'true';
-        const topbarActions = document.querySelector('.topbar-mobile-actions');
+        const topbarActions = document.querySelector('.topbar-more-items') || document.querySelector('.topbar-mobile-actions');
         const rootLoginActions = document.querySelector('#authScreen[data-auth-stage="login"] .auth-reference-controls[data-i18n-switcher]');
         const genericSwitcher = document.querySelector('[data-i18n-switcher]');
         const actions = loginPage

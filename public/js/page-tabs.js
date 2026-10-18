@@ -453,6 +453,32 @@
         setOpen(false, false);
     }
 
+    function initTopbarMoreMenu() {
+        const menu = document.querySelector('.topbar-more-menu');
+        const trigger = menu?.querySelector('.topbar-more-trigger');
+        if (!menu || !trigger) return;
+        const desktop = window.matchMedia('(min-width: 1024px)');
+        const close = (restoreFocus = false) => {
+            if (!menu.open) return;
+            menu.open = false;
+            if (restoreFocus) trigger.focus({ preventScroll: true });
+        };
+        menu.addEventListener('click', (event) => {
+            if (!desktop.matches && event.target.closest('.topbar-more-items button')) close(true);
+        });
+        document.addEventListener('pointerdown', (event) => {
+            if (!desktop.matches && menu.open && !menu.contains(event.target)) close(false);
+        });
+        document.addEventListener('keydown', (event) => {
+            if (desktop.matches || event.key !== 'Escape' || !menu.open) return;
+            event.preventDefault();
+            close(true);
+        });
+        const syncMode = () => { menu.open = desktop.matches; };
+        desktop.addEventListener?.('change', syncMode);
+        syncMode();
+    }
+
     function syncMobileNavigationContext(name) {
         const active = document.querySelector(`[data-page-tab="${name}"]`);
         const label = active?.querySelector('span:not(.visually-hidden)')?.textContent?.trim();
@@ -694,6 +720,7 @@
         initDashboardViewTabs();
         initSidebarPin();
         initMobileNavigation();
+        initTopbarMoreMenu();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');
         });

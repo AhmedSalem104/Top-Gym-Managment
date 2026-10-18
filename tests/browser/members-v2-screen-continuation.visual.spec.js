@@ -545,6 +545,8 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 const dialogBounds = await dialog.boundingBox();
                 expect(dialogBounds.x, `filter dialog left ${width}px ${theme}`).toBeGreaterThanOrEqual(-1);
                 expect(dialogBounds.x + dialogBounds.width, `filter dialog right ${width}px ${theme}`).toBeLessThanOrEqual(width + 1);
+                expect(dialogBounds.height, `mobile filter sheet should size to its fields at ${width}px`).toBeLessThan(await page.evaluate(() => innerHeight * 0.8));
+                expect(dialogBounds.y + dialogBounds.height, `filter sheet should respect the lower viewport edge at ${width}px`).toBeLessThanOrEqual(await page.evaluate(() => innerHeight + 1));
                 await page.screenshot({ path: path.join(OUTPUT, `members-filters-${width}-${theme}-${locale}.png`) });
                 await page.keyboard.press('Escape');
                 await expect(dialog).toBeHidden();

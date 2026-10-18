@@ -474,8 +474,7 @@
         document.body.dataset.topGymFinanceVisible = String(permissions.hasPermission(user, 'finance.read'));
         const accountBar = $('authAccountBar');
         const pageTabs = $('pageTabs');
-        const topbarControls = document.querySelector('.topbar-controls');
-        const accountHost = topbarControls || pageTabs;
+        const accountHost = pageTabs;
         if (accountBar && accountHost && accountBar.parentElement !== accountHost) accountHost.appendChild(accountBar);
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             const feature = permissions.featureForTab(button.dataset.pageTab);
