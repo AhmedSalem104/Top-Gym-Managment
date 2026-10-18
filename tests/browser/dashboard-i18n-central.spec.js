@@ -82,6 +82,9 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
         await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
         await page.evaluate(() => window.topGymAppUsable);
+        await expect(page.locator('#dashboardViewTabs')).toBeVisible();
+        await expect(page.locator('#dashboardOverviewTab')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.locator('#dashboardOverviewPanel')).toBeVisible();
         await expect(page.locator('#dashboardSection .dashboard-overview-shell')).toBeVisible();
         await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
         await expect(page.locator('#dashboardSection .dashboard-overview-card')).toHaveCount(5);
@@ -91,6 +94,24 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
         await expect(page.locator('[data-dashboard-overview-plan]')).not.toHaveText('—');
         await expect(page.locator('#alertsList .alert-card')).toHaveCount(3);
         await expect(page.locator('#dashboardDayPassTableWrap .day-pass-empty')).toHaveText('لا توجد حصص مسجلة خلال هذا الشهر.');
+        await expect(page.locator('#dashboardAnalyticsTab')).toBeVisible();
+        await page.locator('#dashboardOverviewTab').focus();
+        await page.keyboard.press('ArrowLeft');
+        await expect(page.locator('#dashboardAnalyticsTab')).toHaveAttribute('aria-selected', 'true');
+        await page.keyboard.press('ArrowRight');
+        await expect(page.locator('#dashboardOverviewTab')).toHaveAttribute('aria-selected', 'true');
+        const dashboardHash = await page.evaluate(() => location.hash);
+        await page.locator('#dashboardAnalyticsTab').click();
+        await expect(page.locator('#dashboardAnalyticsTab')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.locator('#dashboardAnalyticsPanel')).toBeVisible();
+        await expect(page.locator('#dashboardAnalytics')).toBeVisible();
+        await expect(page.locator('#dashboardAnalyticsTitle')).toBeVisible();
+        await expect(page.locator('#dashboardOverviewPanel')).toBeHidden();
+        await page.locator('#dashboardOverviewTab').click();
+        await expect(page.locator('#dashboardOverviewPanel')).toBeVisible();
+        await expect(page.locator('#alertsSection')).toBeVisible();
+        await expect(page.locator('#dashboardDayPassCard')).toBeVisible();
+        expect(await page.evaluate(() => location.hash)).toBe(dashboardHash);
         await expect(page.locator('#statTotal')).toHaveText('١٢٥');
         await expect(page.locator('#alertsList .alert-card-detail').first()).toContainText('انتهت في');
         await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
@@ -108,6 +129,8 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
                     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
                 }
                 await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+                await expect(page.locator('#dashboardOverviewTab')).toContainText('نظرة عامة');
+                await expect(page.locator('#dashboardAnalyticsTab')).toContainText('التحليلات');
                 const rtlDirection = await page.evaluate(() => ({
                     hero: getComputedStyle(document.querySelector('#dashboardSection .dashboard-overview-cards')).direction,
                     overview: getComputedStyle(document.querySelector('#dashboardSection .overview-grid')).direction
@@ -128,6 +151,8 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
                 await page.locator('.topbar-language-toggle').click();
                 await expect(page.locator('html')).toHaveAttribute('lang', 'en');
                 await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+                await expect(page.locator('#dashboardOverviewTab')).toContainText('Overview');
+                await expect(page.locator('#dashboardAnalyticsTab')).toContainText('Analytics');
                 const ltrDirection = await page.evaluate(() => {
                     const input = document.querySelector('#alertsSearch');
                     const icon = input?.closest('.alerts-search-field')?.querySelector('svg');

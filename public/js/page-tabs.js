@@ -73,6 +73,55 @@
         }
     }
 
+    function initDashboardViewTabs() {
+        const tablist = document.getElementById('dashboardViewTabs');
+        const panelsRoot = document.getElementById('dashboardViewPanels');
+        if (!tablist || !panelsRoot) return;
+
+        const tabs = [...tablist.querySelectorAll('[data-dashboard-view-tab]')];
+        const panels = [...panelsRoot.querySelectorAll('[data-dashboard-view-panel]')];
+        const activate = (name, moveFocus = false) => {
+            const selected = tabs.find((tab) => tab.dataset.dashboardViewTab === name && !tab.hidden);
+            if (!selected) return;
+
+            tabs.forEach((tab) => {
+                const isSelected = tab === selected;
+                tab.setAttribute('aria-selected', String(isSelected));
+                tab.tabIndex = isSelected ? 0 : -1;
+            });
+            panels.forEach((panel) => {
+                const isSelected = panel.dataset.dashboardViewPanel === name;
+                panel.hidden = !isSelected;
+                panel.setAttribute('aria-hidden', String(!isSelected));
+                panel.toggleAttribute('inert', !isSelected);
+            });
+            if (moveFocus) selected.focus({ preventScroll: true });
+        };
+
+        tablist.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-dashboard-view-tab]');
+            if (!tab || !tablist.contains(tab) || tab.hidden) return;
+            activate(tab.dataset.dashboardViewTab);
+        });
+        tablist.addEventListener('keydown', (event) => {
+            const current = event.target.closest('[data-dashboard-view-tab]');
+            if (!current) return;
+            const available = tabs.filter((tab) => !tab.hidden && tab.getAttribute('aria-disabled') !== 'true');
+            if (!available.length) return;
+            const direction = document.documentElement.dir === 'rtl' ? -1 : 1;
+            let index = available.indexOf(current);
+            if (event.key === 'Home') index = 0;
+            else if (event.key === 'End') index = available.length - 1;
+            else if (event.key === 'ArrowRight') index = (index + direction + available.length) % available.length;
+            else if (event.key === 'ArrowLeft') index = (index - direction + available.length) % available.length;
+            else return;
+            event.preventDefault();
+            activate(available[index].dataset.dashboardViewTab, true);
+        });
+
+        activate('overview');
+    }
+
     function syncSidebarTooltips(rail) {
         if (!rail) return;
 
@@ -457,6 +506,8 @@
         const memberSubscriptionRequestsSection = document.getElementById('memberSubscriptionRequestsSection');
         const portalAnalyticsSection = document.getElementById('portalAnalyticsSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
+        const dashboardViewTabs = document.getElementById('dashboardViewTabs');
+        const dashboardViewPanels = document.getElementById('dashboardViewPanels');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
         const reportsSection = document.getElementById('reportsSection');
         const feedbackSection = document.getElementById('feedbackSection');
@@ -495,6 +546,8 @@
         setHidden(dashboardOverviewShell, !isDashboard);
         setHidden(overview, !isDashboard);
         setHidden(dashboardInitialSkeleton, !isDashboard);
+        setHidden(dashboardViewTabs, !isDashboard);
+        setHidden(dashboardViewPanels, !isDashboard);
         dashboardInitialSkeleton?.setAttribute('aria-hidden', String(!isDashboard));
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
@@ -638,6 +691,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         ensureBackupHistoryTab();
         ensureNavigationSections();
+        initDashboardViewTabs();
         initSidebarPin();
         initMobileNavigation();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {

@@ -91,6 +91,7 @@ One primitive has one visual owner. A feature may compose primitives but may not
 - **Dialogs/alerts/toasts:** 10px dialog radius, responsive bounds, keyboard/focus/escape lifecycle preserved. The member-details dialog keeps a viewport-relative frame with its profile header and tab navigation fixed; only the active tab panel scrolls, and selecting a tab returns that panel to its start. Toast position follows locale direction, but delivery queue/timing/dismiss semantics are unchanged unless explicitly approved.
 - **Badges:** semantic soft colors, 6px radius and 22/26/30px sizes. Never alter business status meanings.
 - **Tabs/segmented controls:** preserve route, selected value, lazy loading and event behavior. Mobile may adapt width/scroll without hiding destinations.
+- **Gym Dashboard views:** the Dashboard page may use the canonical inset-surface tab variant for local views. Its default Overview view contains the existing overview cards, alerts and daily passes; Analytics remains a separate owner-authorized view. These local tabs must not alter the global page-navigation routes or permission checks.
 - **Navigation:** preserve item inventory, routes, permission visibility, group membership semantics, branch context and deep links. Collapsed/mobile forms retain access to all authorized destinations.
 
 ## 5. Responsive and accessibility rules

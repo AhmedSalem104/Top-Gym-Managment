@@ -170,6 +170,26 @@ test('Dashboard overview cards are owned by the dashboard page and use live data
     assert.doesNotMatch(app, /parseInt\([^)]*dashboard-overview|Number\([^)]*textContent/u);
 });
 
+test('Gym Dashboard local views use canonical tabs and stay separate from global page routes', () => {
+    const tabsCss = read('public/css/components/tabs.css');
+    const dashboardCss = read('public/css/pages/dashboard.css');
+    const theme = read('public/css/theme.css');
+    const visual = read('public/css/components/visual-redesign.css');
+    const html = read('public/index.html');
+    const pageTabs = read('public/js/page-tabs.js');
+
+    assert.match(tabsCss, /\.tabs--surface\s*\{[^}]*var\(--color-border-soft\)[^}]*var\(--color-surface-muted\)/u);
+    assert.match(tabsCss, /\.tabs--surface[^{}]*\[role="tab"\]\[aria-selected="true"\]/u);
+    assert.match(dashboardCss, /\.dashboard-view-tabs\s*\{/u);
+    assert.match(html, /id="dashboardViewTabs"[\s\S]*?id="dashboardOverviewTab"[\s\S]*?id="dashboardAnalyticsTab"/u);
+    assert.match(html, /id="dashboardOverviewPanel"[\s\S]*?class="dashboard-overview-shell"[\s\S]*?class="overview-grid"[\s\S]*?id="alertsSection"[\s\S]*?id="dashboardDayPassCard"/u);
+    assert.match(html, /id="dashboardAnalyticsTab"[^>]*data-owner-only/u);
+    assert.match(pageTabs, /setHidden\(dashboardViewTabs, !isDashboard\)/u);
+    assert.match(pageTabs, /initDashboardViewTabs\(\)/u);
+    assert.doesNotMatch(theme, /\.dashboard-view-tabs|\.tabs--surface/u);
+    assert.doesNotMatch(visual, /\.dashboard-view-tabs|\.tabs--surface/u);
+});
+
 test('Branch Management presentation is feature-owned, not part of the visual polish layer', () => {
     const branches = read('public/css/pages/branches.css');
     const branchContext = read('public/css/components/branch-context.css');
