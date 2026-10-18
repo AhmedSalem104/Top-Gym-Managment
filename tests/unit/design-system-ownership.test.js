@@ -656,7 +656,7 @@ test('Members table composition is feature-owned while generic table behavior st
     const visual = read('public/css/components/visual-redesign.css');
     const tables = read('public/css/components/tables.css');
 
-    assert.match(members, /\.members-table:not\(\.table-card-layout\)\s*\{[^}]*min-width:\s*1240px[^}]*table-layout:\s*fixed/u);
+    assert.match(members, /\.members-table:not\(\.table-card-layout\)\s*\{[^}]*min-width:\s*1320px[^}]*table-layout:\s*fixed/u);
     assert.match(tables, /table,\s*\.data-table,\s*\.members-table,\s*\.history-table\s*\{[^}]*table-layout:\s*auto/u);
     assert.doesNotMatch(visual, /\.members-table(?:\b|\s|:|#)|#membersSection\s+\.members-table/u);
 });

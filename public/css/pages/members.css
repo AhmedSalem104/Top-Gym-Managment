@@ -467,16 +467,12 @@ body #membersSection .members-toolbar-copy { display: none; }
    wrapper and horizontal-overflow behavior remain owned by Tables. */
 @media (min-width: 768px) {
   #membersSection .members-table {
-    min-width: 1240px;
+    min-width: 1320px;
   }
 
-  #membersSection .members-table th:nth-child(6),
-  #membersSection .members-table td:nth-child(6) {
-    min-width: 168px;
-  }
-
-  #membersSection .members-table td:nth-child(6) {
-    overflow: hidden;
+  #membersSection .members-table th:nth-child(4),
+  #membersSection .members-table td:nth-child(4) {
+    min-width: 190px;
   }
 }
 
@@ -496,7 +492,7 @@ body #membersSection .members-toolbar-copy { display: none; }
 @media (min-width: 768px) {
   .members-table:not(.table-card-layout) {
     width: 100%;
-    min-width: 1240px;
+    min-width: 1320px;
     table-layout: fixed;
   }
 
@@ -508,22 +504,20 @@ body #membersSection .members-toolbar-copy { display: none; }
   }
 
   .members-table:not(.table-card-layout) th:nth-child(1),
-  .members-table:not(.table-card-layout) td:nth-child(1) { width: 25%; }
+  .members-table:not(.table-card-layout) td:nth-child(1) { width: 22%; }
   .members-table:not(.table-card-layout) th:nth-child(2),
-  .members-table:not(.table-card-layout) td:nth-child(2) { width: 12%; }
+  .members-table:not(.table-card-layout) td:nth-child(2) { width: 29%; }
   .members-table:not(.table-card-layout) th:nth-child(3),
-  .members-table:not(.table-card-layout) td:nth-child(3) { width: 9%; }
+  .members-table:not(.table-card-layout) td:nth-child(3) { width: 12%; }
   .members-table:not(.table-card-layout) th:nth-child(4),
-  .members-table:not(.table-card-layout) td:nth-child(4) { width: 12%; }
+  .members-table:not(.table-card-layout) td:nth-child(4) { width: 16%; }
   .members-table:not(.table-card-layout) th:nth-child(5),
-  .members-table:not(.table-card-layout) td:nth-child(5) { width: 8%; }
+  .members-table:not(.table-card-layout) td:nth-child(5) { width: 10%; }
   .members-table:not(.table-card-layout) th:nth-child(6),
-  .members-table:not(.table-card-layout) td:nth-child(6) { width: 14%; }
-  .members-table:not(.table-card-layout) th:nth-child(7),
-  .members-table:not(.table-card-layout) td:nth-child(7) { width: 20%; min-width: 236px; }
+  .members-table:not(.table-card-layout) td:nth-child(6) { width: 11%; min-width: 236px; }
 
   .members-table:not(.table-card-layout) th:last-child { text-align: center; }
-  .members-table:not(.table-card-layout) td:first-child { min-width: 330px; }
+  .members-table:not(.table-card-layout) td:first-child { min-width: 280px; }
 
   .members-table:not(.table-card-layout) .member-identity {
     display: flex;
@@ -608,7 +602,30 @@ body #membersSection .members-toolbar-copy { display: none; }
     min-width: 74px;
     justify-content: center;
   }
+
+  .members-table:not(.table-card-layout) .member-status-detail {
+    display: block;
+    max-width: 100%;
+    margin-block-start: var(--space-1);
+    white-space: normal;
+  }
 }
+
+.member-last-subscription { display: grid; min-width: 0; gap: var(--space-2); }
+.member-subscription-title { min-width: 0; color: var(--color-text); font-size: var(--font-md); font-weight: var(--weight-semibold); line-height: 1.4; white-space: normal; }
+.member-subscription-dates { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.membership-date { display: grid; min-width: 0; gap: 3px; }
+.membership-date + .membership-date { padding-inline-start: var(--space-3); border-inline-start: 1px solid var(--border-secondary); }
+.membership-date small { color: var(--color-text-muted); font-size: var(--font-xs); line-height: 1.3; }
+.membership-date time { color: var(--color-text); font-size: var(--font-sm); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+.member-account-values { display: grid; min-width: 0; gap: var(--space-1); }
+.member-account-values > span { display: flex; min-width: 0; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+.member-account-values small { color: var(--color-text-muted); font-size: var(--font-xs); }
+.member-account-values strong { color: var(--color-text); font-size: var(--font-sm); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+.member-account-values .has-debt strong { color: var(--color-danger); }
+.freeze-usage { display: grid; min-width: 0; gap: 3px; }
+.freeze-usage > strong { color: var(--color-text); font-size: var(--font-sm); font-variant-numeric: tabular-nums; line-height: 1.35; overflow-wrap: anywhere; white-space: normal; }
+.freeze-usage > span { color: var(--color-text-muted); font-size: var(--font-xs); white-space: normal; }
 
 .members-table .table-actions .icon-action[data-action="freeze"],
 .members-list .icon-action[data-action="freeze"] {
@@ -1161,11 +1178,13 @@ body .member-details-more-menu.is-floating .ui-icon {
 
 .members-mobile-card-head .member-card-copy { min-width: 0; }
 .members-mobile-card-head .members-mobile-name {
+  display: -webkit-box;
   overflow: hidden;
   font-size: var(--font-sm);
   line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 .members-mobile-card-head .table-member-phone {
   width: fit-content;
@@ -1208,15 +1227,20 @@ body .member-details-more-menu.is-floating .ui-icon {
 .members-mobile-details dd .has-debt { color: var(--color-danger); font-weight: var(--weight-semibold); }
 .members-mobile-details dd .is-settled { color: var(--color-success); }
 .members-mobile-details .members-mobile-balance {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  border-top: 1px solid var(--border-secondary);
-  padding-top: var(--space-2);
+  min-width: 0;
 }
-.members-mobile-details .members-mobile-balance dd { display: block; }
+.members-mobile-details .members-mobile-subscription { grid-column: 1 / -1; }
+.members-mobile-details .members-mobile-subscription dd { gap: var(--space-2); }
+.members-mobile-subscription-title { color: var(--color-text); font-size: var(--font-md); line-height: 1.4; }
+.members-mobile-date-grid { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.members-mobile-expiry-detail { color: var(--color-text-muted); font-size: var(--font-xs); font-weight: var(--weight-regular); }
+.members-mobile-account-values { display: grid; min-width: 0; gap: var(--space-2); }
+.members-mobile-account-values > span { display: grid; min-width: 0; gap: 2px; }
+.members-mobile-account-values strong { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.members-mobile-account-values .has-debt strong { color: var(--color-danger); }
+.members-mobile-account-values .is-settled strong { color: var(--color-success); }
+.members-mobile-details .members-mobile-freeze dd { gap: 3px; }
+.members-mobile-freeze dd > small { white-space: normal; }
 
 .members-mobile-actions .table-actions {
   display: flex;
