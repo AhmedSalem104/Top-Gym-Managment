@@ -78,6 +78,10 @@ The active owner map must be verified against consumer tests before old CSS is r
 
 PDF generation that moves a standalone `.print-sheet` into the live document must also load the canonical `print.css` into the capture document and apply brand variables to a scoped PDF host. Keep html2canvas capture coordinates at the viewport origin (`scrollX`/`scrollY` zero); do not capture a far-offscreen staging node. Inspect actual rendered pages for clipping and orphaned footers before accepting a PDF change.
 
+### Coaching nutrition and workout print variant
+
+The member diet-plan and workout-program documents use a dedicated, narrowly scoped cream-and-olive print variant in `public/css/print.css` (`.coaching-plan-print`). It is intentionally independent of the app's Azure primary color and must not affect receipts, membership documents, or other reports. The canonical coaching print builder in `public/js/integrations/print-enhancements.js` lays meals/exercises out as alternating timeline entries with sequence markers, original associated images where present, all source item metrics, and a trailing plan summary. Gym name/logo, member/program data, locale and dates stay dynamic. Missing image associations use the neutral media treatment rather than borrowing a different food/exercise image. Use native A4 portrait print rendering for vector text and page numbering; inspect every PDF page for pagination, image fidelity, readable Arabic, and retained source fields. The mobile preview changes to a single timeline column without changing sequence or content.
+
 One primitive has one visual owner. A feature may compose primitives but may not redefine their shared geometry/state. Domain-specific layouts are permitted when they express unique information structure rather than a second visual system.
 
 ## 4. Component behavior contracts

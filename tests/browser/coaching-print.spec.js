@@ -29,7 +29,11 @@ const workout = {
         nameEn: 'Day One - Lower Body',
         notes: 'ملاحظة طويلة لاختبار ظهور تعليمات المدرب في الصفحة المطبوعة.',
         notesEn: 'A long note used to verify coach instructions in the printed document.',
-        exercises: [{ exerciseId: 17701, sets: 3, repsMin: 8, repsMax: 12, weightKg: 40, restSeconds: 90, rpe: 8, notes: 'حافظ على مدى حركة كامل.', notesEn: 'Use a full range of motion.' }]
+        exercises: [
+            { exerciseId: 17701, nameAr: 'سكوات بالبار', nameEn: 'Barbell Squat', sets: 3, repsMin: 8, repsMax: 12, weightKg: 40, restSeconds: 90, rpe: 8, tempo: '3-1-1', supersetGroupId: 'A', notes: 'حافظ على مدى حركة كامل.', notesEn: 'Use a full range of motion.' },
+            { exerciseId: 17701, nameAr: 'سكوات بإيقاع متحكم', nameEn: 'Controlled Tempo Squat', sets: 4, repsMin: 6, repsMax: 8, weightKg: 45, restSeconds: 120, rir: 2, tempo: '4-0-2' },
+            { exerciseId: 17701, nameAr: 'سكوات توقف', nameEn: 'Paused Squat', sets: 3, repsMin: 5, repsMax: 5, weightKg: 50, restSeconds: 150, rpe: 9, supersetGroupId: 'A' }
+        ]
     }]
 };
 
@@ -48,13 +52,11 @@ const diet = {
     targetFats: 70,
     startDate: '2026-10-01',
     endDate: '2026-10-31',
-    meals: [{
-        name: 'الإفطار',
-        nameEn: 'Breakfast',
-        mealTime: '08:00',
-        notesEn: 'Pre-workout meal.',
-        items: [{ foodId: 37701, nameAr: 'شوفان بالحليب', nameEn: 'Oats with milk', assignedQuantity: 80, servingUnit: 'جرام', calories: 310, protein: 13, carbs: 52, fats: 6, notes: 'وجبة قبل التمرين.', notesEn: 'A meal before training.' }]
-    }]
+    meals: [
+        { name: 'الإفطار', nameEn: 'Breakfast', mealTime: '08:00', notesEn: 'Pre-workout meal.', items: [{ foodId: 37701, nameAr: 'شوفان بالحليب', nameEn: 'Oats with milk', assignedQuantity: 80, servingUnit: 'جرام', calories: 310, protein: 13, carbs: 52, fats: 6, notes: 'وجبة قبل التمرين.', notesEn: 'A meal before training.' }] },
+        { name: 'الغداء', nameEn: 'Lunch', items: [{ foodId: 37702, nameAr: 'أرز وخضار', nameEn: 'Rice and vegetables', assignedQuantity: 160, servingUnit: 'جرام', calories: 420, protein: 18, carbs: 72, fats: 8 }] },
+        { name: 'العشاء', nameEn: 'Dinner', mealTime: '19:30', items: [{ foodId: 37703, nameAr: 'دجاج مشوي', nameEn: 'Grilled chicken', assignedQuantity: 140, servingUnit: 'جرام', calories: 350, protein: 36, carbs: 18, fats: 12 }] }
+    ]
 };
 
 const overview = {
@@ -72,6 +74,10 @@ const dietDraftCatalog = {
 };
 
 async function makePdfFromPrintPopup(page, popup, testInfo, fileBase, expectedLocale = 'ar') {
+    const evidenceDir = process.env.COACHING_PRINT_EVIDENCE_DIR
+        ? path.resolve(process.env.COACHING_PRINT_EVIDENCE_DIR)
+        : path.join(__dirname, '../../qa/reports/logicfit-v2-print-coaching');
+    await fs.promises.mkdir(evidenceDir, { recursive: true });
     await expect(popup.locator('main.print-sheet')).toBeVisible();
     await expect(popup.locator('link[data-top-gym-print-styles]')).toHaveAttribute('href', /\/css\/print\.css\?v=[^&]+$/);
     await popup.addStyleTag({ content: fs.readFileSync(path.join(__dirname, '../../public/css/print.css'), 'utf8') });
@@ -80,7 +86,7 @@ async function makePdfFromPrintPopup(page, popup, testInfo, fileBase, expectedLo
         language: document.documentElement.lang,
         width: Math.round(sheet.getBoundingClientRect().width),
         scrollWidth: sheet.scrollWidth,
-        sectionCount: sheet.querySelectorAll('.print-section').length,
+        sectionCount: sheet.querySelectorAll('.print-section, .coaching-plan-card').length,
         overviewGridAlignment: sheet.querySelector('.print-system-overview-grid')
             ? getComputedStyle(sheet.querySelector('.print-system-overview-grid')).alignItems
             : null,
@@ -99,6 +105,7 @@ async function makePdfFromPrintPopup(page, popup, testInfo, fileBase, expectedLo
     if (layout.overviewGridAlignment !== null) expect(layout.overviewGridAlignment).toBe('start');
 
     const printable = await page.context().newPage();
+    await printable.setViewportSize({ width: 794, height: 1123 });
     const markup = await popup.evaluate(() => `<!doctype html><html lang="${document.documentElement.lang}" dir="${document.documentElement.dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>${document.querySelector('main.print-sheet').outerHTML}</body></html>`);
     await printable.setContent(markup, { waitUntil: 'domcontentloaded' });
     await printable.addStyleTag({ content: fs.readFileSync(path.join(__dirname, '../../public/css/print.css'), 'utf8') });
@@ -112,14 +119,27 @@ async function makePdfFromPrintPopup(page, popup, testInfo, fileBase, expectedLo
     const pageCount = (pdf.toString('latin1').match(/\/Type\s*\/Page\b/gu) || []).length;
     expect(pageCount).toBeGreaterThanOrEqual(1);
     await printable.screenshot({ path: screenshotPath, fullPage: true });
-    const evidenceDir = process.env.COACHING_PRINT_EVIDENCE_DIR
-        ? path.resolve(process.env.COACHING_PRINT_EVIDENCE_DIR)
-        : path.join(__dirname, '../../qa/reports/logicfit-v2-print-coaching');
-    await fs.promises.mkdir(evidenceDir, { recursive: true });
     await Promise.all([
         fs.promises.copyFile(pdfPath, path.join(evidenceDir, `${fileBase}.pdf`)),
         fs.promises.copyFile(screenshotPath, path.join(evidenceDir, `${fileBase}.png`))
     ]);
+    if (process.env.COACHING_PRINT_DELIVERABLES === '1' && expectedLocale === 'ar'
+        && ['coaching-workout-print-ar', 'coaching-diet-print-ar'].includes(fileBase)) {
+        const outputDir = path.join(__dirname, '../../output/pdf');
+        const previewDir = path.join(__dirname, '../../qa/artifacts/coaching-print-reference-20261018');
+        await fs.promises.mkdir(outputDir, { recursive: true });
+        await fs.promises.mkdir(previewDir, { recursive: true });
+        const stem = fileBase.includes('workout') ? 'logicfit-training-program' : 'logicfit-nutrition-plan';
+        await fs.promises.copyFile(pdfPath, path.join(outputDir, `${stem}.pdf`));
+        await printable.screenshot({ path: path.join(previewDir, `${stem}-print-preview.png`), fullPage: true });
+        const mobile = await page.context().newPage();
+        await mobile.setViewportSize({ width: 390, height: 844 });
+        await mobile.setContent(markup, { waitUntil: 'domcontentloaded' });
+        await mobile.addStyleTag({ content: fs.readFileSync(path.join(__dirname, '../../public/css/print.css'), 'utf8') });
+        await mobile.evaluate(() => document.fonts?.ready);
+        await mobile.screenshot({ path: path.join(previewDir, `${stem}-mobile-preview.png`), fullPage: true });
+        await mobile.close();
+    }
     await printable.close();
     await popup.close();
     return { layout, pdfBytes: pdf.byteLength, pageCount, pdfPath, screenshotPath };
@@ -159,7 +179,7 @@ test('coaching workout, nutrition plan, client overview, and unsaved drafts prin
         else if (pathname === '/api/saas/entitlements') payload = { tenantStatus: 'active', subscription: { status: 'active', plan: { code: 'qa', name: 'QA' } }, entitlements: { tenantType: 'gym', features: { coaching: true }, featureCatalog: [{ key: 'coaching', tenantTypes: ['gym'] }] } };
         else if (pathname === '/api/branding') payload = { branding: { identity: { brandName: 'Logic Fit QA' }, assets: {} }, version: 1 };
         else if (pathname === `/api/workoutprograms/${workoutId}`) payload = { program: workout };
-        else if (pathname === `/api/library/exercises/17701`) payload = { item: { id: 17701, nameAr: 'سكوات بالبار', nameEn: 'Barbell Squat', name: 'Barbell Squat', targetMuscleNameAr: 'عضلات الفخذ', targetMuscleNameEn: 'Quadriceps', equipment: 'Barbell', difficulty: 'Intermediate', descriptionAr: 'تمرين مركب للقوة.', instructionsAr: ['حافظ على وضع الظهر.'], instructionsEn: ['Keep a neutral back.'] } };
+        else if (pathname === `/api/library/exercises/17701`) payload = { item: { id: 17701, nameAr: 'سكوات بالبار', nameEn: 'Barbell Squat', name: 'Barbell Squat', targetMuscleNameAr: 'عضلات الفخذ', targetMuscleNameEn: 'Quadriceps', equipment: 'Barbell', difficulty: 'Intermediate', imageAssets: { start: '/assets/exercises/Barbell_Full_Squat/start.webp', end: '/assets/exercises/Barbell_Full_Squat/end.webp' }, descriptionAr: 'تمرين مركب للقوة.', instructionsAr: ['حافظ على وضع الظهر.'], instructionsEn: ['Keep a neutral back.'] } };
         else if (pathname === `/api/dietplans/${dietId}`) payload = { plan: diet };
         else if (pathname === `/api/clients/${clientId}/training-overview`) payload = overview;
         await route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
@@ -171,7 +191,7 @@ test('coaching workout, nutrition plan, client overview, and unsaved drafts prin
     }
     await expect.poll(() => page.evaluate(() => Boolean(window.topGymPrint?.printCoachingSystem))).toBe(true);
     const outputs = {};
-    const library = { exercises: [{ id: 17701, nameAr: 'سكوات بالبار', name: 'Barbell Squat', targetMuscleNameAr: 'عضلات الفخذ', targetMuscleNameEn: 'Quadriceps', equipment: 'Barbell', difficulty: 'Intermediate' }] };
+    const library = { exercises: [{ id: 17701, nameAr: 'سكوات بالبار', name: 'Barbell Squat', targetMuscleNameAr: 'عضلات الفخذ', targetMuscleNameEn: 'Quadriceps', equipment: 'Barbell', difficulty: 'Intermediate', imageAssets: { start: '/assets/exercises/Barbell_Full_Squat/start.webp', end: '/assets/exercises/Barbell_Full_Squat/end.webp' }, instructionsAr: ['حافظ على وضع الظهر.'], instructionsEn: ['Keep a neutral back.'] }] };
     const drafts = {
         workout: { ...workout, id: undefined, name: 'مسودة اختبار برنامج القوة', nameEn: 'Strength Program Draft' },
         diet: { ...diet, id: undefined, name: 'مسودة اختبار التغذية', nameEn: 'Nutrition Plan Draft' }
@@ -201,25 +221,25 @@ test('coaching workout, nutrition plan, client overview, and unsaved drafts prin
 
         const workoutPopup = await openPrint(() => page.evaluate((id) => window.topGymPrint.printCoachingSystem(id, 'workout'), workoutId));
         await assertDocumentLocale(workoutPopup, locale === 'ar' ? 'برنامج تدريب رياضي' : 'Workout program');
-        await expect(workoutPopup.locator('.print-system-routine tbody tr')).toContainText(locale === 'ar' ? 'سكوات بالبار' : 'Barbell Squat');
-        await expect(workoutPopup.locator('.print-system-routine tbody tr')).toContainText(locale === 'ar' ? 'حافظ على مدى حركة كامل' : 'Use a full range of motion.');
+        await expect(workoutPopup.locator('.coaching-plan-card').first()).toContainText(locale === 'ar' ? 'سكوات بالبار' : 'Barbell Squat');
+        await expect(workoutPopup.locator('.coaching-plan-card').first()).toContainText(locale === 'ar' ? 'حافظ على مدى حركة كامل' : 'Use a full range of motion.');
         await expect(workoutPopup.locator('.print-system-document')).toContainText(locale === 'ar' ? 'الحمل التدريبي' : 'Training load');
         outputs[`workout_${suffix}`] = await makePdfFromPrintPopup(page, workoutPopup, testInfo, `coaching-workout-print-${suffix}`, locale);
 
         const workoutDraftPopup = await openPrint(() => page.evaluate(({ draft, client, catalog }) => window.topGymPrint.printCoachingDraft(draft, 'workout', catalog, client), { draft: drafts.workout, client: memberName, catalog: library }));
         await assertDocumentLocale(workoutDraftPopup, locale === 'ar' ? 'مسودة اختبار برنامج القوة' : 'Strength Program Draft');
-        await expect(workoutDraftPopup.locator('.print-system-routine tbody tr')).toContainText(locale === 'ar' ? 'سكوات بالبار' : 'Barbell Squat');
+        await expect(workoutDraftPopup.locator('.coaching-plan-card').first()).toContainText(locale === 'ar' ? 'سكوات بالبار' : 'Barbell Squat');
         outputs[`workoutDraft_${suffix}`] = await makePdfFromPrintPopup(page, workoutDraftPopup, testInfo, `coaching-workout-draft-print-${suffix}`, locale);
 
         const dietPopup = await openPrint(() => page.evaluate((id) => window.topGymPrint.printCoachingSystem(id, 'diet'), dietId));
         await assertDocumentLocale(dietPopup, locale === 'ar' ? 'خطة تغذية رياضية' : 'Nutrition plan');
-        await expect(dietPopup.locator('.print-system-routine tbody tr')).toContainText(locale === 'ar' ? 'شوفان بالحليب' : 'Oats with milk');
-        await expect(dietPopup.locator('.print-system-routine thead')).toContainText(locale === 'ar' ? 'السعرات' : 'Calories');
+        await expect(dietPopup.locator('.coaching-meal-card').first()).toContainText(locale === 'ar' ? 'شوفان بالحليب' : 'Oats with milk');
+        await expect(dietPopup.locator('.coaching-plan-metrics').first()).toContainText(locale === 'ar' ? 'السعرات' : 'Calories');
         outputs[`diet_${suffix}`] = await makePdfFromPrintPopup(page, dietPopup, testInfo, `coaching-diet-print-${suffix}`, locale);
 
         const dietDraftPopup = await openPrint(() => page.evaluate(({ draft, client, catalog }) => window.topGymPrint.printCoachingDraft(draft, 'diet', catalog, client), { draft: drafts.diet, client: memberName, catalog: dietDraftCatalog }));
         await assertDocumentLocale(dietDraftPopup, locale === 'ar' ? 'مسودة اختبار التغذية' : 'Nutrition Plan Draft');
-        await expect(dietDraftPopup.locator('.print-system-routine tbody tr')).toContainText(locale === 'ar' ? 'شوفان بالحليب' : 'Oats with milk');
+        await expect(dietDraftPopup.locator('.coaching-meal-card').first()).toContainText(locale === 'ar' ? 'شوفان بالحليب' : 'Oats with milk');
         outputs[`dietDraft_${suffix}`] = await makePdfFromPrintPopup(page, dietDraftPopup, testInfo, `coaching-diet-draft-print-${suffix}`, locale);
 
         const overviewPopup = await openPrint(() => page.evaluate((id) => window.topGymPrint.printCoachingOverview(id), clientId));
@@ -292,8 +312,8 @@ test('workout and nutrition system PDFs follow the selected Arabic/English local
                 expect(text).toContain(locale === 'en' ? '8–12' : '٨–١٢');
                 expect(text).toContain(locale === 'en' ? '40.0 kg' : '٤٠٫٠ كجم');
                 expect(text).toContain(locale === 'en' ? '90 sec' : '٩٠ ث');
-                expect(text).toContain(locale === 'en' ? 'RPE 8' : 'RPE ٨');
-                expect(text).toContain(locale === 'en' ? '3 sets' : '٣ مجموعات');
+                expect(text).toContain(locale === 'en' ? 'RPE8' : 'RPE٨');
+                expect(text).toContain(locale === 'en' ? 'sets3' : 'مجموعات٣');
                 expect(text).toContain(locale === 'en' ? 'October' : 'أكتوبر');
                 expect(text).toContain(locale === 'en' ? 'October 1, 2026' : '١ أكتوبر ٢٠٢٦');
                 expect(text).toContain(locale === 'en' ? 'November 26, 2026' : '٢٦ نوفمبر ٢٠٢٦');
