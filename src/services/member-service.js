@@ -767,6 +767,7 @@ function ensureMemberSort(value) {
 
 function mapMember(row) {
     const membershipId = row.membershipId ? Number(row.membershipId) : null;
+    const latestRecordedMembershipId = row.latestRecordedMembershipId ? Number(row.latestRecordedMembershipId) : null;
     let parsedPhone = null;
     try {
         parsedPhone = parsePhone(row.phoneNormalized || row.phone, { required: false, requireCountryForLocal: false });
@@ -811,6 +812,29 @@ function mapMember(row) {
             amountRemaining: Number(row.amountRemaining || 0),
             paymentMethod: row.paymentMethod || 'cash',
             paymentPaidAt: formatDateOnly(row.paymentPaidAt)
+        } : null,
+        // Additive list projection for the newest persisted membership event.
+        // Keep `membership` above as the operational selection used by existing
+        // actions so presentation does not change renewal/freeze behavior.
+        latestRecordedMembership: latestRecordedMembershipId ? {
+            id: latestRecordedMembershipId,
+            plan: row.latestRecordedMembershipPlan || 'gym_only',
+            type: row.latestRecordedMembershipType,
+            startDate: formatDateOnly(row.latestRecordedStartDate),
+            endDate: formatDateOnly(row.latestRecordedEndDate),
+            effectiveEndDate: formatDateOnly(row.latestRecordedEffectiveEndDate),
+            status: row.latestRecordedStatus,
+            cancelledAt: row.latestRecordedCancelledAt ? formatDateOnly(row.latestRecordedCancelledAt) : null,
+            daysRemaining: row.latestRecordedDaysRemaining === null ? null : Number(row.latestRecordedDaysRemaining),
+            freezeStart: formatDateOnly(row.latestRecordedFreezeStart),
+            freezeEnd: formatDateOnly(row.latestRecordedFreezeEnd),
+            // Freeze allowance/count intentionally remains member-wide, matching
+            // the existing list projection; payment values belong to this record.
+            freezeCount: Number(row.latestRecordedFreezeCount || 0),
+            freezeLimit: MEMBERSHIP_FREEZE_LIMIT,
+            freezesRemaining: Math.max(0, MEMBERSHIP_FREEZE_LIMIT - Number(row.latestRecordedFreezeCount || 0)),
+            amountPaid: Number(row.latestRecordedAmountPaid || 0),
+            amountRemaining: Number(row.latestRecordedAmountRemaining || 0)
         } : null
     };
 }

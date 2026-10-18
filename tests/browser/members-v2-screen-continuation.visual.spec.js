@@ -44,7 +44,7 @@ const MEMBERS = [
     memberFixture(734, 'إسلام أحمد عبدالمقصود', 'frozen', { freezeCount: 0, amountRemaining: 0 })
 ];
 
-async function installReadOnlyMemberFixtures(page) {
+async function installReadOnlyMemberFixtures(page, members = MEMBERS) {
     const requests = [];
     await page.route('**/api/**', async (route) => {
         const request = route.request();
@@ -87,11 +87,11 @@ async function installReadOnlyMemberFixtures(page) {
             };
         } else if (pathname === '/api/members') {
             payload = {
-                members: MEMBERS,
+                members,
                 pagination: { page: 1, pageSize: 5, total: 165, totalItems: 165, totalPages: 33, hasPrevious: false, hasNext: true }
             };
-        } else if (pathname === `/api/members/${MEMBERS[0].id}/details`) {
-            payload = { member: MEMBERS[0], memberships: [], freezes: [], events: [] };
+        } else if (pathname === `/api/members/${members[0]?.id}/details`) {
+            payload = { member: members[0], currentMembership: members[0].membership, memberships: [], freezes: [], events: [] };
         }
 
         return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
@@ -192,7 +192,7 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
             await expect(page.locator('#membersList .members-table')).toBeVisible();
             await expect(page.locator('#membersList .members-table tbody > tr')).toHaveCount(4);
             await expect(page.locator('#membersList .members-mobile-card')).toHaveCount(0);
-            await expect(page.locator('#membersList .members-table thead th')).toHaveCount(7);
+            await expect(page.locator('#membersList .members-table thead th')).toHaveCount(6);
         }
 
         for (const locale of LOCALES) {
@@ -250,11 +250,11 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 expect(bounds.tableScroller.tableDirection, `table direction follows ${locale} at ${width}px`).toBe(direction);
                 expect(bounds.tableScroller.firstColumnVisible, `member identity column is visible at the initial table position at ${width}px ${locale}`).toBe(true);
                 const accountCellTextOverflow = await page.locator('#membersList .members-table tbody tr').evaluateAll((rows) => rows.flatMap((row) => {
-                    const cell = row.cells[5];
+                    const cell = row.cells[3];
                     if (!cell) return [];
                     const cellRect = cell.getBoundingClientRect();
-                    const actionsRect = row.cells[6]?.getBoundingClientRect();
-                    return [...cell.querySelectorAll('.table-money, .table-sub')]
+                    const actionsRect = row.cells[5]?.getBoundingClientRect();
+                    return [...cell.querySelectorAll('.member-account-values strong')]
                         .filter((node) => node.getClientRects().length)
                         .map((node) => {
                             const rect = node.getBoundingClientRect();
@@ -436,6 +436,19 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                     closeAccessible: node.querySelector('#detailsClose')?.getAttribute('aria-label'),
                     badge: node.querySelector('#detailsMemberBadge')?.textContent.trim(),
                     sectionHeadings: [...node.querySelectorAll('#detailsContent h4')].map((item) => item.textContent.trim()),
+                    interfaceLabels: [...node.querySelectorAll([
+                        '.member-details-overview-heading span', '.member-details-overview-heading small',
+                        '.member-detail-stat-copy small', '.member-detail-stat-copy em',
+                        '.member-details-actions h4', '.member-details-action span', '.member-details-more-menu button span',
+                        '.member-details-tabs button', '.member-details-overview-financial span',
+                        '.member-detail-attendance h4', '.member-detail-attendance-state strong', '.member-detail-attendance-times span',
+                        '.member-scope-details h4', '.member-scope-details span', '.member-store-purchases h4',
+                        '.member-store-purchases th', '.member-store-purchases-kicker', '.details-section h4', '.details-section th',
+                        '.details-summary-card > span', '.history-table th', '.history-table .badge', '.payment-history-section h4',
+                        '.financial-summary-card span', '.membership-portal-code-kicker', '.membership-portal-code-card h4',
+                        '.membership-portal-code-card p', '.membership-portal-code-status', '.membership-portal-code-value > span',
+                        '.membership-portal-code-actions button'
+                    ].join(','))].map((item) => item.textContent.trim()).filter(Boolean),
                     memberName: node.querySelector('#detailsTitle')?.textContent.trim()
                 }));
                 dialogLocaleAudits.push({ viewport: width, theme, surface: 'details', arabic: arabicDetails, english: englishDetails });
@@ -444,6 +457,7 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 expect(englishDetails.closeAccessible).toBe('Close member details');
                 expect(englishDetails.badge).toBe('Active');
                 expect(englishDetails.sectionHeadings.every((heading) => !/[\u0621-\u064a]/.test(heading)), 'English details headings must not leave Arabic UI labels untranslated').toBe(true);
+                expect(englishDetails.interfaceLabels.filter((label) => /[\u0621-\u064a]/.test(label)), 'English member detail interface labels must not remain Arabic').toEqual([]);
                 await page.evaluate(() => window.TopGymI18n.set('ar'));
             }
             await page.locator('#detailsClose').click();
@@ -466,6 +480,112 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
         mutations: 0
     }, null, 2), 'utf8');
     await fs.writeFile(path.join(OUTPUT, 'dialog-locale-audit.json'), JSON.stringify({ generatedAt: new Date().toISOString(), audits: dialogLocaleAudits }, null, 2), 'utf8');
+});
+
+test('member list presents the newest recorded membership snapshot without changing the operational membership', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'One deterministic browser captures the membership record matrix.');
+    test.setTimeout(180_000);
+    const fixtures = MEMBERS.map((member) => structuredClone(member));
+    fixtures[0] = {
+        ...fixtures[0],
+        membership: { ...fixtures[0].membership, id: 1731, status: 'active', startDate: '2026-10-01', effectiveEndDate: '2026-11-12' },
+        latestRecordedMembership: { id: 2731, plan: 'gym_cardio', type: 'quarterly', status: 'expired', startDate: '2026-07-20', endDate: '2026-08-20', effectiveEndDate: '2026-08-20', daysRemaining: -58, freezeCount: 0, freezeLimit: 3, amountPaid: 250, amountRemaining: 150 }
+    };
+    fixtures[1] = { ...fixtures[1], latestRecordedMembership: { ...fixtures[1].membership, id: 1732 } };
+    fixtures[2] = { ...fixtures[2], latestRecordedMembership: { ...fixtures[2].membership, id: 1733, status: 'expired' } };
+    fixtures[3] = { ...fixtures[3], latestRecordedMembership: { ...fixtures[3].membership, id: 1734, status: 'active', startDate: '2027-01-01', endDate: '2027-02-01', effectiveEndDate: '2027-02-01', daysRemaining: 107 } };
+    fixtures.push({ ...memberFixture(735, 'عضو بلا اشتراك', 'expired'), membership: null, latestRecordedMembership: null });
+    fixtures.push({ ...memberFixture(736, 'اشتراك بلا تاريخ متاح', 'expired'), latestRecordedMembership: { id: 2736, plan: 'gym_only', type: 'monthly', status: 'expired', startDate: null, endDate: null, effectiveEndDate: null, daysRemaining: null, freezeCount: 0, freezeLimit: 3, amountPaid: 0, amountRemaining: 0 } });
+    await installReadOnlyMemberFixtures(page, fixtures);
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    const membersCssSource = await fs.readFile(path.join(process.cwd(), 'public/css/pages/members.css'), 'utf8');
+    await fs.mkdir(OUTPUT, { recursive: true });
+    await page.addInitScript(() => {
+        localStorage.setItem('logic-fit-ui-locale', 'ar');
+        localStorage.setItem('topgym-theme', 'light');
+    });
+
+    for (const width of [320, 390, 768, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(`/index.html?membersLastRecorded=${width}#members`, { waitUntil: 'networkidle' });
+        await installCurrentMembersStyles(page, membersCssSource);
+        const mobile = width < 768;
+        const firstMember = mobile ? page.locator('.members-mobile-card[data-member-id="731"]') : page.locator('.members-table tbody tr[data-member-id="731"]');
+        await expect(firstMember).toContainText('جيم وكارديو');
+        await expect(firstMember).toContainText('ربع سنوية');
+        await expect(firstMember).toContainText('20/07/2026');
+        await expect(firstMember).toContainText('20/08/2026');
+        await expect(firstMember).toContainText('منتهية');
+        const accountValues = await firstMember.locator('.members-mobile-account-values strong, .member-account-values strong').allTextContents();
+        const normalizedAccountValues = accountValues.join(' ').replace(/[٠-٩]/gu, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+        expect(normalizedAccountValues).toContain('250');
+        expect(normalizedAccountValues).toContain('150');
+        await expect(page.locator(mobile ? '.members-mobile-card[data-member-id="735"]' : '.members-table tbody tr[data-member-id="735"]')).toContainText('بدون اشتراك');
+        const missingDatesMember = page.locator(mobile ? '.members-mobile-card[data-member-id="736"]' : '.members-table tbody tr[data-member-id="736"]');
+        await expect(missingDatesMember.locator('.membership-date time')).toHaveText(['غير متاح', 'غير متاح']);
+        await expect(missingDatesMember).not.toContainText('منتهية منذ 0 يوم');
+        const isoDateAudit = await firstMember.locator('time').evaluateAll((nodes) => nodes.map((node) => ({ dir: node.getAttribute('dir'), datetime: node.getAttribute('datetime'), text: node.textContent.trim() })));
+        expect(isoDateAudit).toEqual([
+            { dir: 'ltr', datetime: '2026-07-20', text: '20/07/2026' },
+            { dir: 'ltr', datetime: '2026-08-20', text: '20/08/2026' }
+        ]);
+        if (!mobile) {
+            const headers = await page.locator('.members-table thead th').allTextContents();
+            expect(headers).toEqual(['العضو', 'آخر اشتراك', 'الحالة', 'الحساب', 'تجميد العضو', 'الإجراءات']);
+            await expect(firstMember.locator('.status-badge-with-icon')).toHaveClass(/expired/);
+            await expect(firstMember.locator('.freeze-usage')).toContainText('مستخدم');
+            await expect(firstMember.locator('.freeze-usage bdi[dir="ltr"]')).toContainText('/');
+            await expect(firstMember.locator('.freeze-usage')).toContainText('مرات تجميد');
+            const freezeAction = firstMember.locator('[data-action="freeze"]');
+            await expect(freezeAction).toHaveCount(1);
+            const actionsMenu = firstMember.locator('.action-menu-toggle');
+            if (await actionsMenu.count()) {
+                await actionsMenu.click();
+                await expect(freezeAction).toBeVisible();
+                await actionsMenu.click();
+            }
+        } else {
+            await expect(firstMember.locator('.members-mobile-date-grid .membership-date')).toHaveCount(2);
+            const geometry = await page.evaluate(() => ({
+                document: document.documentElement.scrollWidth,
+                body: document.body.scrollWidth,
+                viewport: innerWidth,
+                dateRects: [...document.querySelectorAll('.members-mobile-card[data-member-id="731"] time')].map((node) => {
+                    const rect = node.getBoundingClientRect();
+                    return { left: rect.left, right: rect.right, width: rect.width, scroll: node.scrollWidth };
+                })
+            }));
+            expect(geometry.document).toBeLessThanOrEqual(geometry.viewport);
+            expect(geometry.body).toBeLessThanOrEqual(geometry.viewport);
+            expect(geometry.dateRects.every((rect) => rect.width > 0 && rect.scroll <= rect.width + 1)).toBe(true);
+        }
+        await firstMember.scrollIntoViewIfNeeded();
+        if (width === 390 || width === 1440) {
+            await page.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-ar-light.png`), fullPage: false });
+        }
+
+        for (const locale of ['ar', 'en']) {
+            await page.evaluate((value) => window.TopGymI18n.set(value), locale);
+            await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+            await expect(firstMember.locator('.members-mobile-subscription-title, .member-subscription-title')).toContainText(locale === 'ar' ? 'جيم وكارديو · ربع سنوية' : 'Gym and cardio · Quarterly');
+            await expect(firstMember).toContainText('20/07/2026');
+            await expect(firstMember).toContainText('20/08/2026');
+            const dateLabels = await firstMember.locator('.membership-date small').allTextContents();
+            expect(dateLabels).toEqual(locale === 'ar' ? ['البداية', 'النهاية'] : ['Start', 'End']);
+            for (const theme of ['light', 'dark']) {
+                await page.evaluate((value) => window.TopGymTheme.set(value), theme);
+                await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+                const bounds = await page.evaluate(() => ({ width: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
+                expect(bounds.document).toBeLessThanOrEqual(bounds.width);
+                expect(bounds.body).toBeLessThanOrEqual(bounds.width);
+                if (width === 390 || width === 1440) {
+                    await page.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-${locale}-${theme}.png`), fullPage: false });
+                }
+            }
+        }
+    }
+    expect(pageErrors).toEqual([]);
 });
 
 test('Members more-action menus stay reachable and within the viewport at responsive breakpoints', async ({ page }, testInfo) => {
