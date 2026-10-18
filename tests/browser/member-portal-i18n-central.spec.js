@@ -44,7 +44,10 @@ test('Member Portal central locale switch preserves cached state across RTL/LTR,
             return route.fulfill({ json: { currency: 'EGP', plans: [{ code: 'gym_only', label: 'جيم فقط' }], types: [{ code: 'monthly', label: 'شهرية', durationDays: 30 }], prices: { gym_only: { monthly: 500 } } } });
         }
         if (url.pathname === '/api/member-portal/payment-methods') {
-            return route.fulfill({ json: { paymentMethods: [{ id: 'fixture-cash', name: 'تحويل تجريبي', accountReference: 'TEST-000' }] } });
+            return route.fulfill({ json: { paymentMethods: [
+                { id: 'fixture-cash', typeId: 'instapay', name: 'تحويل تجريبي', accountReference: 'TEST-000' },
+                { id: 'fixture-legacy', name: 'وسيلة قديمة', accountReference: 'TEST-LEGACY' }
+            ] } });
         }
         if (url.pathname === '/api/member-portal/subscription-requests') {
             return route.fulfill({ json: { requests: [{ id: 501, status: 'pending', requestType: 'membership', membership: { type: 'عضوية تجريبية', startDate: '2026-10-12' }, pricing: { amountDue: 500, currency: 'EGP' } }] } });
@@ -113,6 +116,9 @@ test('Member Portal central locale switch preserves cached state across RTL/LTR,
     await page.locator('#portalLibraryMount [data-library-close]').click();
     await page.locator('[data-portal-tool="subscription"]').click();
     await expect(page.locator('#portalSubscriptionPlan')).toHaveValue('gym_only');
+    await expect(page.locator('.portal-payment-method-row .payment-method-brand-mark')).toHaveCount(2);
+    await expect(page.locator('.portal-payment-method-row .payment-method-brand-mark img').first()).toHaveAttribute('src', /payment-instapay-icon/u);
+    await expect(page.locator('.portal-payment-method-row .payment-method-brand-mark img')).toHaveCount(1);
     await expect(page.locator('#portalSubscriptionHistory .portal-request-history-row')).toHaveCount(1);
     await page.locator('#portalSubscriptionNotes').fill('ملاحظة محفوظة');
     const requestCountBeforeLocaleChange = apiRequests.length;

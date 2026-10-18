@@ -20,7 +20,9 @@ module.exports = defineConfig({
     fullyParallel: false,
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 1 : 0,
-    workers: 1,
+    // Keep local runs deterministic while allowing independent CI specs to
+    // complete within the workflow budget without reducing test coverage.
+    workers: process.env.CI ? 4 : 1,
     reporter: process.env.CI
         ? [['line'], ['json', { outputFile: 'qa/reports/playwright.json' }]]
         : [['list'], ['json', { outputFile: 'qa/reports/playwright.json' }]],

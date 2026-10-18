@@ -3609,9 +3609,23 @@
         'print.member.value.twoMonths': 'Two months'
     });
 
+    const memberPaymentAdminArabic = Object.freeze({
+        'memberPayment.table.method': 'الوسيلة', 'memberPayment.table.reference': 'الرقم أو الحساب', 'memberPayment.table.recipient': 'اسم المستلم', 'memberPayment.table.sortOrder': 'الترتيب', 'memberPayment.table.visibility': 'الظهور للعضو', 'memberPayment.table.actions': 'الإجراءات',
+        'memberPayment.methods.noInstructions': 'لا توجد تعليمات إضافية', 'memberPayment.methods.visible': 'ظاهرة', 'memberPayment.methods.hidden': 'مخفية', 'memberPayment.methods.edit': 'تعديل', 'memberPayment.methods.editNamed': 'تعديل {{name}}', 'memberPayment.methods.removeNamed': 'إزالة {{name}}', 'memberPayment.methods.legacyType': 'نوع قديم غير محدد', 'memberPayment.methods.removeTitle': 'إزالة وسيلة الدفع؟', 'memberPayment.methods.removeConfirm': 'هل تريد إزالة {{name}} من المسودة؟',
+        'memberPayment.dialog.addTitle': 'إضافة وسيلة دفع', 'memberPayment.dialog.editTitle': 'تعديل وسيلة الدفع', 'memberPayment.dialog.description': 'أدخل بيانات التحويل التي ستظهر للعضو بعد النشر.', 'memberPayment.dialog.close': 'إغلاق', 'memberPayment.dialog.cancel': 'إلغاء', 'memberPayment.dialog.apply': 'تطبيق', 'memberPayment.dialog.type': 'نوع الوسيلة', 'memberPayment.dialog.searchType': 'ابحث عن نوع الوسيلة', 'memberPayment.dialog.chooseType': 'اختر نوع الوسيلة', 'memberPayment.dialog.typeHelp': 'اختيار النوع يحدد الشعار فقط؛ يمكنك تعديل اسم العرض.',
+        'memberPayment.validation.dialogRequired': 'أدخل اسم الوسيلة والرقم أو الحساب.', 'memberPayment.validation.typeRequired': 'اختر نوع الوسيلة.', 'memberPayment.validation.invalidType': 'نوع وسيلة الدفع غير مدعوم.'
+    });
+    const memberPaymentAdminEnglish = Object.freeze({
+        'memberPayment.table.method': 'Method', 'memberPayment.table.reference': 'Number or account', 'memberPayment.table.recipient': 'Recipient', 'memberPayment.table.sortOrder': 'Order', 'memberPayment.table.visibility': 'Visible to member', 'memberPayment.table.actions': 'Actions',
+        'memberPayment.methods.noInstructions': 'No additional instructions', 'memberPayment.methods.visible': 'Visible', 'memberPayment.methods.hidden': 'Hidden', 'memberPayment.methods.edit': 'Edit', 'memberPayment.methods.editNamed': 'Edit {{name}}', 'memberPayment.methods.removeNamed': 'Remove {{name}}', 'memberPayment.methods.legacyType': 'Legacy type not specified', 'memberPayment.methods.removeTitle': 'Remove this payment method?', 'memberPayment.methods.removeConfirm': 'Remove {{name}} from the draft?',
+        'memberPayment.dialog.addTitle': 'Add payment method', 'memberPayment.dialog.editTitle': 'Edit payment method', 'memberPayment.dialog.description': 'Enter transfer details that members can see after publishing.', 'memberPayment.dialog.close': 'Close', 'memberPayment.dialog.cancel': 'Cancel', 'memberPayment.dialog.apply': 'Apply', 'memberPayment.dialog.type': 'Method type', 'memberPayment.dialog.searchType': 'Search method types', 'memberPayment.dialog.chooseType': 'Choose a method type', 'memberPayment.dialog.typeHelp': 'The type selects the logo only; the display name remains editable.',
+        'memberPayment.validation.dialogRequired': 'Enter the method name and number or account.', 'memberPayment.validation.typeRequired': 'Choose a payment method type.', 'memberPayment.validation.invalidType': 'This payment method type is not supported.'
+    });
+
     const messages = Object.freeze({
         ar: Object.freeze({
             ...coachingPrintArabic,
+            ...memberPaymentAdminArabic,
             'platformAdminScreen.shell.brandName': 'منصة Logic Fit',
             'platformAdminScreen.shell.brandDescription': 'إدارة المنصة المركزية',
             'platformAdminScreen.shell.sidebarCaption': 'إدارة المنصة',
@@ -6192,6 +6206,7 @@
         }),
         en: Object.freeze({
             ...coachingPrintEnglish,
+            ...memberPaymentAdminEnglish,
             ...backupHistoryEnglish,
             ...loginScreenEnglish,
             ...trainerWorkspaceScreenEnglish,

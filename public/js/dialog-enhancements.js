@@ -18,6 +18,7 @@
         trainerPurchaseDialog: 'md',
         trainerPaymentDialog: 'md',
         memberQrDialog: 'md',
+        memberPaymentMethodDialog: 'md',
         qrReaderDialog: 'md',
         platformActionDialog: 'lg',
         platformRegistrationCredentialsDialog: 'lg',

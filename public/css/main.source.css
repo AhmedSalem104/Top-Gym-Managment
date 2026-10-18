@@ -23,6 +23,7 @@
 @import url("./components/notifications.css");
 @import url("./components/feedback.css");
 @import url("./components/empty-states.css");
+@import url("./components/payment-method-brand-mark.css");
 @import url("./pages/login.css");
 @import url("./components/tenant-welcome.css");
 @import url("./pages/change-password.css");

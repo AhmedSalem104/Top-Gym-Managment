@@ -77,7 +77,7 @@
         function memberFreezeMarkup(used, limit) {
             if (!Number.isFinite(used) || !Number.isFinite(limit)) return `<span class="freeze-usage is-unavailable">${escapeHtml(membersText('freeze.unavailable'))}</span>`;
             const remaining = Math.max(0, limit - used);
-            return `<span class="freeze-usage${used >= limit ? ' complete' : ''}"><strong><span>${escapeHtml(membersText('freeze.usedLabel'))}:</span><bdi dir="auto">${escapeHtml(membersNumber(used))} ${escapeHtml(membersText('freeze.of'))} ${escapeHtml(membersNumber(limit))}</bdi></strong><span><span>${escapeHtml(membersText('freeze.remainingLabel'))}:</span><bdi dir="auto">${escapeHtml(membersText('freeze.timesRemaining', { count: membersNumber(remaining) }))}</bdi></span></span>`;
+            return `<span class="freeze-usage${used >= limit ? ' complete' : ''}"><strong><span>${escapeHtml(membersText('freeze.usedLabel'))}:</span><bdi dir="ltr">${escapeHtml(membersNumber(used))} ${escapeHtml(membersText('freeze.of'))} ${escapeHtml(membersNumber(limit))}</bdi></strong><span><span>${escapeHtml(membersText('freeze.remainingLabel'))}:</span><bdi dir="ltr">${escapeHtml(membersText('freeze.timesRemaining', { count: membersNumber(remaining) }))}</bdi></span></span>`;
         }
          function membersCurrency(value) { return window.TopGymI18n?.format?.('currency', Number(value || 0), { currency: 'EGP', minimumFractionDigits: 2, maximumFractionDigits: 2 }) || money(value); }
          function memberActionLabel(action) { const keys = { details: 'action.details', edit: 'action.edit', renew: 'action.renew', freeze: 'action.freeze', resume: 'action.resume', payment: 'action.payment', print: 'action.print', qr: 'action.qr', delete: 'action.delete', refund: 'action.refund' }; return keys[action] ? membersText(keys[action]) : ACTION_LABELS[action] || action; }
@@ -947,7 +947,7 @@
             const preview = member.membershipCode?.maskedCode;
             if (!preview) return `<span class="table-sub member-code-preview">${escapeHtml(membersText('portalCode.unissued'))}</span>`;
             const [before = '', after = ''] = membersText('portalCode', { code: '__CODE__' }).split('__CODE__');
-            return `<span class="table-sub member-code-preview">${escapeHtml(before)}<b dir="ltr">${escapeHtml(preview)}</b>${escapeHtml(after)}</span>`;
+            return `<span class="table-sub member-code-preview">${escapeHtml(before)}<b dir="ltr" title="${escapeHtml(preview)}">${escapeHtml(preview)}</b>${escapeHtml(after)}</span>`;
         }
         function memberInitials(name) {
             return String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => Array.from(part)[0]).join('') || '؟';
@@ -1013,7 +1013,7 @@
             const remainingClass = amountRemaining > 0 ? 'has-debt' : Number.isFinite(amountRemaining) ? 'is-settled' : '';
             const subscription = `<div class="member-last-subscription"><strong class="member-subscription-title">${escapeHtml(membersListPlanLabel(sub.plan))}<span aria-hidden="true"> · </span>${escapeHtml(membersListTypeLabel(sub.type))}</strong><div class="member-subscription-dates">${membersDateMarkup(sub.startDate, membersText('date.start'))}${membersDateMarkup(sub.effectiveEndDate || sub.endDate, membersText('date.end'))}</div></div>`;
             const account = `<div class="member-account-values"><span><small>${escapeHtml(membersText('account.paid'))}</small><strong>${Number.isFinite(amountPaid) ? escapeHtml(membersCurrency(amountPaid)) : '—'}</strong></span><span class="${remainingClass}"><small>${escapeHtml(membersText('account.remaining'))}</small><strong>${Number.isFinite(amountRemaining) ? escapeHtml(membersCurrency(amountRemaining)) : '—'}</strong></span></div>`;
-            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td>${subscription}</td><td>${memberStatusBadge(sub.status)}<span class="table-sub member-status-detail">${escapeHtml(remaining)}</span></td><td>${account}</td><td><div class="member-freeze-cell"><strong>${escapeHtml(membersText('freeze.memberTitle'))}</strong><small>${escapeHtml(membersText('freeze.memberScope'))}</small>${freezeUsage}</div></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
+            return `<tr data-member-id="${member.id}"><td><span class="table-member-name">${escapeHtml(member.fullName)}</span><a class="table-member-phone" href="tel:${escapeHtml(member.phone)}">${escapeHtml(displayPhone(member.phone, member.phoneCountry))}</a>${memberPortalCodeMarkup(member)}</td><td>${subscription}</td><td>${memberStatusBadge(sub.status)}<span class="table-sub member-status-detail">${escapeHtml(remaining)}</span></td><td>${account}</td><td><div class="member-freeze-cell"><small>${escapeHtml(membersText('freeze.memberScope'))}</small>${freezeUsage}</div></td><td class="actions-cell">${memberActionsMarkup(member)}</td></tr>`;
         }
         function renderMembersSummary() {
             const section = document.getElementById('membersSection');

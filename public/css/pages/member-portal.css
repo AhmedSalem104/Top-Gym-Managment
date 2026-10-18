@@ -1313,7 +1313,7 @@
 
 .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto 40px minmax(0, 1fr) auto;
   min-height: 64px;
   align-items: center;
   gap: 8px;
@@ -1324,6 +1324,12 @@
 .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-copy {
   gap: 2px;
 }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .payment-method-brand-mark {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
 
 .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-copy strong {
   font-size: 11px;
@@ -1516,6 +1522,15 @@
 
   .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-list {
     grid-template-columns: 1fr;
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-row {
+    grid-template-columns: auto 36px minmax(0, 1fr);
+  }
+
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-payment-method-account {
+    grid-column: 3;
+    justify-self: start;
   }
 
   .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary {
