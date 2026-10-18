@@ -129,6 +129,7 @@
   .coaching-toolbar { align-items: stretch; flex-direction: column; }
   .coaching-toolbar-actions { justify-content: space-between; }
   .coaching-search { max-width: none; }
+  #traineesSection .coaching-search { flex: 0 1 auto; }
   #traineesSection .coaching-header { align-items: stretch; }
   #traineesSection .coaching-toolbar-actions { width: 100%; }
   .external-trainee-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

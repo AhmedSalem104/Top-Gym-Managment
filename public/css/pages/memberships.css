@@ -998,6 +998,23 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   gap: var(--space-5);
 }
 
+#detailsDialog .member-details-overview-heading {
+  display: grid;
+  gap: var(--space-1);
+  padding-inline: 2px;
+}
+
+#detailsDialog .member-details-overview-heading span {
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-bold);
+}
+
+#detailsDialog .member-details-overview-heading small {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+}
+
 #detailsDialog .member-details-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

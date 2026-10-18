@@ -468,8 +468,8 @@ html[data-theme="dark"] .table-loading{
   color: var(--text-muted);
 }
 
-html[data-theme="dark"] .dashboard-hero,
-html[data-theme="dark"] .dashboard-hero-visual,
+html[data-theme="dark"] .dashboard-overview-shell,
+html[data-theme="dark"] .dashboard-overview-card,
 html[data-theme="dark"] .dashboard-store-summary,
 html[data-theme="dark"] .monthly-finance-snapshot,
 html[data-theme="dark"] .management-shortcuts,
@@ -484,33 +484,6 @@ html[data-theme="dark"] .monthly-finance-metric{
   border-color: var(--border-primary);
   background: var(--bg-card);
   color: var(--text-primary);
-}
-
-html[data-theme="dark"] .dashboard-hero-visual{
-  background: radial-gradient(circle at 50% 45%, var(--bg-elevated), var(--bg-input));
-}
-
-html[data-theme="dark"] .dashboard-hero-visual::before,
-html[data-theme="dark"] .dashboard-hero-visual::after,
-html[data-theme="dark"] .dashboard-hero-visual-ring{
-  border-color: var(--primary-border);
-}
-
-html[data-theme="dark"] .dashboard-hero-visual-logo{
-  border-color: var(--border-hover);
-  background: var(--bg-elevated);
-}
-
-html[data-theme="dark"] .dashboard-hero-stat + .dashboard-hero-stat{
-  border-inline-start-color: var(--border-secondary);
-}
-
-html[data-theme="dark"] .dashboard-hero-pulse b{
-  background: var(--primary-hover);
-}
-
-html[data-theme="dark"] .dashboard-hero-pulse b:nth-child(4){
-  background: var(--primary);
 }
 
 html[data-theme="dark"] .management-shortcut:hover{
@@ -899,7 +872,6 @@ html[data-theme="dark"] .store-status.danger{
   color: var(--danger-text);
 }
 
-html[data-theme="dark"] .dashboard-hero,
 html[data-theme="dark"] .monthly-finance-card,
 html[data-theme="dark"] .dashboard-day-pass-card,
 html[data-theme="dark"] .attendance-entry-card,
@@ -919,7 +891,6 @@ html[data-theme="dark"] .member-feedback-section{
   color: var(--text-primary);
 }
 
-html[data-theme="dark"] .dashboard-hero,
 html[data-theme="dark"] .monthly-finance-card,
 html[data-theme="dark"] .dashboard-day-pass-card,
 html[data-theme="dark"] .attendance-entry-card,
@@ -1722,46 +1693,4 @@ html[data-theme="light"] .theme-toggle-button:focus-visible{
   background: var(--primary);
   color: var(--text-on-primary);
   box-shadow: var(--shadow-primary);
-}
-
-@media (max-width: 767px){
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  .dashboard-section-heading{
-    margin-top: 2px;
-  }
 }

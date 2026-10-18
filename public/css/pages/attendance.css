@@ -1061,7 +1061,6 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 }
 
 .attendance-mode-actions {
-  display: flex !important;
   min-width: 0;
   align-items: center;
   justify-content: flex-start;
@@ -2470,7 +2469,6 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 }
 
 .attendance-section .phone-input-error[hidden] {
-  display: block !important;
   min-height: 0;
   height: 0;
   margin: 0;

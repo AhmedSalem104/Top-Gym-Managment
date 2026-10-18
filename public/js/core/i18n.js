@@ -13,7 +13,11 @@
         'login.page.title': 'تسجيل الدخول | Logic Fit',
         'login.screen.label': 'بوابة تسجيل الدخول',
         'login.controls.label': 'إعدادات العرض',
+        'login.locale.label': 'لغة الواجهة',
+        'login.form.section': 'قسم تسجيل الدخول',
         'login.features.label': 'مزايا Logic Fit',
+        'login.hero.title': 'جيمك. متصل.',
+        'login.hero.description': 'مساحة واحدة لإدارة عملك ومدربيك ومشتركيك.',
         'login.form.label': 'نموذج تسجيل الدخول',
         'login.welcome.title': 'مرحبًا بعودتك',
         'login.welcome.description': 'سجّل الدخول إلى حسابك لمتابعة عملك',
@@ -60,7 +64,11 @@
         'login.page.title': 'Sign in | Logic Fit',
         'login.screen.label': 'Sign-in portal',
         'login.controls.label': 'Display settings',
+        'login.locale.label': 'Interface language',
+        'login.form.section': 'Sign-in section',
         'login.features.label': 'Logic Fit benefits',
+        'login.hero.title': 'Your gym. Connected.',
+        'login.hero.description': 'One workspace for your business, trainers and members.',
         'login.form.label': 'Sign-in form',
         'login.welcome.title': 'Welcome back',
         'login.welcome.description': 'Sign in to your account to continue your work',
@@ -492,6 +500,7 @@
         'platformAdminScreen.audit.kicker': 'Operations log', 'platformAdminScreen.audit.title': 'Platform operations log',
         'platformAdminScreen.audit.description': 'Every administrative decision is logged with its actor, time, reason, and change.',
         'platformAdminScreen.settings.description': 'Manage platform operations and customization settings in one place.',
+        'platformAdminScreen.settings.kicker': 'Settings',
         'platformAdminScreen.settings.sections': 'Platform settings sections',
         'platformAdminScreen.settings.instructions': 'Choose a section to manage. WhatsApp templates here are platform-wide settings only.',
         'platformAdminScreen.settings.subscriptions': 'Subscriptions and plans',
@@ -1747,6 +1756,89 @@
         'coaching.builder.workoutStructure': 'بناء الأيام والتمارين',
         'coaching.builder.review': 'المراجعة والحفظ',
         'coaching.builder.reviewBeforeSave': 'مراجعة قبل الحفظ',
+        'coaching.builder.title.create.workout': 'إنشاء برنامج تدريب',
+        'coaching.builder.title.edit.workout': 'تعديل برنامج تدريب',
+        'coaching.builder.title.create.diet': 'إنشاء خطة تغذية',
+        'coaching.builder.title.edit.diet': 'تعديل خطة تغذية',
+        'coaching.builder.dialogSubtitle': 'العميل: {{client}} · ثلاث مراحل واضحة حتى الحفظ.',
+        'coaching.builder.backToBasics': 'السابق: البيانات الأساسية',
+        'coaching.builder.backToContent': 'السابق: بناء المحتوى',
+        'coaching.builder.hint.diet.basics': '١/٣ — بيانات العميل والسعرات',
+        'coaching.builder.hint.diet.structure': '٢/٣ — ترتيب الوجبات والأطعمة',
+        'coaching.builder.hint.diet.review': '٣/٣ — مراجعة واعتماد الخطة',
+        'coaching.builder.hint.workout.basics': '١/٣ — بيانات البرنامج والهدف',
+        'coaching.builder.hint.workout.structure': '٢/٣ — بناء الأيام والتمارين',
+        'coaching.builder.hint.workout.review': '٣/٣ — مراجعة واعتماد البرنامج',
+        'coaching.builder.stageTwo': 'المرحلة الثانية',
+        'coaching.builder.workoutStepTwoHint': 'أضف الأيام والتمارين، وسيُحسب الحجم وتوزيع العضلات تلقائيًا.',
+        'coaching.builder.totalExercises': 'إجمالي التمارين',
+        'coaching.builder.totalSets': 'إجمالي المجموعات',
+        'coaching.builder.trainingVolume': 'حجم التدريب التقريبي',
+        'coaching.builder.days': 'الأيام',
+        'coaching.builder.muscleDistribution': 'توزيع الحمل على العضلات',
+        'coaching.builder.muscleDistributionHint': 'حسب مجموعات التمارين',
+        'coaching.builder.muscleDistributionEmpty': 'أضف تمارين لعرض التوزيع.',
+        'coaching.builder.dayName': 'اسم اليوم',
+        'coaching.builder.dayOfWeek': 'يوم الأسبوع',
+        'coaching.builder.chooseDay': 'اختر اليوم',
+        'coaching.builder.dayNotes': 'ملاحظات اليوم',
+        'coaching.builder.chooseExercise': 'اختر تمرينًا',
+        'coaching.builder.exerciseReferenceEmpty': 'اختر تمرينًا لعرض العضلة والتعليمات.',
+        'coaching.builder.removeDay': 'حذف اليوم',
+        'coaching.builder.addExercise': '+ إضافة تمرين',
+        'coaching.builder.exerciseNotes': 'ملاحظات التمرين',
+        'coaching.builder.repsMin': 'التكرارات من',
+        'coaching.builder.repsMax': 'التكرارات إلى',
+        'coaching.builder.undetermined': 'غير محددة',
+        'coaching.builder.dayNumber': 'اليوم {{count}}',
+        'coaching.builder.exerciseCount': 'التمارين: {{count}}',
+        'coaching.builder.delete': 'حذف',
+        'coaching.builder.next.dietStructure': 'التالي: بناء الوجبات',
+        'coaching.builder.next.dietReview': 'التالي: مراجعة الخطة',
+        'coaching.builder.next.workoutStructure': 'التالي: بناء الأيام',
+        'coaching.builder.next.workoutReview': 'التالي: مراجعة البرنامج',
+        'coaching.builder.stageThree': 'المرحلة الثالثة',
+        'coaching.builder.workoutReviewTitle': 'مراجعة برنامج التدريب قبل الحفظ',
+        'coaching.builder.workoutReviewHint': 'راجع الحمل التدريبي وتوزيع العضلات وتفاصيل كل يوم.',
+        'coaching.builder.reviewReady': 'جاهز للمراجعة',
+        'coaching.builder.program': 'البرنامج',
+        'coaching.builder.review.duration': 'المدة',
+        'coaching.builder.unit.kg': 'كجم',
+        'coaching.builder.review.goal': 'الهدف:',
+        'coaching.builder.review.level': 'المستوى:',
+        'coaching.builder.review.daysPerWeek': 'أيام أسبوعيًا:',
+        'coaching.builder.review.durationValue': '{{count}} أسبوع',
+        'coaching.builder.review.volumeValue': '{{count}} كجم',
+        'coaching.builder.review.exerciseSetCounts': 'التمارين: {{exercises}} · المجموعات: {{sets}}',
+        'coaching.builder.aiDescription': 'اترك الإنشاء اليدوي متاحًا، أو اطلب تعديلًا على المسودة الحالية.',
+        'coaching.builder.aiPlaceholder': 'مثال: أضف تمرين ضغط صدر 4 مجموعات أو بدّل الأرز بالبطاطس',
+        'coaching.builder.atomicSave': 'حفظ ذري داخل قاعدة البيانات',
+        'coaching.builder.programName': 'اسم البرنامج *',
+        'coaching.builder.programNamePlaceholder': 'مثال: برنامج القوة الأساسي',
+        'coaching.builder.startDate': 'تاريخ البداية *',
+        'coaching.builder.endDate': 'النهاية',
+        'coaching.builder.durationWeeks': 'المدة بالأسابيع',
+        'coaching.builder.goal': 'الهدف',
+        'coaching.builder.level': 'المستوى',
+        'coaching.builder.daysPerWeek': 'أيام التدريب أسبوعيًا',
+        'coaching.builder.description': 'وصف البرنامج',
+        'coaching.builder.buildDays': 'بناء أيام التدريب',
+        'coaching.builder.buildDaysHint': 'أضف الأيام والتمارين من مكتبة TOP GYM.',
+        'coaching.builder.addDay': '+ إضافة يوم',
+        'coaching.builder.noDays': 'لم تضف أيامًا بعد.',
+        'coaching.builder.stageOne': 'المرحلة الأولى',
+        'coaching.builder.programDetails': 'بيانات البرنامج',
+        'coaching.builder.programDetailsHint': 'حدد هدف البرنامج ومستواه ومدته قبل توزيع الأيام والتمارين.',
+        'coaching.builder.goal.muscle': 'بناء العضلات',
+        'coaching.builder.goal.strength': 'زيادة القوة',
+        'coaching.builder.goal.fatLoss': 'حرق الدهون',
+        'coaching.builder.goal.generalFitness': 'لياقة عامة',
+        'coaching.builder.goal.endurance': 'التحمل',
+        'coaching.builder.level.beginner': 'مبتدئ',
+        'coaching.builder.level.intermediate': 'متوسط',
+        'coaching.builder.level.advanced': 'متقدم',
+        'coaching.builder.progress.diet': 'الوجبات: {{meals}} · الأطعمة: {{foods}}',
+        'coaching.builder.progress.workout': 'الأيام: {{days}} · التمارين: {{exercises}}',
         'coaching.builder.food': 'الطعام',
         'coaching.builder.protein': 'بروتين',
         'coaching.builder.carbs': 'كربوهيدرات',
@@ -1771,6 +1863,82 @@
         'coaching.builder.dailyEnergyNeeds': 'الاحتياج اليومي مع النشاط (TDEE)',
         'coaching.builder.calculationTarget': 'الهدف المقترح',
         'coaching.builder.targetCaloriesLabel': 'السعرات المستهدفة',
+        'coaching.builder.statusLabel': 'الحالة',
+        'coaching.builder.diet.currentProfile': 'الملف الحالي:',
+        'coaching.builder.diet.mealCount': '{{count}} وجبات',
+        'coaching.builder.diet.basicsTitle': 'المعلومات الأساسية وحساب السعرات',
+        'coaching.builder.diet.basicsHint': 'احسب الاحتياج اليومي ثم طبّق الهدف والماكروز على الخطة قبل بناء الوجبات.',
+        'coaching.builder.diet.planName': 'اسم الخطة *',
+        'coaching.builder.diet.planNamePlaceholder': 'مثال: خطة بناء العضلات',
+        'coaching.builder.diet.mealsPerDay': 'عدد الوجبات اليومية',
+        'coaching.builder.diet.meals': 'وجبات',
+        'coaching.builder.diet.calculator': 'حاسبة BMR / TDEE',
+        'coaching.builder.diet.dailyNeeds': 'الاحتياج اليومي للعميل',
+        'coaching.builder.diet.measurementNote.withDate': 'تم جلب الوزن والطول من آخر قياس بتاريخ {{date}}.',
+        'coaching.builder.diet.measurementNote.empty': 'يمكن تعبئة القياسات يدويًا أو إضافة قياس من ملف العميل.',
+        'coaching.builder.diet.weightKg': 'الوزن كجم',
+        'coaching.builder.diet.heightCm': 'الطول سم',
+        'coaching.builder.diet.age': 'العمر',
+        'coaching.builder.diet.gender': 'النوع',
+        'coaching.builder.diet.gender.male': 'ذكر',
+        'coaching.builder.diet.gender.female': 'أنثى',
+        'coaching.builder.diet.activity': 'مستوى النشاط',
+        'coaching.builder.diet.activity.sedentary': 'قليل جدًا',
+        'coaching.builder.diet.activity.light': 'خفيف',
+        'coaching.builder.diet.activity.moderate': 'متوسط',
+        'coaching.builder.diet.activity.high': 'مرتفع',
+        'coaching.builder.diet.activity.veryHigh': 'مرتفع جدًا',
+        'coaching.builder.diet.goal.lose': 'خسارة وزن',
+        'coaching.builder.diet.goal.maintain': 'تثبيت الوزن',
+        'coaching.builder.diet.goal.gain': 'زيادة وزن',
+        'coaching.builder.diet.calorieAdjustment': 'العجز / الفائض بالسعرات',
+        'coaching.builder.diet.calorieAdjustmentHint': 'سالب للخسارة وموجب للزيادة',
+        'coaching.builder.diet.bmr': 'السعرات الأساسية',
+        'coaching.builder.diet.tdee': 'الاحتياج مع النشاط',
+        'coaching.builder.diet.applyCalories': 'تطبيق على الخطة',
+        'coaching.builder.diet.planTargets': 'أهداف الخطة',
+        'coaching.builder.diet.defaultMacroSplit': 'التوزيع الافتراضي: 30% بروتين · 40% كارب · 30% دهون',
+        'coaching.builder.diet.description': 'وصف الخطة',
+        'coaching.builder.diet.notes': 'ملاحظات',
+        'coaching.builder.diet.chooseFood': 'اختر طعامًا',
+        'coaching.builder.diet.searchFood': 'ابحث عن الطعام',
+        'coaching.builder.diet.noFoodMatch': 'لا يوجد طعام مطابق.',
+        'coaching.builder.diet.chooseClient': 'اختر العميل',
+        'coaching.builder.diet.searchClient': 'ابحث باسم العميل أو الهاتف',
+        'coaching.builder.diet.noClientMatch': 'لا يوجد عميل مطابق.',
+        'coaching.builder.diet.searchExercise': 'ابحث عن التمرين أو العضلة',
+        'coaching.builder.diet.noExerciseMatch': 'لا يوجد تمرين مطابق.',
+        'coaching.builder.diet.chooseOption': 'اختر من القائمة',
+        'coaching.builder.diet.searchOptions': 'ابحث في الخيارات',
+        'coaching.builder.diet.noOptionMatch': 'لا توجد خيارات مطابقة.',
+        'coaching.builder.diet.quantity': 'الكمية',
+        'coaching.builder.diet.unit': 'الوحدة',
+        'coaching.builder.diet.grams': 'جرام',
+        'coaching.builder.diet.calorieUnit': 'سعرة',
+        'coaching.builder.diet.mealTime': 'الوقت',
+        'coaching.builder.diet.mealTimeHint': 'حدد موعد الوجبة',
+        'coaching.builder.diet.removeFood': 'حذف الطعام',
+        'coaching.builder.diet.removeMeal': 'حذف الوجبة',
+        'coaching.builder.diet.addFood': '+ إضافة طعام',
+        'coaching.builder.diet.addMeal': '+ إضافة وجبة',
+        'coaching.builder.diet.emptyMeal': 'أضف أول طعام لهذه الوجبة.',
+        'coaching.builder.diet.emptyMeals': 'لم تضف وجبات بعد.',
+        'coaching.builder.diet.mealNotes': 'ملاحظات الوجبة',
+        'coaching.builder.diet.stepTwoHint': 'تتغير القيم فورًا عند تعديل الكمية أو الطعام.',
+        'coaching.builder.diet.meal': 'وجبة',
+        'coaching.builder.diet.mealCount': '{{count}} وجبات',
+        'coaching.builder.diet.foodCount': '{{count}} أطعمة',
+        'coaching.builder.diet.remainingCalories': 'المتبقي {{count}} سعرة',
+        'coaching.builder.diet.percentComplete': '{{percent}}% مكتمل',
+        'coaching.builder.diet.mealTimeWithValue': 'موعد الوجبة: {{time}}',
+        'coaching.builder.diet.reviewTitle': 'مراجعة خطة التغذية قبل الحفظ',
+        'coaching.builder.diet.reviewHint': 'راجع بيانات العميل، الأهداف، والقيم الفعلية لكل وجبة.',
+        'coaching.builder.diet.currentValues': 'القيم الحالية',
+        'coaching.builder.diet.mealFoodCount': '{{meals}} وجبات / {{foods}} أطعمة',
+        'coaching.builder.diet.mealsFoodsLabel': 'الوجبات / الأطعمة',
+        'coaching.builder.diet.noMealTime': 'بدون موعد',
+        'coaching.builder.diet.planLabel': 'الخطة:',
+        'coaching.builder.diet.mealCalories': '{{count}} سعرة',
         'coaching.measurement.edit': 'تعديل القياس',
         'coaching.measurement.saved': 'تم حفظ القياس بنجاح.',
         'coaching.checkin.question': 'كيف كان يوم المتدرب؟',
@@ -1892,6 +2060,89 @@
         'coaching.builder.workoutStructure': 'Build days & exercises',
         'coaching.builder.review': 'Review & save',
         'coaching.builder.reviewBeforeSave': 'Review before saving',
+        'coaching.builder.title.create.workout': 'Create training program',
+        'coaching.builder.title.edit.workout': 'Edit training program',
+        'coaching.builder.title.create.diet': 'Create nutrition plan',
+        'coaching.builder.title.edit.diet': 'Edit nutrition plan',
+        'coaching.builder.dialogSubtitle': 'Client: {{client}} · Three clear steps before saving.',
+        'coaching.builder.backToBasics': 'Previous: basic information',
+        'coaching.builder.backToContent': 'Previous: plan content',
+        'coaching.builder.hint.diet.basics': '1/3 — Client and calorie details',
+        'coaching.builder.hint.diet.structure': '2/3 — Arrange meals and foods',
+        'coaching.builder.hint.diet.review': '3/3 — Review and approve the plan',
+        'coaching.builder.hint.workout.basics': '1/3 — Program details and goal',
+        'coaching.builder.hint.workout.structure': '2/3 — Build days and exercises',
+        'coaching.builder.hint.workout.review': '3/3 — Review and approve the program',
+        'coaching.builder.stageTwo': 'Step two',
+        'coaching.builder.workoutStepTwoHint': 'Add days and exercises; volume and muscle distribution will be calculated automatically.',
+        'coaching.builder.totalExercises': 'Total exercises',
+        'coaching.builder.totalSets': 'Total sets',
+        'coaching.builder.trainingVolume': 'Estimated training volume',
+        'coaching.builder.days': 'Days',
+        'coaching.builder.muscleDistribution': 'Muscle distribution',
+        'coaching.builder.muscleDistributionHint': 'Based on exercise sets',
+        'coaching.builder.muscleDistributionEmpty': 'Add exercises to view distribution.',
+        'coaching.builder.dayName': 'Day name',
+        'coaching.builder.dayOfWeek': 'Day of week',
+        'coaching.builder.chooseDay': 'Choose day',
+        'coaching.builder.dayNotes': 'Day notes',
+        'coaching.builder.chooseExercise': 'Choose an exercise',
+        'coaching.builder.exerciseReferenceEmpty': 'Choose an exercise to view its target muscle and instructions.',
+        'coaching.builder.removeDay': 'Remove day',
+        'coaching.builder.addExercise': '+ Add exercise',
+        'coaching.builder.exerciseNotes': 'Exercise notes',
+        'coaching.builder.repsMin': 'Reps min',
+        'coaching.builder.repsMax': 'Reps max',
+        'coaching.builder.undetermined': 'Not specified',
+        'coaching.builder.dayNumber': 'Day {{count}}',
+        'coaching.builder.exerciseCount': 'Exercises: {{count}}',
+        'coaching.builder.delete': 'Delete',
+        'coaching.builder.next.dietStructure': 'Next: build meals',
+        'coaching.builder.next.dietReview': 'Next: review plan',
+        'coaching.builder.next.workoutStructure': 'Next: build training days',
+        'coaching.builder.next.workoutReview': 'Next: review program',
+        'coaching.builder.stageThree': 'Step three',
+        'coaching.builder.workoutReviewTitle': 'Review training program before saving',
+        'coaching.builder.workoutReviewHint': 'Review training load, muscle distribution, and each day.',
+        'coaching.builder.reviewReady': 'Ready for review',
+        'coaching.builder.program': 'Program',
+        'coaching.builder.review.duration': 'Duration',
+        'coaching.builder.unit.kg': 'kg',
+        'coaching.builder.review.goal': 'Goal:',
+        'coaching.builder.review.level': 'Level:',
+        'coaching.builder.review.daysPerWeek': 'Training days per week:',
+        'coaching.builder.review.durationValue': '{{count}} weeks',
+        'coaching.builder.review.volumeValue': '{{count}} kg',
+        'coaching.builder.review.exerciseSetCounts': 'Exercises: {{exercises}} · Sets: {{sets}}',
+        'coaching.builder.aiDescription': 'Keep manual editing available, or request a refinement to the current draft.',
+        'coaching.builder.aiPlaceholder': 'Example: add 4 sets of bench press or swap rice for potatoes',
+        'coaching.builder.atomicSave': 'Atomic database save',
+        'coaching.builder.programName': 'Program name *',
+        'coaching.builder.programNamePlaceholder': 'Example: foundational strength program',
+        'coaching.builder.startDate': 'Start date *',
+        'coaching.builder.endDate': 'End date',
+        'coaching.builder.durationWeeks': 'Duration in weeks',
+        'coaching.builder.goal': 'Goal',
+        'coaching.builder.level': 'Level',
+        'coaching.builder.daysPerWeek': 'Training days per week',
+        'coaching.builder.description': 'Program description',
+        'coaching.builder.buildDays': 'Build training days',
+        'coaching.builder.buildDaysHint': 'Add days and exercises from the TOP GYM library.',
+        'coaching.builder.addDay': '+ Add day',
+        'coaching.builder.noDays': 'No training days added yet.',
+        'coaching.builder.stageOne': 'Step one',
+        'coaching.builder.programDetails': 'Program details',
+        'coaching.builder.programDetailsHint': 'Set the program goal, level, and duration before arranging days and exercises.',
+        'coaching.builder.goal.muscle': 'Build muscle',
+        'coaching.builder.goal.strength': 'Increase strength',
+        'coaching.builder.goal.fatLoss': 'Lose fat',
+        'coaching.builder.goal.generalFitness': 'General fitness',
+        'coaching.builder.goal.endurance': 'Endurance',
+        'coaching.builder.level.beginner': 'Beginner',
+        'coaching.builder.level.intermediate': 'Intermediate',
+        'coaching.builder.level.advanced': 'Advanced',
+        'coaching.builder.progress.diet': 'Meals: {{meals}} · Foods: {{foods}}',
+        'coaching.builder.progress.workout': 'Days: {{days}} · Exercises: {{exercises}}',
         'coaching.builder.food': 'Food',
         'coaching.builder.protein': 'Protein',
         'coaching.builder.carbs': 'Carbohydrates',
@@ -1916,6 +2167,82 @@
         'coaching.builder.dailyEnergyNeeds': 'Total daily energy expenditure (TDEE)',
         'coaching.builder.calculationTarget': 'Suggested target',
         'coaching.builder.targetCaloriesLabel': 'Target calories',
+        'coaching.builder.statusLabel': 'Status',
+        'coaching.builder.diet.currentProfile': 'Current profile:',
+        'coaching.builder.diet.mealCount': '{{count}} meals',
+        'coaching.builder.diet.basicsTitle': 'Plan basics and calorie calculation',
+        'coaching.builder.diet.basicsHint': 'Calculate daily needs, then apply the goal and macros before building meals.',
+        'coaching.builder.diet.planName': 'Plan name *',
+        'coaching.builder.diet.planNamePlaceholder': 'Example: muscle-building plan',
+        'coaching.builder.diet.mealsPerDay': 'Meals per day',
+        'coaching.builder.diet.meals': 'meals',
+        'coaching.builder.diet.calculator': 'BMR / TDEE calculator',
+        'coaching.builder.diet.dailyNeeds': 'Client daily energy needs',
+        'coaching.builder.diet.measurementNote.withDate': 'Weight and height loaded from the latest measurement on {{date}}.',
+        'coaching.builder.diet.measurementNote.empty': 'Enter measurements manually or add one from the client profile.',
+        'coaching.builder.diet.weightKg': 'Weight (kg)',
+        'coaching.builder.diet.heightCm': 'Height (cm)',
+        'coaching.builder.diet.age': 'Age',
+        'coaching.builder.diet.gender': 'Gender',
+        'coaching.builder.diet.gender.male': 'Male',
+        'coaching.builder.diet.gender.female': 'Female',
+        'coaching.builder.diet.activity': 'Activity level',
+        'coaching.builder.diet.activity.sedentary': 'Very low',
+        'coaching.builder.diet.activity.light': 'Light',
+        'coaching.builder.diet.activity.moderate': 'Moderate',
+        'coaching.builder.diet.activity.high': 'High',
+        'coaching.builder.diet.activity.veryHigh': 'Very high',
+        'coaching.builder.diet.goal.lose': 'Lose weight',
+        'coaching.builder.diet.goal.maintain': 'Maintain weight',
+        'coaching.builder.diet.goal.gain': 'Gain weight',
+        'coaching.builder.diet.calorieAdjustment': 'Calorie deficit / surplus',
+        'coaching.builder.diet.calorieAdjustmentHint': 'Negative for weight loss; positive for weight gain',
+        'coaching.builder.diet.bmr': 'Basal calories',
+        'coaching.builder.diet.tdee': 'Energy needs with activity',
+        'coaching.builder.diet.applyCalories': 'Apply to plan',
+        'coaching.builder.diet.planTargets': 'Plan targets',
+        'coaching.builder.diet.defaultMacroSplit': 'Default split: 30% protein · 40% carbs · 30% fat',
+        'coaching.builder.diet.description': 'Plan description',
+        'coaching.builder.diet.notes': 'Notes',
+        'coaching.builder.diet.chooseFood': 'Choose food',
+        'coaching.builder.diet.searchFood': 'Search foods',
+        'coaching.builder.diet.noFoodMatch': 'No matching food found.',
+        'coaching.builder.diet.chooseClient': 'Choose client',
+        'coaching.builder.diet.searchClient': 'Search by client name or phone',
+        'coaching.builder.diet.noClientMatch': 'No matching client found.',
+        'coaching.builder.diet.searchExercise': 'Search exercises or muscles',
+        'coaching.builder.diet.noExerciseMatch': 'No matching exercise found.',
+        'coaching.builder.diet.chooseOption': 'Choose an option',
+        'coaching.builder.diet.searchOptions': 'Search options',
+        'coaching.builder.diet.noOptionMatch': 'No matching options.',
+        'coaching.builder.diet.quantity': 'Quantity',
+        'coaching.builder.diet.unit': 'Unit',
+        'coaching.builder.diet.grams': 'grams',
+        'coaching.builder.diet.calorieUnit': 'calories',
+        'coaching.builder.diet.mealTime': 'Time',
+        'coaching.builder.diet.mealTimeHint': 'Set meal time',
+        'coaching.builder.diet.removeFood': 'Remove food',
+        'coaching.builder.diet.removeMeal': 'Remove meal',
+        'coaching.builder.diet.addFood': '+ Add food',
+        'coaching.builder.diet.addMeal': '+ Add meal',
+        'coaching.builder.diet.emptyMeal': 'Add the first food to this meal.',
+        'coaching.builder.diet.emptyMeals': 'No meals added yet.',
+        'coaching.builder.diet.mealNotes': 'Meal notes',
+        'coaching.builder.diet.stepTwoHint': 'Values update immediately when the quantity or food changes.',
+        'coaching.builder.diet.meal': 'Meal',
+        'coaching.builder.diet.mealCount': '{{count}} meals',
+        'coaching.builder.diet.foodCount': '{{count}} foods',
+        'coaching.builder.diet.remainingCalories': '{{count}} calories remaining',
+        'coaching.builder.diet.percentComplete': '{{percent}}% complete',
+        'coaching.builder.diet.mealTimeWithValue': 'Meal time: {{time}}',
+        'coaching.builder.diet.reviewTitle': 'Review nutrition plan before saving',
+        'coaching.builder.diet.reviewHint': 'Review client details, targets, and actual values for each meal.',
+        'coaching.builder.diet.currentValues': 'Current values',
+        'coaching.builder.diet.mealFoodCount': '{{meals}} meals / {{foods}} foods',
+        'coaching.builder.diet.mealsFoodsLabel': 'Meals / foods',
+        'coaching.builder.diet.noMealTime': 'No time set',
+        'coaching.builder.diet.planLabel': 'Plan:',
+        'coaching.builder.diet.mealCalories': '{{count}} calories',
         'coaching.measurement.edit': 'Edit measurement',
         'coaching.measurement.saved': 'Measurement saved successfully.',
         'coaching.checkin.question': 'How was the trainee’s day?',
@@ -2712,8 +3039,579 @@
         'backupHistory.error.storageUnavailable': 'Private backup storage is currently unavailable. Check the provider settings and try again.'
     });
 
+    const coachingPrintArabic = Object.freeze({
+        'print.coaching.document.workout': 'برنامج تدريب رياضي',
+        'print.coaching.document.diet': 'خطة تغذية رياضية',
+        'print.coaching.brand.subtitle': 'إدارة التدريب والتغذية الرياضية',
+        'print.coaching.documentId.draft': 'مسودة',
+        'print.coaching.client': 'العميل',
+        'print.coaching.clientFile': 'ملف العميل',
+        'print.coaching.approved.workout': 'برنامج التدريب المعتمد',
+        'print.coaching.approved.diet': 'خطة التغذية المعتمدة',
+        'print.coaching.newSystem': 'نظام جديد',
+        'print.coaching.programSummary': 'ملخص البرنامج',
+        'print.coaching.trainingLoad': 'الحمل التدريبي وتوزيع العضلات',
+        'print.coaching.trainingDays': 'الأيام التدريبية',
+        'print.coaching.exerciseTotal': 'إجمالي التمارين',
+        'print.coaching.setTotal': 'إجمالي المجموعات',
+        'print.coaching.approxVolume': 'الحجم التقريبي',
+        'print.coaching.basedOnInputs': 'حسب الوزن والتكرارات المدخلة',
+        'print.coaching.basicDetails': 'البيانات الأساسية',
+        'print.coaching.goal': 'الهدف',
+        'print.coaching.level': 'المستوى',
+        'print.coaching.daysPerWeek': 'أيام أسبوعيًا',
+        'print.coaching.duration': 'المدة',
+        'print.coaching.weeks': 'أسبوع',
+        'print.coaching.start': 'البداية',
+        'print.coaching.end': 'النهاية',
+        'print.coaching.status': 'الحالة',
+        'print.coaching.version': 'الإصدار',
+        'print.coaching.muscleDistribution': 'توزيع العضلات',
+        'print.coaching.exerciseSet': 'مجموعة',
+        'print.coaching.noMuscleDistribution': 'لم يتم تحديد توزيع العضلات.',
+        'print.coaching.programDescription': 'وصف البرنامج',
+        'print.coaching.day': 'اليوم {{count}}',
+        'print.coaching.exercise': 'تمرين',
+        'print.coaching.exercises': 'تمارين',
+        'print.coaching.sets': 'مجموعات',
+        'print.coaching.exerciseName': 'التمرين',
+        'print.coaching.muscle': 'العضلة',
+        'print.coaching.reps': 'تكرارات',
+        'print.coaching.weight': 'الوزن',
+        'print.coaching.rest': 'الراحة',
+        'print.coaching.tempoEffort': 'الوتيرة / الجهد',
+        'print.coaching.superset': 'سوبر سيت',
+        'print.coaching.noExercises': 'لا توجد تمارين.',
+        'print.coaching.noTrainingDays': 'لا توجد أيام تدريب محفوظة.',
+        'print.coaching.performanceReference': 'مرجع الأداء',
+        'print.coaching.exerciseInstructions': 'تعليمات التمارين والنصائح',
+        'print.coaching.undeterminedMuscle': 'غير محددة',
+        'print.coaching.muscleById': 'عضلة #{{id}}',
+        'print.coaching.equipmentUndetermined': 'معدات غير محددة',
+        'print.coaching.levelUndetermined': 'مستوى غير محدد',
+        'print.coaching.howToPerform': 'طريقة الأداء',
+        'print.coaching.tip': 'نصيحة',
+        'print.coaching.commonMistakes': 'أخطاء شائعة',
+        'print.coaching.managementNotes': 'ملاحظات الإدارة',
+        'print.coaching.programNotes': 'ملاحظات البرنامج',
+        'print.coaching.dietSummary': 'ملخص الخطة',
+        'print.coaching.nutritionGoals': 'الأهداف الغذائية والقيم المحسوبة',
+        'print.coaching.targetCalories': 'السعرات المستهدفة',
+        'print.coaching.calculatedCalories': 'السعرات المحسوبة',
+        'print.coaching.mealCount': 'عدد الوجبات',
+        'print.coaching.foodCount': 'عدد الأطعمة',
+        'print.coaching.calorieUnit': 'سعر',
+        'print.coaching.dailyGoals': 'الأهداف اليومية',
+        'print.coaching.calorieAdjustment': 'تعديل السعرات',
+        'print.coaching.proteinTarget': 'البروتين المستهدف',
+        'print.coaching.carbsTarget': 'الكربوهيدرات المستهدفة',
+        'print.coaching.fatsTarget': 'الدهون المستهدفة',
+        'print.coaching.grams': 'ج',
+        'print.coaching.unit.kg': 'كجم',
+        'print.coaching.unit.cm': 'سم',
+        'print.coaching.unit.seconds': 'ث',
+        'print.coaching.unit.years': 'سنة',
+        'print.coaching.status.active': 'نشطة',
+        'print.coaching.status.draft': 'مسودة',
+        'print.coaching.status.paused': 'متوقفة',
+        'print.coaching.status.completed': 'مكتملة',
+        'print.coaching.status.archived': 'مؤرشفة',
+        'print.coaching.goal.lose': 'خسارة وزن',
+        'print.coaching.goal.maintain': 'تثبيت الوزن',
+        'print.coaching.goal.gain': 'زيادة وزن',
+        'print.coaching.goal.muscle': 'بناء العضلات',
+        'print.coaching.goal.strength': 'زيادة القوة',
+        'print.coaching.goal.fatLoss': 'حرق الدهون',
+        'print.coaching.goal.generalFitness': 'لياقة عامة',
+        'print.coaching.goal.endurance': 'التحمل',
+        'print.coaching.level.beginner': 'مبتدئ',
+        'print.coaching.level.intermediate': 'متوسط',
+        'print.coaching.level.advanced': 'متقدم',
+        'print.coaching.dailyNeedsCalculator': 'حاسبة الاحتياج اليومي',
+        'print.coaching.weightKg': 'الوزن',
+        'print.coaching.heightCm': 'الطول',
+        'print.coaching.age': 'العمر',
+        'print.coaching.gender': 'النوع',
+        'print.coaching.gender.female': 'أنثى',
+        'print.coaching.gender.male': 'ذكر',
+        'print.coaching.activity': 'النشاط',
+        'print.coaching.activity.sedentary': 'قليل جدًا',
+        'print.coaching.activity.light': 'خفيف',
+        'print.coaching.activity.moderate': 'متوسط',
+        'print.coaching.activity.high': 'مرتفع',
+        'print.coaching.activity.veryHigh': 'مرتفع جدًا',
+        'print.coaching.bmr': 'BMR · معدل الأيض الأساسي',
+        'print.coaching.tdee': 'TDEE · الاحتياج اليومي',
+        'print.coaching.dietDescription': 'وصف الخطة',
+        'print.coaching.totalMacros': 'إجمالي الماكروز المحسوبة',
+        'print.coaching.macroSummary': 'البروتين {{protein}} ج · الكربوهيدرات {{carbs}} ج · الدهون {{fats}} ج',
+        'print.coaching.meal': 'وجبة {{count}}',
+        'print.coaching.food': 'الطعام',
+        'print.coaching.quantity': 'الكمية',
+        'print.coaching.calories': 'السعرات',
+        'print.coaching.protein': 'البروتين',
+        'print.coaching.carbs': 'الكربوهيدرات',
+        'print.coaching.fats': 'الدهون',
+        'print.coaching.noFood': 'لا توجد أطعمة.',
+        'print.coaching.noMeals': 'لا توجد وجبات محفوظة.',
+        'print.coaching.noMealTime': 'بدون موعد',
+        'print.coaching.mealTime': 'موعد الوجبة',
+        'print.coaching.adminNotes': 'ملاحظات الإدارة',
+        'print.coaching.planNotes': 'ملاحظات الخطة',
+        'print.coaching.fallback.food': 'طعام غير محدد',
+        'print.coaching.footer.generated': 'إدارة التدريب والتغذية الرياضية',
+        'print.coaching.fallback.item': 'عنصر غير محدد',
+        'print.coaching.noData': 'لا توجد بيانات مسجلة.',
+        'print.coaching.overview.document': 'ملف التدريب والتغذية الكامل',
+        'print.coaching.overview.name': 'ملف التدريب والتغذية',
+        'print.coaching.overview.followUp': 'التنفيذ والمتابعة',
+        'print.coaching.overview.activeFile': 'ملف نشط',
+        'print.coaching.overview.savedSystems': 'الأنظمة المحفوظة',
+        'print.coaching.overview.workouts': 'برامج التدريب',
+        'print.coaching.overview.diets': 'خطط التغذية',
+        'print.coaching.overview.measurements': 'المتابعة البدنية',
+        'print.coaching.overview.measurementsTitle': 'القياسات المسجلة',
+        'print.coaching.overview.sessions': 'التنفيذ',
+        'print.coaching.overview.sessionsTitle': 'جلسات التدريب',
+        'print.coaching.overview.mealLogsTitle': 'سجل الوجبات',
+        'print.coaching.image.start': 'البداية',
+        'print.coaching.image.end': 'النهاية',
+        'print.coaching.servingUnit.gram': 'جرام',
+        'print.coaching.servingUnit.kilogram': 'كجم',
+        'print.coaching.servingUnit.milliliter': 'مل',
+        'print.coaching.servingUnit.liter': 'لتر',
+        'print.coaching.servingUnit.cup': 'كوب',
+        'print.coaching.servingUnit.tablespoon': 'ملعقة كبيرة',
+        'print.coaching.servingUnit.teaspoon': 'ملعقة صغيرة',
+        'print.coaching.servingUnit.piece': 'حبة',
+        'print.coaching.overview.notesTitle': 'ملاحظات الملف',
+        'print.coaching.overview.workoutGoal': 'البرنامج والهدف',
+        'print.coaching.overview.dietCalories': 'الخطة والسعرات',
+        'print.coaching.overview.period': 'الفترة',
+        'print.coaching.overview.content': 'المحتوى',
+        'print.coaching.overview.exerciseCount': '{{count}} تمرين',
+        'print.coaching.overview.calorieValue': '{{count}} سعر',
+        'print.coaching.overview.mealCount': '{{count}} وجبات',
+        'print.coaching.overview.date': 'التاريخ',
+        'print.coaching.overview.weight': 'الوزن',
+        'print.coaching.overview.height': 'الطول',
+        'print.coaching.overview.weightUnit': '\u0643\u062c\u0645',
+        'print.coaching.overview.heightUnit': '\u0633\u0645',
+        'print.coaching.overview.currentWeight': 'الوزن الحالي',
+        'print.coaching.overview.bodyFat': 'نسبة الدهون',
+        'print.coaching.overview.day': 'اليوم',
+        'print.coaching.overview.statusCompleted': 'مكتملة',
+        'print.coaching.overview.session': 'جلسة تدريب',
+        'print.coaching.overview.food': 'طعام',
+        'print.coaching.overview.meal': 'الوجبة',
+        'print.coaching.overview.calories': 'السعرات',
+        'print.coaching.overview.loggedAt': 'وقت التسجيل',
+        'print.coaching.overview.workoutEmpty': 'لا توجد برامج تدريب.',
+        'print.coaching.overview.dietEmpty': 'لا توجد خطط تغذية.',
+        'print.coaching.overview.measurementsEmpty': 'لا توجد قياسات.',
+        'print.coaching.overview.sessionsEmpty': 'لا توجد جلسات.',
+        'print.coaching.overview.mealLogsEmpty': 'لا توجد وجبات مسجلة.',
+        'print.coaching.overview.clientNotes': 'ملاحظات العميل',
+        'print.coaching.loading.system': 'جاري تجهيز النظام للطباعة…',
+        'print.coaching.loading.draft': 'جاري تجهيز مسودة النظام للطباعة…',
+        'print.coaching.loading.overview': 'جاري تجهيز ملف التدريب والتغذية…',
+        'print.coaching.error.notFound': 'لم يتم العثور على النظام المطلوب.',
+        'print.coaching.error.print': 'تعذر تجهيز مستند الطباعة.',
+        'print.coaching.error.overview': 'تعذر تجهيز الملف.'
+    });
+
+    const coachingPrintEnglish = Object.freeze({
+        'print.coaching.document.workout': 'Workout program',
+        'print.coaching.document.diet': 'Nutrition plan',
+        'print.coaching.brand.subtitle': 'Training and nutrition management',
+        'print.coaching.documentId.draft': 'Draft',
+        'print.coaching.client': 'Client',
+        'print.coaching.clientFile': 'Client profile',
+        'print.coaching.approved.workout': 'Approved workout program',
+        'print.coaching.approved.diet': 'Approved nutrition plan',
+        'print.coaching.newSystem': 'New plan',
+        'print.coaching.programSummary': 'Program summary',
+        'print.coaching.trainingLoad': 'Training load and muscle distribution',
+        'print.coaching.trainingDays': 'Training days',
+        'print.coaching.exerciseTotal': 'Total exercises',
+        'print.coaching.setTotal': 'Total sets',
+        'print.coaching.approxVolume': 'Approximate volume',
+        'print.coaching.basedOnInputs': 'Based on entered weight and reps',
+        'print.coaching.basicDetails': 'Program details',
+        'print.coaching.goal': 'Goal',
+        'print.coaching.level': 'Level',
+        'print.coaching.daysPerWeek': 'Days per week',
+        'print.coaching.duration': 'Duration',
+        'print.coaching.weeks': 'weeks',
+        'print.coaching.start': 'Start',
+        'print.coaching.end': 'End',
+        'print.coaching.status': 'Status',
+        'print.coaching.version': 'Version',
+        'print.coaching.muscleDistribution': 'Muscle distribution',
+        'print.coaching.exerciseSet': 'sets',
+        'print.coaching.noMuscleDistribution': 'No muscle distribution specified.',
+        'print.coaching.programDescription': 'Program description',
+        'print.coaching.day': 'Day {{count}}',
+        'print.coaching.exercise': 'exercise',
+        'print.coaching.exercises': 'exercises',
+        'print.coaching.sets': 'sets',
+        'print.coaching.exerciseName': 'Exercise',
+        'print.coaching.muscle': 'Muscle',
+        'print.coaching.reps': 'Reps',
+        'print.coaching.weight': 'Weight',
+        'print.coaching.rest': 'Rest',
+        'print.coaching.tempoEffort': 'Tempo / effort',
+        'print.coaching.superset': 'Superset',
+        'print.coaching.noExercises': 'No exercises.',
+        'print.coaching.noTrainingDays': 'No saved training days.',
+        'print.coaching.performanceReference': 'Exercise reference',
+        'print.coaching.exerciseInstructions': 'Exercise instructions and tips',
+        'print.coaching.undeterminedMuscle': 'Unspecified',
+        'print.coaching.muscleById': 'Muscle #{{id}}',
+        'print.coaching.equipmentUndetermined': 'Unspecified equipment',
+        'print.coaching.levelUndetermined': 'Unspecified level',
+        'print.coaching.howToPerform': 'Instructions',
+        'print.coaching.tip': 'Tip',
+        'print.coaching.commonMistakes': 'Common mistakes',
+        'print.coaching.managementNotes': 'Management notes',
+        'print.coaching.programNotes': 'Program notes',
+        'print.coaching.dietSummary': 'Plan summary',
+        'print.coaching.nutritionGoals': 'Nutrition goals and calculated values',
+        'print.coaching.targetCalories': 'Target calories',
+        'print.coaching.calculatedCalories': 'Calculated calories',
+        'print.coaching.mealCount': 'Meal count',
+        'print.coaching.foodCount': 'Food count',
+        'print.coaching.calorieUnit': 'kcal',
+        'print.coaching.dailyGoals': 'Daily goals',
+        'print.coaching.calorieAdjustment': 'Calorie adjustment',
+        'print.coaching.proteinTarget': 'Target protein',
+        'print.coaching.carbsTarget': 'Target carbohydrates',
+        'print.coaching.fatsTarget': 'Target fats',
+        'print.coaching.grams': 'g',
+        'print.coaching.unit.kg': 'kg',
+        'print.coaching.unit.cm': 'cm',
+        'print.coaching.unit.seconds': 'sec',
+        'print.coaching.unit.years': 'years',
+        'print.coaching.status.active': 'Active',
+        'print.coaching.status.draft': 'Draft',
+        'print.coaching.status.paused': 'Paused',
+        'print.coaching.status.completed': 'Completed',
+        'print.coaching.status.archived': 'Archived',
+        'print.coaching.goal.lose': 'Lose weight',
+        'print.coaching.goal.maintain': 'Maintain weight',
+        'print.coaching.goal.gain': 'Gain weight',
+        'print.coaching.goal.muscle': 'Build muscle',
+        'print.coaching.goal.strength': 'Build strength',
+        'print.coaching.goal.fatLoss': 'Fat loss',
+        'print.coaching.goal.generalFitness': 'General fitness',
+        'print.coaching.goal.endurance': 'Endurance',
+        'print.coaching.level.beginner': 'Beginner',
+        'print.coaching.level.intermediate': 'Intermediate',
+        'print.coaching.level.advanced': 'Advanced',
+        'print.coaching.dailyNeedsCalculator': 'Daily needs calculator',
+        'print.coaching.weightKg': 'Weight',
+        'print.coaching.heightCm': 'Height',
+        'print.coaching.age': 'Age',
+        'print.coaching.gender': 'Gender',
+        'print.coaching.gender.female': 'Female',
+        'print.coaching.gender.male': 'Male',
+        'print.coaching.activity': 'Activity',
+        'print.coaching.activity.sedentary': 'Sedentary',
+        'print.coaching.activity.light': 'Light',
+        'print.coaching.activity.moderate': 'Moderate',
+        'print.coaching.activity.high': 'High',
+        'print.coaching.activity.veryHigh': 'Very high',
+        'print.coaching.bmr': 'BMR · Basal metabolic rate',
+        'print.coaching.tdee': 'TDEE · Daily energy needs',
+        'print.coaching.dietDescription': 'Plan description',
+        'print.coaching.totalMacros': 'Calculated macro totals',
+        'print.coaching.macroSummary': 'Protein {{protein}} g · Carbohydrates {{carbs}} g · Fats {{fats}} g',
+        'print.coaching.meal': 'Meal {{count}}',
+        'print.coaching.food': 'Food',
+        'print.coaching.quantity': 'Quantity',
+        'print.coaching.calories': 'Calories',
+        'print.coaching.protein': 'Protein',
+        'print.coaching.carbs': 'Carbohydrates',
+        'print.coaching.fats': 'Fats',
+        'print.coaching.noFood': 'No foods.',
+        'print.coaching.noMeals': 'No saved meals.',
+        'print.coaching.noMealTime': 'No time set',
+        'print.coaching.mealTime': 'Meal time',
+        'print.coaching.adminNotes': 'Management notes',
+        'print.coaching.planNotes': 'Plan notes',
+        'print.coaching.fallback.food': 'Unspecified food',
+        'print.coaching.footer.generated': 'Training and nutrition management',
+        'print.coaching.fallback.item': 'Unspecified item',
+        'print.coaching.noData': 'No data recorded.',
+        'print.coaching.overview.document': 'Complete training and nutrition profile',
+        'print.coaching.overview.name': 'Training and nutrition profile',
+        'print.coaching.overview.followUp': 'Activity and follow-up',
+        'print.coaching.overview.activeFile': 'Active profile',
+        'print.coaching.overview.savedSystems': 'Saved plans',
+        'print.coaching.overview.workouts': 'Workout programs',
+        'print.coaching.overview.diets': 'Nutrition plans',
+        'print.coaching.overview.measurements': 'Physical tracking',
+        'print.coaching.overview.measurementsTitle': 'Recorded measurements',
+        'print.coaching.overview.sessions': 'Activity',
+        'print.coaching.overview.sessionsTitle': 'Training sessions',
+        'print.coaching.overview.mealLogsTitle': 'Meal log',
+        'print.coaching.image.start': 'Start position',
+        'print.coaching.image.end': 'End position',
+        'print.coaching.servingUnit.gram': 'g',
+        'print.coaching.servingUnit.kilogram': 'kg',
+        'print.coaching.servingUnit.milliliter': 'mL',
+        'print.coaching.servingUnit.liter': 'L',
+        'print.coaching.servingUnit.cup': 'cup',
+        'print.coaching.servingUnit.tablespoon': 'tbsp',
+        'print.coaching.servingUnit.teaspoon': 'tsp',
+        'print.coaching.servingUnit.piece': 'piece',
+        'print.coaching.overview.notesTitle': 'Profile notes',
+        'print.coaching.overview.workoutGoal': 'Program and goal',
+        'print.coaching.overview.dietCalories': 'Plan and calories',
+        'print.coaching.overview.period': 'Period',
+        'print.coaching.overview.content': 'Content',
+        'print.coaching.overview.exerciseCount': '{{count}} exercises',
+        'print.coaching.overview.calorieValue': '{{count}} kcal',
+        'print.coaching.overview.mealCount': '{{count}} meals',
+        'print.coaching.overview.date': 'Date',
+        'print.coaching.overview.weight': 'Weight',
+        'print.coaching.overview.height': 'Height',
+        'print.coaching.overview.weightUnit': 'kg',
+        'print.coaching.overview.heightUnit': 'cm',
+        'print.coaching.overview.currentWeight': 'Current weight',
+        'print.coaching.overview.bodyFat': 'Body fat',
+        'print.coaching.overview.day': 'Day',
+        'print.coaching.overview.statusCompleted': 'Completed',
+        'print.coaching.overview.session': 'Training session',
+        'print.coaching.overview.food': 'Food',
+        'print.coaching.overview.meal': 'Meal',
+        'print.coaching.overview.calories': 'Calories',
+        'print.coaching.overview.loggedAt': 'Logged at',
+        'print.coaching.overview.workoutEmpty': 'No workout programs.',
+        'print.coaching.overview.dietEmpty': 'No nutrition plans.',
+        'print.coaching.overview.measurementsEmpty': 'No measurements recorded.',
+        'print.coaching.overview.sessionsEmpty': 'No training sessions.',
+        'print.coaching.overview.mealLogsEmpty': 'No meal logs.',
+        'print.coaching.overview.clientNotes': 'Client notes',
+        'print.coaching.loading.system': 'Preparing the plan for printing…',
+        'print.coaching.loading.draft': 'Preparing the draft for printing…',
+        'print.coaching.loading.overview': 'Preparing the training and nutrition profile…',
+        'print.coaching.error.notFound': 'The requested plan could not be found.',
+        'print.coaching.error.print': 'Could not prepare the print document.',
+        'print.coaching.error.overview': 'Could not prepare the profile.'
+    });
+
+    const memberPrintArabic = Object.freeze({
+        'print.member.document.membershipTitle': 'إيصال الاشتراك',
+        'print.member.document.fullProfileTitle': 'ملف العضوية الكامل',
+        'print.member.document.newMembershipTitle': 'إيصال اشتراك جديد',
+        'print.member.document.paymentReceiptTitle': 'إيصال دفع',
+        'print.member.brand.subtitle': 'إدارة الجيم',
+        'print.member.brand.managementContext': 'إدارة العضويات والاشتراكات',
+        'print.member.footer.signature': 'اعتماد الإدارة',
+        'print.member.footer.generatedBy': 'تم إنشاؤه بواسطة نظام {{brand}}',
+        'print.member.meta.memberNumber': 'رقم العضو',
+        'print.member.meta.receiptNumber': 'رقم الإيصال',
+        'print.member.meta.printedAt': 'تاريخ الطباعة',
+        'print.member.section.customerData': 'بيانات العميل',
+        'print.member.section.memberData': 'بيانات المشترك',
+        'print.member.section.accessScope': 'نطاق العضوية والبوابة',
+        'print.member.section.accessDetails': 'تفاصيل الوصول',
+        'print.member.section.membershipDetails': 'تفاصيل العضوية',
+        'print.member.section.newMembershipDetails': 'تفاصيل الاشتراك الجديد',
+        'print.member.section.currentMembership': 'الاشتراك الحالي',
+        'print.member.section.financialHistory': 'السجل المالي',
+        'print.member.section.paymentHistory': 'سجل المدفوعات والإيصالات',
+        'print.member.section.completeHistory': 'السجل الكامل',
+        'print.member.section.membershipHistory': 'سجل الاشتراكات والتجديدات',
+        'print.member.section.freezeHistory': 'سجل التجميد',
+        'print.member.section.freezeOperations': 'عمليات التجميد',
+        'print.member.section.activityHistory': 'سجل النشاط',
+        'print.member.section.allRecordedOperations': 'كل العمليات المسجلة',
+        'print.member.field.memberNumber': 'رقم العضو',
+        'print.member.field.registrationDate': 'تاريخ التسجيل',
+        'print.member.field.email': 'البريد الإلكتروني',
+        'print.member.field.memberNotes': 'ملاحظات العضو',
+        'print.member.field.branch': 'الفرع',
+        'print.member.field.section': 'القسم',
+        'print.member.field.portalCode': 'كود بوابة العضوية',
+        'print.member.field.portalLink': 'رابط بوابة العضوية',
+        'print.member.field.plan': 'الباقة',
+        'print.member.field.membershipType': 'نوع العضوية',
+        'print.member.field.startDate': 'تاريخ البداية',
+        'print.member.field.endDate': 'تاريخ الانتهاء',
+        'print.member.field.daysRemaining': 'الأيام المتبقية',
+        'print.member.field.freeze': 'التجميد',
+        'print.member.field.paymentDate': 'تاريخ الدفع',
+        'print.member.field.paymentMethod': 'طريقة الدفع',
+        'print.member.field.basePrice': 'السعر الأساسي',
+        'print.member.field.discount': 'الخصم',
+        'print.member.field.amountDue': 'المستحق',
+        'print.member.field.amountRemaining': 'المتبقي',
+        'print.member.field.membershipNotes': 'ملاحظات الاشتراك',
+        'print.member.field.totalDue': 'إجمالي المستحق',
+        'print.member.field.totalPaid': 'إجمالي المدفوع',
+        'print.member.field.totalRemaining': 'إجمالي المتبقي',
+        'print.member.field.receiptCount': 'عدد الإيصالات',
+        'print.member.table.planAndDuration': 'الباقة والمدة',
+        'print.member.table.branch': 'الفرع',
+        'print.member.table.section': 'القسم',
+        'print.member.table.period': 'الفترة',
+        'print.member.table.status': 'الحالة',
+        'print.member.table.account': 'الحساب',
+        'print.member.table.payment': 'الدفع',
+        'print.member.table.start': 'البداية',
+        'print.member.table.end': 'النهاية',
+        'print.member.table.resumption': 'الاستئناف',
+        'print.member.table.duration': 'المدة',
+        'print.member.table.reason': 'السبب',
+        'print.member.table.date': 'التاريخ',
+        'print.member.table.operation': 'العملية',
+        'print.member.table.details': 'التفاصيل',
+        'print.member.table.receiptNumber': 'رقم الإيصال',
+        'print.member.table.membership': 'الاشتراك',
+        'print.member.table.transactionAmount': 'قيمة العملية',
+        'print.member.table.remaining': 'المتبقي',
+        'print.member.table.paymentMethod': 'طريقة الدفع',
+        'print.member.table.notes': 'ملاحظات',
+        'print.member.value.until': 'حتى {{date}}',
+        'print.member.value.remaining': 'متبقي {{amount}}',
+        'print.member.value.expiredSince': 'منتهية منذ {{count}} يوم',
+        'print.member.value.dayCount': '{{count}} يوم',
+        'print.member.value.from': 'من {{date}}',
+        'print.member.value.to': 'إلى {{date}}',
+        'print.member.value.due': 'مستحق {{amount}}',
+        'print.member.value.paid': 'مدفوع {{amount}}',
+        'print.member.value.operationRecorded': 'تم تسجيل العملية في سجل العضو.',
+        'print.member.value.active': 'نشط',
+        'print.member.value.notSpecified': 'غير محدد',
+        'print.member.value.notAvailable': 'غير متاح',
+        'print.member.value.memberFallback': 'عضو الجيم',
+        'print.member.value.noMembership': 'لا يوجد اشتراك مسجل لهذا العضو.',
+        'print.member.empty.memberships': 'لا توجد اشتراكات مسجلة.',
+        'print.member.empty.freezes': 'لا توجد عمليات تجميد.',
+        'print.member.empty.events': 'لا توجد عمليات مسجلة.',
+        'print.member.empty.payments': 'لا توجد مدفوعات أو إيصالات مسجلة.',
+        'print.member.error.receiptMissing': 'الإيصال غير موجود. حدّث بيانات العضو وحاول مرة أخرى.',
+        'print.member.operation.created': 'إضافة اشتراك',
+        'print.member.operation.updated': 'تعديل بيانات',
+        'print.member.operation.renewed': 'تجديد اشتراك',
+        'print.member.operation.frozen': 'تجميد العضوية',
+        'print.member.operation.resumed': 'استئناف العضوية',
+        'print.member.operation.paymentUpdated': 'تحديث الدفع',
+        'print.member.operation.transactionSubscription': 'اشتراك',
+        'print.member.operation.transactionPayment': 'دفعة',
+        'print.member.operation.transactionAdjustment': 'تسوية',
+        'print.member.value.twoMonths': 'شهرين'
+    });
+
+    const memberPrintEnglish = Object.freeze({
+        'print.member.document.membershipTitle': 'Membership receipt',
+        'print.member.document.fullProfileTitle': 'Full membership profile',
+        'print.member.document.newMembershipTitle': 'New membership receipt',
+        'print.member.document.paymentReceiptTitle': 'Payment receipt',
+        'print.member.brand.subtitle': 'Gym management',
+        'print.member.brand.managementContext': 'Membership management',
+        'print.member.footer.signature': 'Management approval',
+        'print.member.footer.generatedBy': 'Generated by {{brand}} System',
+        'print.member.meta.memberNumber': 'Member number',
+        'print.member.meta.receiptNumber': 'Receipt number',
+        'print.member.meta.printedAt': 'Print date',
+        'print.member.section.customerData': 'Customer information',
+        'print.member.section.memberData': 'Member information',
+        'print.member.section.accessScope': 'Membership and portal scope',
+        'print.member.section.accessDetails': 'Access details',
+        'print.member.section.membershipDetails': 'Membership details',
+        'print.member.section.newMembershipDetails': 'New membership details',
+        'print.member.section.currentMembership': 'Current membership',
+        'print.member.section.financialHistory': 'Financial history',
+        'print.member.section.paymentHistory': 'Payment and receipt history',
+        'print.member.section.completeHistory': 'Complete history',
+        'print.member.section.membershipHistory': 'Membership and renewal history',
+        'print.member.section.freezeHistory': 'Freeze history',
+        'print.member.section.freezeOperations': 'Freeze operations',
+        'print.member.section.activityHistory': 'Activity history',
+        'print.member.section.allRecordedOperations': 'All recorded operations',
+        'print.member.field.memberNumber': 'Member number',
+        'print.member.field.registrationDate': 'Registration date',
+        'print.member.field.email': 'Email address',
+        'print.member.field.memberNotes': 'Member notes',
+        'print.member.field.branch': 'Branch',
+        'print.member.field.section': 'Section',
+        'print.member.field.portalCode': 'Membership portal code',
+        'print.member.field.portalLink': 'Membership portal link',
+        'print.member.field.plan': 'Plan',
+        'print.member.field.membershipType': 'Membership type',
+        'print.member.field.startDate': 'Start date',
+        'print.member.field.endDate': 'End date',
+        'print.member.field.daysRemaining': 'Days remaining',
+        'print.member.field.freeze': 'Freeze',
+        'print.member.field.paymentDate': 'Payment date',
+        'print.member.field.paymentMethod': 'Payment method',
+        'print.member.field.basePrice': 'Base price',
+        'print.member.field.discount': 'Discount',
+        'print.member.field.amountDue': 'Amount due',
+        'print.member.field.amountRemaining': 'Remaining balance',
+        'print.member.field.membershipNotes': 'Membership notes',
+        'print.member.field.totalDue': 'Total due',
+        'print.member.field.totalPaid': 'Total paid',
+        'print.member.field.totalRemaining': 'Total remaining',
+        'print.member.field.receiptCount': 'Receipt count',
+        'print.member.table.planAndDuration': 'Plan and duration',
+        'print.member.table.branch': 'Branch',
+        'print.member.table.section': 'Section',
+        'print.member.table.period': 'Period',
+        'print.member.table.status': 'Status',
+        'print.member.table.account': 'Account',
+        'print.member.table.payment': 'Payment',
+        'print.member.table.start': 'Start',
+        'print.member.table.end': 'End',
+        'print.member.table.resumption': 'Resumption',
+        'print.member.table.duration': 'Duration',
+        'print.member.table.reason': 'Reason',
+        'print.member.table.date': 'Date',
+        'print.member.table.operation': 'Operation',
+        'print.member.table.details': 'Details',
+        'print.member.table.receiptNumber': 'Receipt number',
+        'print.member.table.membership': 'Membership',
+        'print.member.table.transactionAmount': 'Transaction amount',
+        'print.member.table.remaining': 'Remaining',
+        'print.member.table.paymentMethod': 'Payment method',
+        'print.member.table.notes': 'Notes',
+        'print.member.value.until': 'Until {{date}}',
+        'print.member.value.remaining': '{{amount}} remaining',
+        'print.member.value.expiredSince': 'Expired {{count}} days ago',
+        'print.member.value.dayCount': '{{count}} days',
+        'print.member.value.from': 'From {{date}}',
+        'print.member.value.to': 'To {{date}}',
+        'print.member.value.due': 'Due {{amount}}',
+        'print.member.value.paid': 'Paid {{amount}}',
+        'print.member.value.operationRecorded': 'The operation was recorded in the member history.',
+        'print.member.value.active': 'Active',
+        'print.member.value.notSpecified': 'Not specified',
+        'print.member.value.notAvailable': 'Not available',
+        'print.member.value.memberFallback': 'Gym member',
+        'print.member.value.noMembership': 'No membership is recorded for this member.',
+        'print.member.empty.memberships': 'No memberships recorded.',
+        'print.member.empty.freezes': 'No freeze operations recorded.',
+        'print.member.empty.events': 'No operations recorded.',
+        'print.member.empty.payments': 'No payments or receipts recorded.',
+        'print.member.error.receiptMissing': 'The receipt was not found. Refresh the member data and try again.',
+        'print.member.operation.created': 'Membership added',
+        'print.member.operation.updated': 'Details updated',
+        'print.member.operation.renewed': 'Membership renewed',
+        'print.member.operation.frozen': 'Membership frozen',
+        'print.member.operation.resumed': 'Membership resumed',
+        'print.member.operation.paymentUpdated': 'Payment updated',
+        'print.member.operation.transactionSubscription': 'Subscription',
+        'print.member.operation.transactionPayment': 'Payment',
+        'print.member.operation.transactionAdjustment': 'Adjustment',
+        'print.member.value.twoMonths': 'Two months'
+    });
+
     const messages = Object.freeze({
         ar: Object.freeze({
+            ...coachingPrintArabic,
             'platformAdminScreen.shell.brandName': 'منصة Logic Fit',
             'platformAdminScreen.shell.brandDescription': 'إدارة المنصة المركزية',
             'platformAdminScreen.shell.sidebarCaption': 'إدارة المنصة',
@@ -2731,6 +3629,7 @@
             ...gymLibraryScreenArabic,
             ...membershipManagementScreenArabic,
             ...permissionsScreenArabic,
+            ...memberPrintArabic,
             'feedback.kicker': 'صوت المشتركين',
             'feedback.title': 'تقييمات المشتركين',
             'feedback.description': 'راجع آراء الأعضاء ومشكلاتهم واقتراحاتهم لتحسين تجربة الجيم.',
@@ -2962,6 +3861,7 @@
             'platformAdminScreen.audit.title': 'سجل عمليات المنصة',
             'platformAdminScreen.audit.description': 'كل قرار إداري محفوظ مع الممثل والوقت والسبب والتغيير.',
             'platformAdminScreen.settings.description': 'إدارة إعدادات التشغيل والتخصيص الخاصة بالمنصة من مكان واحد.',
+            'platformAdminScreen.settings.kicker': 'الإعدادات',
             'platformAdminScreen.settings.sections': 'أقسام إعدادات المنصة',
             'platformAdminScreen.settings.instructions': 'اختر القسم المطلوب لإدارته. تظهر قوالب WhatsApp هنا كإعداد مركزي للمنصة فقط.',
             'platformAdminScreen.settings.subscriptions': 'الاشتراكات والخطط',
@@ -3844,6 +4744,8 @@
             'attendance.qr.reader.note': 'إذا لم تعمل الكاميرا، أغلق النافذة وسجّل الحضور برقم الهاتف.'
             , 'dashboard.loading': 'جارٍ تجهيز مؤشرات لوحة التحكم…'
             , 'dashboard.aria.actions': 'إجراءات لوحة التحكم'
+            , 'dashboard.overview.aria': 'نظرة عامة على مساحة العمل'
+            , 'dashboard.overview.title': 'نظرة عامة'
             , 'dashboard.status.live': 'النظام يعمل الآن'
             , 'dashboard.eyebrow': 'لوحة التشغيل اليومية'
             , 'dashboard.welcome.prefix': 'مرحبًا بك في'
@@ -4013,6 +4915,12 @@
             , 'dashboard.analytics.label.actualCollections': 'التحصيل الفعلي'
             , 'dashboard.analytics.label.periodNet': 'صافي الفترة'
             , 'dashboard.analytics.label.attendanceVisits': 'زيارات الحضور'
+            , 'dashboard.analytics.label.visits': 'زيارات الحضور'
+            , 'dashboard.analytics.label.uniqueMembers': 'مشتركون مختلفون'
+            , 'dashboard.analytics.label.dailyAverage': 'متوسط الزيارات اليومي'
+            , 'dashboard.analytics.label.differentMember': 'عدد المشتركين المختلفين'
+            , 'dashboard.analytics.label.visitPerDay': 'زيارة يوميًا'
+            , 'dashboard.analytics.label.noAttendance7Days': 'لم يسجلوا حضورًا منذ 7 أيام'
             , 'dashboard.analytics.label.outstanding': 'المبالغ المتبقية'
             , 'dashboard.analytics.label.needsFollowup': 'تحتاج متابعة'
             , 'dashboard.analytics.label.financialActivity': 'الحركة المالية'
@@ -4790,6 +5698,191 @@
             , 'members.details.trainingNutrition': 'التدريب والتغذية'
             , 'members.details.close': 'إغلاق'
             , 'members.details.closeAccessible': 'إغلاق تفاصيل العضو'
+            , 'members.details.registrationDate': 'تاريخ التسجيل: {{date}}'
+            , 'members.details.memberSummary': 'ملخص العضوية'
+            , 'members.details.statusDurationFreeze': 'الحالة والمدة والتجميد'
+            , 'members.details.subscription': 'الاشتراك'
+            , 'members.details.expirationDate': 'تاريخ الانتهاء'
+            , 'members.details.daysRemaining': '{{count}} يوم متبقي'
+            , 'members.details.daysExpired': 'منتهية منذ {{count}} يوم'
+            , 'members.details.freeze': 'التجميد'
+            , 'members.details.freezesRemaining': 'متبقي {{count}} مرات'
+            , 'members.details.account': 'الحساب'
+            , 'members.details.remainingAmount': 'المتبقي {{amount}}'
+            , 'members.details.accountSettled': 'الحساب مسدد'
+            , 'members.details.actions': 'الإجراءات'
+            , 'members.details.renew': 'تجديد'
+            , 'members.details.view': 'عرض'
+            , 'members.details.print': 'طباعة'
+            , 'members.details.resume': 'استئناف'
+            , 'members.details.freezeAction': 'تجميد'
+            , 'members.details.more': 'المزيد'
+            , 'members.details.recordPayment': 'تسجيل دفعة'
+            , 'members.details.refundSubscription': 'استرجاع الاشتراك'
+            , 'members.details.memberCard': 'بطاقة العضوية'
+            , 'members.details.editData': 'تعديل البيانات'
+            , 'members.details.membershipScope': 'نطاق العضوية والبوابة'
+            , 'members.details.branch': 'الفرع'
+            , 'members.details.section': 'القسم'
+            , 'members.details.portalCodeLabel': 'كود بوابة العضوية'
+            , 'members.details.portalLink': 'رابط بوابة العضوية'
+            , 'members.details.notSpecified': 'غير محدد'
+            , 'members.details.notAvailable': 'غير متاح'
+            , 'members.details.checkedOutToday': 'تم تسجيل الانصراف اليوم'
+            , 'members.details.memberInsideGym': 'العضو داخل الجيم الآن'
+            , 'members.details.noAttendanceToday': 'لا يوجد حضور مسجل اليوم'
+            , 'members.details.checkInTime': 'وقت الدخول'
+            , 'members.details.checkOutTime': 'وقت الانصراف'
+            , 'members.details.attendanceHint': 'ستظهر حالة الدخول والانصراف هنا بعد تسجيل حركة اليوم.'
+            , 'members.details.financialTotalDue': 'إجمالي المستحق'
+            , 'members.details.financialTotalPaid': 'إجمالي المدفوع'
+            , 'members.details.financialTotalRemaining': 'إجمالي المتبقي'
+            , 'members.details.overviewFinancial': 'الرصيد المالي'
+            , 'members.details.tabOverviewShort': 'ملخص'
+            , 'members.details.tabOverview': 'نظرة عامة'
+            , 'members.details.tabSubscriptionShort': 'اشتراك'
+            , 'members.details.tabSubscriptions': 'الاشتراكات'
+            , 'members.details.tabAttendanceShort': 'حضور'
+            , 'members.details.tabAttendance': 'الحضور'
+            , 'members.details.tabAccountShort': 'حساب'
+            , 'members.details.tabAccount': 'الحساب'
+            , 'members.details.tabStoreShort': 'متجر'
+            , 'members.details.tabStore': 'المتجر'
+            , 'members.details.tabTrainingShort': 'تدريب'
+            , 'members.details.tabTraining': 'التدريب والتغذية'
+            , 'members.details.tabsAccessible': 'أقسام تفاصيل المشترك'
+            , 'members.details.storeLoading': 'جاري تحميل مشتريات العضو…'
+            , 'members.details.storePermissionDenied': 'لا تتوفر لديك صلاحية عرض مشتريات هذا العضو.'
+            , 'members.details.storeSeparation': 'مبيعات منفصلة عن العضوية'
+            , 'members.details.storeDescription': 'سجل مشتريات العضو من متجر {{brand}} دون خلطها باشتراك العضوية.'
+            , 'members.details.invoiceCount': '{{count}} فاتورة'
+            , 'members.details.invoiceAndDate': 'الفاتورة والتاريخ'
+            , 'members.details.products': 'المنتجات'
+            , 'members.details.total': 'الإجمالي'
+            , 'members.details.paymentMethod': 'طريقة الدفع'
+            , 'members.details.status': 'الحالة'
+            , 'members.details.paidAmount': 'مدفوع {{amount}}'
+            , 'members.details.remainingAmountInline': 'متبقي {{amount}}'
+            , 'members.details.cancelled': 'ملغاة'
+            , 'members.details.completed': 'مكتملة'
+            , 'members.details.noStorePurchases': 'لا توجد مشتريات متجر مسجلة لهذا العضو.'
+            , 'members.details.storeLoadError': 'تعذر تحميل مشتريات المتجر حاليًا.'
+            , 'members.details.member': 'عضو'
+            , 'members.details.gymOnly': 'جيم فقط'
+            , 'members.details.gymCardio': 'جيم وكارديو'
+            , 'members.details.monthly': 'شهرية'
+            , 'members.details.halfMonth': 'نصف شهر'
+            , 'members.details.quarterly': 'ربع سنوية'
+            , 'members.details.semiannual': 'نصف سنوية'
+            , 'members.details.annual': 'سنوية'
+            , 'members.details.cash': 'نقدي'
+            , 'members.details.card': 'بطاقة'
+            , 'members.details.transfer': 'تحويل'
+            , 'members.details.wallet': 'محفظة'
+            , 'members.details.other': 'أخرى'
+            , 'members.details.registeredOn': 'تاريخ التسجيل'
+            , 'members.details.subscriptionCount': 'عدد الاشتراكات'
+            , 'members.details.freezeCount': 'عدد التجميدات'
+            , 'members.details.eventCount': 'عدد العمليات'
+            , 'members.details.period': 'الفترة'
+            , 'members.details.paymentAccount': 'الحساب'
+            , 'members.details.freezes': 'التجميد'
+            , 'members.details.noMemberships': 'لا توجد اشتراكات مسجلة.'
+            , 'members.details.singleOccurrence': '{{count}} مرة'
+            , 'members.details.noEvents': 'لا توجد عمليات مسجلة بعد.'
+            , 'members.details.freezeHistory': 'سجل التجميد'
+            , 'members.details.start': 'البداية'
+            , 'members.details.end': 'النهاية'
+            , 'members.details.resumption': 'الاستئناف'
+            , 'members.details.duration': 'المدة'
+            , 'members.details.reason': 'السبب'
+            , 'members.details.memberNotes': 'ملاحظات العضو'
+            , 'members.details.until': 'حتى {{date}}'
+            , 'members.details.paidInline': 'مدفوع {{amount}} · متبقي {{remaining}}'
+            , 'members.details.daysUnit': '{{count}} يوم'
+            , 'members.details.paymentHistory': 'السجل المالي والإيصالات'
+            , 'members.details.receiptCount': 'عدد الإيصالات'
+            , 'members.details.subscriptionStatus': 'حالة الاشتراك'
+            , 'members.details.active': 'نشط'
+            , 'members.details.expiringSoon': 'قريب الانتهاء'
+            , 'members.details.expired': 'منتهي'
+            , 'members.details.frozen': 'مجمد'
+            , 'members.details.cancelledStatus': 'ملغى'
+            , 'members.details.expiryToday': 'ينتهي الاشتراك اليوم'
+            , 'members.details.expiringInDays': 'ينتهي الاشتراك خلال {{count}} يوم'
+            , 'members.details.expiringSoonText': 'ينتهي الاشتراك قريبًا'
+            , 'members.details.expiredOn': 'انتهى الاشتراك في {{date}}'
+            , 'members.details.freezeUntil': 'يستمر التجميد حتى {{date}}'
+            , 'members.details.frozenNow': 'العضوية مجمدة حاليًا'
+            , 'members.details.accessDetails': 'تفاصيل الوصول'
+            , 'members.details.memberTodayAttendance': 'حضور اليوم'
+            , 'members.details.membershipPortalCode': 'كود بوابة العضوية'
+            , 'members.details.membershipPortalLink': 'رابط بوابة العضوية'
+            , 'members.details.paymentDue': 'إجمالي المستحق'
+            , 'members.details.paymentPaid': 'إجمالي المدفوع'
+            , 'members.details.paymentRemaining': 'إجمالي المتبقي'
+            , 'members.details.recordedMembershipHistory': 'سجل الاشتراكات والتجديدات'
+            , 'members.details.membershipPlanAndDuration': 'الباقة والمدة'
+            , 'members.details.membershipPeriod': 'الفترة'
+            , 'members.details.accountHeading': 'الحساب'
+            , 'members.details.freezeHeading': 'التجميد'
+            , 'members.details.noRecordedMemberships': 'لا توجد اشتراكات مسجلة.'
+            , 'members.details.freezeStart': 'البداية'
+            , 'members.details.freezeEnd': 'النهاية'
+            , 'members.details.freezeResumption': 'الاستئناف'
+            , 'members.details.freezeDuration': 'المدة'
+            , 'members.details.freezeReason': 'السبب'
+            , 'members.details.allActivity': 'سجل كل العمليات'
+            , 'members.details.noActivity': 'لا توجد عمليات مسجلة بعد.'
+            , 'members.details.notes': 'ملاحظات العضو'
+            , 'members.details.subscriptionPaymentInline': 'مدفوع {{paid}} · متبقي {{remaining}}'
+            , 'members.details.freezeOccurrence': '{{count}} مرة'
+            , 'members.details.freezeDays': '{{count}} يوم'
+            , 'members.details.storeTitle': 'مشتريات المتجر'
+            , 'members.details.storeLoadingMember': 'جاري تحميل مشتريات العضو…'
+            , 'members.details.storeNoPermission': 'لا تتوفر لديك صلاحية عرض مشتريات هذا العضو.'
+            , 'members.details.storeDescriptionFull': 'سجل مشتريات العضو من متجر {{brand}} دون خلطها باشتراك العضوية.'
+            , 'members.details.storeInvoiceDate': 'الفاتورة والتاريخ'
+            , 'members.details.storeProducts': 'المنتجات'
+            , 'members.details.storeTotal': 'الإجمالي'
+            , 'members.details.storePaymentMethod': 'طريقة الدفع'
+            , 'members.details.storeStatus': 'الحالة'
+            , 'members.details.storeNoPurchases': 'لا توجد مشتريات متجر مسجلة لهذا العضو.'
+            , 'members.details.storeCouldNotLoad': 'تعذر تحميل مشتريات المتجر حاليًا.'
+            , 'members.details.attendanceCheckedIn': 'العضو داخل الجيم الآن'
+            , 'members.details.attendanceCheckedOut': 'تم تسجيل الانصراف اليوم'
+            , 'members.details.attendanceAbsent': 'لا يوجد حضور مسجل اليوم'
+            , 'members.details.attendanceCheckInTime': 'وقت الدخول'
+            , 'members.details.attendanceCheckOutTime': 'وقت الانصراف'
+            , 'members.details.attendanceEmptyHint': 'ستظهر حالة الدخول والانصراف هنا بعد تسجيل حركة اليوم.'
+            , 'members.details.registrationSummary': 'تاريخ التسجيل'
+            , 'members.details.subscriptionSummaryCount': 'عدد الاشتراكات'
+            , 'members.details.freezeSummaryCount': 'عدد التجميدات'
+            , 'members.details.eventSummaryCount': 'عدد العمليات'
+            , 'members.details.dueTotal': 'إجمالي المستحق'
+            , 'members.details.paidTotal': 'إجمالي المدفوع'
+            , 'members.details.remainingTotal': 'إجمالي المتبقي'
+            , 'members.details.paymentReceiptsCount': 'عدد الإيصالات'
+            , 'members.details.statusActive': 'نشط'
+            , 'members.details.statusExpiring': 'تنتهي قريبًا'
+            , 'members.details.statusExpired': 'منتهية'
+            , 'members.details.statusFrozen': 'مجمّدة'
+            , 'members.details.statusCancelled': 'ملغاة'
+            , 'members.details.paidLabel': 'مدفوع'
+            , 'members.details.remainingLabel': 'متبقي'
+            , 'members.details.settledLabel': 'الحساب مسدد'
+            , 'members.details.portalGuest': 'بوابة المشترك'
+            , 'members.details.portalCodeHeading': 'كود بوابة المشترك'
+            , 'members.details.portalCodeDescription': 'كود مستقل وثابت لمتابعة العضوية دون مشاركة بياناتك الشخصية.'
+            , 'members.details.inactive': 'غير نشط'
+            , 'members.details.fullView': 'عرض كامل'
+            , 'members.details.shortView': 'عرض مختصر'
+            , 'members.details.hideCode': 'إخفاء الكود'
+            , 'members.details.showCode': 'إظهار الكود'
+            , 'members.details.copyCode': 'نسخ الكود'
+            , 'members.details.sendWhatsapp': 'إرسال واتساب'
+            , 'members.details.openPortal': 'فتح البوابة'
+            , 'members.details.reissueCode': 'إعادة إصدار'
             , 'members.profile.badge.member': 'عضو'
             , 'members.status.activeBadge': 'نشط'
             , 'members.status.expiringSoonBadge': 'تنتهي قريبًا'
@@ -5064,6 +6157,7 @@
             , 'branding.confirm.removeAsset.confirm': 'إزالة', 'branding.confirm.removeAsset.cancel': 'إلغاء', 'branding.confirm.removeAsset.fallback': 'إزالة أصل الهوية والعودة إلى الافتراضي؟', 'branding.confirm.reset.fallback': 'استعادة الهوية الافتراضية «Logic Fit»؟', 'branding.confirm.leave.fallback': 'لديك تغييرات غير محفوظة. هل تريد مغادرة الشاشة؟'
         }),
         en: Object.freeze({
+            ...coachingPrintEnglish,
             ...backupHistoryEnglish,
             ...loginScreenEnglish,
             ...trainerWorkspaceScreenEnglish,
@@ -5074,6 +6168,7 @@
             ...gymLibraryScreenEnglish,
             ...membershipManagementScreenEnglish,
             ...permissionsScreenEnglish,
+            ...memberPrintEnglish,
             ...platformAdminScreenEnglish,
             'feedback.kicker': 'Member voice',
             'feedback.title': 'Member feedback',
@@ -5828,6 +6923,8 @@
             'attendance.qr.reader.note': 'If the camera does not work, close this dialog and record attendance by phone number.'
             , 'dashboard.loading': 'Preparing dashboard metrics…'
             , 'dashboard.aria.actions': 'Dashboard actions'
+            , 'dashboard.overview.aria': 'Workspace overview'
+            , 'dashboard.overview.title': 'Overview'
             , 'dashboard.status.live': 'System is live'
             , 'dashboard.eyebrow': 'Daily operations overview'
             , 'dashboard.welcome.prefix': 'Welcome to'
@@ -5997,6 +7094,12 @@
             , 'dashboard.analytics.label.actualCollections': 'Collections'
             , 'dashboard.analytics.label.periodNet': 'Net for period'
             , 'dashboard.analytics.label.attendanceVisits': 'Attendance visits'
+            , 'dashboard.analytics.label.visits': 'Visits'
+            , 'dashboard.analytics.label.uniqueMembers': 'Unique members'
+            , 'dashboard.analytics.label.dailyAverage': 'Daily average'
+            , 'dashboard.analytics.label.differentMember': 'Unique members'
+            , 'dashboard.analytics.label.visitPerDay': 'Visits per day'
+            , 'dashboard.analytics.label.noAttendance7Days': 'No attendance in 7 days'
             , 'dashboard.analytics.label.outstanding': 'Outstanding balances'
             , 'dashboard.analytics.label.needsFollowup': 'Needs follow-up'
             , 'dashboard.analytics.label.financialActivity': 'Financial activity'
@@ -6774,6 +7877,191 @@
             , 'members.details.trainingNutrition': 'Training and nutrition'
             , 'members.details.close': 'Close'
             , 'members.details.closeAccessible': 'Close member details'
+            , 'members.details.registrationDate': 'Registered: {{date}}'
+            , 'members.details.memberSummary': 'Membership summary'
+            , 'members.details.statusDurationFreeze': 'Status, duration and freezes'
+            , 'members.details.subscription': 'Subscription'
+            , 'members.details.expirationDate': 'Expiration date'
+            , 'members.details.daysRemaining': '{{count}} days remaining'
+            , 'members.details.daysExpired': 'Expired {{count}} days ago'
+            , 'members.details.freeze': 'Freezes'
+            , 'members.details.freezesRemaining': '{{count}} freezes remaining'
+            , 'members.details.account': 'Account'
+            , 'members.details.remainingAmount': '{{amount}} remaining'
+            , 'members.details.accountSettled': 'Account settled'
+            , 'members.details.actions': 'Actions'
+            , 'members.details.renew': 'Renew'
+            , 'members.details.view': 'View'
+            , 'members.details.print': 'Print'
+            , 'members.details.resume': 'Resume'
+            , 'members.details.freezeAction': 'Freeze'
+            , 'members.details.more': 'More'
+            , 'members.details.recordPayment': 'Record payment'
+            , 'members.details.refundSubscription': 'Refund subscription'
+            , 'members.details.memberCard': 'Membership card'
+            , 'members.details.editData': 'Edit details'
+            , 'members.details.membershipScope': 'Membership and portal scope'
+            , 'members.details.branch': 'Branch'
+            , 'members.details.section': 'Section'
+            , 'members.details.portalCodeLabel': 'Member portal code'
+            , 'members.details.portalLink': 'Member portal link'
+            , 'members.details.notSpecified': 'Not specified'
+            , 'members.details.notAvailable': 'Not available'
+            , 'members.details.checkedOutToday': 'Check-out recorded today'
+            , 'members.details.memberInsideGym': 'Member is currently in the gym'
+            , 'members.details.noAttendanceToday': 'No attendance recorded today'
+            , 'members.details.checkInTime': 'Check-in time'
+            , 'members.details.checkOutTime': 'Check-out time'
+            , 'members.details.attendanceHint': 'Today’s check-in and check-out activity will appear here.'
+            , 'members.details.financialTotalDue': 'Total due'
+            , 'members.details.financialTotalPaid': 'Total paid'
+            , 'members.details.financialTotalRemaining': 'Total remaining'
+            , 'members.details.overviewFinancial': 'Financial balance'
+            , 'members.details.tabOverviewShort': 'Summary'
+            , 'members.details.tabOverview': 'Overview'
+            , 'members.details.tabSubscriptionShort': 'Plan'
+            , 'members.details.tabSubscriptions': 'Subscriptions'
+            , 'members.details.tabAttendanceShort': 'Visits'
+            , 'members.details.tabAttendance': 'Attendance'
+            , 'members.details.tabAccountShort': 'Account'
+            , 'members.details.tabAccount': 'Account'
+            , 'members.details.tabStoreShort': 'Store'
+            , 'members.details.tabStore': 'Store'
+            , 'members.details.tabTrainingShort': 'Training'
+            , 'members.details.tabTraining': 'Training and nutrition'
+            , 'members.details.tabsAccessible': 'Member detail sections'
+            , 'members.details.storeLoading': 'Loading member purchases…'
+            , 'members.details.storePermissionDenied': 'You do not have permission to view this member’s purchases.'
+            , 'members.details.storeSeparation': 'Sales separate from membership'
+            , 'members.details.storeDescription': 'Purchases from {{brand}} are shown separately from the membership.'
+            , 'members.details.invoiceCount': '{{count}} invoices'
+            , 'members.details.invoiceAndDate': 'Invoice and date'
+            , 'members.details.products': 'Products'
+            , 'members.details.total': 'Total'
+            , 'members.details.paymentMethod': 'Payment method'
+            , 'members.details.status': 'Status'
+            , 'members.details.paidAmount': 'Paid {{amount}}'
+            , 'members.details.remainingAmountInline': '{{amount}} remaining'
+            , 'members.details.cancelled': 'Cancelled'
+            , 'members.details.completed': 'Completed'
+            , 'members.details.noStorePurchases': 'No store purchases are recorded for this member.'
+            , 'members.details.storeLoadError': 'Store purchases could not be loaded right now.'
+            , 'members.details.member': 'Member'
+            , 'members.details.gymOnly': 'Gym only'
+            , 'members.details.gymCardio': 'Gym and cardio'
+            , 'members.details.monthly': 'Monthly'
+            , 'members.details.halfMonth': 'Half month'
+            , 'members.details.quarterly': 'Quarterly'
+            , 'members.details.semiannual': 'Semiannual'
+            , 'members.details.annual': 'Annual'
+            , 'members.details.cash': 'Cash'
+            , 'members.details.card': 'Card'
+            , 'members.details.transfer': 'Transfer'
+            , 'members.details.wallet': 'Wallet'
+            , 'members.details.other': 'Other'
+            , 'members.details.registeredOn': 'Registration date'
+            , 'members.details.subscriptionCount': 'Subscriptions'
+            , 'members.details.freezeCount': 'Freezes'
+            , 'members.details.eventCount': 'Activities'
+            , 'members.details.period': 'Period'
+            , 'members.details.paymentAccount': 'Account'
+            , 'members.details.freezes': 'Freezes'
+            , 'members.details.noMemberships': 'No subscriptions are recorded.'
+            , 'members.details.singleOccurrence': '{{count}} occurrence'
+            , 'members.details.noEvents': 'No activity has been recorded yet.'
+            , 'members.details.freezeHistory': 'Freeze history'
+            , 'members.details.start': 'Start'
+            , 'members.details.end': 'End'
+            , 'members.details.resumption': 'Resumed'
+            , 'members.details.duration': 'Duration'
+            , 'members.details.reason': 'Reason'
+            , 'members.details.memberNotes': 'Member notes'
+            , 'members.details.until': 'Until {{date}}'
+            , 'members.details.paidInline': 'Paid {{amount}} · Remaining {{remaining}}'
+            , 'members.details.daysUnit': '{{count}} days'
+            , 'members.details.paymentHistory': 'Financial history and receipts'
+            , 'members.details.receiptCount': 'Receipts'
+            , 'members.details.subscriptionStatus': 'Subscription status'
+            , 'members.details.active': 'Active'
+            , 'members.details.expiringSoon': 'Expiring soon'
+            , 'members.details.expired': 'Expired'
+            , 'members.details.frozen': 'Frozen'
+            , 'members.details.cancelledStatus': 'Cancelled'
+            , 'members.details.expiryToday': 'Subscription expires today'
+            , 'members.details.expiringInDays': 'Subscription expires in {{count}} days'
+            , 'members.details.expiringSoonText': 'Subscription expires soon'
+            , 'members.details.expiredOn': 'Subscription expired on {{date}}'
+            , 'members.details.freezeUntil': 'Freeze continues until {{date}}'
+            , 'members.details.frozenNow': 'Membership is currently frozen'
+            , 'members.details.accessDetails': 'Access details'
+            , 'members.details.memberTodayAttendance': 'Today’s attendance'
+            , 'members.details.membershipPortalCode': 'Member portal code'
+            , 'members.details.membershipPortalLink': 'Member portal link'
+            , 'members.details.paymentDue': 'Total due'
+            , 'members.details.paymentPaid': 'Total paid'
+            , 'members.details.paymentRemaining': 'Total remaining'
+            , 'members.details.recordedMembershipHistory': 'Membership and renewal history'
+            , 'members.details.membershipPlanAndDuration': 'Plan and duration'
+            , 'members.details.membershipPeriod': 'Period'
+            , 'members.details.accountHeading': 'Account'
+            , 'members.details.freezeHeading': 'Freezes'
+            , 'members.details.noRecordedMemberships': 'No subscriptions are recorded.'
+            , 'members.details.freezeStart': 'Start'
+            , 'members.details.freezeEnd': 'End'
+            , 'members.details.freezeResumption': 'Resumed'
+            , 'members.details.freezeDuration': 'Duration'
+            , 'members.details.freezeReason': 'Reason'
+            , 'members.details.allActivity': 'Activity history'
+            , 'members.details.noActivity': 'No activity has been recorded yet.'
+            , 'members.details.notes': 'Member notes'
+            , 'members.details.subscriptionPaymentInline': 'Paid {{paid}} · Remaining {{remaining}}'
+            , 'members.details.freezeOccurrence': '{{count}} occurrence'
+            , 'members.details.freezeDays': '{{count}} days'
+            , 'members.details.storeTitle': 'Store purchases'
+            , 'members.details.storeLoadingMember': 'Loading member purchases…'
+            , 'members.details.storeNoPermission': 'You do not have permission to view this member’s purchases.'
+            , 'members.details.storeDescriptionFull': 'Purchases from {{brand}} are shown separately from the membership.'
+            , 'members.details.storeInvoiceDate': 'Invoice and date'
+            , 'members.details.storeProducts': 'Products'
+            , 'members.details.storeTotal': 'Total'
+            , 'members.details.storePaymentMethod': 'Payment method'
+            , 'members.details.storeStatus': 'Status'
+            , 'members.details.storeNoPurchases': 'No store purchases are recorded for this member.'
+            , 'members.details.storeCouldNotLoad': 'Store purchases could not be loaded right now.'
+            , 'members.details.attendanceCheckedIn': 'Member is currently in the gym'
+            , 'members.details.attendanceCheckedOut': 'Check-out recorded today'
+            , 'members.details.attendanceAbsent': 'No attendance recorded today'
+            , 'members.details.attendanceCheckInTime': 'Check-in time'
+            , 'members.details.attendanceCheckOutTime': 'Check-out time'
+            , 'members.details.attendanceEmptyHint': 'Today’s check-in and check-out activity will appear here.'
+            , 'members.details.registrationSummary': 'Registration date'
+            , 'members.details.subscriptionSummaryCount': 'Subscriptions'
+            , 'members.details.freezeSummaryCount': 'Freezes'
+            , 'members.details.eventSummaryCount': 'Activities'
+            , 'members.details.dueTotal': 'Total due'
+            , 'members.details.paidTotal': 'Total paid'
+            , 'members.details.remainingTotal': 'Total remaining'
+            , 'members.details.paymentReceiptsCount': 'Receipts'
+            , 'members.details.statusActive': 'Active'
+            , 'members.details.statusExpiring': 'Expiring soon'
+            , 'members.details.statusExpired': 'Expired'
+            , 'members.details.statusFrozen': 'Frozen'
+            , 'members.details.statusCancelled': 'Cancelled'
+            , 'members.details.paidLabel': 'Paid'
+            , 'members.details.remainingLabel': 'Remaining'
+            , 'members.details.settledLabel': 'Account settled'
+            , 'members.details.portalGuest': 'Member portal'
+            , 'members.details.portalCodeHeading': 'Member portal code'
+            , 'members.details.portalCodeDescription': 'A separate, permanent code for membership access without sharing personal details.'
+            , 'members.details.inactive': 'Inactive'
+            , 'members.details.fullView': 'Full view'
+            , 'members.details.shortView': 'Limited view'
+            , 'members.details.hideCode': 'Hide code'
+            , 'members.details.showCode': 'Show code'
+            , 'members.details.copyCode': 'Copy code'
+            , 'members.details.sendWhatsapp': 'Send on WhatsApp'
+            , 'members.details.openPortal': 'Open portal'
+            , 'members.details.reissueCode': 'Reissue'
             , 'members.profile.badge.member': 'Member'
             , 'members.status.activeBadge': 'Active'
             , 'members.status.expiringSoonBadge': 'Expiring soon'
@@ -7217,14 +8505,18 @@
             '.auth-screen[data-auth-stage="login"] .auth-account-row',
             '.auth-screen[data-auth-stage="login"] .auth-registration-entry',
             '.auth-screen[data-auth-stage="login"] .auth-reference-features',
+            '.auth-screen[data-auth-stage="login"] .auth-reference-marketing-copy',
             '.auth-screen[data-auth-stage="login"] .auth-choice-dialog'
         ].forEach((selector) => document.querySelectorAll(selector).forEach((element) => { element.style.direction = direction; }));
         document.title = t('login.page.title');
         document.getElementById('authScreen')?.setAttribute('aria-label', t('login.screen.label'));
         document.querySelector('#loginForm')?.setAttribute('aria-label', t('login.form.label'));
         document.querySelector('#authScreen .auth-reference-controls')?.setAttribute('aria-label', t('login.controls.label'));
+        document.querySelector('#authScreen .auth-login-column')?.setAttribute('aria-label', t('login.form.section'));
         document.querySelector('#authScreen .auth-reference-features')?.setAttribute('aria-label', t('login.features.label'));
         const textTargets = [
+            ['.auth-reference-hero-title', 'login.hero.title'],
+            ['.auth-reference-hero-description', 'login.hero.description'],
             ['.auth-form-heading h2', 'login.welcome.title'],
             ['.auth-form-heading p', 'login.welcome.description'],
             ['label[for="loginEmail"]', 'login.email.label'],
@@ -7281,6 +8573,31 @@
     }
 
     function updateLanguageButton() {
+        const segmented = document.querySelector('#authScreen .auth-locale-segmented[data-locale-segmented]');
+        if (segmented) {
+            const target = currentLocale === 'ar' ? 'en' : 'ar';
+            const switchKey = target === 'en' ? 'language.switchToEnglish' : 'language.switchToArabic';
+            const exposeLoginToggle = document.body?.dataset.topGymAuthenticated !== 'true';
+            segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
+                const locale = button.dataset.localeChoice;
+                button.setAttribute('aria-pressed', String(locale === currentLocale));
+                button.setAttribute('lang', locale);
+                button.setAttribute('dir', localeMeta[locale]?.dir || 'ltr');
+                if (locale === target && exposeLoginToggle) {
+                    button.id = 'languageToggleButton';
+                    button.setAttribute('aria-label', t(switchKey));
+                    button.setAttribute('title', t(switchKey));
+                } else {
+                    button.removeAttribute('id');
+                    button.removeAttribute('title');
+                    button.setAttribute('aria-label', locale === 'ar' ? 'العربية' : 'English');
+                }
+            });
+            const host = segmented.closest('.auth-reference-controls');
+            segmented.setAttribute('aria-label', t('login.locale.label'));
+            host?.setAttribute('aria-label', t('login.controls.label'));
+            if (document.body?.dataset.topGymAuthenticated !== 'true') return;
+        }
         if (!languageButton) return;
         const target = currentLocale === 'ar' ? 'en' : 'ar';
         languageButton.textContent = t('language.short');
@@ -7382,8 +8699,18 @@
                 ? (topbarActions || genericSwitcher || rootLoginActions)
                 : (rootLoginActions || genericSwitcher || topbarActions);
         if (!actions) return;
+        const segmented = !authenticated && actions.querySelector('[data-locale-segmented]');
+        if (segmented) {
+            segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
+                if (button.dataset.localeChoiceBound === 'true') return;
+                button.addEventListener('click', () => set(button.dataset.localeChoice));
+                button.dataset.localeChoiceBound = 'true';
+            });
+            updateLanguageButton();
+            return;
+        }
         languageButton = document.getElementById('languageToggleButton');
-        if (!languageButton) {
+        if (!languageButton || languageButton.matches('[data-locale-choice]')) {
             languageButton = document.createElement('button');
             languageButton.id = 'languageToggleButton';
             languageButton.type = 'button';

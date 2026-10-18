@@ -403,6 +403,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                     await page.evaluate(() => document.fonts.ready);
                     await expect(page.locator('#attendanceTitle')).toHaveText(locale === 'ar' ? 'الحضور والانصراف' : 'Attendance');
                     await expect(page.locator('#attendanceTableWrap tbody tr')).toHaveCount(2);
+                    await expect(page.locator('.attendance-mode-actions')).toHaveCSS('display', 'flex');
 
                     const geometry = await collectScreenGeometry(page);
                     if (/loading today|جارٍ تحميل سجل الحضور/i.test(geometry.listMeta.text)) {

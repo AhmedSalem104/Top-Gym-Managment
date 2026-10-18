@@ -59,6 +59,59 @@ dialog.lf-modal-shell.lf-modal--structured[open] {
   padding: 0;
 }
 
+/* Structured renewal/action forms keep the form lifecycle intact while its
+   header and footer stay in normal layout and only the body scrolls. */
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(header, .dialog-header, footer, .dialog-actions) {
+  box-sizing: border-box;
+  position: static;
+  z-index: auto;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(.dialog-body, .dialog-scroll-content) {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#actionDialog {
+  max-height: calc(100dvh - 32px);
+  height: fit-content;
+}
+
+#actionDialog > .lf-modal-layout {
+  max-height: calc(100dvh - 32px);
+}
+
+#actionDialog > .lf-modal-layout > .dialog-header {
+  align-items: flex-start;
+  padding: var(--space-4) var(--space-5);
+}
+
+#actionDialog > .lf-modal-layout > .dialog-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  scroll-padding-block: var(--space-4);
+}
+
+#actionDialog > .lf-modal-layout > .dialog-actions {
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-block-start: 1px solid var(--border-secondary);
+  padding: var(--space-3) var(--space-5);
+}
+
 .lf-modal-shell.lf-modal--structured > .lf-modal-layout > :is(header, footer, .dialog-header, .dialog-actions) {
   position: static;
   z-index: auto;
@@ -532,6 +585,20 @@ body .swal2-popup.lf-modal--workspace {
   .lf-modal-shell.lf-modal--xl,
   .lf-modal-shell.lf-modal--workspace {
     width: min(94vw, 920px);
+  }
+
+  #actionDialog {
+    max-height: calc(100dvh - 24px);
+  }
+
+  #actionDialog > .lf-modal-layout {
+    max-height: calc(100dvh - 24px);
+  }
+
+  #actionDialog > .lf-modal-layout > .dialog-header,
+  #actionDialog > .lf-modal-layout > .dialog-body,
+  #actionDialog > .lf-modal-layout > .dialog-actions {
+    padding-inline: var(--space-4);
   }
 }
 

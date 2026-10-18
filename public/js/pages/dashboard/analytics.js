@@ -4,9 +4,9 @@
 
     const state = { period: 'month', requestId: 0, abortController: null, data: null, error: false };
     const PERIOD_LABELS = {
-        week: 'dashboard.analytics.period.weekLabel',
-        month: 'dashboard.analytics.period.monthLabel',
-        year: 'dashboard.analytics.period.yearLabel'
+        week: 'period.weekLabel',
+        month: 'period.monthLabel',
+        year: 'period.yearLabel'
     };
     const STATUS_LABELS = { active: 'نشطة', expiring_soon: 'قريبة الانتهاء', expired: 'منتهية', frozen: 'مجمدة' };
     const PLAN_LABELS = { gym_only: 'جيم فقط', gym_cardio: 'جيم وكارديو' };

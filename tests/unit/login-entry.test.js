@@ -30,7 +30,7 @@ test('login entry is generated from the shared auth card and excludes the app sh
     assert.doesNotMatch(login, /core\/phone-inputs\.js/u);
     assert.doesNotMatch(login, /\/css\/main\.css/u);
     assert.match(login, /\/css\/login-entry\.css\?v=[a-f0-9]{12}/u);
-    assert.match(read('public/css/pages/login.css'), /max-width:\s*460px/u);
+    assert.match(read('public/css/pages/login.css'), /max-width:\s*420px/u);
     assert.match(read('public/css/pages/login.css'), /background:\s*transparent;[\s\S]*?box-shadow:\s*none;[\s\S]*?direction:\s*rtl;/u);
 });
 

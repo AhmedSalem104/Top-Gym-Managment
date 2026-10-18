@@ -71,10 +71,58 @@
         'إنشاء': 'coaching.builder.create', 'تعديل': 'coaching.builder.edit', 'إلغاء': 'coaching.builder.cancel',
         'مراجعة سريعة': 'coaching.builder.preview', 'طباعة': 'coaching.builder.print', 'حفظ النظام': 'coaching.builder.save',
         'حفظ التعديلات': 'coaching.builder.saveChanges', 'اعتماد وحفظ النظام': 'coaching.builder.approveSave',
-        'العميل': 'coaching.builder.client', 'اختر العميل الذي سيُحفظ النظام باسمه.': 'coaching.builder.clientPlaceholder',
+        'العميل': 'coaching.builder.client', 'العميل *': 'coaching.builder.client', 'اختر العميل الذي سيُحفظ النظام باسمه.': 'coaching.builder.clientPlaceholder',
         'البيانات الأساسية': 'coaching.builder.basic', 'بناء الوجبات': 'coaching.builder.dietStructure',
         'بناء الأيام والتمارين': 'coaching.builder.workoutStructure', 'المراجعة والحفظ': 'coaching.builder.review',
         'مراجعة قبل الحفظ': 'coaching.builder.reviewBeforeSave', 'الطعام': 'coaching.builder.food',
+        'تاريخ البداية *': 'coaching.builder.startDate', 'تاريخ النهاية': 'coaching.builder.endDate',
+        'حفظ آمن داخل Transaction': 'coaching.builder.atomicSave',
+        'مثال: برنامج القوة الأساسي': 'coaching.builder.programNamePlaceholder',
+        'اسم البرنامج *': 'coaching.builder.programName', 'المدة بالأسابيع': 'coaching.builder.durationWeeks',
+        'أيام التدريب أسبوعيًا': 'coaching.builder.daysPerWeek', 'وصف البرنامج': 'coaching.builder.description',
+        'الهدف': 'coaching.builder.goal', 'المستوى': 'coaching.builder.level',
+        'الحالة': 'coaching.builder.statusLabel',
+        'المرحلة الأولى': 'coaching.builder.stageOne', 'بيانات البرنامج': 'coaching.builder.programDetails',
+        'حدد هدف البرنامج ومستواه ومدته قبل توزيع الأيام والتمارين.': 'coaching.builder.programDetailsHint',
+        'بناء العضلات': 'coaching.builder.goal.muscle', 'زيادة القوة': 'coaching.builder.goal.strength',
+        'حرق الدهون': 'coaching.builder.goal.fatLoss', 'لياقة عامة': 'coaching.builder.goal.generalFitness',
+        'التحمل': 'coaching.builder.goal.endurance', 'مبتدئ': 'coaching.builder.level.beginner',
+        'متوسط': 'coaching.builder.level.intermediate', 'متقدم': 'coaching.builder.level.advanced',
+        'السابق: البيانات الأساسية': 'coaching.builder.backToBasics',
+        'السابق: بناء المحتوى': 'coaching.builder.backToContent',
+        'المرحلة الثانية': 'coaching.builder.stageTwo',
+        'أضف الأيام والتمارين، وسيُحسب الحجم وتوزيع العضلات تلقائيًا.': 'coaching.builder.workoutStepTwoHint',
+        'إجمالي التمارين': 'coaching.builder.totalExercises',
+        'إجمالي المجموعات': 'coaching.builder.totalSets',
+        'حجم التدريب التقريبي': 'coaching.builder.trainingVolume',
+        'الأيام': 'coaching.builder.days', 'Muscle Distribution': 'coaching.builder.muscleDistribution',
+        'توزيع الحمل على العضلات': 'coaching.builder.muscleDistribution',
+        'حسب مجموعات التمارين': 'coaching.builder.muscleDistributionHint',
+        'أضف تمارين لعرض التوزيع.': 'coaching.builder.muscleDistributionEmpty',
+        'اسم اليوم': 'coaching.builder.dayName', 'يوم الأسبوع': 'coaching.builder.dayOfWeek',
+        'اختر اليوم': 'coaching.builder.chooseDay', 'ملاحظات اليوم': 'coaching.builder.dayNotes',
+        'اختر تمرينًا': 'coaching.builder.chooseExercise',
+        'اختر تمرينًا لعرض العضلة والتعليمات.': 'coaching.builder.exerciseReferenceEmpty',
+        'حذف اليوم': 'coaching.builder.removeDay', '+ إضافة تمرين': 'coaching.builder.addExercise',
+        'ملاحظات التمرين': 'coaching.builder.exerciseNotes',
+        'Reps من': 'coaching.builder.repsMin', 'Reps إلى': 'coaching.builder.repsMax',
+        'غير محددة': 'coaching.builder.undetermined',
+        'حذف': 'coaching.builder.delete',
+        'المرحلة الثالثة': 'coaching.builder.stageThree',
+        'مراجعة برنامج التدريب قبل الحفظ': 'coaching.builder.workoutReviewTitle',
+        'راجع الحمل التدريبي وتوزيع العضلات وتفاصيل كل يوم.': 'coaching.builder.workoutReviewHint',
+        'جاهز للمراجعة': 'coaching.builder.reviewReady',
+        'البرنامج': 'coaching.builder.program', 'المدة': 'coaching.builder.review.duration',
+        'التمارين': 'coaching.builder.totalExercises', 'المجموعات': 'coaching.builder.totalSets',
+        'الحجم التقريبي': 'coaching.builder.trainingVolume', 'كجم': 'coaching.builder.unit.kg',
+        'الهدف:': 'coaching.builder.review.goal', 'المستوى:': 'coaching.builder.review.level',
+        'أيام أسبوعيًا:': 'coaching.builder.review.daysPerWeek',
+        'كجم': 'coaching.builder.unit.kg',
+        'اترك الإنشاء اليدوي متاحًا، أو اطلب تعديلًا على المسودة الحالية.': 'coaching.builder.aiDescription',
+        'مثال: أضف تمرين ضغط صدر 4 مجموعات أو بدّل الأرز بالبطاطس': 'coaching.builder.aiPlaceholder',
+        'بناء أيام التدريب': 'coaching.builder.buildDays',
+        'أضف الأيام والتمارين من مكتبة TOP GYM.': 'coaching.builder.buildDaysHint',
+        '+ إضافة يوم': 'coaching.builder.addDay', 'لم تضف أيامًا بعد.': 'coaching.builder.noDays',
         'بروتين': 'coaching.builder.protein', 'كربوهيدرات': 'coaching.builder.carbs', 'دهون': 'coaching.builder.fat',
         'السعرات': 'coaching.builder.calories', 'المستهدف': 'coaching.builder.target', 'التمرين': 'coaching.builder.exercise',
         'المجموعات': 'coaching.builder.sets', 'التكرارات': 'coaching.builder.reps', 'الوزن': 'coaching.builder.weight',
@@ -98,7 +146,50 @@
         'BMR': 'coaching.builder.basalMetabolicRate', 'TDEE': 'coaching.builder.dailyEnergyNeeds',
         'Basal metabolic rate (BMR)': 'coaching.builder.basalMetabolicRate',
         'Total daily energy expenditure (TDEE)': 'coaching.builder.dailyEnergyNeeds',
-        'Suggested target': 'coaching.builder.calculationTarget', 'Target': 'coaching.builder.calculationTarget'
+        'Suggested target': 'coaching.builder.calculationTarget', 'Target': 'coaching.builder.calculationTarget',
+        'المعلومات الأساسية وحساب السعرات': 'coaching.builder.diet.basicsTitle',
+        'احسب الاحتياج اليومي ثم طبّق الهدف والماكروز على الخطة قبل بناء الوجبات.': 'coaching.builder.diet.basicsHint',
+        'اسم الخطة *': 'coaching.builder.diet.planName', 'مثال: خطة بناء العضلات': 'coaching.builder.diet.planNamePlaceholder',
+        'عدد الوجبات اليومية': 'coaching.builder.diet.mealsPerDay', 'وجبات': 'coaching.builder.diet.meals',
+        'حاسبة BMR / TDEE': 'coaching.builder.diet.calculator', 'الاحتياج اليومي للعميل': 'coaching.builder.diet.dailyNeeds',
+        'يمكن تعبئة القياسات يدويًا أو إضافة قياس من ملف العميل.': 'coaching.builder.diet.measurementNote.empty',
+        'الوزن كجم': 'coaching.builder.diet.weightKg', 'الطول سم': 'coaching.builder.diet.heightCm',
+        'العمر': 'coaching.builder.diet.age', 'النوع': 'coaching.builder.diet.gender',
+        'ذكر': 'coaching.builder.diet.gender.male', 'أنثى': 'coaching.builder.diet.gender.female',
+        'مستوى النشاط': 'coaching.builder.diet.activity', 'قليل جدًا': 'coaching.builder.diet.activity.sedentary',
+        'خفيف': 'coaching.builder.diet.activity.light', 'متوسط': 'coaching.builder.diet.activity.moderate',
+        'مرتفع': 'coaching.builder.diet.activity.high', 'مرتفع جدًا': 'coaching.builder.diet.activity.veryHigh',
+        'خسارة وزن': 'coaching.builder.diet.goal.lose', 'تثبيت الوزن': 'coaching.builder.diet.goal.maintain',
+        'زيادة وزن': 'coaching.builder.diet.goal.gain', 'العجز / الفائض بالسعرات': 'coaching.builder.diet.calorieAdjustment',
+        'سالب للخسارة وموجب للزيادة': 'coaching.builder.diet.calorieAdjustmentHint',
+        'السعرات الأساسية': 'coaching.builder.diet.bmr', 'الاحتياج مع النشاط': 'coaching.builder.diet.tdee',
+        'تطبيق على الخطة': 'coaching.builder.diet.applyCalories', 'أهداف الخطة': 'coaching.builder.diet.planTargets',
+        'التوزيع الافتراضي: 30% بروتين · 40% كارب · 30% دهون': 'coaching.builder.diet.defaultMacroSplit',
+        'وصف الخطة': 'coaching.builder.diet.description', 'ملاحظات': 'coaching.builder.diet.notes',
+        'البروتين (جم)': 'coaching.builder.proteinGrams', 'الكربوهيدرات (جم)': 'coaching.builder.carbsGrams',
+        'الدهون (جم)': 'coaching.builder.fatGrams', 'الطعام': 'coaching.builder.food',
+        'اختر طعامًا': 'coaching.builder.diet.chooseFood', 'ابحث عن الطعام': 'coaching.builder.diet.searchFood',
+        'لا يوجد طعام مطابق.': 'coaching.builder.diet.noFoodMatch',
+        'اختر العميل': 'coaching.builder.diet.chooseClient', 'ابحث باسم العميل أو الهاتف': 'coaching.builder.diet.searchClient',
+        'لا يوجد عميل مطابق.': 'coaching.builder.diet.noClientMatch', 'اختر تمرينًا': 'coaching.builder.chooseExercise',
+        'ابحث عن التمرين أو العضلة': 'coaching.builder.diet.searchExercise', 'لا يوجد تمرين مطابق.': 'coaching.builder.diet.noExerciseMatch',
+        'اختر من القائمة': 'coaching.builder.diet.chooseOption', 'ابحث في الخيارات': 'coaching.builder.diet.searchOptions',
+        'لا توجد خيارات مطابقة.': 'coaching.builder.diet.noOptionMatch',
+        'الكمية': 'coaching.builder.diet.quantity', 'الوحدة': 'coaching.builder.diet.unit',
+        'جرام': 'coaching.builder.diet.grams', 'سعرة': 'coaching.builder.diet.calorieUnit',
+        'الوقت': 'coaching.builder.diet.mealTime', 'حدد موعد الوجبة': 'coaching.builder.diet.mealTimeHint',
+        'حذف الطعام': 'coaching.builder.diet.removeFood', 'حذف الوجبة': 'coaching.builder.diet.removeMeal',
+        '+ إضافة طعام': 'coaching.builder.diet.addFood', '+ إضافة Food': 'coaching.builder.diet.addFood',
+        '+ إضافة وجبة': 'coaching.builder.diet.addMeal', 'أضف أول طعام لهذه الوجبة.': 'coaching.builder.diet.emptyMeal',
+        'لم تضف وجبات بعد.': 'coaching.builder.diet.emptyMeals', 'ملاحظات الوجبة': 'coaching.builder.diet.mealNotes',
+        'تتغير القيم فورًا عند تعديل الكمية أو الطعام.': 'coaching.builder.diet.stepTwoHint',
+        'وجبة': 'coaching.builder.diet.meal', 'المرحلة الثانية': 'coaching.builder.stageTwo',
+        'مراجعة خطة التغذية قبل الحفظ': 'coaching.builder.diet.reviewTitle',
+        'راجع بيانات العميل، الأهداف، والقيم الفعلية لكل وجبة.': 'coaching.builder.diet.reviewHint',
+        'القيم الحالية': 'coaching.builder.diet.currentValues', 'الوجبات / الأطعمة': 'coaching.builder.diet.mealsFoodsLabel',
+        'تثبيت': 'coaching.builder.diet.goal.maintain', 'بدون موعد': 'coaching.builder.diet.noMealTime',
+        'الخطة:': 'coaching.builder.diet.planLabel', 'البروتين المستهدف': 'coaching.builder.proteinGrams',
+        'الكربوهيدرات المستهدفة': 'coaching.builder.carbsGrams', 'الدهون المستهدفة': 'coaching.builder.fatGrams'
     });
     const coachingTextNodeKeys = new WeakMap();
     const coachingAttributeKeys = new WeakMap();
@@ -147,15 +238,25 @@
             while (walker.nextNode()) nodes.push(walker.currentNode);
             nodes.forEach((node) => {
                 const parent = node.parentElement;
-                if (!parent || parent.closest('.trainee-avatar, .external-trainee-primary strong, .external-trainee-primary a, .external-trainee-primary small, .external-trainee-system-copy strong, .external-trainee-system-copy small, .profile-system-card strong, .profile-system-card small, .builder-search-option, .builder-search-select-options, .profile-table tbody')) return;
+                if (!parent || parent.closest('[data-i18n-preserve], .trainee-avatar, .external-trainee-primary strong, .external-trainee-primary a, .external-trainee-primary small, .external-trainee-system-copy strong, .external-trainee-system-copy small, .profile-system-card strong, .profile-system-card small, .builder-search-option, .builder-search-select-options, .profile-table tbody')) return;
                 const raw = node.nodeValue || '';
                 const trimmed = raw.trim();
-                const key = coachingTextNodeKeys.get(node) || coachingTextKeys[trimmed];
+                // Explicit component keys are authoritative when the same Arabic
+                // label is shared by multiple domains (for example table "type"
+                // and nutrition "gender"). Text inference is only a fallback.
+                const key = parent.dataset.i18n || coachingTextNodeKeys.get(node) || coachingTextKeys[trimmed];
                 if (!key) return;
                 coachingTextNodeKeys.set(node, key);
                 const firstTextNode = [...parent.childNodes].find((child) => child.nodeType === Node.TEXT_NODE && child.nodeValue.trim());
                 if (!parent.dataset.i18n && firstTextNode === node) parent.dataset.i18n = key;
-                const translated = coachingText(key, trimmed);
+                const params = {};
+                Object.keys(parent.dataset).forEach((name) => {
+                    if (!name.startsWith('i18nParam')) return;
+                    const parameter = name.slice(9, 10).toLowerCase() + name.slice(10);
+                    const value = parent.dataset[name];
+                    params[parameter] = parameter === 'count' && /^\d+(?:\.\d+)?$/u.test(value) ? Number(value) : value;
+                });
+                const translated = coachingText(key, trimmed, params);
                 if (translated !== trimmed) node.nodeValue = raw.replace(trimmed, translated);
             });
             const elements = root.nodeType === Node.ELEMENT_NODE
@@ -183,12 +284,31 @@
     function renderCoachingLocale() {
         const traineesSection = $('traineesSection');
         if (traineesSection) window.TopGymI18n?.applyTranslations?.(traineesSection);
+        if (state.builder) {
+            renderBuilderDialogHeading();
+            renderBuilderChrome();
+        }
         const externalTraineeTitle = $('externalTraineeTitle');
         if (externalTraineeTitle) {
             externalTraineeTitle.dataset.i18n = 'coaching.addTrainee';
             externalTraineeTitle.textContent = coachingText('coaching.addTrainee', externalTraineeTitle.textContent);
         }
         coachingLocalizationRoots().forEach(translateCoachingSubtree);
+        if (state.builder) {
+            window.TopGymI18n?.applyTranslations?.($('coachingBuilderDialog'));
+            localizeBuilderDynamicOptions();
+            localizeBuilderReviewValues();
+            if (state.builder.type === 'diet') {
+                if (state.builder.step === 1) {
+                    refreshDietMeasurementNote();
+                    localizeDietMealOptions();
+                }
+                if (state.builder.step === 2) refreshDietStepTwoLocale();
+                if (state.builder.step === 3) refreshDietReviewLocale();
+                if (state.builder.step === 2) refreshDietStepTwoLocale();
+            }
+            refreshBuilderSearchSelectLocales();
+        }
         const setText = (selector, key) => {
             const element = document.querySelector(selector);
             if (element) element.textContent = coachingText(key, element.textContent);
@@ -1372,6 +1492,20 @@
         return draft.routines.length > 0 && draft.routines.every((routine) => routine.exercises.length > 0 && routine.exercises.every((exercise) => Number(exercise.exerciseId) > 0));
     }
 
+    function renderBuilderDialogHeading() {
+        if (!state.builder) return;
+        const { type, id, draft } = state.builder;
+        const titleKey = `coaching.builder.title.${id ? 'edit' : 'create'}.${type}`;
+        const fallbackTitle = `${id ? 'تعديل' : 'إنشاء'} ${type === 'workout' ? 'برنامج تدريب' : 'خطة تغذية'}`;
+        const client = draft.memberName || state.profile?.member?.fullName || coachingText('coaching.builder.client', 'العميل');
+        $('coachingBuilderTitle').textContent = coachingText(titleKey, fallbackTitle);
+        $('coachingBuilderSubtitle').textContent = coachingText(
+            'coaching.builder.dialogSubtitle',
+            'العميل: {{client}} · ثلاث مراحل واضحة حتى الحفظ.',
+            { client }
+        );
+    }
+
     function renderBuilderChrome() {
         const step = state.builder.step;
         const mode = state.builder.type === 'diet' ? 'diet' : 'workout';
@@ -1382,13 +1516,26 @@
             dialog.dataset.builderType = mode;
             dialog.dataset.builderStep = String(step);
         }
-        const steps = state.builder.type === 'diet' ? ['البيانات الأساسية', 'بناء الوجبات', 'المراجعة والحفظ'] : ['البيانات الأساسية', 'بناء الأيام والتمارين', 'المراجعة والحفظ'];
+        const basicLabel = coachingText('coaching.builder.basic', 'البيانات الأساسية');
+        const structureLabel = state.builder.type === 'diet'
+            ? coachingText('coaching.builder.dietStructure', 'بناء الوجبات')
+            : coachingText('coaching.builder.workoutStructure', 'بناء الأيام والتمارين');
+        const reviewLabel = coachingText('coaching.builder.review', 'المراجعة والحفظ');
+        const steps = [basicLabel, structureLabel, reviewLabel];
         $('coachingBuilderStepper').innerHTML = steps.map((label, index) => { const number = index + 1; return `<button type="button" class="builder-step ${number === step ? 'active' : ''} ${number < step ? 'complete' : ''}" data-builder-step-target="${number}" ${number > step ? 'disabled' : ''}${number === step ? ' aria-current="step"' : ''}><span>${number}</span><strong>${label}</strong></button>`; }).join('');
         const draft = state.builder.draft;
         const basicDone = builderBasicComplete(draft);
         const structureDone = builderStructureComplete(draft);
-        const structureCount = state.builder.type === 'diet' ? `${draft.meals.length} وجبات · ${draft.meals.reduce((sum, meal) => sum + meal.items.length, 0)} أطعمة` : `${draft.routines.length} أيام · ${workoutStats(draft).exercises} تمارين`;
-        $('coachingBuilderProgress').innerHTML = `<div class="builder-progress-track"><span class="${basicDone ? 'complete' : ''}">١ <b>البيانات الأساسية</b></span><i class="${basicDone ? 'complete' : ''}"></i><span class="${structureDone ? 'complete' : ''}">٢ <b>${structureCount}</b></span><i class="${structureDone ? 'complete' : ''}"></i><span class="${step === 3 ? 'active' : ''}">٣ <b>مراجعة قبل الحفظ</b></span></div>`;
+        const structureCount = state.builder.type === 'diet'
+            ? coachingText('coaching.builder.progress.diet', '{{meals}} meals · {{foods}} foods', {
+                meals: number(draft.meals.length, 0),
+                foods: number(draft.meals.reduce((sum, meal) => sum + meal.items.length, 0), 0)
+            })
+            : coachingText('coaching.builder.progress.workout', '{{days}} days · {{exercises}} exercises', {
+                days: number(draft.routines.length, 0),
+                exercises: number(workoutStats(draft).exercises, 0)
+            });
+        $('coachingBuilderProgress').innerHTML = `<div class="builder-progress-track"><span class="${basicDone ? 'complete' : ''}">${number(1, 0)} <b>${escapeHtml(basicLabel)}</b></span><i class="${basicDone ? 'complete' : ''}"></i><span class="${structureDone ? 'complete' : ''}">${number(2, 0)} <b>${escapeHtml(structureCount)}</b></span><i class="${structureDone ? 'complete' : ''}"></i><span class="${step === 3 ? 'active' : ''}">${number(3, 0)} <b>${escapeHtml(coachingText('coaching.builder.reviewBeforeSave', 'مراجعة قبل الحفظ'))}</b></span></div>`;
         $('coachingBuilderBack').hidden = step === 1;
         // The primary next action already validates and opens the review step;
         // keep the legacy preview hook available in the DOM without showing a
@@ -1404,30 +1551,41 @@
         $('coachingBuilderPdf').dataset.builderHidden = String(step !== 3);
         $('coachingBuilderNext').dataset.builderHidden = String(step === 3);
         $('coachingBuilderSave').dataset.builderHidden = String(step !== 3);
-        const actionHints = state.builder.type === 'diet'
-            ? { 1: '١/٣ — بيانات العميل والسعرات', 2: '٢/٣ — ترتيب الوجبات والأطعمة', 3: '٣/٣ — مراجعة واعتماد الخطة' }
-            : { 1: '١/٣ — بيانات البرنامج والهدف', 2: '٢/٣ — بناء الأيام والتمارين', 3: '٣/٣ — مراجعة واعتماد البرنامج' };
+        const actionHintKeys = state.builder.type === 'diet'
+            ? { 1: 'coaching.builder.hint.diet.basics', 2: 'coaching.builder.hint.diet.structure', 3: 'coaching.builder.hint.diet.review' }
+            : { 1: 'coaching.builder.hint.workout.basics', 2: 'coaching.builder.hint.workout.structure', 3: 'coaching.builder.hint.workout.review' };
         const actionBar = document.querySelector('.builder-dialog-actions');
         if (actionBar) {
-            actionBar.dataset.builderActionHint = actionHints[step];
+            actionBar.dataset.builderActionHint = coachingText(actionHintKeys[step], '');
             actionBar.dataset.builderStep = String(step);
         }
         if ($('coachingBuilderSave')) $('coachingBuilderSave').dataset.requiredPermission = state.builder.id ? 'coaching.update' : 'coaching.create';
         if ($('coachingBuilderPrint')) $('coachingBuilderPrint').dataset.requiredPermission = 'coaching.read';
         if ($('coachingBuilderPdf')) $('coachingBuilderPdf').dataset.requiredPermission = 'coaching.read';
-        $('coachingBuilderBack').textContent = step === 2 ? 'السابق: البيانات الأساسية' : 'السابق: بناء المحتوى';
-        $('coachingBuilderPreview').textContent = 'مراجعة سريعة';
-        $('coachingBuilderNext').textContent = state.builder.type === 'diet'
-            ? (step === 1 ? 'التالي: بناء الوجبات' : 'التالي: مراجعة الخطة')
-            : (step === 1 ? 'التالي: بناء الأيام' : 'التالي: مراجعة البرنامج');
-        $('coachingBuilderSave').textContent = state.builder.id ? 'حفظ التعديلات' : 'اعتماد وحفظ النظام';
+        $('coachingBuilderBack').textContent = coachingText(
+            step === 2 ? 'coaching.builder.backToBasics' : 'coaching.builder.backToContent',
+            step === 2 ? 'السابق: البيانات الأساسية' : 'السابق: بناء المحتوى'
+        );
+        $('coachingBuilderPreview').textContent = coachingText('coaching.builder.preview', 'مراجعة سريعة');
+        const nextKey = state.builder.type === 'diet'
+            ? (step === 1 ? 'coaching.builder.next.dietStructure' : 'coaching.builder.next.dietReview')
+            : (step === 1 ? 'coaching.builder.next.workoutStructure' : 'coaching.builder.next.workoutReview');
+        $('coachingBuilderNext').dataset.i18n = nextKey;
+        $('coachingBuilderNext').textContent = coachingText(nextKey, 'التالي');
+        $('coachingBuilderSave').textContent = coachingText(
+            state.builder.id ? 'coaching.builder.saveChanges' : 'coaching.builder.approveSave',
+            state.builder.id ? 'حفظ التعديلات' : 'اعتماد وحفظ النظام'
+        );
         const canUseIntelligence = window.topGymAuth?.isOwner?.() || window.topGymAuth?.hasPermission?.('intelligence.generate');
         const aiTools = $('coachingBuilderAiTools');
         if (aiTools) aiTools.hidden = !canUseIntelligence;
     }
 
     function renderBuilderClientField(draft, locked = false) {
-        return `<label class="builder-client-field">العميل *<select data-builder-field="memberId" ${locked ? 'disabled' : ''}>${builderClientOptions(draft.memberId, draft.memberName)}</select><small>${draft.memberName ? `الملف الحالي: ${escapeHtml(draft.memberName)}` : 'اختر العميل الذي سيُحفظ النظام باسمه.'}</small></label>`;
+        const hint = draft.memberName
+            ? `<span data-i18n="coaching.builder.diet.currentProfile">${coachingText('coaching.builder.diet.currentProfile', 'Current profile:')}</span> <bdi dir="auto">${escapeHtml(draft.memberName)}</bdi>`
+            : `<span data-i18n="coaching.builder.clientPlaceholder">${coachingText('coaching.builder.clientPlaceholder', 'Choose the client this plan will be saved for.')}</span>`;
+        return `<label class="builder-client-field">العميل *<select data-builder-field="memberId" ${locked ? 'disabled' : ''}>${builderClientOptions(draft.memberId, draft.memberName)}</select><small>${hint}</small></label>`;
     }
 
     function renderDietStepOne() {
@@ -1438,6 +1596,26 @@
         const activityLabels = { sedentary: 'قليل جدًا', light: 'خفيف', moderate: 'متوسط', high: 'مرتفع', very_high: 'مرتفع جدًا' };
         const latestNote = calculator.measurementDate ? `تم جلب الوزن والطول من آخر قياس بتاريخ ${builderDate(calculator.measurementDate)}.` : 'يمكن تعبئة القياسات يدويًا أو إضافة قياس من ملف العميل.';
         $('coachingBuilderContent').innerHTML = `<section class="builder-stage builder-diet-basics"><div class="builder-stage-heading"><div><span>المرحلة الأولى</span><h4>المعلومات الأساسية وحساب السعرات</h4><p>احسب الاحتياج اليومي ثم طبّق الهدف والماكروز على الخطة قبل بناء الوجبات.</p></div><span class="builder-lock-chip">حفظ آمن داخل Transaction</span></div><div class="builder-basic-grid">${renderBuilderClientField(draft, Boolean(state.builder.id))}<label>اسم الخطة *<input required data-builder-field="name" value="${escapeHtml(draft.name)}" placeholder="مثال: خطة بناء العضلات"></label><label>تاريخ البداية *<input required type="date" data-builder-field="startDate" value="${escapeHtml(draft.startDate)}"></label><label>تاريخ النهاية<input type="date" data-builder-field="endDate" value="${escapeHtml(draft.endDate || '')}"></label><label>عدد الوجبات اليومية<select data-builder-field="mealsPerDay">${[3, 4, 5, 6].map((value) => `<option value="${value}" ${Number(draft.mealsPerDay) === value ? 'selected' : ''}>${value} وجبات</option>`).join('')}</select></label><label>الحالة<select data-builder-field="status">${Object.entries(STATUS_LABELS).map(([key, label]) => `<option value="${key}" ${draft.status === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label></div><div class="builder-calculator"><div class="builder-section-title"><div><span>حاسبة BMR / TDEE</span><h4>الاحتياج اليومي للعميل</h4><small>${latestNote}</small></div><span class="builder-formula-chip">Mifflin–St Jeor</span></div><div class="calculator-grid"><label>الوزن كجم<input type="number" min="1" step="0.1" data-calculator-field="weightKg" value="${escapeHtml(calculator.weightKg || '')}"></label><label>الطول سم<input type="number" min="1" step="0.1" data-calculator-field="heightCm" value="${escapeHtml(calculator.heightCm || '')}"></label><label>العمر<input type="number" min="1" max="120" data-calculator-field="age" value="${escapeHtml(calculator.age || '')}"></label><label>النوع<select data-calculator-field="gender"><option value="male" ${calculator.gender === 'male' ? 'selected' : ''}>ذكر</option><option value="female" ${calculator.gender === 'female' ? 'selected' : ''}>أنثى</option></select></label><label>مستوى النشاط<select data-calculator-field="activity">${Object.entries(activityLabels).map(([key, label]) => `<option value="${key}" ${calculator.activity === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label>الهدف<select data-builder-field="calorieGoal">${Object.entries(goalLabels).map(([key, label]) => `<option value="${key}" ${draft.calorieGoal === key ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label>العجز / الفائض بالسعرات<input type="number" step="50" data-builder-field="calorieAdjustment" value="${escapeHtml(draft.calorieAdjustment || 0)}"><small>سالب للخسارة وموجب للزيادة</small></label></div><div class="calculator-results"><div><span>BMR</span><strong id="dietBmrValue">${energy ? builderNum(energy.bmr) : '—'}</strong><small>السعرات الأساسية</small></div><div><span>TDEE</span><strong id="dietTdeeValue">${energy ? builderNum(energy.tdee) : '—'}</strong><small>الاحتياج مع النشاط</small></div><div><span>Target</span><strong id="dietTargetValue">${energy ? builderNum(energy.target) : builderNum(draft.targetCalories)}</strong><small>الهدف المقترح</small></div><button type="button" class="btn btn-primary" data-builder-action="apply-calories">تطبيق على الخطة</button></div></div><div class="builder-target-panel"><div class="builder-section-title"><div><span>أهداف الخطة</span><h4>Target Calories & Macros</h4></div><small>التوزيع الافتراضي: 30% بروتين · 40% كارب · 30% دهون</small></div><div class="target-grid"><label>Target Calories<input type="number" min="1" data-builder-field="targetCalories" value="${escapeHtml(draft.targetCalories || '')}"></label><label>Protein (g)<input type="number" min="0" step="0.1" data-builder-field="targetProtein" value="${escapeHtml(draft.targetProtein || '')}"></label><label>Carbs (g)<input type="number" min="0" step="0.1" data-builder-field="targetCarbs" value="${escapeHtml(draft.targetCarbs || '')}"></label><label>Fat (g)<input type="number" min="0" step="0.1" data-builder-field="targetFats" value="${escapeHtml(draft.targetFats || '')}"></label></div></div><label class="builder-wide-label">وصف الخطة<textarea data-builder-field="description" rows="2">${escapeHtml(draft.description || '')}</textarea></label><label class="builder-wide-label">ملاحظات<textarea data-builder-field="notes" rows="2">${escapeHtml(draft.notes || '')}</textarea></label></section>`;
+        refreshDietMeasurementNote();
+        localizeDietMealOptions();
+    }
+
+    function refreshDietMeasurementNote() {
+        if (!state.builder || state.builder.type !== 'diet') return;
+        const note = $('coachingBuilderContent')?.querySelector('.builder-calculator .builder-section-title small');
+        if (!note) return;
+        const measurementDate = state.builder.draft?.calculator?.measurementDate;
+        note.textContent = measurementDate
+            ? coachingText('coaching.builder.diet.measurementNote.withDate', 'Weight and height loaded from the latest measurement on {{date}}.', { date: builderDate(measurementDate) })
+            : coachingText('coaching.builder.diet.measurementNote.empty', 'Enter measurements manually or add one from the client profile.');
+    }
+
+    function localizeDietMealOptions() {
+        const select = $('coachingBuilderContent')?.querySelector('[data-builder-field="mealsPerDay"]');
+        if (!select) return;
+        [...select.options].forEach((option) => {
+            option.textContent = coachingText('coaching.builder.diet.mealCount', '{{count}} meals', { count: option.value });
+        });
     }
 
     function renderWorkoutStepOne() {
@@ -1452,7 +1630,77 @@
         const macro = (current, goal) => goal ? Math.min(100, Math.round((current / goal) * 100)) : 0;
         const summary = $('dietLiveSummary');
         if (!summary) return;
-        summary.innerHTML = `<div class="nutrition-summary-head"><div><span>Live Nutrition Totals</span><strong>${builderNum(totals.calories)} <small>/ ${builderNum(target)} سعرة</small></strong></div><b>${caloriePercent}% مكتمل</b></div><div class="nutrition-total-progress"><i></i></div><div class="nutrition-macro-grid"><div><span>Protein</span><strong>${builderNum(totals.protein, 1)} / ${builderNum(draft.targetProtein, 1)}g</strong><i><b></b></i></div><div><span>Carbs</span><strong>${builderNum(totals.carbs, 1)} / ${builderNum(draft.targetCarbs, 1)}g</strong><i><b></b></i></div><div><span>Fat</span><strong>${builderNum(totals.fats, 1)} / ${builderNum(draft.targetFats, 1)}g</strong><i><b></b></i></div></div><div class="nutrition-summary-foot"><span>${draft.meals.length} وجبات</span><span>${draft.meals.reduce((sum, meal) => sum + meal.items.length, 0)} أطعمة</span><span>المتبقي ${builderNum(Math.max(0, target - totals.calories))} سعرة</span></div>`;
+        summary.innerHTML = `<div class="nutrition-summary-head"><div><span>${escapeHtml(coachingText('coaching.builder.nutritionTotals', 'Live nutrition totals'))}</span><strong>${builderNum(totals.calories)} <small>/ ${builderNum(target)} ${escapeHtml(coachingText('coaching.builder.diet.calorieUnit', 'calories'))}</small></strong></div><b>${escapeHtml(coachingText('coaching.builder.diet.percentComplete', '{{percent}}% complete', { percent: caloriePercent }))}</b></div><div class="nutrition-total-progress"><i></i></div><div class="nutrition-macro-grid"><div><span>${escapeHtml(coachingText('coaching.builder.protein', 'Protein'))}</span><strong>${builderNum(totals.protein, 1)} / ${builderNum(draft.targetProtein, 1)}g</strong><i><b></b></i></div><div><span>${escapeHtml(coachingText('coaching.builder.carbs', 'Carbs'))}</span><strong>${builderNum(totals.carbs, 1)} / ${builderNum(draft.targetCarbs, 1)}g</strong><i><b></b></i></div><div><span>${escapeHtml(coachingText('coaching.builder.fat', 'Fat'))}</span><strong>${builderNum(totals.fats, 1)} / ${builderNum(draft.targetFats, 1)}g</strong><i><b></b></i></div></div><div class="nutrition-summary-foot"><span>${escapeHtml(coachingText('coaching.builder.diet.mealCount', '{{count}} meals', { count: number(draft.meals.length, 0) }))}</span><span>${escapeHtml(coachingText('coaching.builder.diet.foodCount', '{{count}} foods', { count: number(draft.meals.reduce((sum, meal) => sum + meal.items.length, 0), 0) }))}</span><span>${escapeHtml(coachingText('coaching.builder.diet.remainingCalories', '{{count}} calories remaining', { count: builderNum(Math.max(0, target - totals.calories)) }))}</span></div>`;
+    }
+
+    function refreshDietStepTwoLocale() {
+        const draft = syncBuilderDraft();
+        if (!draft || state.builder?.type !== 'diet' || state.builder.step !== 2) return;
+        renderDietLiveSummary(draft);
+        const calorieUnit = coachingText('coaching.builder.diet.calorieUnit', 'calories');
+        const labels = [
+            coachingText('coaching.builder.diet.calorieUnit', 'Calories'),
+            coachingText('coaching.builder.protein', 'Protein'),
+            coachingText('coaching.builder.carbs', 'Carbs'),
+            coachingText('coaching.builder.fat', 'Fat')
+        ];
+        draft.meals.forEach((meal, mealIndex) => {
+            const row = $('coachingBuilderContent')?.querySelector(`[data-meal-index="${mealIndex}"].builder-meal-row`);
+            if (!row) return;
+            const timeHint = row.querySelector('.builder-meal-title small');
+            if (timeHint) timeHint.textContent = meal.mealTime
+                ? coachingText('coaching.builder.diet.mealTimeWithValue', 'Meal time: {{time}}', { time: meal.mealTime })
+                : coachingText('coaching.builder.diet.mealTimeHint', 'Set meal time');
+            const totals = dietMealTotals(meal);
+            const values = [
+                `${builderNum(totals.calories, 0)} ${calorieUnit}`,
+                `${builderNum(totals.protein, 1)}g ${labels[1]}`,
+                `${builderNum(totals.carbs, 1)}g ${labels[2]}`,
+                `${builderNum(totals.fats, 1)}g ${labels[3]}`
+            ];
+            row.querySelectorAll('.builder-meal-row-summary span').forEach((item, index) => {
+                if (values[index] !== undefined) item.textContent = values[index];
+            });
+        });
+    }
+
+    function refreshDietReviewLocale() {
+        const draft = state.builder?.draft;
+        const content = $('coachingBuilderContent');
+        if (!draft || !content || state.builder.type !== 'diet' || state.builder.step !== 3) return;
+        const calorieUnit = coachingText('coaching.builder.diet.calorieUnit', 'calories');
+        const summaryValues = [...content.querySelectorAll('.review-summary-grid > div strong')];
+        const totals = dietTotals(draft);
+        const foods = draft.meals.reduce((sum, meal) => sum + meal.items.length, 0);
+        const values = [
+            `${builderNum(draft.targetCalories)} ${calorieUnit}`,
+            `${builderNum(draft.targetProtein, 1)}g`,
+            `${builderNum(draft.targetCarbs, 1)}g`,
+            `${builderNum(draft.targetFats, 1)}g`,
+            `${builderNum(totals.calories)} ${calorieUnit}`,
+            coachingText('coaching.builder.diet.mealFoodCount', '{{meals}} meals / {{foods}} foods', {
+                meals: number(draft.meals.length, 0), foods: number(foods, 0)
+            })
+        ];
+        summaryValues.forEach((element, index) => {
+            if (values[index] !== undefined) element.textContent = values[index];
+        });
+        const goalKey = draft.calorieGoal === 'lose'
+            ? 'coaching.builder.diet.goal.lose'
+            : draft.calorieGoal === 'gain' ? 'coaching.builder.diet.goal.gain' : 'coaching.builder.diet.goal.maintain';
+        const note = content.querySelector('.review-note');
+        if (note) {
+            note.innerHTML = `${escapeHtml(coachingText('coaching.builder.diet.planLabel', 'Plan:'))} <b>${escapeHtml(draft.name)}</b> · ${escapeHtml(coachingText('coaching.builder.review.goal', 'Goal:'))} <b>${escapeHtml(coachingText(goalKey, 'Maintain weight'))}</b> · BMR: <b>${draft.calculator?.bmr ? builderNum(draft.calculator.bmr) : '—'}</b> · TDEE: <b>${draft.calculator?.tdee ? builderNum(draft.calculator.tdee) : '—'}</b>`;
+        }
+        content.querySelectorAll('.review-block').forEach((block, index) => {
+            const meal = draft.meals[index];
+            const summary = block.querySelector('.review-block-head span');
+            if (!meal || !summary) return;
+            const time = meal.mealTime
+                ? coachingText('coaching.builder.diet.mealTimeWithValue', 'Meal time: {{time}}', { time: meal.mealTime })
+                : coachingText('coaching.builder.diet.noMealTime', 'No time set');
+            summary.textContent = `${time} · ${coachingText('coaching.builder.diet.mealCalories', '{{count}} calories', { count: builderNum(dietMealTotals(meal).calories) })}`;
+        });
     }
 
     function renderDietStepTwo() {
@@ -1491,7 +1739,7 @@
         const draft = state.builder.draft;
         const activeRoutine = Math.min(Math.max(Number(state.builder.activeRoutine || 0), 0), Math.max(draft.routines.length - 1, 0));
         state.builder.activeRoutine = activeRoutine;
-        const tabs = draft.routines.map((routine, index) => `<button type="button" class="builder-day-tab ${index === activeRoutine ? 'active' : ''}" data-builder-action="select-routine" data-index="${index}"><span>اليوم ${index + 1}</span><b>${escapeHtml(routine.name || 'يوم جديد')}</b><small>${routine.exercises.length} تمرين</small></button>`).join('');
+        const tabs = draft.routines.map((routine, index) => `<button type="button" class="builder-day-tab ${index === activeRoutine ? 'active' : ''}" data-builder-action="select-routine" data-index="${index}"><span data-i18n="coaching.builder.dayNumber" data-i18n-param-count="${index + 1}">Day ${index + 1}</span><b>${escapeHtml(routine.name || 'يوم جديد')}</b><small data-i18n="coaching.builder.exerciseCount" data-i18n-param-count="${routine.exercises.length}">Exercises: ${routine.exercises.length}</small></button>`).join('');
         const panels = draft.routines.map((routine, routineIndex) => {
             const exerciseRows = routine.exercises.map((exercise, exerciseIndex) => `<div class="builder-exercise-row" data-exercise-index="${exerciseIndex}"><div class="exercise-row-number">${exerciseIndex + 1}</div><label class="exercise-select-field"><span>Exercise</span><select data-exercise-field="exerciseId">${builderOptionList(state.catalog.exercises, exercise.exerciseId, 'اختر تمرينًا', (item) => item.nameAr || item.name || item.nameEn)}</select></label><label><span>Sets</span><input type="number" min="1" max="100" data-exercise-field="sets" value="${escapeHtml(exercise.sets)}"></label><label><span>Reps من</span><input type="number" min="1" data-exercise-field="repsMin" value="${escapeHtml(exercise.repsMin ?? '')}"></label><label><span>Reps إلى</span><input type="number" min="1" data-exercise-field="repsMax" value="${escapeHtml(exercise.repsMax ?? '')}"></label><label><span>Weight kg</span><input type="number" min="0" step="0.5" data-exercise-field="weightKg" value="${escapeHtml(exercise.weightKg ?? '')}"></label><label><span>Rest sec</span><input type="number" min="0" data-exercise-field="restSeconds" value="${escapeHtml(exercise.restSeconds ?? '')}"></label><label><span>Tempo</span><input data-exercise-field="tempo" value="${escapeHtml(exercise.tempo || '')}" placeholder="3-1-2-0"></label><label><span>Superset</span><input data-exercise-field="supersetGroupId" value="${escapeHtml(exercise.supersetGroupId || '')}" placeholder="A"></label><button type="button" class="btn btn-danger btn-small row-delete-button" data-builder-action="remove-exercise" data-routine="${routineIndex}" data-index="${exerciseIndex}">حذف</button><div class="exercise-row-notes"><input data-exercise-field="notes" value="${escapeHtml(exercise.notes || '')}" placeholder="ملاحظات التمرين"><div>${exerciseReference(exercise)}</div></div></div>`).join('');
             return `<section class="builder-day-panel" data-routine-index="${routineIndex}" ${routineIndex === activeRoutine ? '' : 'hidden'}><div class="builder-day-panel-head"><div><label>اسم اليوم<input data-routine-field="name" value="${escapeHtml(routine.name)}"></label><label>يوم الأسبوع<select data-routine-field="dayOfWeek"><option value="">اختر اليوم</option>${[1, 2, 3, 4, 5, 6, 7].map((day) => `<option value="${day}" ${Number(routine.dayOfWeek) === day ? 'selected' : ''}>اليوم ${day}</option>`).join('')}</select></label></div><div class="builder-row-actions"><button type="button" class="btn btn-light btn-small" data-builder-action="move-routine" data-index="${routineIndex}" data-direction="up" ${routineIndex === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn btn-light btn-small" data-builder-action="move-routine" data-index="${routineIndex}" data-direction="down" ${routineIndex === draft.routines.length - 1 ? 'disabled' : ''}>↓</button><button type="button" class="btn btn-danger btn-small" data-builder-action="remove-routine" data-index="${routineIndex}">حذف اليوم</button></div></div><label class="builder-row-note">ملاحظات اليوم<input data-routine-field="notes" value="${escapeHtml(routine.notes || '')}"></label><div class="builder-exercise-table"><div class="builder-exercise-table-head"><span>#</span><span>Exercise</span><span>Sets</span><span>Reps</span><span>Weight</span><span>Rest</span><span>Tempo</span><span>Superset</span><span></span></div>${exerciseRows || '<div class="builder-empty">أضف أول تمرين لهذا اليوم.</div>'}</div><button type="button" class="btn btn-light builder-add-item" data-builder-action="add-exercise" data-routine="${routineIndex}">+ إضافة تمرين</button></section>`;
@@ -1580,7 +1828,21 @@
     function localizeBuilderLabels() {
         const content = $('coachingBuilderContent');
         if (!content) return;
+        // Preserve the original domain value before translating option labels
+        // whose HTML intentionally omitted an explicit value attribute.
+        content.querySelectorAll('select option:not([value])').forEach((option) => {
+            option.setAttribute('value', option.textContent);
+        });
         translateCoachingSubtree(content);
+        window.TopGymI18n?.applyTranslations?.(content);
+        const builderDialog = $('coachingBuilderDialog');
+        translateCoachingSubtree(builderDialog);
+        window.TopGymI18n?.applyTranslations?.(builderDialog);
+        localizeBuilderDynamicOptions();
+        localizeBuilderReviewValues();
+        refreshBuilderSearchSelectLocales();
+        const volumeUnit = content.querySelector('.workout-metrics-grid article:nth-child(3) strong small');
+        if (volumeUnit) volumeUnit.textContent = coachingText('coaching.builder.unit.kg', 'كجم');
         return;
         const labels = {
             Food: 'الطعام',
@@ -1618,6 +1880,38 @@
             if (!textNode) return;
             const key = textNode.textContent.trim();
             if (labels[key]) textNode.textContent = textNode.textContent.replace(key, labels[key]);
+        });
+    }
+
+    function localizeBuilderDynamicOptions() {
+        const dayNumberLabel = (day) => coachingText('coaching.builder.dayNumber', 'اليوم {{count}}', { count: day });
+        $('coachingBuilderContent')?.querySelectorAll('select[data-routine-field="dayOfWeek"] option[value]:not([value=""])').forEach((option) => {
+            option.textContent = dayNumberLabel(Number(option.value));
+        });
+    }
+
+    function localizeBuilderReviewValues() {
+        if (!state.builder || state.builder.step !== 3 || state.builder.type !== 'workout') return;
+        const draft = state.builder.draft;
+        const volume = $('coachingBuilderContent')?.querySelector('.review-summary-grid > div:nth-child(6) strong');
+        if (volume) volume.textContent = coachingText('coaching.builder.review.volumeValue', '{{count}} kg', { count: number(workoutStats(draft).volume, 0) });
+        const duration = $('coachingBuilderContent')?.querySelector('.review-summary-grid > div:nth-child(2) strong');
+        if (duration) duration.textContent = coachingText('coaching.builder.review.durationValue', '{{count}} أسبوع', { count: number(draft.durationWeeks, 0) });
+        const reviewNote = $('coachingBuilderContent')?.querySelector('.review-note');
+        if (reviewNote) {
+            reviewNote.dataset.i18nPreserve = 'true';
+            const goal = coachingText(coachingTextKeys[draft.goal], draft.goal || '—');
+            const level = coachingText(coachingTextKeys[draft.level], draft.level || '—');
+            reviewNote.innerHTML = `${escapeHtml(coachingText('coaching.builder.review.goal', 'الهدف:'))} <b>${escapeHtml(goal)}</b> · ${escapeHtml(coachingText('coaching.builder.review.level', 'المستوى:'))} <b>${escapeHtml(level)}</b> · ${escapeHtml(coachingText('coaching.builder.review.daysPerWeek', 'أيام أسبوعيًا:'))} ${number(draft.daysPerWeek, 0)}`;
+        }
+        $('coachingBuilderContent')?.querySelectorAll('.review-block-head > span').forEach((label, index) => {
+            const routine = draft.routines[index];
+            if (!routine) return;
+            const sets = routine.exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0);
+            label.textContent = coachingText('coaching.builder.review.exerciseSetCounts', 'التمارين: {{exercises}} · المجموعات: {{sets}}', {
+                exercises: number(routine.exercises.length, 0),
+                sets: number(sets, 0)
+            });
         });
     }
 
@@ -1693,16 +1987,19 @@
                 options.className = 'builder-search-options';
                 options.setAttribute('role', 'listbox');
                 popover.append(searchLabel, options);
-                const optionRecords = [...select.options].map((option) => ({
+        const optionRecords = [...select.options].map((option) => ({
                     value: option.value,
                     label: option.textContent.trim(),
                     searchText: option.textContent.toLocaleLowerCase(),
                     disabled: option.disabled
                 }));
+        let activePlaceholder = coachingText(coachingTextKeys[placeholder], placeholder);
+        let activeSearchPlaceholder = coachingText(coachingTextKeys[searchPlaceholder], searchPlaceholder);
+        let activeEmpty = coachingText(coachingTextKeys[empty], empty);
 
                 const updateTrigger = () => {
                     const selected = select.selectedOptions?.[0];
-                    triggerText.textContent = selected?.value ? selected.textContent.trim() : placeholder;
+            triggerText.textContent = selected?.value ? selected.textContent.trim() : activePlaceholder;
                     trigger.title = triggerText.textContent;
                 };
                 const renderOptions = () => {
@@ -1712,7 +2009,7 @@
                     if (!matchingOptions.length) {
                         const emptyState = document.createElement('div');
                         emptyState.className = 'builder-search-empty';
-                        emptyState.textContent = empty;
+                emptyState.textContent = activeEmpty;
                         fragment.append(emptyState);
                         options.replaceChildren(fragment);
                         return;
@@ -1724,7 +2021,7 @@
                         optionButton.setAttribute('role', 'option');
                         optionButton.setAttribute('aria-selected', String(option.value === select.value));
                         optionButton.disabled = option.disabled;
-                        optionButton.textContent = option.value ? option.label : placeholder;
+                optionButton.textContent = option.value ? option.label : activePlaceholder;
                         optionButton.addEventListener('click', () => {
                             const previousValue = select.value;
                             select.value = option.value;
@@ -1737,6 +2034,22 @@
                     });
                     options.replaceChildren(fragment);
                 };
+        wrapper.refreshLocale = () => {
+            activePlaceholder = coachingText(coachingTextKeys[placeholder], placeholder);
+            activeSearchPlaceholder = coachingText(coachingTextKeys[searchPlaceholder], searchPlaceholder);
+            activeEmpty = coachingText(coachingTextKeys[empty], empty);
+            searchInput.placeholder = activeSearchPlaceholder;
+            searchInput.setAttribute('aria-label', activeSearchPlaceholder);
+            optionRecords.forEach((record) => {
+                const option = [...select.options].find((candidate) => candidate.value === record.value);
+                if (!option) return;
+                record.label = option.textContent.trim();
+                record.searchText = record.label.toLocaleLowerCase();
+                record.disabled = option.disabled;
+            });
+            updateTrigger();
+            if (!popover.hidden) renderOptions();
+        };
                 const setOpen = (open) => {
                     if (select.disabled) return;
                     if (open) closeBuilderSearchSelects(wrapper);
@@ -1796,9 +2109,13 @@
                 parent.insertBefore(wrapper, select);
                 wrapper.append(trigger, popover, select);
                 select.classList.add('builder-search-native');
-                updateTrigger();
+                wrapper.refreshLocale();
             });
         });
+    }
+
+    function refreshBuilderSearchSelectLocales() {
+        $('coachingBuilderContent')?.querySelectorAll('.builder-search-select').forEach((wrapper) => wrapper.refreshLocale?.());
     }
 
     function renderBuilderV2() {
@@ -1809,6 +2126,7 @@
         else renderBuilderReview();
         enhanceBuilderSearchSelects();
         localizeBuilderLabels();
+        if (state.builder.type === 'diet' && state.builder.step === 3) refreshDietReviewLocale();
         window.TopGymExerciseAssets?.hydrate($('coachingBuilderContent'));
     }
 
@@ -1883,8 +2201,7 @@
             state.builder = { type, memberId: Number(draft.memberId || memberId), id: id ? Number(id) : null, draft, defaultName: id ? '' : draft.name, step: 1, activeRoutine: 0 };
             $('coachingBuilderId').value = id || '';
             $('coachingBuilderMemberId').value = state.builder.memberId;
-            $('coachingBuilderTitle').textContent = `${id ? 'تعديل' : 'إنشاء'} ${type === 'workout' ? 'برنامج تدريب' : 'خطة تغذية'}`;
-            $('coachingBuilderSubtitle').textContent = `العميل: ${draft.memberName || resolvedMemberName || 'العميل المحدد'} · ثلاث مراحل واضحة حتى الحفظ.`;
+            renderBuilderDialogHeading();
             renderBuilderV2();
             openDialog($('coachingBuilderDialog'));
             resetBuilderViewport();
@@ -1978,7 +2295,7 @@
         const clientLabel = draft.memberName || (state.builderClients || []).find((client) => String(client.id) === String(draft.memberId))?.fullName || 'العميل المحدد';
         const title = state.builder.type === 'diet' ? 'خطة تغذية' : 'برنامج تدريب';
         const content = state.builder.type === 'diet' ? `<div class="print-summary"><b>Target Calories:</b> ${builderNum(draft.targetCalories)} · <b>Protein:</b> ${builderNum(draft.targetProtein, 1)}g · <b>Carbs:</b> ${builderNum(draft.targetCarbs, 1)}g · <b>Fat:</b> ${builderNum(draft.targetFats, 1)}g</div>${draft.meals.map((meal, index) => `<section><h2>${index + 1}. ${escapeHtml(meal.name)} <small>${meal.mealTime || ''}</small></h2><table><thead><tr><th>الطعام</th><th>الكمية</th><th>Calories</th><th>Protein</th><th>Carbs</th><th>Fat</th></tr></thead><tbody>${meal.items.map((item) => { const values = dietFoodMetrics(item); return `<tr><td>${escapeHtml(values.food ? itemName(values.food) : '—')}</td><td>${builderNum(item.assignedQuantity, 1)} ${escapeHtml(item.servingUnit || '')}</td><td>${builderNum(values.calories, 1)}</td><td>${builderNum(values.protein, 1)}</td><td>${builderNum(values.carbs, 1)}</td><td>${builderNum(values.fats, 1)}</td></tr>`; }).join('')}</tbody></table></section>`).join('') : `<div class="print-summary"><b>الهدف:</b> ${escapeHtml(draft.goal)} · <b>المستوى:</b> ${escapeHtml(draft.level)} · <b>المدة:</b> ${builderNum(draft.durationWeeks)} أسبوع · <b>الأيام:</b> ${draft.routines.length}</div>${draft.routines.map((routine, index) => `<section><h2>${index + 1}. ${escapeHtml(routine.name)}</h2><table><thead><tr><th>التمرين</th><th>Sets</th><th>Reps</th><th>Weight</th><th>Rest</th><th>Tempo</th><th>Superset</th></tr></thead><tbody>${routine.exercises.map((exercise) => { const item = state.catalog.exercises.find((candidate) => String(candidate.id) === String(exercise.exerciseId)); return `<tr><td>${escapeHtml(item ? itemName(item) : '—')}</td><td>${exercise.sets}</td><td>${exercise.repsMin || '—'}${exercise.repsMax ? `–${exercise.repsMax}` : ''}</td><td>${exercise.weightKg || '—'}</td><td>${exercise.restSeconds || 0}s</td><td>${escapeHtml(exercise.tempo || '—')}</td><td>${escapeHtml(exercise.supersetGroupId || '—')}</td></tr>`; }).join('')}</tbody></table></section>`).join('')}`;
-        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=45c24d3511465222"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Cairo,Tahoma,Arial,sans-serif;color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>إدارة الجيم</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
+        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=6cd2b7018b0d6cad"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:Cairo,Tahoma,Arial,sans-serif;color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>إدارة الجيم</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
     }
 
     }
@@ -2006,7 +2323,7 @@
         const content = state.builder.type === 'diet'
             ? `<div class="print-summary"><b>Target calories:</b> ${builderNum(draft.targetCalories)} · <b>Protein:</b> ${builderNum(draft.targetProtein, 1)}g · <b>Carbs:</b> ${builderNum(draft.targetCarbs, 1)}g · <b>Fat:</b> ${builderNum(draft.targetFats, 1)}g</div>${dietSections}`
             : `<div class="print-summary"><b>Goal:</b> ${escapeHtml(draft.goal)} · <b>Level:</b> ${escapeHtml(draft.level)} · <b>Duration:</b> ${builderNum(draft.durationWeeks)} weeks · <b>Days:</b> ${(draft.routines || []).length}</div>${workoutSections}`;
-        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=45c24d3511465222"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:var(--font-body,sans-serif);color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>Gym management</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
+        return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/css/main.css?v=6cd2b7018b0d6cad"><title>${title} - TOP GYM</title><style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font-family:var(--font-body,sans-serif);color:var(--text-primary);margin:0;line-height:1.6}header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid var(--primary);padding-bottom:12px;margin-bottom:18px}h1{font-size:27px;margin:0;color:var(--primary-hover);letter-spacing:2px}header p{margin:2px 0;color:var(--text-muted);font-size:11px}.meta{text-align:left;color:var(--text-secondary);font-size:11px}h2{font-size:15px;margin:16px 0 7px;padding:7px 10px;border-right:4px solid var(--primary);background:var(--primary-soft)}h2 small{float:left;color:var(--text-muted);font-size:10px;font-weight:400}table{width:100%;border-collapse:collapse;font-size:10px}th{background:var(--text-primary);color:var(--text-on-primary);text-align:right;padding:7px}td{border:1px solid var(--border-secondary);padding:7px}tr:nth-child(even) td{background:var(--bg-elevated)}.print-summary{padding:10px 12px;border:1px solid var(--primary-border);background:var(--bg-card-hover);border-radius:8px;font-size:11px}footer{margin-top:25px;border-top:1px solid var(--border-secondary);padding-top:10px;color:var(--text-muted);font-size:10px;display:flex;justify-content:space-between}</style></head><body><header><div><h1>TOP GYM</h1><p>${title}</p></div><div class="meta"><b>${escapeHtml(clientLabel)}</b><br>${builderDate(draft.startDate)}${draft.endDate ? ` — ${builderDate(draft.endDate)}` : ''}</div></header>${content}<footer><b>Gym management</b><span>TOP GYM · ${new Date().toLocaleDateString('ar-EG')}</span></footer><script>window.onload=()=>setTimeout(()=>window.print(),350);<\/script></body></html>`;
     }
 
     const buildBuilderPrintDocumentLegacy = buildBuilderPrintDocument;

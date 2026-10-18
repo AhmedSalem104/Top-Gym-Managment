@@ -94,7 +94,9 @@ test('members, dashboard, platform and trainer surfaces use component-scoped loa
     assert.match(trainerMarkup, /id="trainerSessionsList"[^>]+data-skeleton-kind="list"/);
     assert.match(trainerScript, /function beginRegionLoading\(/);
     assert.match(trainerScript, /topGymSkeleton\?\.ready/);
-    assert.match(dashboardStyles, /#dashboardSection\.data-loading > \.dashboard-hero,[\s\S]*display: grid;/);
+    assert.match(index, /class="dashboard-overview-cards"[\s\S]*data-dashboard-member-count/u);
+    assert.match(dashboardStyles, /#dashboardSection\.data-loading \.dashboard-initial-skeleton\s*\{\s*display:\s*block/u);
+    assert.match(dashboardStyles, /#dashboardSection\.data-loading \.dashboard-overview-card \[data-dashboard-member-count\],[\s\S]*?background:\s*var\(--bg-card-hover\)/u);
 });
 
 test('refreshing a region preserves its current content and reduced motion disables shimmer', () => {

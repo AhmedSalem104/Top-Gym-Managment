@@ -141,7 +141,7 @@
                 return;
             }
             await ensureTab('phone-inputs');
-            await loadScript('/js/pages/dashboard/analytics.js?v=2a0be108e09f0386', 'dashboard-analytics')
+            await loadScript('/js/pages/dashboard/analytics.js?v=d6b751fdc62f3f48', 'dashboard-analytics')
                 .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
         };
         scheduleIdle(() => void start(), immediate ? 700 : 1600);

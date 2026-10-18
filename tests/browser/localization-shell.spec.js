@@ -49,6 +49,9 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await page.waitForFunction(() => Boolean(window.TopGymI18n));
     await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('#languageToggleButton')).toHaveText('EN');
+    await expect(page.locator('#languageToggleButton')).toHaveAttribute('aria-label', 'التبديل إلى الإنجليزية');
+    await expect(page.locator('#languageToggleButton')).toHaveAttribute('title', 'التبديل إلى الإنجليزية');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('المشتركون');
     expect(await page.locator('.topbar-inner').evaluate((element) => getComputedStyle(element).direction)).toBe('rtl');
     expect(await page.locator('[data-page-tab="members"] > span').evaluate((element) => getComputedStyle(element).fontFamily)).toContain('Tajawal');

@@ -549,9 +549,7 @@
                 const element = root.querySelector(selector);
                 if (element) element.setAttribute(attribute, i18n.t(key));
             };
-            setAttribute('.dashboard-hero', 'aria-label', 'dashboard.aria.actions');
-            setAttribute('.dashboard-hero-meta', 'aria-label', 'dashboard.meta.secure');
-            setAttribute('.dashboard-hero-mini-stats', 'aria-label', 'dashboard.summary.subscription');
+            setAttribute('.dashboard-overview-cards', 'aria-label', 'dashboard.overview.aria');
             setAttribute('.overview-grid', 'aria-label', 'dashboard.memberships.aria');
             setAttribute('.stats-grid', 'aria-label', 'dashboard.memberships.title');
             setAttribute('.dashboard-day-pass-kpis', 'aria-label', 'dashboard.dayPasses.title');
@@ -768,27 +766,29 @@
             window.addEventListener('topgym:localechange', () => roots.forEach(localize));
         }
 
-        function syncDashboardHeroStats() {
-            document.querySelectorAll('[data-dashboard-hero-source]').forEach((card) => {
-                const source = document.getElementById(card.dataset.dashboardHeroSource);
-                const value = card.querySelector('[data-dashboard-hero-value]');
-                if (!source || !value) return;
-                const raw = source.textContent.trim();
-                const number = Number(raw.replace(/[^\d.-]/g, ''));
-                value.textContent = raw && Number.isFinite(number) ? dashboardNumber(number) : raw;
-            });
+        function syncDashboardOverviewCards() {
+            const rawMemberCount = state.dashboard?.stats?.total;
+            const memberCount = rawMemberCount === null || rawMemberCount === undefined || rawMemberCount === ''
+                ? null
+                : Number(rawMemberCount);
+            const memberCountValue = document.querySelector('[data-dashboard-member-count]');
+            if (memberCountValue) {
+                memberCountValue.textContent = memberCount !== null && Number.isFinite(memberCount)
+                    ? dashboardNumber(memberCount)
+                    : '—';
+            }
             const subscription = dashboardSubscriptionValue();
             const plan = typeof subscription.plan === 'string' ? { name: subscription.plan } : (subscription.plan || {});
             const planName = plan.name || subscription.planName || subscription.plan_name || '—';
             const subscriptionStart = subscription.startsAt || subscription.startDate || subscription.starts_at || subscription.start_date || null;
-            const planValue = document.querySelector('[data-dashboard-hero-subscription="plan"] [data-dashboard-hero-value]');
-            const dateValue = document.querySelector('[data-dashboard-hero-subscription="date"] [data-dashboard-hero-value]');
+            const planValue = document.querySelector('[data-dashboard-overview-plan]');
+            const dateValue = document.querySelector('[data-dashboard-overview-date]');
             if (planValue) planValue.textContent = planName;
             if (dateValue) dateValue.textContent = subscriptionStart ? dashboardDate(subscriptionStart) : '—';
         }
 
          function renderDashboard() {
-             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboardNumber(dashboard.stats.total || 0); $('statActive').textContent = dashboardNumber(dashboard.stats.active || 0); $('statExpiring').textContent = dashboardNumber(dashboard.stats.expiringSoon || 0); $('statExpired').textContent = dashboardNumber(dashboard.stats.expired || 0); $('statFrozen').textContent = dashboardNumber(dashboard.stats.frozen || 0); syncDashboardHeroStats();
+             const dashboard = state.dashboard || { stats: {}, alerts: [] }; $('statTotal').textContent = dashboardNumber(dashboard.stats.total || 0); $('statActive').textContent = dashboardNumber(dashboard.stats.active || 0); $('statExpiring').textContent = dashboardNumber(dashboard.stats.expiringSoon || 0); $('statExpired').textContent = dashboardNumber(dashboard.stats.expired || 0); $('statFrozen').textContent = dashboardNumber(dashboard.stats.frozen || 0); syncDashboardOverviewCards();
              const store = dashboard.store;
              const storeSummary = $('dashboardStoreSummary');
              if (storeSummary) {

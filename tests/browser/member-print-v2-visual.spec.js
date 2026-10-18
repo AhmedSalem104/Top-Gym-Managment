@@ -75,8 +75,9 @@ const details = {
 const artifacts = path.resolve(__dirname, '../../qa/artifacts/member-print-v2-visual');
 const normalizeNumbers = (value) => String(value).replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660)).replace(/[٬٫,]/g, '');
 
-test('member print formats render to actual A4 PDFs without losing fixture fields or clipping content', async ({ page }, testInfo) => {
+test('member print formats render Arabic RTL and English LTR A4 PDFs without losing fixture fields or clipping content', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'A4 PDF pagination is captured in Desktop Chromium.');
+    test.setTimeout(240_000);
     fs.mkdirSync(artifacts, { recursive: true });
 
     const apiCalls = [];
@@ -115,7 +116,8 @@ test('member print formats render to actual A4 PDFs without losing fixture field
     const integrationLoaded = await page.evaluate(() => [...document.scripts].some((script) => script.src.includes('/integrations/print-enhancements.js')));
     if (!integrationLoaded) await page.addScriptTag({ url: '/js/integrations/print-enhancements.js' });
 
-    const capture = async (name, invoke) => {
+    const capture = async (name, invoke, locale = 'ar') => {
+        await page.evaluate((language) => window.TopGymI18n?.set?.(language, { persist: false }), locale);
         await page.evaluate(() => { window.__memberPrintInvoked = false; });
         const popupPromise = page.waitForEvent('popup');
         await invoke();
@@ -135,6 +137,7 @@ test('member print formats render to actual A4 PDFs without losing fixture field
 
         const fields = await popup.locator('.print-sheet').evaluate((sheet) => ({
             direction: getComputedStyle(sheet).direction,
+            language: document.documentElement.lang,
             pageSize: getComputedStyle(sheet).getPropertyValue('width'),
             text: sheet.innerText,
             sectionCount: sheet.querySelectorAll('.print-section').length,
@@ -142,7 +145,8 @@ test('member print formats render to actual A4 PDFs without losing fixture field
             historyRows: sheet.querySelectorAll('.print-table tbody tr').length,
             overflowing: [...sheet.querySelectorAll('.print-info-item, .print-billing-item, .print-table-wrap, .print-footer')].filter((node) => node.scrollWidth > node.clientWidth + 1).length
         }));
-        expect(fields.direction).toBe('rtl');
+        expect(fields.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
+        expect(fields.language).toBe(locale);
         expect(fields.overflowing).toBe(0);
 
         const printable = await page.context().newPage();
@@ -160,6 +164,7 @@ test('member print formats render to actual A4 PDFs without losing fixture field
         await fs.promises.writeFile(path.join(artifacts, `${name}.json`), JSON.stringify({
             documentTitle: await popup.title(),
             direction: fields.direction,
+            language: fields.language,
             pageCount,
             pageSizeCss: fields.pageSize,
             sections: fields.sectionCount,
@@ -185,6 +190,13 @@ test('member print formats render to actual A4 PDFs without losing fixture field
     expect(normalizeNumbers(short.fields.text)).toContain('25000');
     expect(short.fields.text).toContain('https://portal.example.test/members/74201?view=membership');
 
+    const shortEn = await capture('member-short-membership-a4-en', () => page.evaluate((id) => window.topGymPrint.printMember(id, 'membership'), memberId), 'en');
+    expect(shortEn.pageCount).toBe(1);
+    expect(shortEn.fields.text).toContain('Membership receipt');
+    expect(shortEn.fields.text).toContain('Membership and portal scope');
+    expect(shortEn.fields.text).toContain('EGP');
+    expect(shortEn.fields.text).not.toContain('تاريخ التسجيل');
+
     member.notes = longNote;
     memberships.at(-1).notes = longNote;
     const full = await capture('member-full-profile-long-a4', () => page.evaluate((id) => window.topGymPrint.printMember(id, 'full'), memberId));
@@ -197,6 +209,13 @@ test('member print formats render to actual A4 PDFs without losing fixture field
     expect(full.fields.text).toContain('QA-MEMBER-0032');
     expect(full.fields.text).toContain(longNote.trim());
 
+    const fullEn = await capture('member-full-profile-long-a4-en', () => page.evaluate((id) => window.topGymPrint.printMember(id, 'full'), memberId), 'en');
+    expect(fullEn.pageCount).toBeGreaterThan(1);
+    expect(fullEn.fields.paymentRows).toBeGreaterThanOrEqual(32);
+    expect(fullEn.fields.text).toContain('Complete history');
+    expect(fullEn.fields.text).toContain('EGP');
+    expect(fullEn.fields.text).not.toContain('سجل الاشتراكات');
+
     member.notes = 'Synthetic short member note';
     memberships.at(-1).notes = 'Synthetic short membership note';
     const receipt = await capture('member-payment-receipt-a4', () => page.evaluate(({ id, paymentId }) => window.topGymPrint.printPaymentReceipt(id, paymentId), { id: memberId, paymentId: payments[0].id }));
@@ -207,14 +226,21 @@ test('member print formats render to actual A4 PDFs without losing fixture field
     expect(normalizeNumbers(receipt.fields.text)).toContain('100000');
     expect(normalizeNumbers(receipt.fields.text)).toContain('25000');
 
+    const receiptEn = await capture('member-payment-receipt-a4-en', () => page.evaluate(({ id, paymentId }) => window.topGymPrint.printPaymentReceipt(id, paymentId), { id: memberId, paymentId: payments[0].id }), 'en');
+    expect(receiptEn.pageCount).toBe(1);
+    expect(receiptEn.fields.text).toContain('Payment receipt');
+    expect(receiptEn.fields.text).toContain('Transaction amount');
+    expect(receiptEn.fields.text).toContain('EGP');
+    expect(receiptEn.fields.text).not.toContain('رقم الإيصال');
+
     expect(apiCalls.filter((entry) => entry.pathname === `/api/members/${memberId}/details` && entry.method === 'GET').length).toBeGreaterThanOrEqual(3);
     expect(writes).toEqual([]);
     await fs.promises.writeFile(path.join(artifacts, 'coverage.json'), JSON.stringify({
         runtime: process.version,
-        supportedFormatsVerified: ['Member membership summary — A4, short data', 'Full member profile — A4, long synthetic history', 'Member payment receipt — A4'],
-        unsupportedByCurrentTemplate: ['English/LTR document localization; templates explicitly emit lang="ar" dir="rtl"'],
+        supportedFormatsVerified: ['Member membership summary — A4, Arabic/RTL and English/LTR', 'Full member profile — A4, long synthetic history in Arabic/RTL and English/LTR', 'Member payment receipt — A4, Arabic/RTL and English/LTR'],
+        unsupportedByCurrentTemplate: [],
         noBackendWrites: writes.length === 0,
         apiReads: apiCalls.filter((entry) => entry.pathname === `/api/members/${memberId}/details`).length,
-        outputs: ['member-short-membership-a4.pdf', 'member-full-profile-long-a4.pdf', 'member-payment-receipt-a4.pdf']
+        outputs: ['member-short-membership-a4.pdf', 'member-short-membership-a4-en.pdf', 'member-full-profile-long-a4.pdf', 'member-full-profile-long-a4-en.pdf', 'member-payment-receipt-a4.pdf', 'member-payment-receipt-a4-en.pdf']
     }, null, 2));
 });

@@ -97,12 +97,16 @@ test('page and section heading presentation has canonical typography, layout, an
     const typography = read('public/css/typography.css');
     const layout = read('public/css/layout.css');
     const responsive = read('public/css/responsive.css');
+    const dashboard = read('public/css/pages/dashboard.css');
+    const theme = read('public/css/theme.css');
 
     assert.match(typography, /body \.page-header h2,[\s\S]*?font-size:\s*var\(--font-size-page-title\)[\s\S]*?font-weight:\s*var\(--weight-semibold\)/u);
     assert.match(typography, /body \.page-header p,[\s\S]*?color:\s*var\(--color-text-muted\)[\s\S]*?line-height:\s*1\.6/u);
     assert.match(layout, /\.section-heading\s*\{[^}]*min-height:\s*44px[^}]*var\(--space-4\)[^}]*var\(--border-secondary\)[^}]*var\(--space-3\)/u);
     assert.match(responsive, /\.section-heading\s*\{[^}]*align-items:\s*flex-start[^}]*flex-direction:\s*column[^}]*gap:\s*var\(--space-3\)/u);
     assert.doesNotMatch(visual, /body \.page-header h2|body \.section-heading|body \.members-panel h3/u);
+    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-section-heading\s*\{[^}]*margin-top:\s*2px/u);
+    assert.doesNotMatch(theme, /\.dashboard-section-heading/u, 'dashboard-specific responsive styling belongs to the dashboard page owner');
 });
 
 test('shared mobile content grids collapse in the responsive owner, not visual polish', () => {
@@ -141,17 +145,26 @@ test('SaaS panel heading presentation is owned by the SaaS page stylesheet', () 
     assert.doesNotMatch(visual, /\.saas-panel-head/u);
 });
 
-test('Dashboard Hero presentation is owned by the dashboard page, not visual polish', () => {
+test('Dashboard overview cards are owned by the dashboard page and use live data hooks', () => {
     const dashboard = read('public/css/pages/dashboard.css');
     const visual = read('public/css/components/visual-redesign.css');
     const html = read('public/index.html');
+    const app = read('public/js/app.js');
 
     assert.doesNotMatch(visual, /\.dashboard-hero(?:[\s:#.[,]|$)|dashboard-hero-enter/u);
-    assert.match(dashboard, /\.dashboard-hero::before[\s\S]*?logic-fit-login-gym\.webp/u);
-    assert.match(dashboard, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.dashboard-hero/u);
-    assert.match(dashboard, /\.dashboard-hero\s+#dashboardPrintPricingButton\s*\{\s*display:\s*none\s*;?\s*\}/u);
+    assert.doesNotMatch(dashboard, /dashboard-hero|logic-fit-login-gym\.webp/u);
+    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*border-radius:\s*var\(--radius-overview-card\)/u);
+    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*background:\s*var\(--bg-surface\)/u);
+    assert.match(dashboard, /\.dashboard-overview-cards\s*\{[^}]*display:\s*grid/u);
+    assert.match(dashboard, /\.dashboard-overview-card\s*\{[^}]*var\(--radius-overview-card\)/u);
+    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-overview-cards/u);
     assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);
-    assert.match(html, /data-dashboard-hero-subscription="plan"[\s\S]*?data-dashboard-hero-source="statTotal"[\s\S]*?data-dashboard-hero-subscription="date"/u);
+    assert.match(html, /class="dashboard-overview-cards"[\s\S]*?data-dashboard-member-count[\s\S]*?data-dashboard-overview-plan[\s\S]*?data-dashboard-overview-date/u);
+    assert.match(html, /class="dashboard-overview-shell"[\s\S]*?id="dashboardOverviewTitle"[\s\S]*?class="dashboard-overview-cards"/u);
+    assert.match(app, /const rawMemberCount\s*=\s*state\.dashboard\?\.stats\?\.total/u);
+    assert.match(app, /syncDashboardOverviewCards\(\)/u);
+    assert.match(app, /function dashboardSubscriptionValue\(\)[\s\S]*?const candidates = \[[\s\S]*?billing\.subscription[\s\S]*?return candidates\.find/u);
+    assert.doesNotMatch(app, /parseInt\([^)]*dashboard-overview|Number\([^)]*textContent/u);
 });
 
 test('Branch Management presentation is feature-owned, not part of the visual polish layer', () => {
@@ -197,6 +210,12 @@ test('branch/section dropdown styling and Navbar shell composition have canonica
         assert.equal(rulesContainingClass(visual, selectorClass).length, 0,
             `${selectorClass} must not remain in components/visual-redesign.css`);
     }
+
+    assert.equal((context.match(/body \.app-shell > \.topbar:has\(\.branch-context-field\.is-open\)/gu) || []).length, 1,
+        'the open branch-context topbar stacking rule must have one canonical declaration');
+    assert.match(context,
+        /body \.topbar-controls > \.branch-context-shell \.branch-context-field:hover,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field:focus-within,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field\.is-open\s*\{[^}]*min-width: 0;[^}]*transform: none;/u,
+        'the compact Navbar branch/section states share one non-important sizing rule');
 
     for (const source of [main, appShell]) {
         const navigationIndex = source.indexOf('@import url("./components/navigation-shell.css");');
@@ -302,16 +321,23 @@ test('member action dialog presentation is owned by the members page stylesheet'
         '#actionDialog {',
         '#actionDialog #dialogTitle {',
         '#actionDialog #dialogDescription {',
-        '#dialogFields {',
-        'body #actionDialog > form.dialog-body {',
-        'body #actionDialog > form.dialog-body > .dialog-actions {'
+        '#dialogFields {'
     ]) {
         assert.ok(members.includes(selector), `${selector} must be owned by pages/members.css`);
         assert.equal(visual.includes(selector), false, `${selector} must not remain in visual-redesign.css`);
     }
 
-    assert.match(members, /@media\s*\(max-width:\s*767px\)[\s\S]*?body #actionDialog > form\.dialog-body[\s\S]*?body #actionDialog > form\.dialog-body > \.dialog-actions/u,
-        'member action dialog mobile spacing must be owned by pages/members.css');
+    const modalFoundation = read('public/css/components/modal-foundation.css');
+    const html = read('public/index.html');
+    assert.match(modalFoundation, /#actionDialog\s*\{[^}]*max-height:\s*calc\(100dvh\s*-\s*32px\)[^}]*height:\s*fit-content/u,
+        'the shared modal owner must size the action dialog to content');
+    assert.match(modalFoundation, /\.lf-modal-shell\.lf-modal--structured > \.lf-modal-layout > :is\(\.dialog-body, \.dialog-scroll-content\)\s*\{[^}]*min-height:\s*0[^}]*overflow-y:\s*auto/u,
+        'only the action dialog body may scroll');
+    assert.match(modalFoundation, /#actionDialog > \.lf-modal-layout > \.dialog-actions\s*\{[^}]*border-block-start/u,
+        'the action footer separator must remain inside the dialog');
+    assert.match(html, /<form class="lf-modal-layout" id="actionForm">[\s\S]*?<header class="dialog-header">[\s\S]*?<div class="dialog-body" id="actionDialogBody">[\s\S]*?<footer class="dialog-actions">/u,
+        'the form contract must use explicit header/body/footer regions');
+    assert.doesNotMatch(members, /body #actionDialog > form\.dialog-body\s*\{[^}]*position:\s*sticky/u);
     assert.doesNotMatch(visual, /#actionDialog|#dialogTitle|#dialogDescription|#dialogFields/u,
         'visual-redesign.css must not own member action dialog presentation');
     assert.doesNotMatch(visual, /body \.coaching-builder-dialog > form\.dialog-body/u,
@@ -418,6 +444,18 @@ test('dynamically-created Coaching dialogs opt into the central structured contr
     }
 });
 
+test('SweetAlert destructive actions have one semantic danger owner instead of a shadowed primary rule', () => {
+    const modals = read('public/css/components/modals.css');
+    const primaryRule = modals.match(/body \.swal2-popup \.swal2-actions > button\.swal2-confirm,[\s\S]*?\{([^}]*)\}/u);
+    const dangerRule = modals.match(/body \.swal2-popup \.swal2-actions > button\.btn-danger\s*\{([^}]*)\}/u);
+
+    assert.ok(primaryRule, 'the confirm and primary buttons keep their canonical primary styling');
+    assert.doesNotMatch(primaryRule[0], /button\.btn-danger/u, 'destructive actions must not be classified as primary');
+    assert.ok(dangerRule, 'the destructive button has a dedicated semantic owner');
+    assert.match(dangerRule[1], /background:\s*var\(--color-danger\)\s*!important/u);
+    assert.match(dangerRule[1], /color:\s*var\(--text-on-primary\)\s*!important/u);
+});
+
 test('all static native dialogs are hydrated by the central runtime and have canonical size metadata', () => {
     const enhancer = read('public/js/dialog-enhancements.js');
     const htmlFiles = [
@@ -475,6 +513,26 @@ test('authentication submit geometry is owned by Buttons rather than visual-rede
     assert.equal(hasRootClassSelector(buttons, 'auth-submit'), true);
     assert.equal(hasRootClassSelector(visual, 'auth-submit'), false);
     assert.equal(rulesContainingClass(login, 'auth-submit').some(rule => /min-height:\s*56px/u.test(rule.declarations)), true);
+});
+
+test('login remember-me keeps an 18px visual box inside the shared touch target', () => {
+    const login = read('public/css/pages/login.css');
+    const lastRule = (pattern) => [...login.matchAll(pattern)].at(-1)?.[0] || '';
+    const rule = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember\s*\{[^}]*\}/gu);
+    const checkbox = login.match(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input\s*\{[^}]*appearance:\s*none[^}]*\}/u)?.[0] || '';
+    const checked = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:checked\s*\{[^}]*\}/gu);
+    const mark = lastRule(/\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:checked::after\s*\{[^}]*\}/gu);
+    assert.match(rule, /min-height:\s*var\(--ui-touch-target\)/u);
+    assert.match(rule, /gap:\s*var\(--space-2\)/u);
+    assert.match(rule, /font-size:\s*14px/u);
+    assert.match(checkbox, /width:\s*18px/u);
+    assert.match(checkbox, /height:\s*18px/u);
+    assert.match(checkbox, /border-radius:\s*4px/u);
+    assert.match(checkbox, /display:\s*grid/u);
+    assert.match(checked, /background:\s*var\(--primary\)/u);
+    assert.match(mark, /border:\s*solid var\(--text-on-primary\)/u);
+    assert.doesNotMatch(login, /body\.auth-locked \.auth-screen\[data-auth-stage="login"\] \.auth-remember input\s*\{[^}]*height:\s*20px/u);
+    assert.match(login, /\.auth-screen\[data-auth-stage="login"\] \.auth-remember input:focus-visible/u);
 });
 
 test('authentication alerts use Alerts owner and Platform form message stays feature-owned', () => {
@@ -691,6 +749,18 @@ test('payment receipt amounts use primary semantics while outstanding balances r
     assert.match(print, /\.print-receipt-amount\s*\{[^}]*border-color:\s*var\(--print-brand-border\)[^}]*background:\s*var\(--print-brand-surface\)/u);
     assert.match(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*var\(--print-brand-primary\)/u);
     assert.doesNotMatch(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*#c53030/u);
+});
+
+test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {
+    const phone = read('public/css/components/phone-inputs.css');
+    const attendance = read('public/css/pages/attendance.css');
+
+    assert.match(phone, /\.phone-input-error\[hidden\]\s*\{[^}]*display:\s*block\s*!important/u,
+        'the phone component owns its stable hidden feedback slot');
+    assert.match(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*height:\s*0;[^}]*visibility:\s*hidden;/u,
+        'Attendance may retain its local zero-height layout adjustment');
+    assert.doesNotMatch(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*display\s*:/u,
+        'Attendance must not duplicate the phone component display invariant');
 });
 
 test('style validator checks generated bundles but does not report them as duplicate token owners', () => {

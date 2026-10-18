@@ -27,7 +27,7 @@
   .top-actions,
   .page-header-actions,
   .dashboard-page-actions,
-  .dashboard-hero,
+  .dashboard-overview-cards,
   .btn,
   button,
   .modal-backdrop,
@@ -191,7 +191,7 @@ body > .print-sheet,
   margin: 0 auto;
   background: #fff;
   color: var(--print-brand-text);
-  direction: rtl;
+  direction: inherit;
   font-family: "Logic Fit Print Arabic", "Tajawal", Tahoma, Arial, sans-serif;
   font-size: 10pt;
   line-height: 1.65;
@@ -272,7 +272,7 @@ body > .print-sheet,
   gap: 2px;
   color: var(--print-brand-muted);
   font-size: 8.5pt;
-  text-align: left;
+  text-align: start;
 }
 
 .print-document-meta strong {
@@ -293,6 +293,18 @@ body > .print-sheet,
      moving the entire section and stranding the document header by itself. */
   break-inside: auto;
   page-break-inside: auto;
+}
+
+/* Standalone coaching PDFs are generated from one bounded sheet. Keep their
+   final attribution/footer with short plans instead of spilling it alone onto
+   an almost-empty second A4 page. Long sections still paginate normally. */
+.print-system-document > .print-section {
+  margin-block-end: 10px;
+}
+
+.print-system-document > .print-footer {
+  margin-block-start: 12px;
+  padding-block-start: 6px;
 }
 
 .print-section-title {
@@ -488,6 +500,7 @@ body > .print-sheet,
 .print-system-overview-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 10px;
   margin-top: 10px;
 }
@@ -603,7 +616,7 @@ body > .print-sheet,
   padding: 6px;
   font-weight: 700;
   text-align: center;
-  direction: rtl;
+  direction: inherit;
   unicode-bidi: isolate;
 }
 
@@ -614,7 +627,7 @@ body > .print-sheet,
   text-align: center;
   vertical-align: middle;
   overflow-wrap: anywhere;
-  direction: rtl;
+  direction: inherit;
   unicode-bidi: isolate;
 }
 
@@ -708,7 +721,7 @@ body > .print-sheet,
   .print-system-hero,
   .print-section-title,
   .print-footer { align-items: stretch; flex-direction: column; }
-  .print-document-meta,
+  .print-document-meta { text-align: start; }
   .print-system-hero-title { text-align: right; }
   .print-info-grid,
   .print-billing-grid,

@@ -26,7 +26,7 @@ function createElement() {
     };
 }
 
-function boot(savedLocale = null) {
+function boot(savedLocale = null, source = runtime) {
     const storage = new Map(savedLocale ? [['logic-fit-ui-locale', savedLocale], ['topgym-theme', 'dark']] : [['topgym-theme', 'dark']]);
     const host = createElement();
     host.insertBefore = (element) => { element.parentElement = host; host.button = element; };
@@ -55,7 +55,7 @@ function boot(savedLocale = null) {
         dispatchEvent(event) { events.push(event); },
         addEventListener() {}
     };
-    vm.runInNewContext(runtime, { window, document, CustomEvent }, { filename: 'i18n.js' });
+    vm.runInNewContext(source, { window, document, CustomEvent }, { filename: 'i18n.js' });
     return { api: window.TopGymI18n, root, body, storage, events, host };
 }
 
@@ -103,6 +103,109 @@ test('localization exposes only centralized text lookup and never injects user i
     api.renderText(target, 'common.greeting', { name: '<img src=x onerror=alert(1)>' });
     assert.equal(target.textContent, 'Hello <img src=x onerror=alert(1)>');
     assert.equal(target.innerHTML, '<em>unchanged</em>');
+});
+
+test('dashboard attendance analytics labels resolve in both centralized locales', () => {
+    const { api } = boot();
+    const keys = [
+        'dashboard.analytics.label.visits',
+        'dashboard.analytics.label.uniqueMembers',
+        'dashboard.analytics.label.dailyAverage',
+        'dashboard.analytics.label.differentMember',
+        'dashboard.analytics.label.visitPerDay',
+        'dashboard.analytics.label.noAttendance7Days'
+    ];
+
+    for (const locale of ['ar', 'en']) {
+        api.set(locale, { persist: false });
+        for (const key of keys) assert.notEqual(api.t(key), key, `${locale} is missing ${key}`);
+    }
+});
+
+test('member print catalog has complete Arabic and English coverage with key fallback', () => {
+    const { api } = boot();
+    const catalogKeys = (catalogName) => {
+        const start = runtime.indexOf(`const ${catalogName} = Object.freeze({`);
+        assert.notEqual(start, -1, `Missing catalog ${catalogName}`);
+        const end = runtime.indexOf('\n    });', start);
+        assert.notEqual(end, -1, `Unterminated catalog ${catalogName}`);
+        return [...runtime.slice(start, end).matchAll(/'((?:print\.member\.)[\w.]+)'\s*:/gu)].map((match) => match[1]);
+    };
+    const arabicKeys = catalogKeys('memberPrintArabic');
+    const englishKeys = catalogKeys('memberPrintEnglish');
+    const counts = new Map();
+    [...arabicKeys, ...englishKeys].forEach((key) => counts.set(key, (counts.get(key) || 0) + 1));
+
+    assert.ok(counts.size >= 80, `Expected a complete member print message set, found ${counts.size} keys`);
+    for (const [key, count] of counts) assert.equal(count, 2, `${key} must be defined once per locale`);
+    assert.deepEqual([...arabicKeys].sort(), [...englishKeys].sort(), 'Arabic and English print catalogs must have identical key coverage');
+
+    const requiredGroups = [
+        'print.member.document.membershipTitle',
+        'print.member.document.fullProfileTitle',
+        'print.member.document.paymentReceiptTitle',
+        'print.member.section.membershipHistory',
+        'print.member.field.registrationDate',
+        'print.member.table.transactionAmount',
+        'print.member.empty.payments',
+        'print.member.error.receiptMissing',
+        'print.member.footer.signature'
+    ];
+    for (const key of requiredGroups) assert.ok(counts.has(key), `Missing required print catalog key: ${key}`);
+
+    for (const locale of ['ar', 'en']) {
+        api.set(locale, { persist: false });
+        for (const key of counts.keys()) assert.notEqual(api.t(key), key, `${locale} is missing ${key}`);
+    }
+
+    api.set('en', { persist: false });
+    assert.equal(api.t('print.member.value.until', { date: '20/08/2026' }), 'Until 20/08/2026');
+    assert.equal(api.t('print.member.missing.key'), 'print.member.missing.key');
+
+    const fallbackKey = "        'print.member.value.active': 'Active',\n";
+    assert.ok(runtime.includes(fallbackKey), 'English fallback fixture should match a single catalog entry');
+    const fallbackRuntime = runtime.replace(fallbackKey, '');
+    const { api: fallbackApi } = boot('en', fallbackRuntime);
+    assert.equal(fallbackApi.t('print.member.value.active'), 'نشط');
+});
+
+test('member print known operation and duration labels resolve exactly without defining arbitrary enum codes', () => {
+    const { api } = boot();
+    const labels = {
+        ar: {
+            'print.member.operation.created': 'إضافة اشتراك',
+            'print.member.operation.updated': 'تعديل بيانات',
+            'print.member.operation.renewed': 'تجديد اشتراك',
+            'print.member.operation.frozen': 'تجميد العضوية',
+            'print.member.operation.resumed': 'استئناف العضوية',
+            'print.member.operation.paymentUpdated': 'تحديث الدفع',
+            'print.member.operation.transactionSubscription': 'اشتراك',
+            'print.member.operation.transactionPayment': 'دفعة',
+            'print.member.operation.transactionAdjustment': 'تسوية',
+            'print.member.value.twoMonths': 'شهرين'
+        },
+        en: {
+            'print.member.operation.created': 'Membership added',
+            'print.member.operation.updated': 'Details updated',
+            'print.member.operation.renewed': 'Membership renewed',
+            'print.member.operation.frozen': 'Membership frozen',
+            'print.member.operation.resumed': 'Membership resumed',
+            'print.member.operation.paymentUpdated': 'Payment updated',
+            'print.member.operation.transactionSubscription': 'Subscription',
+            'print.member.operation.transactionPayment': 'Payment',
+            'print.member.operation.transactionAdjustment': 'Adjustment',
+            'print.member.value.twoMonths': 'Two months'
+        }
+    };
+
+    for (const [locale, expected] of Object.entries(labels)) {
+        api.set(locale, { persist: false });
+        for (const [key, value] of Object.entries(expected)) assert.equal(api.t(key), value, `${locale}: ${key}`);
+    }
+
+    const unknownCode = 'print.member.operation.unrecognized_external_code';
+    assert.equal(api.t(unknownCode), unknownCode, 'Unknown enum-like values must retain key fallback');
+    assert.ok(!runtime.includes(`'${unknownCode}'`), 'Arbitrary unknown enum codes must not be added to the catalog');
 });
 
 test('central locale formatters localize numbers, currency, and dates without changing source values', () => {
