@@ -266,15 +266,18 @@
     const previous = elements.method.value;
     const selected = methods.some((item) => String(item.id) === String(previous)) ? String(previous) : String(methods[0].id);
     elements.method.value = selected;
+    const paymentMarks = window.LogicFitPaymentMethodCatalog;
     elements.methodList.innerHTML = methods.map((item) => `
       <div class="portal-payment-method-choice">
         <label class="portal-payment-method-row">
           <input type="radio" name="portalPaymentMethod" value="${escapeHtml(item.id)}" ${String(item.id) === selected ? 'checked' : ''}>
+          ${paymentMarks?.createMark?.(item.typeId)?.outerHTML || ''}
           <span class="portal-payment-method-copy"><strong>${escapeHtml(item.name || tr('paymentMethod'))}</strong>${item.recipientName ? `<small>${escapeHtml(item.recipientName)}</small>` : ''}${item.instructions ? `<small>${escapeHtml(item.instructions)}</small>` : ''}</span>
           <span class="portal-payment-method-account" dir="ltr">${escapeHtml(item.accountReference || '—')}</span>
         </label>
         <button class="btn btn-light btn-small portal-copy-payment" type="button" data-portal-copy-payment="${escapeHtml(item.id)}">${escapeHtml(tr('copyAccount'))}</button>
       </div>`).join('');
+    paymentMarks?.bindFallbackHandling?.(elements.methodList);
     syncSubmitState();
   }
 

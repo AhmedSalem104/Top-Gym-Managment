@@ -605,7 +605,7 @@ test('member list presents the newest recorded membership snapshot without chang
         localStorage.setItem('topgym-theme', 'light');
     });
 
-    for (const width of [320, 390, 768, 1440]) {
+    for (const width of [320, 360, 390, 768, 1440]) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(`/index.html?membersLastRecorded=${width}#members`, { waitUntil: 'networkidle' });
         await installCurrentMembersStyles(page, membersCssSource);
@@ -636,8 +636,9 @@ test('member list presents the newest recorded membership snapshot without chang
             expect(headers.slice(4)).toEqual(['تجميد العضو', 'الإجراءات']);
             await expect(firstMember.locator('.status-badge-with-icon')).toHaveClass(/expired/);
             await expect(firstMember.locator('.member-freeze-cell')).toContainText('إجمالي سجلاته');
+            await expect(firstMember.locator('.member-freeze-cell > strong')).toHaveCount(0);
             await expect(firstMember.locator('.freeze-usage')).toContainText('المستخدم');
-            await expect(firstMember.locator('.freeze-usage bdi[dir="auto"]')).toContainText('من');
+            await expect(firstMember.locator('.freeze-usage bdi[dir="ltr"]').first()).toContainText('من');
             await expect(firstMember.locator('.freeze-usage')).toContainText('مرات');
             const freezeAction = firstMember.locator('[data-action="freeze"]');
             await expect(freezeAction).toHaveCount(1);
@@ -649,6 +650,24 @@ test('member list presents the newest recorded membership snapshot without chang
             }
         } else {
             await expect(firstMember.locator('.members-mobile-date-grid .membership-date')).toHaveCount(2);
+            await expect(firstMember.locator('.members-mobile-actions [data-action="renew"]')).toBeVisible();
+            await expect(firstMember.locator('.members-mobile-actions [data-action="details"]')).toBeVisible();
+            await expect(firstMember.locator('.members-mobile-actions .action-menu-toggle')).toBeVisible();
+            await expect(firstMember.locator('.members-mobile-freeze .freeze-usage bdi[dir="ltr"]')).toHaveCount(2);
+            const freezeColumns = await firstMember.locator('.members-mobile-freeze .freeze-usage').evaluate((node) => getComputedStyle(node).gridTemplateColumns);
+            expect(freezeColumns.trim().split(/\s+/)).toHaveLength(2);
+            const codeGeometry = await firstMember.locator('.member-code-preview b').evaluate((node) => {
+                const box = node.getBoundingClientRect();
+                const parent = node.parentElement.getBoundingClientRect();
+                return { code: box.width, parent: parent.width, title: node.title, text: node.textContent };
+            });
+            expect(codeGeometry.code).toBeLessThanOrEqual(codeGeometry.parent);
+            expect(codeGeometry.title).toBe(codeGeometry.text);
+            const actionOrder = await firstMember.locator('.members-mobile-actions [data-action="renew"], .members-mobile-actions [data-action="details"], .members-mobile-actions .action-menu-toggle').evaluateAll((nodes) => nodes.map((node) => ({ action: node.dataset.action || 'more', x: node.getBoundingClientRect().x, y: node.getBoundingClientRect().y })));
+            expect(actionOrder.find(({ action }) => action === 'renew').x).toBeGreaterThan(actionOrder.find(({ action }) => action === 'details').x);
+            expect(actionOrder.find(({ action }) => action === 'details').x).toBeGreaterThan(actionOrder.find(({ action }) => action === 'more').x);
+            const actionY = actionOrder.map(({ y }) => y);
+            expect(Math.max(...actionY) - Math.min(...actionY)).toBeLessThanOrEqual(1);
             const geometry = await page.evaluate(() => ({
                 document: document.documentElement.scrollWidth,
                 body: document.body.scrollWidth,
@@ -663,8 +682,15 @@ test('member list presents the newest recorded membership snapshot without chang
             expect(geometry.dateRects.every((rect) => rect.width > 0 && rect.scroll <= rect.width + 1)).toBe(true);
         }
         await firstMember.scrollIntoViewIfNeeded();
+        await page.mouse.move(0, 0);
         if (width === 390 || width === 1440) {
-            await page.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-ar-light.png`), fullPage: false });
+            if (mobile) {
+                await firstMember.evaluate((card) => {
+                    const bottom = card.getBoundingClientRect().bottom;
+                    window.scrollBy(0, Math.max(0, bottom - (window.innerHeight - 104)));
+                });
+            }
+            await firstMember.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-ar-light.png`), animations: 'disabled' });
         }
 
         for (const locale of ['ar', 'en']) {
@@ -682,7 +708,13 @@ test('member list presents the newest recorded membership snapshot without chang
                 expect(bounds.document).toBeLessThanOrEqual(bounds.width);
                 expect(bounds.body).toBeLessThanOrEqual(bounds.width);
                 if (width === 390 || width === 1440) {
-                    await page.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-${locale}-${theme}.png`), fullPage: false });
+                    if (mobile) {
+                        await firstMember.evaluate((card) => {
+                            const bottom = card.getBoundingClientRect().bottom;
+                            window.scrollBy(0, Math.max(0, bottom - (window.innerHeight - 104)));
+                        });
+                    }
+                    await firstMember.screenshot({ path: path.join(OUTPUT, `members-last-recorded-${width}-${locale}-${theme}.png`), animations: 'disabled' });
                 }
             }
         }

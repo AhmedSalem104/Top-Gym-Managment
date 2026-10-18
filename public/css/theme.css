@@ -1509,26 +1509,6 @@ html[data-theme="dark"] .member-portal-page .portal-theme-toggle:focus-visible {
   color: var(--primary-hover);
 }
 
-html[data-theme="dark"] .table-actions,
-html[data-theme="dark"] .row-actions,
-html[data-theme="dark"] .members-actions,
-html[data-theme="dark"] .action-group,
-html[data-theme="dark"] .library-row-actions,
-html[data-theme="dark"] .store-row-actions,
-html[data-theme="dark"] .day-pass-actions,
-html[data-theme="dark"] .attendance-row-actions,
-html[data-theme="dark"] .reports-debtor-actions,
-html[data-theme="dark"] .reports-coaching-actions,
-html[data-theme="dark"] .type-actions{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: max-content;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-}
-
 html[data-theme="dark"] .table-actions > .btn,
 html[data-theme="dark"] .row-actions > .btn,
 html[data-theme="dark"] .members-actions > .btn,
@@ -1541,37 +1521,15 @@ html[data-theme="dark"] .reports-debtor-actions > .btn,
 html[data-theme="dark"] .reports-coaching-actions > .btn,
 html[data-theme="dark"] .type-actions > .btn{
   box-sizing: border-box;
-  min-height: 36px;
-  height: 36px;
   border: 1px solid var(--border-primary);
-  border-radius: 10px;
   background: var(--bg-elevated);
   color: var(--text-secondary);
   box-shadow: none;
 }
 
-html[data-theme="dark"] .table-actions > .icon-action:not([data-action="renew"]),
-html[data-theme="dark"] .table-actions > .table-action-visible:not([data-action="renew"]),
-html[data-theme="dark"] .action-menu > .action-menu-toggle,
-html[data-theme="dark"] .library-row-actions > .library-action-button{
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
-}
-
 html[data-theme="dark"] .day-pass-actions > .day-pass-action-button.is-compact{
   height: 42px;
   min-height: 42px;
-}
-
-html[data-theme="dark"] .table-actions > .icon-action[data-action="renew"],
-html[data-theme="dark"] .table-actions > .table-action-visible[data-action="renew"]{
-  width: 40px;
-  min-width: 40px;
-  max-width: 40px;
-  padding: 0;
 }
 
 html[data-theme="dark"] .attendance-row-actions > .btn{

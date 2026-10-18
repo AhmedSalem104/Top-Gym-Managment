@@ -87,6 +87,10 @@ The authenticated staff `GET /api/members` and `GET /api/members/:id` responses 
 
 Web consumers are in `public/js/` and are not a mobile contract by themselves. Mobile must use the same server paths and response semantics, replace cookie/session transport only through an approved server-compatible strategy, and add contract tests before implementation. Browser-only downloads, print, hash routes, and DOM-driven dialogs are `WEB_SPECIFIC` unless a user workflow is explicitly mapped in `09-MOBILE-INFORMATION-ARCHITECTURE.md`.
 
+### Member Portal published transfer methods
+
+`GET /api/member-portal/payment-methods` continues to return only active methods from the tenant's published branding configuration. The existing fields (`id`, `name`, `accountReference`, nullable `recipientName`/`instructions`, and `sortOrder`) retain their meanings. A new optional `typeId` may be present for methods explicitly assigned a supported presentation type (`vodafone_cash`, `instapay`, or `other`). Legacy methods without an explicit type omit this field and must use a neutral mark; clients must not infer a provider from the display name or account data. This identifier selects local presentation branding only: it does not represent a payment-provider integration, transaction, or authorization. Draft/inactive methods remain excluded under the existing publication/visibility rules.
+
 ### Native mobile authentication contract (MOB-001)
 
 - `POST /api/mobile/auth/login` accepts the existing staff email/password contract and returns `{ accessToken, refreshToken, session, expiresAt }`.

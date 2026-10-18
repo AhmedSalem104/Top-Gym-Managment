@@ -51,6 +51,8 @@ Code entry
 
 Invalid/revoked/expired code → safe error and no session. Portal session expiry → return to code entry. Feedback/subscription request/proof flows validate scope and rate limits server-side.
 
+The subscription request screen may read `GET /api/member-portal/payment-methods` for the owning tenant's active, published manual transfer instructions. Each item may include an optional supported `typeId` solely to select a local presentation mark; older items omit it and use a neutral mark. Keep the existing member-visible list and request behavior; this metadata does not create a payment integration or transaction.
+
 ## Platform Admin
 
 Login at `/platform-admin` → platform session → overview → select explicit tenant → inspect/change only through platform routes. Plan status/compatibility/override changes are audited and must not be hidden behind mobile-only assumptions.

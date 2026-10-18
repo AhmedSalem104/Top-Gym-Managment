@@ -7,6 +7,7 @@ const { currentTenantId } = require('../tenancy/tenant-context');
 const cacheService = require('./cache-service');
 const { normalizeEgyptianMobile } = require('./phone-service');
 const saasService = require('./saas-service');
+const paymentMethodCatalog = require('../../public/js/core/payment-method-catalog');
 
 const BRANDING_ID = 1;
 const MAX_TEXT_LENGTH = 500;
@@ -362,6 +363,7 @@ function normalizePaymentMethods(value) {
         const accountReference = cleanText(source.accountReference || source.account || source.number, '', 160);
         const recipientName = cleanText(source.recipientName || source.recipient, '', 160);
         const instructions = cleanText(source.instructions, '', 1000);
+        const typeId = cleanText(source.typeId, '', 40);
         const suppliedId = cleanText(source.id || source.code, '', 80).toLowerCase();
         const id = /^[a-z0-9][a-z0-9_-]{1,79}$/.test(suppliedId)
             ? suppliedId
@@ -370,6 +372,7 @@ function normalizePaymentMethods(value) {
         return {
             id,
             name,
+            ...(typeId ? { typeId } : {}),
             accountReference,
             recipientName,
             instructions,
@@ -459,6 +462,11 @@ function validateConfig(config) {
     const errors = [];
     const warnings = [];
     if (!config.identity.brandName.trim()) errors.push({ field: 'identity.brandName', message: 'اسم العلامة التجارية مطلوب.' });
+    for (const [index, method] of (config.identity.paymentMethods || []).entries()) {
+        if (method.typeId && !paymentMethodCatalog.has(method.typeId)) {
+            errors.push({ field: `identity.paymentMethods.${index}.typeId`, message: 'نوع وسيلة الدفع غير مدعوم.' });
+        }
+    }
     for (const themeName of ['light', 'dark']) {
         const theme = config.themes[themeName];
         if (contrastRatio(theme.textPrimary, theme.background) < 4.5) errors.push({ field: `themes.${themeName}.textPrimary`, message: `تباين النص الأساسي في وضع ${themeName === 'light' ? 'Light' : 'Dark'} غير كافٍ.` });
@@ -796,8 +804,8 @@ async function getTenantPaymentMethods({ readOnly = false } = {}) {
     const published = applyTenantIdentity(parseStoredConfig(row?.published_config), defaults.identity.brandName);
     return published.identity.paymentMethods
         .filter((method) => method.isActive)
-        .map(({ id, name, accountReference, recipientName, instructions, sortOrder }) => ({
-            id, name, accountReference, recipientName: recipientName || null, instructions: instructions || null, sortOrder
+        .map(({ id, typeId, name, accountReference, recipientName, instructions, sortOrder }) => ({
+            id, ...(paymentMethodCatalog.has(typeId) ? { typeId } : {}), name, accountReference, recipientName: recipientName || null, instructions: instructions || null, sortOrder
         }));
 }
 

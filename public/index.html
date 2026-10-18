@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#F5F7FB">
     <meta name="auth-routing-version" content="forced-password-v3">
-    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=7b339c44e8b04d19">
+    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=b618946550f1f8ff">
     <script>
         (function () {
             try {
@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=1f1c1827e636068a">
+    <link rel="stylesheet" href="/css/app-shell.css?v=a0e6f4738257ccbf">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -722,28 +722,45 @@
                     <span class="member-payment-version-meta" id="memberPaymentMethodsMeta">مسودة الهوية</span>
                 </div>
 
-                <div class="member-payment-layout">
-                    <section class="member-payment-editor-card" aria-labelledby="memberPaymentEditorTitle">
-                        <header class="member-payment-section-head">
-                            <div><span class="member-payment-kicker">PAYMENT METHODS</span><h3 id="memberPaymentEditorTitle">بيانات استقبال التحويلات</h3><p>استخدم رقم الحساب أو الهاتف الخاص بهذا الجيم. يتم حفظ المسودة أولًا ثم نشرها لتظهر للعضو.</p></div>
-                            <button class="btn btn-light btn-small" id="memberPaymentMethodAdd" type="button" data-async-action="false"><span aria-hidden="true">＋</span> إضافة وسيلة دفع</button>
-                        </header>
-                        <div class="member-payment-methods-list" id="memberPaymentMethodsList" aria-live="polite" aria-busy="true"><div class="member-payment-loading">جاري تحميل إعدادات الدفع…</div></div>
-                    </section>
-
-                    <aside class="member-payment-summary-card" aria-labelledby="memberPaymentSummaryTitle">
-                        <div class="member-payment-summary-top"><span class="member-payment-kicker">PUBLISHED TO PORTAL</span><h3 id="memberPaymentSummaryTitle">حالة العرض</h3><p>لا تظهر أي وسيلة للعضو إلا إذا كانت مفعلة ومضمنة في الهوية المنشورة.</p></div>
-                        <div class="member-payment-stat"><span>الوسائل النشطة</span><strong id="memberPaymentActiveCount">0</strong></div>
-                        <div class="member-payment-stat"><span>إجمالي الوسائل</span><strong id="memberPaymentTotalCount">0</strong></div>
-                        <div class="member-payment-summary-note" id="memberPaymentSummaryNote">أضف وسيلة دفع أو راجع بيانات التحويل الحالية.</div>
-                    </aside>
-                </div>
+                <section class="member-payment-editor-card" aria-labelledby="memberPaymentEditorTitle">
+                    <header class="member-payment-section-head">
+                        <div><span class="member-payment-kicker" data-i18n="memberPayment.methods.eyebrow">وسائل الدفع</span><h3 id="memberPaymentEditorTitle" data-i18n="memberPayment.methods.title">بيانات استقبال التحويلات</h3><p data-i18n="memberPayment.methods.description">استخدم رقم الحساب أو الهاتف الخاص بهذا الجيم. يتم حفظ المسودة أولًا ثم نشرها لتظهر للعضو.</p></div>
+                        <button class="btn btn-primary btn-small" id="memberPaymentMethodAdd" type="button" data-async-action="false" data-i18n="memberPayment.methods.add">إضافة وسيلة دفع</button>
+                    </header>
+                    <div class="member-payment-table-wrap" id="memberPaymentMethodsList" aria-live="polite" aria-busy="true"><div class="member-payment-loading" data-i18n="memberPayment.methods.loading">جاري تحميل إعدادات الدفع…</div></div>
+                </section>
 
                 <footer class="member-payment-action-bar">
                     <div class="member-payment-action-copy"><strong id="memberPaymentMethodsActionTitle">لا توجد تغييرات غير محفوظة</strong><small id="memberPaymentMethodsActionHint">التعديلات الحالية مطابقة للمسودة المحفوظة.</small></div>
                     <div class="member-payment-action-buttons"><button class="btn btn-light btn-small" id="memberPaymentMethodsSave" type="button" data-async-action="false">حفظ كمسودة</button><button class="btn btn-primary btn-small" id="memberPaymentMethodsPublish" type="button" data-async-action="false">حفظ ونشر للبوابة</button></div>
                 </footer>
             </section>
+
+            <dialog id="memberPaymentMethodDialog" class="lf-modal-shell lf-modal--md lf-modal--structured member-payment-dialog" aria-labelledby="memberPaymentDialogTitle" aria-describedby="memberPaymentDialogDescription">
+                <form id="memberPaymentMethodForm" class="lf-modal-layout" novalidate>
+                    <header class="dialog-header">
+                        <div><h3 id="memberPaymentDialogTitle" data-i18n="memberPayment.dialog.addTitle">إضافة وسيلة دفع</h3><p id="memberPaymentDialogDescription" data-i18n="memberPayment.dialog.description">أدخل بيانات التحويل التي ستظهر للعضو بعد النشر.</p></div>
+                        <button class="btn btn-light btn-small" type="button" data-member-payment-dialog-close data-i18n="memberPayment.dialog.close">إغلاق</button>
+                    </header>
+                    <div class="dialog-body member-payment-dialog-fields">
+                        <div class="field member-payment-type-field">
+                            <label for="memberPaymentType" data-i18n="memberPayment.dialog.type">نوع الوسيلة</label>
+                            <input id="memberPaymentTypeSearch" type="search" autocomplete="off" data-i18n-placeholder="memberPayment.dialog.searchType" data-i18n-aria-label="memberPayment.dialog.searchType" placeholder="ابحث عن نوع الوسيلة">
+                            <select id="memberPaymentType" required aria-describedby="memberPaymentTypeHelp"></select>
+                            <small id="memberPaymentTypeHelp" data-i18n="memberPayment.dialog.typeHelp">اختيار النوع يحدد الشعار فقط؛ يمكنك تعديل اسم العرض.</small>
+                        </div>
+                        <div class="member-payment-brand-preview" id="memberPaymentBrandPreview" aria-live="polite"></div>
+                        <div class="field"><label for="memberPaymentName"><span data-i18n="memberPayment.methods.name">اسم الوسيلة</span> <span aria-hidden="true">*</span></label><input id="memberPaymentName" maxlength="120" required data-i18n-placeholder="memberPayment.methods.name.placeholder" placeholder="Vodafone Cash"></div>
+                        <div class="field"><label for="memberPaymentReference"><span data-i18n="memberPayment.methods.reference">الرقم أو الحساب</span> <span aria-hidden="true">*</span></label><input id="memberPaymentReference" maxlength="160" dir="ltr" required data-i18n-placeholder="memberPayment.methods.reference.placeholder" placeholder="رقم الهاتف أو الحساب"></div>
+                        <div class="field"><label for="memberPaymentRecipient" data-i18n="memberPayment.methods.recipient">اسم المستلم</label><input id="memberPaymentRecipient" maxlength="160"></div>
+                        <div class="field"><label for="memberPaymentSortOrder" data-i18n="memberPayment.methods.sortOrder">ترتيب الظهور</label><input id="memberPaymentSortOrder" type="number" min="0" max="999" step="1"></div>
+                        <div class="field member-payment-dialog-full"><label for="memberPaymentInstructions" data-i18n="memberPayment.methods.instructions">تعليمات الدفع</label><textarea id="memberPaymentInstructions" maxlength="1000" rows="4" data-i18n-placeholder="memberPayment.methods.instructions.placeholder" placeholder="تعليمات مختصرة للعضو"></textarea></div>
+                        <label class="member-payment-method-active member-payment-dialog-full"><input id="memberPaymentActive" type="checkbox"><span data-i18n="memberPayment.methods.active">عرض هذه الوسيلة للعضو</span></label>
+                        <p class="member-payment-dialog-error" id="memberPaymentDialogError" role="alert" hidden></p>
+                    </div>
+                    <footer class="dialog-actions"><button class="btn btn-light" type="button" data-member-payment-dialog-close data-i18n="memberPayment.dialog.cancel">إلغاء</button><button class="btn btn-primary" id="memberPaymentApply" type="submit" data-i18n="memberPayment.dialog.apply">تطبيق</button></footer>
+                </form>
+            </dialog>
 
             <section class="backup-history-section backup-history-page panel" id="backupHistorySection" hidden data-owner-only data-page-tab-panel="backup-history" aria-labelledby="backupHistoryPageTitle">
                 <header class="backup-history-section-head backup-history-page-head">
@@ -1218,10 +1235,11 @@
     <script defer src="/js/auth-ui.js?v=5a7faf7a1f2e1ba6"></script>
     <script defer src="/js/branch-context.js?v=e6ab3630df565322"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
-    <script defer src="/js/core/feature-manifest.js?v=5e58dad4b5262286"></script>
-    <script defer src="/js/feature-loader.js?v=a2a46a9395a62d89"></script>
-    <script defer src="/js/core/i18n.js?v=17d4e678ee68763a"></script>
-    <script defer src="/js/app-shell-bootstrap.js?v=008c2587c3163b6a"></script>
+    <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
+    <script defer src="/js/core/feature-manifest.js?v=3019cb6808a93bdc"></script>
+    <script defer src="/js/feature-loader.js?v=db6f5dfe9647e238"></script>
+    <script defer src="/js/core/i18n.js?v=30a22b36dd94c3e1"></script>
+    <script defer src="/js/app-shell-bootstrap.js?v=505a6457b9552131"></script>
     <script defer src="/js/page-tabs.js?v=8dd808a72f13ae6b"></script>
 </body>
 </html>
