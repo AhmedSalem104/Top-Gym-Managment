@@ -1160,6 +1160,37 @@
             statusChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-status-choices');
             sortChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-sort-choices');
             filterRow.append(statusField, statusChoices, sortField, sortChoices);
+            const syncFilterPresentation = () => {
+                const mobile = window.matchMedia('(max-width: 767px)').matches;
+                const fields = [
+                    { field: statusField, choices: statusChoices },
+                    { field: sortField, choices: sortChoices }
+                ];
+
+                fields.forEach(({ field, choices }) => {
+                    const select = field.querySelector('select');
+                    const label = field.querySelector('span');
+                    if (mobile) {
+                        controls.insertBefore(field, clearButton);
+                        field.classList.remove('visually-hidden');
+                        label?.classList.remove('visually-hidden');
+                        select?.classList.remove('logicfit-filter-native-source');
+                        select?.removeAttribute('aria-hidden');
+                        select?.removeAttribute('tabindex');
+                        choices.hidden = true;
+                    } else {
+                        filterRow.append(field, choices);
+                        field.classList.add('visually-hidden');
+                        label?.classList.add('visually-hidden');
+                        select?.classList.add('logicfit-filter-native-source');
+                        select?.setAttribute('aria-hidden', 'true');
+                        if (select) select.tabIndex = -1;
+                        choices.hidden = false;
+                    }
+                });
+
+                filterRow.hidden = mobile;
+            };
             const clearButton = document.createElement('button');
             clearButton.className = 'btn btn-light btn-small members-clear-filters';
             clearButton.type = 'button';
@@ -1191,6 +1222,8 @@
             clearButton.addEventListener('click', clearFilters);
             filterRow.querySelector('[data-filter-choices-for="statusFilter"]')?.setAttribute('aria-label', membersText('filter.statusAria'));
             filterRow.querySelector('[data-filter-choices-for="sortFilter"]')?.setAttribute('aria-label', membersText('filter.sortAria'));
+            syncFilterPresentation();
+            membersMobileMedia.addEventListener('change', syncFilterPresentation);
             updateCount();
         }
         setupMembersFilterTabs();

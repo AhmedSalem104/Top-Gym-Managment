@@ -521,34 +521,27 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
 
             if (isMobile) {
                 const statusGroup = page.locator('.members-filter-tabs-row [data-filter-choices-for="statusFilter"]');
-                await expect(statusGroup).toBeVisible();
-                await expect(statusGroup.locator('[role="radio"]')).toHaveCount(5);
                 const sortGroup = page.locator('.members-filter-tabs-row [data-filter-choices-for="sortFilter"]');
-                await expect(sortGroup).toBeVisible();
+                await expect(page.locator('.members-filter-tabs-row')).toBeHidden();
+                await expect(page.locator('#statusFilter')).toBeVisible();
+                await expect(page.locator('#sortFilter')).toBeVisible();
+                await expect(statusGroup.locator('[role="radio"]')).toHaveCount(5);
                 await expect(sortGroup.locator('[role="radio"]')).toHaveCount(3);
-                for (const [value, tone] of [['active', 'success'], ['expiring_soon', 'warning'], ['expired', 'danger'], ['frozen', 'primary']]) {
-                    await expect(statusGroup.locator(`[data-filter-value="${value}"]`)).toHaveAttribute('data-filter-tone', tone);
-                }
-                const oneLineTabs = await page.locator('.members-filter-tabs-row').evaluate((row) => {
-                    const groups = [...row.querySelectorAll('.logicfit-filter-choices')];
-                    return groups.length === 2 && groups.every((group) => Math.abs(group.getBoundingClientRect().top - groups[0].getBoundingClientRect().top) < 1);
-                });
-                expect(oneLineTabs, `status and sort tabs should share one horizontal line at ${width}px`).toBe(true);
-                await statusGroup.locator('[aria-checked="true"]').focus();
-                await page.keyboard.press('Home');
+                await page.locator('#statusFilter').selectOption('');
+                await page.locator('#sortFilter').selectOption('expiry');
                 await expect(page.locator('#statusFilter')).toHaveValue('');
                 const statusOptions = await page.locator('#statusFilter option').allTextContents();
                 expect(statusOptions).toEqual(locale === 'ar'
                     ? ['كل الحالات', 'نشطة', 'قريبة الانتهاء', 'منتهية', 'مجمدة']
                     : ['All statuses', 'Active', 'Expiring soon', 'Expired', 'Frozen']);
-                await statusGroup.locator('[data-filter-value="active"]').click();
+                await page.locator('#statusFilter').selectOption('active');
                 await expect(page.locator('#statusFilter')).toHaveValue('active');
                 await expect(statusGroup.locator('[data-filter-value="active"]')).toHaveAttribute('aria-checked', 'true');
                 const sortOptions = await page.locator('#sortFilter option').allTextContents();
                 expect(sortOptions).toEqual(locale === 'ar'
                     ? ['الأقرب انتهاءً', 'الأحدث تسجيلًا', 'الأعلى مبلغًا متبقيًا']
                     : ['Expiring soonest', 'Recently registered', 'Highest balance due']);
-                await sortGroup.locator('[data-filter-value="remaining"]').click();
+                await page.locator('#sortFilter').selectOption('remaining');
                 await expect(page.locator('#sortFilter')).toHaveValue('remaining');
                 await page.screenshot({ path: path.join(OUTPUT, `members-filters-${width}-${theme}-${locale}.png`) });
             }
