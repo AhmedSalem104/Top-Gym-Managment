@@ -1118,6 +1118,10 @@
             ];
             const statusLabel = find('#statusFilter')?.closest('.members-filter-field')?.querySelector('span');
             if (statusLabel) statusLabel.textContent = membersText('filter.status');
+            const statusHeading = root.querySelector('#membersStatusFilterTitle');
+            if (statusHeading) statusHeading.textContent = membersText('filter.status');
+            const statusSection = root.querySelector('.members-status-filter');
+            if (statusSection) statusSection.setAttribute('aria-label', membersText('filter.status'));
             setAttr('#statusFilter', 'aria-label', 'filter.statusAria');
             const sortLabel = find('#sortFilter')?.closest('.members-filter-field')?.querySelector('span');
             if (sortLabel) sortLabel.textContent = membersText('filter.sort');
@@ -1156,17 +1160,29 @@
             const controls = document.querySelector('#membersSection .members-toolbar-controls');
             const search = controls?.querySelector('.members-search-field');
             const searchInput = controls?.querySelector('#searchInput');
-            const statusInput = controls?.querySelector('#statusFilter');
+            const membersRoot = document.getElementById('membersSection');
+            const statusInput = membersRoot?.querySelector('#statusFilter');
             const sortInput = controls?.querySelector('#sortFilter');
             const statusField = statusInput?.closest('.members-filter-field');
-            const statusChoices = controls?.querySelector('[data-filter-choices-for="statusFilter"]');
+            const statusChoices = membersRoot?.querySelector('[data-filter-choices-for="statusFilter"]');
             const sortField = sortInput?.closest('.members-filter-field');
             const dialog = document.getElementById('membersFiltersDialog');
             const dialogFields = document.getElementById('membersFilterDialogFields');
             if (!controls || !search || !statusField || !sortField || !dialog || !dialogFields || controls.querySelector('.members-filter-disclosure')) return;
+            const statusSection = document.createElement('section');
+            statusSection.className = 'members-status-filter';
+            statusSection.setAttribute('aria-labelledby', 'membersStatusFilterTitle');
+            statusSection.innerHTML = '<h4 id="membersStatusFilterTitle"></h4>';
+            controls.closest('.members-toolbar')?.before(statusSection);
+            statusField.classList.add('visually-hidden');
+            statusSection.append(statusField);
+            if (statusChoices) {
+                statusChoices.classList.add('logicfit-filter-choices--wrap', 'logicfit-filter-choices--outlined');
+                statusSection.append(statusChoices);
+            }
             const disclosure = document.createElement('details');
             disclosure.className = 'members-filter-disclosure';
-            disclosure.innerHTML = '<summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg><span>الفلاتر والترتيب</span><span class="members-filter-count" aria-live="polite"></span></summary><div class="members-filter-fields"></div>';
+            disclosure.innerHTML = '<summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg><span></span><span class="members-filter-count" aria-live="polite"></span></summary><div class="members-filter-fields"></div>';
             const fields = disclosure.querySelector('.members-filter-fields');
             search.after(disclosure);
             const clearButton = document.createElement('button');
@@ -1181,14 +1197,10 @@
             const closeDialog = () => { if (dialog.open) dialog.close(); };
             const syncLayout = () => {
                 if (membersMobileMedia.matches) {
-                    fields.append(statusField);
-                    if (statusChoices) fields.append(statusChoices);
                     fields.append(sortField);
                     dialogFields.append(fields);
                     disclosure.hidden = false;
                 } else {
-                    controls.insertBefore(statusField, disclosure);
-                    if (statusChoices) controls.insertBefore(statusChoices, disclosure);
                     controls.insertBefore(sortField, disclosure);
                     disclosure.append(fields);
                     disclosure.after(clearButton);
@@ -1198,11 +1210,11 @@
                 }
             };
             const updateCount = () => {
-                const active = Number(Boolean(statusInput?.value))
-                    + Number(sortInput?.value && sortInput.value !== 'expiry');
-                count.textContent = active ? String(active) : '';
-                disclosure.classList.toggle('has-active-filters', active > 0);
-                clearButton.hidden = !active && !String(searchInput?.value || '').trim();
+                const sortActive = Boolean(sortInput?.value && sortInput.value !== 'expiry');
+                const anyActive = Boolean(statusInput?.value) || sortActive || Boolean(String(searchInput?.value || '').trim());
+                count.textContent = sortActive ? '1' : '';
+                disclosure.classList.toggle('has-active-filters', sortActive);
+                clearButton.hidden = !anyActive;
             };
             const clearFilters = () => {
                 if (searchInput) searchInput.value = '';
@@ -1234,6 +1246,8 @@
             clearButton.addEventListener('click', clearFilters);
             clearDialogButton?.addEventListener('click', clearFilters);
             membersMobileMedia.addEventListener?.('change', syncLayout);
+            statusSection.querySelector('#membersStatusFilterTitle').textContent = membersText('filter.status');
+            statusSection.setAttribute('aria-label', membersText('filter.status'));
             syncLayout();
             updateCount();
         }

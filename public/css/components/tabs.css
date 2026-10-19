@@ -70,6 +70,42 @@
 .logicfit-filter-choice[data-filter-tone="warning"][aria-checked="true"] { border-color: var(--warning-border); background: var(--warning-soft); color: var(--warning-text); }
 .logicfit-filter-choice[data-filter-tone="danger"][aria-checked="true"] { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
 
+/* Outlined semantic filter controls for directly visible status groups. */
+.logicfit-filter-choices--outlined {
+  gap: var(--space-2);
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.logicfit-filter-choices--outlined.logicfit-filter-choices--wrap .logicfit-filter-choice {
+  flex: 1 1 max-content;
+}
+
+.logicfit-filter-choices--outlined .logicfit-filter-choice {
+  border-color: var(--border-secondary);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="success"] { border-color: var(--success-border); color: var(--success-text); }
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="warning"] { border-color: var(--warning-border); color: var(--warning-text); }
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="danger"] { border-color: var(--danger-border); color: var(--danger-text); }
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="primary"] { border-color: var(--primary-border); color: var(--color-primary); }
+
+.logicfit-filter-choices--outlined .logicfit-filter-choice[aria-checked="true"] {
+  border-color: var(--color-border-soft);
+  background: var(--bg-surface);
+  color: var(--color-primary);
+  box-shadow: none;
+}
+
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="success"][aria-checked="true"] { border-color: var(--success-border); background: var(--success-soft); color: var(--success-text); }
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="warning"][aria-checked="true"] { border-color: var(--warning-border); background: var(--warning-soft); color: var(--warning-text); }
+.logicfit-filter-choices--outlined .logicfit-filter-choice[data-filter-tone="danger"][aria-checked="true"] { border-color: var(--danger-border); background: var(--danger-soft); color: var(--danger-text); }
+
 @media (prefers-reduced-motion: reduce) {
   .logicfit-filter-choice { transition: none; }
 }

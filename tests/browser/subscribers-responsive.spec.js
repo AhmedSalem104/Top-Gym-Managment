@@ -271,6 +271,9 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-mobile-actions .action-menu-panel [data-member-coaching-action="workout"]')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('.members-mobile-actions .action-menu-panel')).toBeHidden();
+    await page.locator('.members-status-filter [data-filter-value="active"]').click();
+    await expect(page.locator('#statusFilter')).toHaveValue('active');
+    await expect(page.locator('.members-status-filter [data-filter-value="active"]')).toHaveAttribute('aria-checked', 'true');
     await page.locator('.members-filter-disclosure > summary').click();
     const filterDialogBounds = await page.locator('#membersFiltersDialog').evaluate((dialog) => {
         const rect = dialog.getBoundingClientRect();
@@ -280,12 +283,9 @@ test('subscribers use the table on desktop and a single responsive card list on 
     expect(filterDialogBounds.right).toBeLessThanOrEqual(filterDialogBounds.viewportWidth + 1);
     expect(filterDialogBounds.top).toBeGreaterThanOrEqual(0);
     expect(filterDialogBounds.bottom).toBeLessThanOrEqual(filterDialogBounds.viewportHeight + 1);
-    expect(filterDialogBounds.left).toBeLessThanOrEqual(1);
-    expect(filterDialogBounds.top).toBeLessThanOrEqual(1);
     await page.screenshot({ path: test.info().outputPath('subscribers-filters-mobile.png'), fullPage: true });
-    await expect(page.locator('#statusFilter')).toBeVisible();
-    await page.locator('#statusFilter').selectOption('active');
-    await expect(page.locator('.members-filter-disclosure')).toHaveClass(/has-active-filters/);
+    await expect(page.locator('#membersFiltersDialog #statusFilter')).toHaveCount(0);
+    await expect(page.locator('#membersFiltersDialog #sortFilter')).toBeVisible();
     await page.locator('#membersFiltersApply').click();
     await expect(page.locator('.members-mobile-pagination > span')).toHaveText('1 / 33');
     await page.locator('.members-mobile-pagination [aria-label="التالي"]').click();
@@ -333,12 +333,18 @@ test('subscribers use the table on desktop and a single responsive card list on 
         await page.screenshot({ path: test.info().outputPath(`subscribers-mobile-${width}.png`), fullPage: true });
     }
     await page.setViewportSize({ width: 320, height: 800 });
+    const moreMenu = page.locator('.topbar-more-menu');
+    const openMoreMenu = async () => {
+        if (!(await moreMenu.locator('.topbar-more-items').isVisible())) await moreMenu.locator('.topbar-more-trigger').click();
+    };
+    await openMoreMenu();
     await page.locator('#themeToggleButton').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     const darkDimensions = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
     expect(darkDimensions.document).toBeLessThanOrEqual(321);
     expect(darkDimensions.body).toBeLessThanOrEqual(321);
     await page.screenshot({ path: test.info().outputPath('subscribers-mobile-320-dark.png'), fullPage: true });
+    await openMoreMenu();
     await page.locator('#themeToggleButton').click();
 
     for (const width of [768, 1024]) {

@@ -91,6 +91,30 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
   padding: var(--space-3);
 }
 
+.members-status-filter {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-3);
+}
+
+.members-status-filter > h4 {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-secondary);
+  font-weight: var(--weight-semibold);
+}
+
+.members-status-filter > .logicfit-filter-choices {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.members-status-filter .logicfit-filter-choice { flex: 1 1 max-content; }
+
 body #membersSection .members-toolbar-copy { display: none; }
 
 .members-toolbar-copy {
@@ -143,7 +167,7 @@ body #membersSection .members-toolbar-copy { display: none; }
 @media (min-width: 768px) {
   .members-toolbar-controls {
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) repeat(2, minmax(140px, 176px)) auto;
+    grid-template-columns: minmax(260px, 1fr) minmax(140px, 176px) auto;
     align-items: center;
     gap: var(--space-2);
   }
@@ -1436,6 +1460,9 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   body .members-panel > .panel-header .header-actions > #addMemberButton .ui-icon { width: 18px; height: 18px; flex: 0 0 18px; }
   body .members-panel > .panel-header .header-actions > #addMemberButton:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
   .members-toolbar { display: block; border: 0; background: transparent; padding: 0; }
+  .members-status-filter { gap: var(--space-2); padding: var(--space-3); }
+  .members-status-filter > .logicfit-filter-choices { gap: var(--space-2); }
+  .members-status-filter .logicfit-filter-choice { min-height: 40px; padding-inline: var(--space-2); }
   .members-mobile-results-count {
     display: block;
     margin: 0 var(--space-3);
@@ -1447,8 +1474,7 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   .members-toolbar-controls { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); }
   .members-search-field { min-width: 0; width: 100%; }
   .members-search-field .search-clear-button { width: 40px; height: 40px; }
-  .members-search-field,
-  .members-filter-disclosure > .members-filter-fields { grid-column: 1 / -1; }
+  .members-search-field { grid-column: 1 / -1; }
   .members-filter-disclosure { min-width: 0; grid-column: 1; }
   .members-filter-disclosure > summary {
     display: flex;

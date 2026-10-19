@@ -513,7 +513,7 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
             if (isMobile) {
                 expect(await page.locator('.members-filter-disclosure > summary').evaluate((node) => node === document.activeElement)).toBe(true);
             } else {
-                expect(focus.id).toBe('statusFilter');
+                expect(focus.id).toBe('sortFilter');
             }
             expect(focus.outline !== 'none' || focus.outlineWidth !== '0px' || focus.boxShadow !== 'none').toBe(true);
 
@@ -525,19 +525,29 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
             await page.screenshot({ path: screenshotPath, fullPage: false });
 
             if (isMobile) {
-                await page.locator('.members-filter-disclosure > summary').click();
-                const dialog = page.locator('#membersFiltersDialog');
-                await expect(dialog).toBeVisible();
-                await expect(dialog.locator('#statusFilter')).toBeVisible();
-                await expect(dialog.locator('#sortFilter')).toBeVisible();
-                await expect(dialog.locator('.members-filter-field').nth(0).locator('span')).toHaveText(locale === 'ar' ? 'حالة الاشتراك' : 'Membership status');
-                await expect(dialog.locator('.members-filter-field').nth(0).locator('select')).toHaveAttribute('aria-label', locale === 'ar' ? 'فلتر الحالة' : 'Filter by status');
-                await expect(dialog.locator('.members-filter-field').nth(1).locator('span')).toHaveText(locale === 'ar' ? 'ترتيب النتائج' : 'Sort results');
-                await expect(dialog.locator('.members-filter-field').nth(1).locator('select')).toHaveAttribute('aria-label', locale === 'ar' ? 'ترتيب القائمة' : 'Sort members');
-                const statusOptions = await dialog.locator('#statusFilter option').allTextContents();
+                const statusGroup = page.locator('.members-status-filter [data-filter-choices-for="statusFilter"]');
+                await expect(statusGroup).toBeVisible();
+                await expect(statusGroup.locator('[role="radio"]')).toHaveCount(5);
+                for (const [value, tone] of [['active', 'success'], ['expiring_soon', 'warning'], ['expired', 'danger'], ['frozen', 'primary']]) {
+                    await expect(statusGroup.locator(`[data-filter-value="${value}"]`)).toHaveAttribute('data-filter-tone', tone);
+                }
+                const noStatusOverflow = await statusGroup.evaluate((group) => group.scrollWidth <= group.clientWidth);
+                expect(noStatusOverflow, `status filter tabs must wrap without scrolling at ${width}px`).toBe(true);
+                const statusOptions = await page.locator('#statusFilter option').allTextContents();
                 expect(statusOptions).toEqual(locale === 'ar'
                     ? ['كل الحالات', 'نشطة', 'قريبة الانتهاء', 'منتهية', 'مجمدة']
                     : ['All statuses', 'Active', 'Expiring soon', 'Expired', 'Frozen']);
+                await statusGroup.locator('[data-filter-value="active"]').click();
+                await expect(page.locator('#statusFilter')).toHaveValue('active');
+                await expect(statusGroup.locator('[data-filter-value="active"]')).toHaveAttribute('aria-checked', 'true');
+                await page.locator('.members-filter-disclosure > summary').click();
+                const dialog = page.locator('#membersFiltersDialog');
+                await expect(dialog).toBeVisible();
+                await expect(dialog.locator('#statusFilter')).toHaveCount(0);
+                await expect(dialog.locator('#sortFilter')).toBeVisible();
+                await expect(dialog.locator('.members-filter-field')).toHaveCount(1);
+                await expect(dialog.locator('.members-filter-field').locator('span')).toHaveText(locale === 'ar' ? 'ترتيب النتائج' : 'Sort results');
+                await expect(dialog.locator('.members-filter-field').locator('select')).toHaveAttribute('aria-label', locale === 'ar' ? 'ترتيب القائمة' : 'Sort members');
                 const sortOptions = await dialog.locator('#sortFilter option').allTextContents();
                 expect(sortOptions).toEqual(locale === 'ar'
                     ? ['الأقرب انتهاءً', 'الأحدث تسجيلًا', 'الأعلى مبلغًا متبقيًا']

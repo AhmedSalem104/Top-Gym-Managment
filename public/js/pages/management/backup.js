@@ -420,6 +420,22 @@
         return key ? translate(`backupHistory.type.${key}`) : translate('backupHistory.type.unknown');
     }
 
+    function backupActionButton({ id, action, labelKey, icon }) {
+        const label = escapeHtml(translate(labelKey));
+        const attributes = action === 'download'
+            ? `data-backup-record-id="${id}"`
+            : action === 'restore'
+                ? `data-backup-record-restore-id="${id}"`
+                : `data-backup-record-delete-id="${id}"`;
+        const paths = {
+            download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+            restore: '<path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+            delete: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/>'
+        };
+        const variant = action === 'delete' ? 'btn-danger' : 'btn-light';
+        return `<button type="button" class="btn ${variant} btn-icon backup-history-${action}" ${attributes} aria-label="${label}" title="${label}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[icon]}</svg></button>`;
+    }
+
     function renderVisibleHistory(data = {}) {
         const records = Array.isArray(data.records) ? data.records : (Array.isArray(data.archives) ? data.archives : []);
         const visibleRecords = records.filter((item) => String(item.status || '').toUpperCase() !== 'DELETED');
@@ -428,10 +444,10 @@
             const status = String(item.status || '').toUpperCase();
             const id = escapeHtml(item.id);
             const actions = status === 'VERIFIED'
-                ? `<button type="button" class="btn btn-light btn-small backup-history-download" data-backup-record-id="${id}">${escapeHtml(translate('backupHistory.action.download'))}</button><button type="button" class="btn btn-light btn-small backup-history-restore" data-backup-record-restore-id="${id}">${escapeHtml(translate('backupHistory.action.restore'))}</button>`
+                ? `${backupActionButton({ id, action: 'download', labelKey: 'backupHistory.action.download', icon: 'download' })}${backupActionButton({ id, action: 'restore', labelKey: 'backupHistory.action.restore', icon: 'restore' })}`
                 : '';
             const canDelete = !['RUNNING', 'UPLOADED', 'VERIFYING', 'DELETED'].includes(status);
-            return `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatHistoryDate(item.createdAt || item.generatedAt))}</small></td><td>${escapeHtml(recoveryTypeLabel(item.backupType || item.format))}</td><td>${recoveryStatusMarkup(status)}</td><td>${escapeHtml(translate('backupHistory.rows.count', { count: formatHistoryNumber(item.rowCount) }))}</td><td>${formatBytes(item.sizeBytes ?? item.contentBytes)}</td><td>${escapeHtml(formatHistoryDate(item.verifiedAt))}</td><td><div class="backup-history-actions">${actions}${canDelete ? `<button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-record-delete-id="${id}">${escapeHtml(translate('backupHistory.action.delete'))}</button>` : ''}${actions || canDelete ? '' : '—'}</div></td></tr>`;
+            return `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatHistoryDate(item.createdAt || item.generatedAt))}</small></td><td>${escapeHtml(recoveryTypeLabel(item.backupType || item.format))}</td><td>${recoveryStatusMarkup(status)}</td><td>${escapeHtml(translate('backupHistory.rows.count', { count: formatHistoryNumber(item.rowCount) }))}</td><td>${formatBytes(item.sizeBytes ?? item.contentBytes)}</td><td>${escapeHtml(formatHistoryDate(item.verifiedAt))}</td><td><div class="backup-history-actions">${actions}${canDelete ? backupActionButton({ id, action: 'delete', labelKey: 'backupHistory.action.delete', icon: 'delete' }) : ''}${actions || canDelete ? '' : '—'}</div></td></tr>`;
         }).join('');
         const storageNotice = data.storage && data.storage.configured !== true
             ? `<div class="backup-storage-warning" role="status"><strong>${escapeHtml(translate('backupHistory.storage.title'))}</strong><p>${escapeHtml(translate('backupHistory.storage.description'))}</p></div>`

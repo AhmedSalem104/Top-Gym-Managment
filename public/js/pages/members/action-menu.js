@@ -36,6 +36,23 @@
                     : Math.max(viewportPadding, toggleRect.top - panelHeight - viewportPadding);
                 panel.style.left = `${Math.round(left)}px`;
                 panel.style.top = `${Math.round(top)}px`;
+
+                // A transformed application-shell ancestor can establish the
+                // containing block for fixed descendants. Correct against the
+                // rendered viewport rect so the menu stays reachable there too.
+                const renderedRect = panel.getBoundingClientRect();
+                let horizontalCorrection = 0;
+                let verticalCorrection = 0;
+                if (renderedRect.left < viewportPadding) horizontalCorrection = viewportPadding - renderedRect.left;
+                else if (renderedRect.right > window.innerWidth - viewportPadding) {
+                    horizontalCorrection = window.innerWidth - viewportPadding - renderedRect.right;
+                }
+                if (renderedRect.top < viewportPadding) verticalCorrection = viewportPadding - renderedRect.top;
+                else if (renderedRect.bottom > window.innerHeight - viewportPadding) {
+                    verticalCorrection = window.innerHeight - viewportPadding - renderedRect.bottom;
+                }
+                if (horizontalCorrection) panel.style.left = `${Math.round(left + horizontalCorrection)}px`;
+                if (verticalCorrection) panel.style.top = `${Math.round(top + verticalCorrection)}px`;
             }
 
             function repositionOpenMenus() {

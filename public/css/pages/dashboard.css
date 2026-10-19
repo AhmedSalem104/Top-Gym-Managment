@@ -430,7 +430,7 @@
 .backup-history-table td strong,
 .backup-history-table td small { display: block; min-width: 0; overflow-wrap: anywhere; }
 .backup-history-table td small { margin-top: 2px; }
-.backup-history-actions { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); white-space: nowrap; }
+.backup-history-actions { display: inline-flex; min-width: 0; align-items: center; justify-content: center; gap: var(--space-1); white-space: nowrap; }
 .backup-history-status {
   display: inline-flex;
   min-width: 72px;
@@ -589,8 +589,8 @@
   .backup-history-section-head { align-items: stretch; flex-direction: column; }
 
   .backup-history-block-head { align-items: flex-start; flex-direction: column; }
-  .backup-history-actions { width: 100%; }
-  .backup-history-actions > .btn { flex: 1 1 0; }
+  .backup-history-actions { width: auto; justify-content: flex-start; gap: var(--space-1); }
+  .backup-history-actions > .btn { flex: 0 0 auto; }
   .backup-history-page-actions { width: 100%; }
   .backup-history-page-actions > .btn { flex: 1 1 160px; }
 }

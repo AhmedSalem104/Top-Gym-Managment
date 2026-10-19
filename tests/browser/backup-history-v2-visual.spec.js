@@ -205,18 +205,24 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                     expect(layout.tables[0].headers).toEqual(['File', 'Type', 'Status', 'Data', 'Size', 'Last verified', 'Actions']);
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('Verified');
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('Daily backup');
-                    await expect(page.locator('.backup-history-download').first()).toHaveText('Download');
-                    await expect(page.locator('.backup-history-restore').first()).toHaveText('Restore');
-                    await expect(page.locator('.backup-history-delete').first()).toHaveText('Delete');
+                    await expect(page.locator('.backup-history-download').first()).toHaveAttribute('title', 'Download');
+                    await expect(page.locator('.backup-history-download').first()).toHaveAttribute('aria-label', 'Download');
+                    await expect(page.locator('.backup-history-restore').first()).toHaveAttribute('title', 'Restore');
+                    await expect(page.locator('.backup-history-restore').first()).toHaveAttribute('aria-label', 'Restore');
+                    await expect(page.locator('.backup-history-delete').first()).toHaveAttribute('title', 'Delete');
+                    await expect(page.locator('.backup-history-delete').first()).toHaveAttribute('aria-label', 'Delete');
                     await expect(page.locator('.backup-history-block-head').first()).toContainText('The platform retains daily backups for 30 days');
                 } else {
                     expect(layout.dir).toBe('rtl');
                     expect(layout.tables[0].headers).toEqual(['الملف', 'النوع', 'الحالة', 'البيانات', 'الحجم', 'آخر تحقق', 'الإجراءات']);
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('تم التحقق');
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('نسخة يومية');
-                    await expect(page.locator('.backup-history-download').first()).toHaveText('تحميل');
-                    await expect(page.locator('.backup-history-restore').first()).toHaveText('استرجاع');
-                    await expect(page.locator('.backup-history-delete').first()).toHaveText('حذف');
+                    await expect(page.locator('.backup-history-download').first()).toHaveAttribute('title', 'تحميل');
+                    await expect(page.locator('.backup-history-download').first()).toHaveAttribute('aria-label', 'تحميل');
+                    await expect(page.locator('.backup-history-restore').first()).toHaveAttribute('title', 'استرجاع');
+                    await expect(page.locator('.backup-history-restore').first()).toHaveAttribute('aria-label', 'استرجاع');
+                    await expect(page.locator('.backup-history-delete').first()).toHaveAttribute('title', 'حذف');
+                    await expect(page.locator('.backup-history-delete').first()).toHaveAttribute('aria-label', 'حذف');
                 }
 
                 matrix.push({ width, locale, theme, ...layout });

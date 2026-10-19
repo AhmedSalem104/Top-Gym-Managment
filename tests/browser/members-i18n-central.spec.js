@@ -125,7 +125,8 @@ test('Members screen uses central Arabic/English i18n without changing member da
                     await expect(page.locator('#membersPagination .members-pagination-info')).toContainText(locale === 'ar' ? 'عرض' : 'Showing');
                 } else {
                     await expect(page.locator('#membersList .members-mobile-card')).toHaveCount(1);
-                    await expect(page.locator('.members-filter-disclosure summary')).toContainText(locale === 'ar' ? 'الفلاتر' : 'Filters');
+                    await expect(page.locator('.members-status-filter')).toContainText(locale === 'ar' ? 'حالة الاشتراك' : 'Membership status');
+                    await expect(page.locator('.members-filter-disclosure summary')).toContainText(locale === 'ar' ? 'ترتيب النتائج' : 'Sort results');
                 }
                 const geometry = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
                 expect(geometry.document, `document overflow @${width} ${theme} ${locale}`).toBeLessThanOrEqual(width);
