@@ -97,6 +97,15 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-table')).toBeVisible();
     await expect(page.locator('.members-table tbody > tr')).toHaveCount(4);
     await expect(page.locator('.members-summary-item')).toHaveCount(4);
+    const membersSummaryFilterOrder = await page.locator('#membersSection').evaluate((section) => {
+        const summary = section.querySelector('#membersSummary');
+        const filters = section.querySelector('.members-filter-tabs-row');
+        const toolbar = section.querySelector('.members-toolbar');
+        return Boolean(summary && filters && toolbar
+            && (summary.compareDocumentPosition(filters) & Node.DOCUMENT_POSITION_FOLLOWING)
+            && (filters.compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING));
+    });
+    expect(membersSummaryFilterOrder, 'Filter tabs should sit below summary cards and above search').toBe(true);
     await expect(page.locator('#membersCount')).toContainText('مشترك');
     await expect(page.locator('#membersSection .members-toolbar-copy')).toBeHidden();
     const desktopPanelStyle = await page.locator('#membersSection').evaluate((element) => {

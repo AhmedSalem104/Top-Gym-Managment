@@ -1046,11 +1046,14 @@
             if (!summary) {
                 summary = document.createElement('div');
                 summary.id = 'membersSummary';
-            summary.className = 'members-summary-grid';
+                summary.className = 'members-summary-grid';
                 summary.setAttribute('role', 'group');
-            summary.setAttribute('aria-label', membersText('summary.aria'));
-                section.insertBefore(summary, section.querySelector('.members-toolbar'));
+                summary.setAttribute('aria-label', membersText('summary.aria'));
             }
+            const filterRow = section.querySelector('.members-filter-tabs-row');
+            const toolbar = section.querySelector('.members-toolbar');
+            if (filterRow) section.insertBefore(summary, filterRow);
+            else if (toolbar) section.insertBefore(summary, toolbar);
             const stats = state.dashboard?.stats;
             const metrics = [
                 { key: 'total', label: membersText('summary.total'), icon: '<circle cx="9" cy="8" r="3"/><path d="M3 19v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a5 5 0 0 1 3 4.5V19"', tone: 'total' },
@@ -1152,7 +1155,10 @@
             if (!controls || !search || !statusField || !sortField || !statusChoices || !sortChoices || membersRoot.querySelector('.members-filter-tabs-row')) return;
             const filterRow = document.createElement('div');
             filterRow.className = 'members-filter-tabs-row';
-            controls.closest('.members-toolbar')?.before(filterRow);
+            const toolbar = controls.closest('.members-toolbar');
+            const summary = membersRoot.querySelector('#membersSummary');
+            if (summary) summary.after(filterRow);
+            else toolbar?.before(filterRow);
             statusField.classList.add('visually-hidden');
             sortField.classList.add('visually-hidden');
             statusField.querySelector('span')?.classList.add('visually-hidden');
