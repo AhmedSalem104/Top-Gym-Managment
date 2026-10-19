@@ -33,7 +33,8 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(styles, /\.app-shell > \.page-tabs > \.page-tab,[\s\S]*?width: 100%[\s\S]*?min-width: 0/u);
     assert.match(styles, /\.app-shell > \.page-tabs::-webkit-scrollbar\s*\{[\s\S]*?width: 0[\s\S]*?height: 0/u);
     assert.match(styles, /@media \(min-width: 1024px\)[\s\S]*?\.app-shell > \.page-tabs\s*\{[\s\S]*?grid-row: 2/u);
-    assert.match(topbarStyles, /@media \(min-width: 1024px\)[\s\S]*?#mobileNavToggle\s*\{[\s\S]*?display: none/u);
+    assert.match(topbarStyles, /#mobileNavToggle\s*\{\s*display: inline-flex;/u,
+        'the side-navigation control remains visible on desktop as the reference requests');
 });
 
 test('Mobile navigation drawer keeps focus contained and supports reduced motion', () => {

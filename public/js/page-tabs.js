@@ -401,7 +401,12 @@
         const closeNavigation = () => setOpen(false);
 
         toggle.addEventListener('click', () => {
-            if (mediaQuery.matches && shell.classList.contains('mobile-nav-open')) closeNavigation();
+            if (!mediaQuery.matches) {
+                rail.querySelector('#sidebarPinToggle')?.click();
+                toggle.setAttribute('aria-expanded', String(rail.classList.contains('sidebar-pinned')));
+                return;
+            }
+            if (shell.classList.contains('mobile-nav-open')) closeNavigation();
             else openNavigation();
         });
         closeButton?.addEventListener('click', closeNavigation);
@@ -449,30 +454,81 @@
         setOpen(false, false);
     }
 
+    function initApplicationLauncher() {
+        const launcher = document.querySelector('.application-launcher');
+        const menu = document.getElementById('applicationLauncherMenu');
+        const trigger = document.getElementById('applicationLauncherTrigger');
+        const rail = document.getElementById('pageTabs');
+        if (!launcher || !menu || !trigger || !rail) return;
+
+        const render = () => {
+            const availableTabs = [...rail.querySelectorAll('.page-tab[data-page-tab]:not([hidden])')]
+                .filter((tab) => getComputedStyle(tab).display !== 'none' && tab.getAttribute('aria-hidden') !== 'true');
+            menu.replaceChildren(...availableTabs.map((tab) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'application-launcher-item';
+                item.dataset.launcherTab = tab.dataset.pageTab;
+                item.setAttribute('aria-current', tab.getAttribute('aria-selected') === 'true' ? 'page' : 'false');
+                const icon = tab.querySelector('.ui-icon')?.cloneNode(true);
+                if (icon) {
+                    icon.setAttribute('aria-hidden', 'true');
+                    item.append(icon);
+                }
+                const sourceLabel = tab.querySelector('span:not(.visually-hidden)')?.textContent?.trim();
+                const label = document.createElement('span');
+                label.textContent = sourceLabel || tab.dataset.pageTab;
+                item.append(label);
+                return item;
+            }));
+        };
+
+        launcher.addEventListener('toggle', () => {
+            trigger.setAttribute('aria-expanded', String(launcher.open));
+            if (launcher.open) render();
+        });
+        menu.addEventListener('click', (event) => {
+            const item = event.target.closest('[data-launcher-tab]');
+            if (!item || !menu.contains(item)) return;
+            const target = [...rail.querySelectorAll('.page-tab[data-page-tab]')].find((tab) => tab.dataset.pageTab === item.dataset.launcherTab);
+            if (!target || target.hidden || getComputedStyle(target).display === 'none' || target.getAttribute('aria-hidden') === 'true') return;
+            launcher.open = false;
+            target.click();
+        });
+        document.addEventListener('pointerdown', (event) => {
+            if (launcher.open && !launcher.contains(event.target)) launcher.open = false;
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || !launcher.open) return;
+            event.preventDefault();
+            launcher.open = false;
+            trigger.focus({ preventScroll: true });
+        });
+        window.addEventListener('topgym:tab-changed', () => { if (launcher.open) render(); });
+        window.addEventListener('topgym:localechange', () => { if (launcher.open) render(); });
+    }
+
     function initTopbarMoreMenu() {
         const menu = document.querySelector('.topbar-more-menu');
         const trigger = menu?.querySelector('.topbar-more-trigger');
         if (!menu || !trigger) return;
-        const desktop = window.matchMedia('(min-width: 1024px)');
         const close = (restoreFocus = false) => {
             if (!menu.open) return;
             menu.open = false;
             if (restoreFocus) trigger.focus({ preventScroll: true });
         };
         menu.addEventListener('click', (event) => {
-            if (!desktop.matches && event.target.closest('.topbar-more-items button')) close(true);
+            if (event.target.closest('.topbar-more-items button')) close(true);
         });
         document.addEventListener('pointerdown', (event) => {
-            if (!desktop.matches && menu.open && !menu.contains(event.target)) close(false);
+            if (menu.open && !menu.contains(event.target)) close(false);
         });
         document.addEventListener('keydown', (event) => {
-            if (desktop.matches || event.key !== 'Escape' || !menu.open) return;
+            if (event.key !== 'Escape' || !menu.open) return;
             event.preventDefault();
             close(true);
         });
-        const syncMode = () => { menu.open = desktop.matches; };
-        desktop.addEventListener?.('change', syncMode);
-        syncMode();
+        menu.open = false;
     }
 
     function syncMobileNavigationContext(name) {
@@ -662,6 +718,38 @@
             { opacity: 1, transform: 'translateY(0)' }
         ], { duration, easing, fill: 'none' });
         animation.id = 'logicfit-page-transition';
+        if (tabName === 'dashboard') animateDashboardSignals(surface);
+    }
+
+    function animateDashboardSignals(surface) {
+        if (!surface || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || window.matchMedia?.('print').matches) return;
+        const motionTokens = getComputedStyle(document.documentElement);
+        const durationToken = motionTokens.getPropertyValue('--motion-duration-menu').trim();
+        const durationValue = Number.parseFloat(durationToken);
+        const duration = Number.isFinite(durationValue)
+            ? durationValue * (durationToken.endsWith('ms') ? 1 : durationToken.endsWith('s') ? 1000 : 1)
+            : 200;
+        const staggerToken = motionTokens.getPropertyValue('--member-row-stagger').trim();
+        const staggerValue = Number.parseFloat(staggerToken);
+        const stagger = Number.isFinite(staggerValue) ? staggerValue : 30;
+        const capToken = motionTokens.getPropertyValue('--member-row-stagger-cap').trim();
+        const capValue = Number.parseFloat(capToken);
+        const delayCap = Number.isFinite(capValue) ? capValue : 180;
+        const easing = motionTokens.getPropertyValue('--motion-easing-enter').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+        const signals = [...surface.querySelectorAll('.dashboard-overview-card, .stats-grid .stat-card, .alerts-panel, .dashboard-day-pass-card, .monthly-finance-card, .monthly-finance-snapshot, .dashboard-day-pass-kpi, .monthly-finance-metric')]
+            .filter((element) => !element.hidden && element.getClientRects().length);
+
+        signals.forEach((element, index) => {
+            element.getAnimations().forEach((running) => {
+                if (running.id === 'logicfit-dashboard-signal-enter') running.cancel();
+            });
+            const running = element.animate([
+                { opacity: 0, transform: `translateY(${motionTokens.getPropertyValue('--motion-offset-page').trim() || '8px'})` },
+                { opacity: 1, transform: 'translateY(0)'
+                }
+            ], { duration, delay: Math.min(index * stagger, delayCap), easing, fill: 'none' });
+            running.id = 'logicfit-dashboard-signal-enter';
+        });
     }
 
     function renderFeatureAccessState(tabName, access) {
@@ -759,6 +847,7 @@
         initDashboardViewTabs();
         initSidebarPin();
         initMobileNavigation();
+        initApplicationLauncher();
         initTopbarMoreMenu();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');

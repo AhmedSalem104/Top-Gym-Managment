@@ -35,6 +35,10 @@ test('phone input contract is Egypt-only, local-first, and cache-busted consiste
     assert.match(css, /grid-template-columns: minmax\(0, 1fr\)/);
     assert.match(css, /phone-country-control/);
     assert.match(css, /phone-input-error/);
+    assert.doesNotMatch(css, /phone-input-help|grid-template-rows:[^;]*minmax\(1\.25rem/u);
+    assert.match(css, /\.phone-input-error\[hidden\]\s*\{\s*display:\s*none;/u);
+    assert.doesNotMatch(script, /أدخل الرقم بدون مفتاح الدولة|Enter the number without the country/u);
+    assert.match(script, /aria-describedby', \[input\.getAttribute\('aria-describedby'\), error\.id\]/u);
 });
 
 test('phone-bearing screens use local Egyptian mobile inputs', () => {

@@ -3,13 +3,12 @@
   width: 100%;
   max-width: 100%;
   grid-template-columns: minmax(8.8rem, 9.6rem) minmax(0, 1fr);
-  grid-template-rows: var(--ui-control-height, 44px) auto minmax(1.25rem, auto);
+  grid-template-rows: var(--ui-control-height, 44px) auto;
   grid-template-areas:
     "country number"
-    ". help"
     ". error";
   column-gap: 0.625rem;
-  row-gap: 0.25rem;
+  row-gap: 0;
   align-items: stretch;
   align-content: start;
   direction: ltr;
@@ -23,7 +22,6 @@
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     "number"
-    "help"
     "error";
 }
 
@@ -300,7 +298,6 @@
   letter-spacing: 0.04em;
 }
 
-.phone-input-help,
 .phone-input-error {
   box-sizing: border-box;
   min-width: 0;
@@ -309,21 +306,13 @@
   text-align: right;
 }
 
-.phone-input-help {
-  grid-area: help;
-  min-height: 1.45rem;
-  padding: 0 0.2rem;
-  color: var(--color-text-muted, #64748b);
-  font-size: var(--font-xs);
-  line-height: 1.4;
-}
-
 .phone-input-error {
   display: block;
   grid-area: error;
   align-self: start;
-  min-height: 2rem;
+  min-height: 0;
   margin: 0;
+  margin-block-start: var(--space-1);
   padding: 0.35rem 0.6rem;
   border-inline-start: 3px solid #dc2626;
   border-radius: 0.4rem;
@@ -335,9 +324,7 @@
 }
 
 .phone-input-error[hidden] {
-  display: block !important;
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }
 
 html[data-theme] .phone-input-error {

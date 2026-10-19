@@ -506,12 +506,31 @@
         if (accountName) accountName.textContent = user?.name || brandName();
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
+        const topbarProfile = $('topbarProfile');
+        const topbarProfileName = document.querySelector('[data-topbar-profile-name]');
+        const topbarProfileRole = document.querySelector('[data-topbar-profile-role]');
+        const topbarProfileInitials = document.querySelector('[data-topbar-profile-initials]');
+        if (topbarProfile) topbarProfile.hidden = !user;
+        if (topbarProfileName) topbarProfileName.textContent = user?.name || '';
+        if (topbarProfileInitials) topbarProfileInitials.textContent = initials(user?.name);
+        if (topbarProfileRole) {
+            const roleKey = user?.role === 'Owner' ? 'shell.role.owner' : user?.role === 'PlatformAdmin' ? 'shell.role.admin' : 'shell.role.assistant';
+            topbarProfileRole.textContent = window.TopGymI18n?.t(roleKey) || roleLabel(user?.role);
+        }
         if (!permissions.canAccessTab(user, window.location.hash.slice(1))) {
             window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }
         applyPermissionControls(user);
         applyEntitlementControls(user);
     }
+
+    window.addEventListener('topgym:localechange', () => {
+        if (!state.user) return;
+        const profileRole = document.querySelector('[data-topbar-profile-role]');
+        if (!profileRole) return;
+        const roleKey = state.user.role === 'Owner' ? 'shell.role.owner' : state.user.role === 'PlatformAdmin' ? 'shell.role.admin' : 'shell.role.assistant';
+        profileRole.textContent = window.TopGymI18n?.t(roleKey) || roleLabel(state.user.role);
+    });
 
     function applyEntitlementControls(user) {
         const idFeatures = {

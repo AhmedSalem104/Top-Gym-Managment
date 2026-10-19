@@ -105,7 +105,7 @@ test.describe('Egyptian local phone validation', () => {
         expect(metrics.control.right).toBeLessThanOrEqual(metrics.viewport + 1);
     });
 
-    test('keeps error space stable at mobile width in both themes', async ({ page }) => {
+    test('uses input-only height while idle and shows validation directly below the field', async ({ page }) => {
         await page.setViewportSize({ width: 320, height: 568 });
         await installCatalog(page);
         await page.goto('/register-gym.html', { waitUntil: 'domcontentloaded' });
@@ -114,11 +114,24 @@ test.describe('Egyptian local phone validation', () => {
         const before = await control.boundingBox();
         const phoneFieldHeight = await page.locator('.phone-number-control').evaluate((element) => element.getBoundingClientRect().height);
         expect(phoneFieldHeight).toBeLessThanOrEqual(48);
-        expect(before?.height || 0).toBeLessThan(110);
+        expect(Math.abs((before?.height || 0) - phoneFieldHeight)).toBeLessThanOrEqual(1);
+        await expect(page.locator('.phone-input-help')).toHaveCount(0);
         await phone.fill('010123');
         await phone.blur();
-        const after = await control.boundingBox();
-        expect(Math.abs((after?.height || 0) - (before?.height || 0))).toBeLessThanOrEqual(1);
+        const layout = await control.evaluate((element) => {
+            const rect = (selector) => {
+                const { top, bottom, height } = element.querySelector(selector).getBoundingClientRect();
+                return { top, bottom, height };
+            };
+            return {
+                wrapper: element.getBoundingClientRect().height,
+                field: rect('.phone-number-control'),
+                error: rect('.phone-input-error')
+            };
+        });
+        expect(layout.wrapper).toBeGreaterThan(before?.height || 0);
+        expect(layout.error.top).toBeGreaterThanOrEqual(layout.field.bottom);
+        expect(layout.wrapper - phoneFieldHeight).toBeLessThanOrEqual(layout.error.height + 8);
         await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
         await expect(page.locator('.phone-input-error')).toBeVisible();
         await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));

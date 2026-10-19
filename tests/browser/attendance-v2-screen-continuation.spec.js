@@ -239,11 +239,7 @@ async function collectScreenGeometry(page) {
                 text: section.querySelector('#attendanceListMeta')?.textContent.trim() || '',
                 loadingKey: section.querySelector('#attendanceListMeta')?.dataset.i18n === 'attendance.log.loading'
             },
-            phoneHelp: {
-                text: section.querySelector('.phone-input-help')?.textContent.trim() || '',
-                direction: section.querySelector('.phone-input-help') ? getComputedStyle(section.querySelector('.phone-input-help')).direction : null,
-                unicodeBidi: section.querySelector('.phone-input-help') ? getComputedStyle(section.querySelector('.phone-input-help')).unicodeBidi : null
-            },
+            phoneHelperCount: section.querySelectorAll('.phone-input-help').length,
             mobileTableMode: table ? getComputedStyle(table).display === 'block' : false,
             focusRing: (() => {
                 const element = section.querySelector('#attendanceStatusFilter');
@@ -423,6 +419,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                     expect(geometry.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                     expect(geometry.locale).toBe(locale);
                     expect(geometry.theme).toBe(theme);
+                    expect(geometry.phoneHelperCount, `${width}/${locale}/${theme}: the shared phone field must not render a helper row`).toBe(0);
                     expect(geometry.section.width).toBeGreaterThan(0);
                     expect(geometry.branchContext.hidden, `${width}/${locale}/${theme}: branch context should be represented for the authorized synthetic tenant`).toBe(false);
                     expect(geometry.branchContext.branch).toBe('QA Main Branch');
@@ -458,12 +455,13 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                         expect(geometry.row.right).toBeLessThanOrEqual(geometry.tableWrapper.right + 1);
                         expect(geometry.cells).toHaveLength(7);
                         expect(geometry.action.height, `${width}/${locale}/${theme}: row action touch target`).toBeGreaterThanOrEqual(44);
-                        const phoneHelpLayout = await page.locator('.attendance-section .phone-input-control[data-phone-control]').evaluate((control) => {
+                        const phoneLayout = await page.locator('.attendance-section .phone-input-control[data-phone-control]').evaluate((control) => {
+                            const wrapper = control.getBoundingClientRect();
                             const phone = control.querySelector('.phone-number-control')?.getBoundingClientRect();
-                            const help = control.querySelector('.phone-input-help')?.getBoundingClientRect();
-                            return { controlWidth: control.getBoundingClientRect().width, phoneWidth: phone?.width || 0, helpWidth: help?.width || 0 };
+                            return { wrapperHeight: wrapper.height, phoneHeight: phone?.height || 0, helperCount: control.querySelectorAll('.phone-input-help').length };
                         });
-                        expect(phoneHelpLayout.helpWidth, `${width}/${locale}/${theme}: phone guidance should span the phone control instead of a stale second grid column`).toBeGreaterThanOrEqual(phoneHelpLayout.phoneWidth - 2);
+                        expect(phoneLayout.helperCount, `${width}/${locale}/${theme}: removed helper text must not be recreated`).toBe(0);
+                        expect(Math.abs(phoneLayout.wrapperHeight - phoneLayout.phoneHeight), `${width}/${locale}/${theme}: an idle phone control must occupy only the input height`).toBeLessThanOrEqual(1);
                         const touchTargets = await page.locator([
                             '#attendancePhoneModeButton', '#attendanceScanButton', '#attendancePhone',
                             '.attendance-member-search-button', '#attendanceSearch', '#attendanceStatusFilter',

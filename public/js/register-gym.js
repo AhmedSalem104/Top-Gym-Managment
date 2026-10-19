@@ -309,8 +309,6 @@
 
     function refreshPhoneLocale() {
         form.querySelectorAll('[data-phone-input]').forEach((input) => {
-            const helper = input.closest('.phone-input-control')?.querySelector('.phone-input-help');
-            if (helper) helper.textContent = t('registration.phone.help');
             const search = input.closest('.phone-input-control')?.querySelector('.phone-country-search');
             if (search) {
                 search.placeholder = t('registration.phone.countrySearch');

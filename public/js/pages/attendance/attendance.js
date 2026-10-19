@@ -648,10 +648,6 @@
     function applyAttendanceLocalization() {
         const section = $('attendanceSection');
         if (!section) return;
-        const phoneHelp = section.querySelector('#attendancePhone')
-            ?.closest('[data-phone-control]')
-            ?.querySelector('[data-phone-input-help]');
-        if (phoneHelp) phoneHelp.dataset.i18n = 'attendance.phone.help';
         window.TopGymI18n?.apply?.(section);
         window.TopGymI18n?.apply?.($('qrReaderDialog'));
     }

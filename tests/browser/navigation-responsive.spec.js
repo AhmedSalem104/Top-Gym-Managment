@@ -58,14 +58,16 @@ async function installNavigationRuntime(page) {
     });
 }
 
-test('branch and section context values keep distinct readable theme colors; account trigger is not an avatar', async ({ page }, testInfo) => {
+test('branch and section context values, profile, and application launcher keep readable theme colors', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The inline branch and section selectors are desktop-only; compact mobile context is covered in the responsive navigation test.');
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     const branch = page.locator('#branchContextShell [data-context-field="branch"] .branch-context-trigger');
     const section = page.locator('#branchContextShell [data-context-field="section"] .branch-context-trigger');
     await expect(branch).toBeVisible();
     await expect(section).toBeVisible();
-    await expect(page.locator('.topbar-account-avatar')).toHaveCount(0);
+    await expect(page.locator('#topbarProfile')).toBeVisible();
+    await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
     await expect(page.locator('.topbar-more-trigger')).toHaveAttribute('aria-label', /More|المزيد/u);
 
     for (const theme of ['light', 'dark']) {
@@ -73,6 +75,7 @@ test('branch and section context values keep distinct readable theme colors; acc
             document.documentElement.dataset.theme = value;
             document.body.dataset.theme = value;
         }, theme);
+        await page.waitForTimeout(180);
         const colors = await page.evaluate(() => {
             const read = (selector) => getComputedStyle(document.querySelector(selector)).color;
             return {
@@ -121,6 +124,31 @@ test('responsive navigation stays organized and accessible at each viewport', as
 
     if (width <= 1023) {
         await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        for (const responsiveWidth of [320, 375, 390, 430, 768, 1024]) {
+            await page.setViewportSize({ width: responsiveWidth, height: 900 });
+            const navbarLayout = await page.evaluate(() => {
+                const selectors = ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile'];
+                return {
+                    rows: selectors.map((selector) => document.querySelector(selector)?.getBoundingClientRect().top).filter(Number.isFinite),
+                    viewport: document.documentElement.clientWidth,
+                    documentWidth: document.documentElement.scrollWidth,
+                    bodyWidth: document.body.scrollWidth
+                };
+            });
+            expect(Math.max(...navbarLayout.rows) - Math.min(...navbarLayout.rows), `${responsiveWidth}px header rows`).toBeLessThanOrEqual(4);
+            expect(navbarLayout.documentWidth, `${responsiveWidth}px document overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
+            expect(navbarLayout.bodyWidth, `${responsiveWidth}px body overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
+        }
+        await page.setViewportSize({ width, height: 900 });
+        await page.locator('#applicationLauncherTrigger').click();
+        await expect(page.locator('#applicationLauncherMenu')).toBeVisible();
+        expect(await page.locator('#applicationLauncherMenu [data-launcher-tab]').count()).toBeGreaterThan(0);
+        const screenshotDir = path.join(process.cwd(), 'qa', 'artifacts', 'screenshots');
+        fs.mkdirSync(screenshotDir, { recursive: true });
+        await page.screenshot({ path: path.join(screenshotDir, `navbar-launcher-${width}-v2.png`), fullPage: false });
+        await page.locator('#applicationLauncherMenu [data-launcher-tab="members"]').click();
+        await expect(page.locator('[data-page-tab="members"]')).toHaveClass(/active/);
+        await expect(page.locator('#membersSection')).toBeVisible();
         await expect(page.locator('#pageTabs')).toBeHidden();
         await page.locator('#mobileNavToggle').click();
         await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
@@ -134,11 +162,56 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(page.locator('#pageTabs')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
     } else {
-        await expect(page.locator('#mobileNavToggle')).toBeHidden();
+        await expect(page.locator('#mobileNavToggle')).toBeVisible();
         await expect(page.locator('#pageTabs')).toBeVisible();
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+        const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+            .map((selector) => document.querySelector(selector)?.getBoundingClientRect().top)
+            .filter(Number.isFinite));
+        expect(Math.max(...navbarRows) - Math.min(...navbarRows)).toBeLessThanOrEqual(4);
         await page.screenshot({ path: testInfo.outputPath('navigation-desktop.png'), fullPage: true });
     }
+});
+
+test('dashboard daily classes occupy seven columns beside five alert columns on desktop', async ({ page }, testInfo) => {
+    await installNavigationRuntime(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    await page.evaluate(() => {
+        window.__qaMotionAnimations = [];
+        const nativeAnimate = Element.prototype.animate;
+        Element.prototype.animate = function (...args) {
+            const animation = nativeAnimate.apply(this, args);
+            window.__qaMotionAnimations.push(animation);
+            return animation;
+        };
+    });
+    await page.locator('[data-page-tab="members"]').click();
+    await expect(page.locator('#membersSection')).toBeVisible();
+    await page.locator('[data-page-tab="dashboard"]').click();
+    await expect(page.locator('#dashboardSection')).toBeVisible();
+    const dashboardSignalAnimations = await page.evaluate(() => window.__qaMotionAnimations
+        .filter((animation) => animation.id === 'logicfit-dashboard-signal-enter').length);
+    expect(dashboardSignalAnimations).toBeGreaterThan(0);
+    const panels = await page.evaluate(() => {
+        const grid = document.querySelector('.overview-grid');
+        const alerts = grid?.querySelector('.alerts-panel');
+        const classes = grid?.querySelector('.dashboard-day-pass-card');
+        return {
+            columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+            alerts: getComputedStyle(alerts).gridColumn,
+            classes: getComputedStyle(classes).gridColumn,
+            viewportWidth: document.documentElement.clientWidth,
+            documentWidth: document.documentElement.scrollWidth
+        };
+    });
+    expect(panels.columns).toBe(12);
+    expect(panels.alerts).toBe('8 / span 5');
+    expect(panels.classes).toBe('1 / span 7');
+    expect(panels.documentWidth).toBeLessThanOrEqual(panels.viewportWidth + 1);
+    const screenshotDir = path.join(process.cwd(), 'qa', 'artifacts', 'screenshots');
+    fs.mkdirSync(screenshotDir, { recursive: true });
+    await page.screenshot({ path: path.join(screenshotDir, 'dashboard-classes-7-alerts-5-v2.png'), fullPage: true });
 });
 
 test('sidebar width and logout danger treatment remain consistent in light and dark themes', async ({ page }) => {
@@ -532,7 +605,7 @@ test('shared navigation stays below the header without clipping across locale, t
     }
 });
 
-test('mobile topbar has two explicit rows and a single-icon theme action; Login uses a square theme button', async ({ page, context }, testInfo) => {
+test('responsive topbar keeps every primary action on one row; Login keeps its square theme button', async ({ page, context }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
@@ -553,6 +626,10 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
             await loginPage.evaluate((value) => window.TopGymTheme.set(value), theme);
             await page.waitForTimeout(200);
             await loginPage.waitForTimeout(200);
+            if (!await page.locator('.topbar-more-menu').evaluate((element) => element.open)) {
+                await page.locator('.topbar-more-trigger').click();
+            }
+            await expect(page.locator('#themeToggleButton')).toBeVisible();
 
             const state = await page.evaluate(() => {
                 const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
@@ -567,15 +644,10 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
                 return {
                     viewport: innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
-                    menu: rect('#mobileNavToggle'),
-                    actionGroup: rect('.topbar-mobile-actions'),
-                    row: rect('.topbar-mobile-row'),
-                    branch: rect('[data-context-field="branch"]'),
-                    section: rect('[data-context-field="section"]'),
+                    controls: ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+                        .map((selector) => document.querySelector(selector)?.getBoundingClientRect().top).filter(Number.isFinite),
                     theme: rect('#themeToggleButton'),
                     notification: rect('.notification-center-trigger'),
-                    kiosk: rect('#mobileKioskAction'),
-                    logout: rect('#mobileLogoutAction'),
                     themePressed: toggle.getAttribute('aria-pressed'),
                     themeState: toggle.querySelector('[data-theme-toggle-icon]')?.dataset.themeState,
                     themeControlCount: document.querySelectorAll('.topbar-mobile-actions [data-theme-toggle]').length,
@@ -586,8 +658,7 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
                         return { radius: style.borderRadius, columns: style.gridTemplateColumns, direction: style.direction, background: style.backgroundColor, border: style.borderColor };
                     })(),
                     icons,
-                    kioskHidden: getComputedStyle(document.querySelector('#globalKioskToggle')).display === 'none',
-                    logoutContainerHidden: getComputedStyle(document.querySelector('#authAccountBar')).display === 'none'
+                    kioskVisibleInMore: getComputedStyle(document.querySelector('#globalKioskToggle')).display !== 'none'
                 };
             });
             const loginGeometry = await loginToggle.evaluate((element) => {
@@ -615,13 +686,9 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
             });
 
             expect(state.scrollWidth, `${theme} at ${width}px`).toBeLessThanOrEqual(width + 1);
-            expect(state.menu.x).toBeGreaterThan(state.actionGroup.x);
-            expect(state.menu.y).toBeLessThan(state.branch.y);
-            expect(state.branch.y).toBe(state.section.y);
-            expect(state.branch.y).toBeGreaterThanOrEqual(state.row.y + state.row.height + 8);
-            expect(state.branch.x).toBeGreaterThan(state.section.x);
-            expect(state.theme.width).toBeCloseTo(44, 2);
-            expect(state.theme.height).toBe(44);
+            expect(Math.max(...state.controls) - Math.min(...state.controls), `${theme} ${width}px one-row controls`).toBeLessThanOrEqual(4);
+            expect(state.theme.width).toBeGreaterThanOrEqual(44);
+            expect(state.theme.height).toBeGreaterThanOrEqual(44);
             expect(state.themePressed).toBe(String(theme === 'dark'));
             expect(state.themeState).toBe(theme);
             expect(state.themeControlCount).toBe(1);
@@ -633,17 +700,13 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
             expect(visibleLoginIcons).toHaveLength(1);
             expect(visibleLoginIcons[0].theme).toBe(theme);
             expect(state.notification.width).toBe(44);
-            expect(state.notification.x).toBeLessThan(state.theme.x);
-            expect(state.theme.x).toBeLessThan(state.kiosk.x);
-            expect(state.kiosk.x).toBeLessThan(state.logout.x);
-            expect(state.toggleWidth).toBe(44);
-            expect(state.toggleHeight).toBe(44);
+            expect(state.kioskVisibleInMore).toBeTruthy();
+            expect(state.toggleWidth).toBeGreaterThanOrEqual(44);
+            expect(state.toggleHeight).toBeGreaterThanOrEqual(44);
             expect(state.icons).toHaveLength(1);
             expect(state.icons[0].state).toBe(theme);
             expect(state.icons[0].path).toContain(theme === 'dark' ? 'M20.5 15.2' : 'M12 2v2');
             navbarIconColors.add(state.icons[0].color);
-            expect(state.kioskHidden).toBeTruthy();
-            expect(state.logoutContainerHidden).toBeTruthy();
 
             if (theme === 'light') {
                 await page.screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-light.png`), fullPage: false });
@@ -663,20 +726,11 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
     await expect(loginToggle).toHaveAttribute('aria-pressed', 'false');
     expect(await loginPage.evaluate(() => localStorage.getItem('topgym-theme'))).toBe('light');
 
-    for (const [action, originalId] of [
-        [page.locator('#mobileKioskAction'), 'globalKioskToggle'],
-        [page.locator('#mobileLogoutAction'), 'authLogoutButton']
-    ]) {
-        await page.evaluate((id) => {
-            const target = document.getElementById(id);
-            target.__qaForwarded = false;
-            target.click = () => { target.__qaForwarded = true; };
-        }, originalId);
-        await action.click();
-        await expect.poll(() => page.locator(`#${originalId}`).evaluate((element) => element.__qaForwarded)).toBeTruthy();
-    }
-
+    await expect(page.locator('#authAccountBar #authLogoutButton')).toHaveCount(1);
+    const contextTrigger = page.locator('#branchContextMobileTrigger');
+    await contextTrigger.click();
     const branchTrigger = page.locator('[data-context-field="branch"] .branch-context-trigger');
+    await expect(branchTrigger).toBeVisible();
     await branchTrigger.click();
     await expect(page.locator('#branchContextSelectMenu')).toBeVisible();
     await expect(page.locator('#branchContextSelectMenu [data-context-option]')).toHaveCount(3);
@@ -684,6 +738,7 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
     await page.keyboard.press('Escape');
     await expect(page.locator('#branchContextSelectMenu')).toBeHidden();
 
+    await page.locator('.topbar-more-trigger').click();
     await page.locator('#themeToggleButton').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     expect(await page.evaluate(() => localStorage.getItem('topgym-theme'))).toBe('light');
@@ -693,13 +748,18 @@ test('mobile topbar has two explicit rows and a single-icon theme action; Login 
     for (const theme of ['light', 'dark']) {
         await page.evaluate((value) => window.TopGymTheme.set(value), theme);
         await loginPage.evaluate((value) => window.TopGymTheme.set(value), theme);
+        if (!await page.locator('.topbar-more-menu').evaluate((element) => element.open)) {
+            await page.locator('.topbar-more-trigger').click();
+        }
+        await expect(page.locator('#themeToggleButton')).toBeVisible();
         const appRect = await page.locator('#themeToggleButton').boundingBox();
         const loginRect = await loginToggle.boundingBox();
         expect(appRect.width).toBe(44);
         expect(appRect.height).toBe(44);
         expect(loginRect.width).toBe(48);
         expect(loginRect.height).toBeCloseTo(48, 2);
-        await expect(page.locator('#mobileNavToggle')).toBeHidden();
+        await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
         await page.screenshot({ path: testInfo.outputPath(`topbar-desktop-1366-${theme}.png`), fullPage: false });
     }
     await loginPage.close();

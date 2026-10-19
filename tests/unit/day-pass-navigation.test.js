@@ -38,8 +38,8 @@ test('dashboard alerts and day-pass card share a 7/5 grid row above finance', ()
     const dashboard = fs.readFileSync(path.join(__dirname, '../../public/css/pages/dashboard.css'), 'utf8');
     const sourceOrder = source.match(/function arrangeDashboardSections\(\) \{([\s\S]*?)\n    \}/u)?.[1] || '';
 
-    assert.match(dashboard, /\.overview-grid > \.alerts-panel\s*\{\s*grid-column:\s*1 \/ span 7;\s*grid-row:\s*2;/u);
-    assert.match(dashboard, /\.overview-grid > \.dashboard-day-pass-card\s*\{\s*grid-column:\s*8 \/ span 5;\s*grid-row:\s*2;/u);
+    assert.match(dashboard, /\.overview-grid > \.alerts-panel\s*\{\s*grid-column:\s*8 \/ span 5;\s*grid-row:\s*2;/u);
+    assert.match(dashboard, /\.overview-grid > \.dashboard-day-pass-card\s*\{\s*grid-column:\s*1 \/ span 7;\s*grid-row:\s*2;/u);
     assert.match(sourceOrder, /overview\.insertBefore\(alerts, insertionPoint\)/u);
     assert.match(sourceOrder, /overview\.insertBefore\(dayPassCard, insertionPoint/u);
 });

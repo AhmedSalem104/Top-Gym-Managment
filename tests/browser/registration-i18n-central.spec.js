@@ -198,9 +198,25 @@ for (const locale of locales) {
 
         const phoneInput = page.locator('input[name="whatsapp"]');
         const phoneError = page.locator('.phone-input-error');
-        const phoneHelper = page.locator('.phone-input-help');
         await expect(phoneError).toBeVisible();
-        await expect(phoneHelper).toHaveText(await page.evaluate(() => window.TopGymI18n.t('registration.phone.help')));
+        await expect(page.locator('.phone-input-help')).toHaveCount(0);
+        const phoneGeometry = await page.evaluate(() => {
+            const wrapper = document.querySelector('input[name="whatsapp"]')?.closest('[data-phone-control]');
+            const control = wrapper?.querySelector('.phone-number-control');
+            const error = wrapper?.querySelector('.phone-input-error');
+            const box = (element) => element?.getBoundingClientRect();
+            const wrapperBox = box(wrapper);
+            const controlBox = box(control);
+            const errorBox = box(error);
+            return {
+                helperCount: wrapper?.querySelectorAll('.phone-input-help').length || 0,
+                gapBeforeError: errorBox && controlBox ? errorBox.top - controlBox.bottom : Infinity,
+                errorFitsWrapper: wrapperBox && errorBox ? Math.abs(wrapperBox.bottom - errorBox.bottom) <= 1 : false
+            };
+        });
+        expect(phoneGeometry.helperCount).toBe(0);
+        expect(phoneGeometry.gapBeforeError).toBeLessThanOrEqual(8);
+        expect(phoneGeometry.errorFitsWrapper).toBeTruthy();
         const originalDigits = (await phoneInput.inputValue()).replace(/\D/gu, '');
         const originalMessage = await page.evaluate(() => window.TopGymI18n.t('registration.phone.length'));
         await expect(phoneError).toHaveText(originalMessage);
@@ -208,7 +224,7 @@ for (const locale of locales) {
         await page.locator('[data-locale-toggle]').click();
         const switchedMessage = await page.evaluate(() => window.TopGymI18n.t('registration.phone.length'));
         await expect(phoneError).toHaveText(switchedMessage);
-        await expect(phoneHelper).toHaveText(await page.evaluate(() => window.TopGymI18n.t('registration.phone.help')));
+        await expect(page.locator('.phone-input-help')).toHaveCount(0);
         expect((await phoneInput.inputValue()).replace(/\D/gu, '')).toBe(originalDigits);
         expect(await phoneInput.getAttribute('aria-invalid')).toBe('true');
         expect(writes).toEqual([]);

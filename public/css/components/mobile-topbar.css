@@ -1,23 +1,55 @@
-/* Responsive arrangement for the canonical application header. */
-.topbar-mobile-row,
-.topbar-mobile-actions {
-  display: contents;
+/* Canonical responsive owner for the authenticated application Navbar. */
+.app-shell > .topbar,
+.app-shell > .topbar .topbar-inner,
+.app-shell > .topbar .topbar-controls {
+  overflow: visible;
 }
 
-.topbar-more-menu {
+.app-shell > .topbar .topbar-inner {
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-height: calc(var(--app-topbar-height) - 1px);
+  align-items: center;
+  margin-inline: 0;
+  padding: 0 var(--app-content-gutter-wide);
+}
+
+.app-shell > .topbar .topbar-controls {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: inherit;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.topbar-mobile-row,
+.topbar-mobile-actions {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: var(--space-2);
 }
 
-.topbar-more-trigger {
-  display: inline-grid;
+.topbar-mobile-actions { margin-inline-start: auto; }
+.app-shell > .topbar #mobileNavToggle { display: inline-flex; }
+.app-shell > .topbar #branchContextShell[hidden] { display: none; }
+
+.topbar-theme-toggle,
+.mobile-nav-toggle,
+.application-launcher-trigger,
+.topbar-more-trigger,
+.topbar-quick-actions .notification-center-trigger {
   box-sizing: border-box;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
+  display: inline-grid;
+  width: var(--ui-touch-target);
+  min-width: var(--ui-touch-target);
+  height: var(--ui-touch-target);
+  min-height: var(--ui-touch-target);
+  flex: 0 0 var(--ui-touch-target);
   place-items: center;
   padding: 0;
   border: 1px solid var(--border-secondary);
@@ -26,19 +58,102 @@
   color: var(--text-secondary);
   cursor: pointer;
   list-style: none;
+  transition: color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
-.topbar-more-trigger::-webkit-details-marker { display: none; }
+.topbar-theme-toggle:hover,
+.mobile-nav-toggle:hover,
+.application-launcher-trigger:hover,
 .topbar-more-trigger:hover,
-.topbar-more-trigger:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); }
-.topbar-more-trigger:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.topbar-quick-actions .notification-center-trigger:hover,
+.topbar-theme-toggle:focus-visible,
+.mobile-nav-toggle:focus-visible,
+.application-launcher-trigger:focus-visible,
+.topbar-more-trigger:focus-visible,
+.topbar-quick-actions .notification-center-trigger:focus-visible {
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.topbar-theme-toggle:focus-visible,
+.mobile-nav-toggle:focus-visible,
+.application-launcher-trigger:focus-visible,
+.topbar-more-trigger:focus-visible,
+.topbar-quick-actions .notification-center-trigger:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.topbar-theme-toggle .ui-icon,
+.mobile-nav-toggle .ui-icon,
+.application-launcher-trigger .ui-icon,
+.topbar-more-trigger .ui-icon,
+.topbar-quick-actions .notification-center-trigger .ui-icon {
+  width: var(--icon-size-control);
+  height: var(--icon-size-control);
+}
+
+.mobile-nav-toggle .visually-hidden { display: none; }
+.topbar-quick-actions { display: flex; min-width: 0; align-items: center; gap: var(--space-2); margin: 0; }
+.topbar-quick-actions .notification-center-trigger { position: relative; }
+.topbar-quick-actions .notification-center-badge { inset-block-start: 2px; inset-inline-end: 2px; }
+
+.application-launcher,
+.topbar-more-menu { position: relative; display: block; min-width: 0; }
+
+.application-launcher-trigger::-webkit-details-marker,
+.topbar-more-trigger::-webkit-details-marker { display: none; }
+
+.application-launcher-menu,
 .topbar-more-items {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  display: none;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 240px;
+  max-width: min(88vw, 360px);
+  padding: var(--space-3);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-lg);
+}
+
+.application-launcher[open] > .application-launcher-menu,
+.topbar-more-menu[open] > .topbar-more-items {
+  display: grid;
+  animation: logicfit-topbar-menu-enter var(--motion-duration-menu) var(--motion-easing-enter) both;
+}
+
+.application-launcher-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1); }
+.application-launcher-item {
   display: flex;
   min-width: 0;
+  min-height: var(--ui-touch-target);
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
 }
 
+.application-launcher-item .ui-icon { width: var(--icon-size-navigation); height: var(--icon-size-navigation); flex: 0 0 var(--icon-size-navigation); }
+.application-launcher-item span { min-width: 0; overflow-wrap: anywhere; }
+.application-launcher-item:hover,
+.application-launcher-item:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); }
+.application-launcher-item:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+.application-launcher-item[aria-current="page"] { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); font-weight: var(--weight-semibold); }
+
+.topbar-more-items { min-width: 228px; gap: var(--space-2); }
 .topbar-language-toggle {
   display: inline-flex;
   min-height: var(--ui-touch-target);
@@ -62,114 +177,98 @@
   cursor: pointer;
 }
 
-.topbar-language-toggle > button[aria-pressed="true"] {
-  background: var(--primary);
-  color: var(--text-on-primary);
+.topbar-language-toggle > button[aria-pressed="true"] { background: var(--primary); color: var(--text-on-primary); }
+.topbar-more-actions { display: grid; min-width: 0; gap: var(--space-2); }
+.topbar-more-actions > .btn { min-height: var(--ui-touch-target); justify-content: flex-start; }
+.topbar-more-items > .topbar-theme-icon-button,
+.topbar-more-items > .kiosk-toggle-button { width: 100%; justify-content: flex-start; gap: var(--space-3); padding-inline: var(--space-3); }
+.topbar-more-items > .topbar-theme-icon-button .visually-hidden,
+.topbar-more-items > .kiosk-toggle-button .visually-hidden { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; clip-path: none; white-space: nowrap; }
+
+.topbar-profile {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.topbar-more-actions { display: flex; align-items: center; gap: var(--space-2); }
-.topbar-more-menu[open] > .topbar-more-items { animation: logicfit-popover-enter var(--motion-duration-menu) var(--motion-easing-enter) both; }
+.topbar-profile[hidden] { display: none; }
+.topbar-profile-avatar {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
 
-@keyframes logicfit-popover-enter {
+.topbar-profile-copy { display: grid; min-width: 0; gap: 1px; }
+.topbar-profile-copy strong,
+.topbar-profile-copy small { max-width: 156px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-profile-copy strong { color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); }
+.topbar-profile-copy small { color: var(--text-muted); font-size: var(--font-xs); }
+
+@keyframes logicfit-topbar-menu-enter {
   from { opacity: 0; transform: translateY(calc(var(--motion-offset-small) * -1)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-shell > .topbar .topbar-inner { padding-inline: var(--app-content-gutter-compact); }
+  .topbar-profile-copy { display: none; }
+  .app-shell > .topbar #branchContextShell { max-width: min(44vw, 440px); }
+}
+
 @media (min-width: 1024px) {
-  body .app-shell > .topbar .topbar-inner {
-    width: 100%;
-    max-width: none;
-    height: calc(var(--app-topbar-height) - 1px);
-    min-height: calc(var(--app-topbar-height) - 1px);
-    padding-inline: var(--app-content-gutter-compact);
-    padding-block: 0;
-  }
-
-  body .app-shell > .topbar .topbar-controls {
-    display: flex;
-    width: 100%;
-    min-width: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  .app-shell > .topbar .topbar-mobile-row {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .app-shell > .topbar .topbar-mobile-actions {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .app-shell > .topbar .topbar-more-menu { display: flex; }
-  .app-shell > .topbar .topbar-more-menu > .topbar-more-trigger { display: inline-grid; }
-  .app-shell > .topbar .topbar-more-menu > .topbar-more-items { display: flex; }
-  .app-shell > .topbar #mobileNavToggle { display: none; }
-  .app-shell > .topbar #branchContextShell { flex: 0 1 400px; max-width: 42vw; }
+  .topbar-mobile-row { flex: 1 1 auto; }
+  .topbar-mobile-actions { flex: 0 0 auto; }
+  .app-shell > .topbar #branchContextShell { width: min(560px, 52vw); max-width: 560px; flex: 0 1 560px; }
   .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger { display: none; }
   .app-shell > .topbar #branchContextShell .branch-context-fields { position: static; display: flex; width: auto; min-width: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
   .app-shell > .topbar #branchContextShell .branch-context-kicker,
   .app-shell > .topbar #branchContextShell .branch-context-divider,
-  .app-shell > .topbar #branchContextShell .branch-context-status { display: none; }
-  .app-shell > .topbar #branchContextShell .branch-context-field { min-width: 0; }
+  .app-shell > .topbar #branchContextShell .branch-context-status,
   .app-shell > .topbar #branchContextShell .branch-context-field-icon { display: none; }
-  .app-shell > .topbar .topbar-more-menu[open] > .topbar-more-items { position: static; min-width: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
-}
-
-@media (min-width: 1280px) {
-  .app-shell > .topbar .topbar-inner { padding-inline: var(--app-content-gutter-wide); }
-  .app-shell > .topbar #branchContextShell { max-width: 400px; }
-  .app-shell > .topbar .topbar-more-menu > .topbar-more-trigger { display: none; }
+  .application-launcher-menu { min-width: 300px; }
+  .topbar-more-items { min-width: 250px; }
 }
 
 @media (max-width: 1023px) {
   body .app-shell > .topbar .topbar-inner {
-    width: 100%;
-    max-width: none;
-    height: calc(var(--app-topbar-height) - 1px);
     min-height: calc(var(--app-topbar-height) - 1px);
     padding-inline: var(--app-content-gutter-compact);
-    padding-block: 0;
   }
 
   body .app-shell > .topbar .topbar-controls {
     display: grid;
-    width: 100%;
-    min-width: 0;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-2);
+    grid-template-columns: var(--ui-touch-target) var(--ui-touch-target) minmax(48px, 1fr) var(--ui-touch-target) var(--ui-touch-target) var(--ui-touch-target);
+    gap: var(--space-1);
   }
 
-  .app-shell > .topbar .topbar-mobile-row { display: contents; }
-  .app-shell > .topbar #mobileNavToggle {
-    display: inline-flex;
-    min-width: 44px;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding-inline: var(--space-2);
-    white-space: nowrap;
-  }
-  .app-shell > .topbar #mobileNavToggle .visually-hidden { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; clip-path: none; white-space: nowrap; }
-  .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: 44px; }
+  body .topbar-mobile-row,
+  body .topbar-mobile-actions { display: contents; }
+  .app-shell > .topbar #mobileNavToggle { grid-column: 1; grid-row: 1; }
+  .application-launcher { grid-column: 2; grid-row: 1; }
+  .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: var(--ui-touch-target); grid-column: 3; grid-row: 1; }
+  .topbar-more-menu { grid-column: 4; grid-row: 1; }
+  .topbar-quick-actions { grid-column: 5; grid-row: 1; justify-content: center; }
+  .topbar-profile { grid-column: 6; grid-row: 1; justify-content: center; }
+  .topbar-profile-copy { display: none; }
+
   .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger {
     display: flex;
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--ui-touch-target);
     align-items: center;
-    gap: var(--space-2);
-    padding-inline: var(--space-2);
+    gap: var(--space-1);
+    padding-inline: var(--space-1);
     border: 1px solid var(--border-secondary);
     border-radius: var(--radius-md);
     background: var(--bg-card-hover);
@@ -177,52 +276,34 @@
     cursor: pointer;
     text-align: start;
   }
-  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; color: var(--primary); }
-  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon svg { width: 20px; height: 20px; }
+
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; color: var(--primary); }
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-icon svg { width: 18px; height: 18px; }
   .app-shell > .topbar #branchContextShell .branch-context-mobile-copy { display: grid; min-width: 0; flex: 1 1 auto; gap: 1px; }
-  .app-shell > .topbar #branchContextShell .branch-context-mobile-copy > span { overflow: hidden; color: var(--text-primary); font-size: var(--font-xs); line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+  .app-shell > .topbar #branchContextShell .branch-context-mobile-copy > span { overflow: hidden; color: var(--text-primary); font-size: var(--font-xs); line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
   .app-shell > .topbar #branchContextShell .branch-context-mobile-copy > span + span { color: var(--text-muted); }
-  .app-shell > .topbar .topbar-mobile-actions { display: flex; min-width: 0; align-items: center; gap: var(--space-2); }
-  .app-shell > .topbar .topbar-quick-actions { display: flex; min-width: 44px; align-items: center; justify-content: center; margin: 0; }
-  .app-shell > .topbar .topbar-quick-actions .notification-center-trigger { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
-  .app-shell > .topbar .topbar-more-menu { position: relative; display: block; }
-  .app-shell > .topbar .topbar-more-menu > .topbar-more-items { position: absolute; z-index: var(--z-dropdown); inset-block-start: calc(100% + var(--space-2)); inset-inline-end: 0; display: grid; width: max-content; min-width: 220px; max-width: min(88vw, 340px); gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-lg); background: var(--bg-elevated); box-shadow: var(--shadow-lg); }
-  .app-shell > .topbar .topbar-more-menu:not([open]) > .topbar-more-items { display: none; }
-  .app-shell > .topbar .topbar-more-actions { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
-  .app-shell > .topbar .topbar-more-actions > .btn { min-height: 44px; justify-content: flex-start; }
-  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button,
-  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button { width: 100%; min-height: 44px; justify-content: flex-start; gap: var(--space-3); padding-inline: var(--space-3); }
-  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .visually-hidden,
-  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button .visually-hidden { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; clip-path: none; white-space: nowrap; }
-  .app-shell > .topbar .topbar-language-toggle { width: 100%; justify-content: center; }
-  .app-shell > .topbar .topbar-controls > #globalKioskToggle,
-  .app-shell > .topbar .topbar-controls > #authAccountBar { display: none; }
-  .app-shell > .topbar #branchContextShell .branch-context-fields { position: absolute; z-index: var(--z-dropdown); inset-block-start: calc(100% + var(--space-2)); inset-inline: 0 auto; display: none; width: min(320px, 88vw); max-width: calc(100vw - 24px); gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-lg); background: var(--bg-elevated); box-shadow: var(--shadow-lg); }
+  .app-shell > .topbar #branchContextShell .branch-context-fields { position: absolute; z-index: var(--z-dropdown); inset-block-start: calc(100% + var(--space-2)); inset-inline: 0 auto; display: none; width: min(340px, 88vw); max-width: calc(100vw - var(--space-6)); gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-lg); background: var(--bg-elevated); box-shadow: var(--shadow-lg); }
   .app-shell > .topbar #branchContextShell[data-context-open="true"] .branch-context-fields { display: grid; }
   .app-shell > .topbar #branchContextShell .branch-context-kicker,
   .app-shell > .topbar #branchContextShell .branch-context-divider,
-  .app-shell > .topbar #branchContextShell .branch-context-status { display: none; }
-  .app-shell > .topbar #branchContextShell .branch-context-field { display: grid; min-width: 0; gap: var(--space-1); }
-  .app-shell > .topbar #branchContextShell .branch-context-field-copy { display: grid; min-width: 0; gap: var(--space-1); }
+  .app-shell > .topbar #branchContextShell .branch-context-status,
   .app-shell > .topbar #branchContextShell .branch-context-field-icon { display: none; }
-  .app-shell > .topbar #branchContextShell .branch-context-menu { inset-block-start: calc(100% + var(--space-1)); width: 100%; max-width: 100%; }
+  .app-shell > .topbar #branchContextShell .branch-context-field,
+  .app-shell > .topbar #branchContextShell .branch-context-field-copy { display: grid; min-width: 0; gap: var(--space-1); }
+
+  .topbar-more-items { inset-inline-end: 0; }
+  .application-launcher-menu { inset-inline-start: 0; inset-inline-end: auto; }
 }
 
 @media (max-width: 767px) {
   body .app-shell > .topbar .topbar-inner {
-    height: calc(var(--app-topbar-height-mobile) - 1px);
     min-height: calc(var(--app-topbar-height-mobile) - 1px);
     padding-inline: var(--app-content-gutter-mobile);
-    padding-block: 0;
   }
-}
-
-@media (max-width: 374px) {
-  .app-shell > .topbar .topbar-controls { gap: var(--space-1); }
-  .app-shell > .topbar .topbar-mobile-actions { gap: var(--space-1); }
-  .app-shell > .topbar #mobileNavToggle { gap: var(--space-1); padding-inline: 6px; }
+  body .app-shell > .topbar .topbar-profile-avatar { width: var(--ui-touch-target); height: var(--ui-touch-target); flex-basis: var(--ui-touch-target); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-shell > .topbar .topbar-more-menu[open] > .topbar-more-items { animation: none; }
+  .application-launcher[open] > .application-launcher-menu,
+  .topbar-more-menu[open] > .topbar-more-items { animation: none; }
 }

@@ -4282,7 +4282,6 @@
             'registration.toast.copyFailed': 'تعذر النسخ تلقائيًا. يمكنك تحديد رقم الحساب ونسخه يدويًا.',
             'registration.upload.sizeUnit.kb': 'كيلوبايت',
             'registration.upload.sizeUnit.mb': 'ميجابايت',
-            'registration.phone.help': 'أدخل الرقم بدون مفتاح الدولة.',
             'registration.phone.required': 'رقم الهاتف مطلوب.',
             'registration.phone.characters': 'استخدم أرقامًا فقط في حقل الرقم، ويمكن استخدام تنسيق الرقم عند اللصق.',
             'registration.phone.localFormat': 'اكتب رقم المحمول المصري محليًا بدون +20 أو مفتاح دولة.',
@@ -4753,6 +4752,10 @@
             'shell.context.subtitle': 'الفرع والقسم',
             'shell.menu': 'فتح القائمة',
             'shell.more': 'المزيد',
+            'shell.applications': 'التطبيقات',
+            'shell.role.owner': 'مالك النظام',
+            'shell.role.admin': 'مدير المنصة',
+            'shell.role.assistant': 'مساعد الإدارة',
             'shell.addMember': 'إضافة مشترك',
             'shell.pricing': 'الأسعار',
             'shell.refresh': 'تحديث البيانات',
@@ -6072,7 +6075,6 @@
             , 'attendance.mode.qr': 'QR Code'
             , 'attendance.phone.label': 'رقم الهاتف'
             , 'attendance.phone.placeholder': '01015819700'
-            , 'attendance.phone.help': 'أدخل الرقم بدون مفتاح الدولة.'
             , 'attendance.phone.search': 'بحث عن العضو'
             , 'attendance.policy': 'يُسمح بالحضور للعضوية السارية وغير المجمدة مرة واحدة يوميًا. يُغلق الحضور المفتوح تلقائيًا بعد ساعة.'
             , 'attendance.member.heading': 'بيانات العضو'
@@ -6512,7 +6514,6 @@
             'registration.toast.copyFailed': 'Could not copy automatically. Select and copy the account number manually.',
             'registration.upload.sizeUnit.kb': 'KB',
             'registration.upload.sizeUnit.mb': 'MB',
-            'registration.phone.help': 'Enter the number without the country calling code.',
             'registration.phone.required': 'A phone number is required.',
             'registration.phone.characters': 'Use digits only in the number field. A formatted number may be used when pasting.',
             'registration.phone.localFormat': 'Enter the Egyptian mobile number in local format without +20 or a country calling code.',
@@ -6983,6 +6984,10 @@
             'shell.context.subtitle': 'Branch and section',
             'shell.menu': 'Open navigation',
             'shell.more': 'More',
+            'shell.applications': 'Applications',
+            'shell.role.owner': 'Workspace owner',
+            'shell.role.admin': 'Platform administrator',
+            'shell.role.assistant': 'Assistant',
             'shell.addMember': 'Add member',
             'shell.pricing': 'Pricing',
             'shell.refresh': 'Refresh data',
@@ -8302,7 +8307,6 @@
             , 'attendance.mode.qr': 'QR Code'
             , 'attendance.phone.label': 'Phone number'
             , 'attendance.phone.placeholder': 'e.g. 01015819700'
-            , 'attendance.phone.help': 'Enter the number without the country code.'
             , 'attendance.phone.search': 'Find member'
             , 'attendance.policy': 'Active, unfrozen memberships can check in once per day. Open attendance is automatically closed after one hour.'
             , 'attendance.member.heading': 'Member details'

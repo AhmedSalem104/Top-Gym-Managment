@@ -118,10 +118,10 @@ test('dashboard daily passes use the wider column beside the alerts rail', async
         };
     });
     expect(layout.gridColumns).toBe(12);
-    expect(layout.alertsColumn).toBe('1 / span 4');
-    expect(layout.dayPassesColumn).toBe('5 / span 8');
+    expect(layout.alertsColumn).toBe('8 / span 5');
+    expect(layout.dayPassesColumn).toBe('1 / span 7');
     expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
-    await capture(page, testInfo, 'dashboard-day-passes-8-alerts-4');
+    await capture(page, testInfo, 'dashboard-day-passes-7-alerts-5');
 });
 
 test('mobile UI remains compact and usable', async ({ page }, testInfo) => {

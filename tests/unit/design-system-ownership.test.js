@@ -328,8 +328,12 @@ test('superseded branch-context positioning layer is removed while desktop and m
         'branch context selectors stay in document flow so they cannot cover adjacent shell actions');
     assert.doesNotMatch(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*absolute/u,
         'desktop and tablet context must not overlay the action row');
-    assert.match(mobile, /\.topbar-controls\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto/u,
-        'mobile controls allocate one compact row to navigation, context and utility actions');
+    assert.match(mobile, /\.topbar-controls\s*\{[^}]*grid-template-columns:\s*var\(--ui-touch-target\) var\(--ui-touch-target\) minmax\(48px,\s*1fr\) var\(--ui-touch-target\) var\(--ui-touch-target\) var\(--ui-touch-target\)/u,
+        'mobile controls allocate one compact row to navigation, applications, context and utilities');
+    assert.match(mobile, /\.topbar-more-menu\s*\{\s*grid-column:\s*4;\s*grid-row:\s*1;/u,
+        'the More menu remains in the sole mobile navbar row');
+    assert.match(mobile, /#mobileNavToggle\s*\{\s*grid-column:\s*1;\s*grid-row:\s*1;/u,
+        'the navigation control remains pinned to the first row');
     assert.match(mobile, /#branchContextShell\s*\{[^}]*position:\s*relative[^}]*display:\s*block[^}]*width:\s*100%/u,
         'the mobile context selector is a single full-width grid item within the middle track');
     assert.match(html, /id="branchContextMobileTrigger"/u,
@@ -860,16 +864,15 @@ test('print documents use compact shared spacing without reserving full media he
     assert.match(printCss, /\.coaching-plan-summary\s*\{[^}]*padding:\s*2\.5mm/su);
 });
 
-test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {
+test('shared phone controls collapse to input height until a validation message is shown', () => {
     const phone = read('public/css/components/phone-inputs.css');
     const attendance = read('public/css/pages/attendance.css');
 
-    assert.match(phone, /\.phone-input-error\[hidden\]\s*\{[^}]*display:\s*block\s*!important/u,
-        'the phone component owns its stable hidden feedback slot');
-    assert.match(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*height:\s*0;[^}]*visibility:\s*hidden;/u,
-        'Attendance may retain its local zero-height layout adjustment');
-    assert.doesNotMatch(attendance, /\.attendance-section \.phone-input-error\[hidden\]\s*\{[^}]*display\s*:/u,
-        'Attendance must not duplicate the phone component display invariant');
+    assert.match(phone, /grid-template-rows:\s*var\(--ui-control-height,\s*44px\)\s+auto/u);
+    assert.match(phone, /\.phone-input-error\[hidden\]\s*\{[^}]*display:\s*none/u);
+    assert.doesNotMatch(phone, /phone-input-help|"\. help"/u);
+    assert.match(attendance, /grid-template-rows:\s*48px auto/u);
+    assert.doesNotMatch(attendance, /phone-input-help|\.phone-input-error\[hidden\]/u);
 });
 
 test('style validator checks generated bundles but does not report them as duplicate token owners', () => {

@@ -548,11 +548,11 @@
   }
 
   .overview-grid > .alerts-panel {
-    grid-column: 1 / span 7;
+    grid-column: 8 / span 5;
     grid-row: 2;
   }
   .overview-grid > .dashboard-day-pass-card {
-    grid-column: 8 / span 5;
+    grid-column: 1 / span 7;
     grid-row: 2;
   }
   .overview-grid > .monthly-finance-card,
@@ -1639,12 +1639,12 @@
   }
 
   .overview-grid > .alerts-panel {
-    grid-column: 1 / span 7;
+    grid-column: 8 / span 5;
     grid-row: 2;
   }
 
   .overview-grid > .dashboard-day-pass-card {
-    grid-column: 8 / span 5;
+    grid-column: 1 / span 7;
     grid-row: 2;
   }
 
@@ -1792,8 +1792,8 @@
 
 @media (min-width: 1200px) and (max-width: 1279px) {
   .overview-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .overview-grid > .alerts-panel { grid-column: 1 / span 7; grid-row: 2; }
-  .overview-grid > .dashboard-day-pass-card { grid-column: 8 / span 5; grid-row: 2; }
+  .overview-grid > .alerts-panel { grid-column: 8 / span 5; grid-row: 2; }
+  .overview-grid > .dashboard-day-pass-card { grid-column: 1 / span 7; grid-row: 2; }
   .overview-grid > .monthly-finance-card,
   .overview-grid > .monthly-finance-snapshot { grid-column: 1 / -1; }
 }
@@ -1852,6 +1852,15 @@
   color: var(--text-primary);
   box-shadow: var(--shadow-xs);
 }
+
+.dashboard-overview-welcome { background: var(--primary-soft); border-color: var(--primary-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) { background: var(--success-soft); border-color: var(--success-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) { background: var(--info-soft); border-color: var(--info-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(4) { background: var(--warning-soft); border-color: var(--warning-border); }
+.dashboard-overview-shortcuts { background: var(--bg-card-hover); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) .dashboard-overview-icon { color: var(--success); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) .dashboard-overview-icon { color: var(--info); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(4) .dashboard-overview-icon { color: var(--warning); }
 
 .dashboard-overview-card small,
 .dashboard-overview-card p {

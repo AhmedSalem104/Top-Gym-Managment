@@ -119,7 +119,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await expect(page.locator('#attendanceSection')).toBeVisible();
     await expect(page.locator('#attendanceTableWrap .attendance-table tbody tr')).toHaveCount(2);
     await expect(page.locator('#attendanceTitle')).toHaveText('الحضور والانصراف');
-    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveText('أدخل الرقم بدون مفتاح الدولة.');
+    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveCount(0);
     await expect(page.locator('#attendancePresentCount')).toHaveText('٢');
     await expect(page.locator('#attendanceTableWrap')).toContainText('أحمد QA Member');
     await expect(page.locator('#attendanceTableWrap')).toContainText('تسجيل انصراف');
@@ -142,7 +142,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('#attendanceTitle')).toHaveText('Attendance');
-    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveText('Enter the number without the country code.');
+    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveCount(0);
     await expect(page.locator('#attendanceTableWrap thead')).toContainText('Check-in time');
     await expect(page.locator('#attendanceTableWrap')).toContainText('Inside the gym');
     await expect(page.locator('#attendanceMemberPreview')).toContainText('Active');
@@ -216,7 +216,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await page.evaluate(() => window.TopGymI18n.set('ar'));
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('#attendanceTableWrap')).toContainText('انصرف تلقائيًا');
-    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveText('أدخل الرقم بدون مفتاح الدولة.');
+    await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveCount(0);
     expect(await page.locator('#attendanceStatusFilter').inputValue()).toBe(selectedFilter);
     expect(dataRequestCount()).toBe(requestCountBeforeLiveSwitch);
     expect(await page.locator('#attendancePhone').inputValue()).toBe(phoneBefore);
