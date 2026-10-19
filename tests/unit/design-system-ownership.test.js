@@ -91,6 +91,19 @@ test('member filter groups use the canonical equal-choice variant and visible se
     assert.match(app, /sortChoices\.classList\.add\('logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--equal'/u);
 });
 
+test('member feedback rating and type use canonical wrapped choices with local today date defaults', () => {
+    const helper = read('public/js/ui-feedback.js');
+    const feature = read('public/js/pages/management/member-feedback.js');
+    const filters = read('public/css/pages/member-feedback.css');
+
+    assert.match(helper, /'memberFeedbackRatingFilter',\s*'memberFeedbackTypeFilter'/u);
+    assert.match(helper, /if \(choiceField\) select\.insertAdjacentElement\('afterend', group\)/u);
+    assert.match(feature, /input\.defaultValue = today;[\s\S]*?if \(!input\.value\) input\.value = today;/u);
+    assert.match(feature, /logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--wrap'/u);
+    assert.match(filters, /\.member-feedback-filter-field\s*\{[^}]*grid-column:\s*span 6/u);
+    assert.match(filters, /\.member-feedback-filters\s*\{[^}]*grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/u);
+});
+
 test('retired RF visual aliases have no consumers or token definitions in canonical CSS sources', () => {
     const cssRoot = path.join(root, 'public/css');
     const sourcePaths = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

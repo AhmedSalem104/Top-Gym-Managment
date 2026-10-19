@@ -20,7 +20,7 @@
         print: { dependencies: ['phone-inputs'], styles: [], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/integrations/print-enhancements.js?v=e6243d99ee8a623a'] },
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=6f85206e946ae9aa'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=939eace50aaa371b'], scripts: ['/js/pages/reports/reports.js?v=8a5bee2144b303da', '/js/day-pass-reports.js?v=e2c0f146d5770ddf'] },
-        feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=a456214d2b03010c'], scripts: ['/js/pages/management/member-feedback.js?v=7dd9c3dfa910e254'] },
+        feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=9891692d9d0b7181'], scripts: ['/js/pages/management/member-feedback.js?v=4f9ccb397e904bf1'] },
         management: { dependencies: [], styles: ['/css/pages/memberships.css?v=8067256324d3fc12'], scripts: ['/js/pricing-cards.js?v=2f78224cc53b4807', '/js/day-passes.js?v=aa638612f49c24e7'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=ea39cc8ee328ed3a'], scripts: ['/js/pages/branding/branding.js?v=45d5109ed0894dca'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=2ad87db27d7f7f63'], scripts: ['/js/pages/management/member-payment-methods.js?v=04c55f9eaed5899a'] },

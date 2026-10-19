@@ -204,7 +204,7 @@
         }
     }
 
-    const filterChoiceIds = new Set(['statusFilter', 'sortFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackTypeFilter', 'tenantTypeFilter']);
+    const filterChoiceIds = new Set(['statusFilter', 'sortFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackRatingFilter', 'memberFeedbackTypeFilter', 'tenantTypeFilter']);
     const filterTone = (value) => {
         const normalized = String(value || '').toLowerCase();
         if (!normalized) return 'neutral';
@@ -274,8 +274,10 @@
         group.setAttribute('role', 'radiogroup');
         group.setAttribute('aria-orientation', 'horizontal');
         group.dataset.filterChoicesFor = select.id;
+        const choiceField = select.closest('[data-filter-choice-field]');
         const field = select.closest('label.members-filter-field') || select.closest('label');
-        (field || select).insertAdjacentElement('afterend', group);
+        if (choiceField) select.insertAdjacentElement('afterend', group);
+        else (field || select).insertAdjacentElement('afterend', group);
         select.addEventListener('change', () => syncFilterChoices(select, group));
         new MutationObserver(() => syncFilterChoices(select, group)).observe(select, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-label'] });
         syncFilterChoices(select, group);

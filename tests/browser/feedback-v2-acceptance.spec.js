@@ -65,6 +65,94 @@ async function installReadOnlyFixture(page) {
     return { writes, externalRequests, feedbackReads, setFeedbackError: (value) => { feedbackError = Boolean(value); } };
 }
 
+test('Member feedback filter tabs and today date defaults', async ({ page }, testInfo) => {
+    test.setTimeout(60_000);
+    test.skip(testInfo.project.name !== 'desktop', 'The test owns its viewport, locale, and theme checks.');
+    await fs.mkdir(ARTIFACT_ROOT, { recursive: true });
+    await page.addInitScript(() => {
+        localStorage.setItem('logicfit-ui-locale', 'ar');
+        localStorage.setItem('topgym-theme', 'light');
+    });
+    const runtime = await installReadOnlyFixture(page);
+    await page.goto('/index.html#feedback', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
+    await expect(page.locator('#memberFeedbackList .member-feedback-table tbody tr')).toHaveCount(3);
+
+    const today = await page.evaluate(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    });
+    await expect(page.locator('#memberFeedbackFromFilter')).toHaveValue(today);
+    await expect(page.locator('#memberFeedbackToFilter')).toHaveValue(today);
+    for (const [id, count] of [['memberFeedbackRatingFilter', 6], ['memberFeedbackTypeFilter', 6]]) {
+        const group = page.locator(`[data-filter-choices-for="${id}"]`);
+        await expect(group).toHaveAttribute('role', 'radiogroup');
+        await expect(group).toHaveClass(/logicfit-filter-choices--outlined/u);
+        await expect(group).toHaveClass(/logicfit-filter-choices--wrap/u);
+        await expect(group.locator('[role="radio"]')).toHaveCount(count);
+    }
+
+    for (const width of [320, 390, 768, 1440]) {
+        await page.setViewportSize({ width, height: width < 400 ? 844 : 1000 });
+        for (const locale of ['ar', 'en']) {
+            for (const theme of ['light', 'dark']) {
+                await page.evaluate(({ locale: nextLocale, theme: nextTheme }) => {
+                    document.documentElement.dataset.theme = nextTheme;
+                    document.body.dataset.theme = nextTheme;
+                    localStorage.setItem('topgym-theme', nextTheme);
+                    window.TopGymI18n?.set?.(nextLocale);
+                }, { locale, theme });
+                await expect(page.locator('html')).toHaveAttribute('lang', locale);
+                await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+                const geometry = await page.evaluate(() => ({
+                    viewport: document.documentElement.clientWidth,
+                    document: document.documentElement.scrollWidth,
+                    groups: [...document.querySelectorAll('.member-feedback-filter-field .logicfit-filter-choices')].map((group) => ({
+                        width: group.clientWidth,
+                        scrollWidth: group.scrollWidth,
+                        right: group.getBoundingClientRect().right,
+                        left: group.getBoundingClientRect().left,
+                        choices: [...group.querySelectorAll('[role="radio"]')].map((choice) => ({
+                            right: choice.getBoundingClientRect().right,
+                            left: choice.getBoundingClientRect().left
+                        }))
+                    }))
+                }));
+                expect(geometry.document, `page overflow at ${width}/${locale}/${theme}`).toBeLessThanOrEqual(width + 1);
+                expect(geometry.groups).toHaveLength(2);
+                for (const group of geometry.groups) {
+                    expect(group.scrollWidth, `filter group scrolls at ${width}/${locale}/${theme}`).toBeLessThanOrEqual(group.width + 1);
+                    for (const choice of group.choices) {
+                        expect(choice.right).toBeLessThanOrEqual(group.right + 1);
+                        expect(choice.left).toBeGreaterThanOrEqual(group.left - 1);
+                    }
+                }
+                if (width === 390 && locale === 'ar' && theme === 'light') {
+                    await page.locator('#feedbackSection').screenshot({ path: path.join(ARTIFACT_ROOT, 'feedback-filters-mobile-ar-light.png'), animations: 'disabled' });
+                }
+                if (width === 1440 && locale === 'en' && theme === 'dark') {
+                    await page.locator('#feedbackSection').screenshot({ path: path.join(ARTIFACT_ROOT, 'feedback-filters-desktop-en-dark.png'), animations: 'disabled' });
+                }
+            }
+        }
+    }
+
+    await page.locator('[data-filter-choices-for="memberFeedbackRatingFilter"] [data-filter-value="5"]').click();
+    await expect(page.locator('#memberFeedbackRatingFilter')).toHaveValue('5');
+    await page.locator('[data-filter-choices-for="memberFeedbackTypeFilter"] [data-filter-value="suggestion"]').click();
+    await expect(page.locator('#memberFeedbackTypeFilter')).toHaveValue('suggestion');
+    const readsBeforeReset = runtime.feedbackReads.length;
+    await page.locator('#memberFeedbackReset').click();
+    await expect.poll(() => runtime.feedbackReads.length).toBe(readsBeforeReset + 1);
+    await expect(page.locator('#memberFeedbackRatingFilter')).toHaveValue('');
+    await expect(page.locator('#memberFeedbackTypeFilter')).toHaveValue('');
+    await expect(page.locator('#memberFeedbackFromFilter')).toHaveValue(today);
+    await expect(page.locator('#memberFeedbackToFilter')).toHaveValue(today);
+    expect(runtime.feedbackReads.at(-1)).toContain(`from=${today}`);
+    expect(runtime.feedbackReads.at(-1)).toContain(`to=${today}`);
+    expect(runtime.writes).toEqual([]);
+});
+
 test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testInfo) => {
     test.setTimeout(150_000);
     test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal viewport, locale and theme matrix.');
@@ -79,7 +167,7 @@ test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testI
 
     await page.goto('/index.html#feedback', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('.topbar-language-toggle [data-locale-choice="en"]:visible')).toBeVisible();
     await expect(page.locator('#feedbackSection')).toBeVisible();
     await expect(page.locator('[data-page-tab="feedback"]')).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator('#memberFeedbackList .member-feedback-table tbody tr')).toHaveCount(3);
@@ -105,7 +193,7 @@ test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testI
             }, theme);
             for (const locale of LOCALES) {
                 const currentLocale = await page.evaluate(() => window.TopGymI18n?.get?.() || document.documentElement.lang || 'ar');
-                if (currentLocale !== locale) await page.locator('#languageToggleButton').click();
+                if (currentLocale !== locale) await page.locator(`.topbar-language-toggle [data-locale-choice="${locale}"]:visible`).click();
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
                 await expect(page.locator('#feedbackSection')).toBeVisible();
@@ -212,7 +300,7 @@ test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testI
         localStorage.setItem('topgym-theme', 'light');
     });
     if ((await page.evaluate(() => window.TopGymI18n?.get?.() || document.documentElement.lang)) !== 'ar') {
-        await page.locator('#languageToggleButton').click();
+        await page.locator('.topbar-language-toggle [data-locale-choice="ar"]:visible').click();
     }
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     runtime.setFeedbackError(true);

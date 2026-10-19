@@ -36,11 +36,31 @@
     };
     const setText = (element, key, params) => { if (element) element.textContent = t(key, params); };
     const setLabel = (id, key) => {
-        const label = section?.querySelector(`label:has(#${id})`);
+        const label = section?.querySelector(`label[for="${id}"]`) || section?.querySelector(`label:has(#${id})`);
         if (!label) return;
         const textNode = [...label.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.nodeValue.trim());
         if (textNode) textNode.nodeValue = ` ${t(key)} `;
     };
+
+    function setTodayDateDefaults() {
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        ['memberFeedbackFromFilter', 'memberFeedbackToFilter'].forEach((id) => {
+            const input = $(id);
+            if (!input) return;
+            input.defaultValue = today;
+            if (!input.value) input.value = today;
+        });
+    }
+
+    function configureFilterChoices() {
+        ['memberFeedbackRatingFilter', 'memberFeedbackTypeFilter'].forEach((id) => {
+            const select = $(id);
+            window.LogicFitFilterChoiceGroup?.hydrate?.(select);
+            const choices = section?.querySelector(`[data-filter-choices-for="${id}"]`);
+            choices?.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--wrap');
+        });
+    }
 
     function applyStaticTranslations() {
         if (!section) return;
@@ -75,6 +95,7 @@
                 if (key) option.textContent = t(key, { brand: brandName() });
             }
         }
+        configureFilterChoices();
     }
 
     function stars(rating) {
@@ -181,6 +202,7 @@
         void load();
     }
 
+    setTodayDateDefaults();
     applyStaticTranslations();
     renderCurrentState();
     filtersForm?.addEventListener('submit', (event) => {
