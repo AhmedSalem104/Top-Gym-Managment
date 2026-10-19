@@ -101,7 +101,7 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=c49c6b3de75c94a2') + '">' + printBrandVariables();
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=963a19c0caa198dc') + '">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = null) {
@@ -272,6 +272,15 @@
                 printWindow.document.open();
                 printWindow.document.write(html);
                 printWindow.document.close();
+            }
+
+            async function printDocument(printWindow, html) {
+                if (!printWindow || printWindow.closed) throw new Error('Print window is not available.');
+                writeWindow(printWindow, html);
+                await waitForPrintWindowFonts(printWindow);
+                await waitForPrintWindowImages(printWindow);
+                printWindow.focus();
+                printWindow.print();
             }
 
             let pdfLibraryPromise = null;
@@ -1126,6 +1135,7 @@
                 ...(window.topGymPrint || {}),
                 printMember,
                 printPaymentReceipt,
+                printDocument,
                 createPdfFile,
                 printPricing,
                 printCoachingSystem,

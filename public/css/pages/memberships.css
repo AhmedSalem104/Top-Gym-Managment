@@ -1560,15 +1560,6 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   }
 }
 
-@media print {
-#detailsDialog .member-details-actions,
-#detailsDialog .member-expiry-banner,
-#detailsDialog #detailsClose,
-#detailsDialog .print-dialog-actions {
-    display: none;
-  }
-}
-
 /* Compact management workspace ----------------------------------------- */
 #managementSection {
   gap: var(--space-3);

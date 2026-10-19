@@ -202,19 +202,19 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     const popupPromise = page.waitForEvent('popup');
     await page.locator('#storeCheckoutForm').evaluate((form) => form.requestSubmit());
     const receipt = await popupPromise;
-    await expect(receipt.locator('.receipt-brand h1')).toHaveText('النادي الاختباري');
-    await expect(receipt.locator('.receipt-brand p')).toContainText('QA-2026-0091');
+    await expect(receipt.locator('.print-store-receipt-brand h1')).toHaveText('النادي الاختباري');
+    await expect(receipt.locator('.print-store-receipt-brand p')).toContainText('QA-2026-0091');
     await expect(receipt.locator('tbody tr')).toHaveCount(1);
     await expect(receipt.locator('tbody')).toContainText(product.nameAr);
     await expect(receipt.locator('tbody')).toContainText('750 ml');
-    await expect(receipt.locator('.total')).toContainText((175).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    await expect(receipt.locator('.print-store-receipt-total')).toContainText((175).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     await expect(receipt.locator('html')).toHaveAttribute('dir', 'rtl');
     await receipt.evaluate(() => document.fonts?.ready);
-    await receipt.locator('.receipt-brand img').evaluate((image) => image.decode());
+    await receipt.locator('.print-store-receipt-brand img').evaluate((image) => image.decode());
 
     const receiptLayout = await receipt.evaluate(() => {
         const body = document.body.getBoundingClientRect();
-        const nodes = [...document.querySelectorAll('.receipt-brand, table, .total, body > p')];
+        const nodes = [...document.querySelectorAll('.print-store-receipt-brand, table, .print-store-receipt-total, .print-store-receipt-thanks')];
         const outside = nodes.filter((node) => {
             const rect = node.getBoundingClientRect();
             return rect.width > 0 && (rect.left < body.left - 1 || rect.right > body.right + 1 || rect.top < body.top - 1 || rect.bottom > body.bottom + 1);
@@ -227,7 +227,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
             scrollWidth: document.documentElement.scrollWidth,
             clientWidth: document.documentElement.clientWidth,
             outside,
-            logoLoaded: document.querySelector('.receipt-brand img')?.naturalWidth > 0,
+            logoLoaded: document.querySelector('.print-store-receipt-brand img')?.naturalWidth > 0,
             printStylesheetLinked: Boolean(document.querySelector('link[href*="print.css"]'))
         };
     });
@@ -252,7 +252,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
         bodyScrollWidth: document.body.scrollWidth,
-        receiptVisible: Boolean(document.querySelector('.receipt-brand h1')?.getClientRects().length)
+        receiptVisible: Boolean(document.querySelector('.print-store-receipt-brand h1')?.getClientRects().length)
     }));
     expect(printGeometry.receiptVisible).toBe(true);
     expect(printGeometry.scrollWidth).toBeLessThanOrEqual(printGeometry.width);
@@ -266,7 +266,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
             const amount = Number(amountToken.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).replace(/[٬,]/g, '').replace(/٫/g, '.'));
             return { cells, amount };
         });
-        const totalText = document.querySelector('.total')?.innerText || '';
+        const totalText = document.querySelector('.print-store-receipt-total')?.innerText || '';
         const totalValue = totalText.match(/[٠-٩۰-۹\d][٠-٩۰-۹\d,٬]*(?:[.,٫][٠-٩۰-۹\d]{1,2})?/g)?.at(-1) || '';
         const normalizeDigits = (value) => value.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
         const total = Number(normalizeDigits(totalValue).replace(/[٬,]/g, '').replace(/٫/g, '.'));
@@ -274,8 +274,8 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
         const printCss = document.querySelector('link[href*="print.css"]');
         return {
             title: document.title,
-            brand: document.querySelector('.receipt-brand h1')?.innerText.trim(),
-            saleNumber: document.querySelector('.receipt-brand p')?.innerText.trim(),
+            brand: document.querySelector('.print-store-receipt-brand h1')?.innerText.trim(),
+            saleNumber: document.querySelector('.print-store-receipt-brand p')?.innerText.trim(),
             headers: [...document.querySelectorAll('thead th')].map((cell) => cell.innerText.trim()),
             rows,
             totalText: totalText.trim(),
@@ -287,7 +287,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
             printStylesheetLoaded: Boolean(printCss?.sheet),
             printStylesheetHref: printCss?.href || null,
             loadedStylesheets: [...document.styleSheets].map((sheet) => sheet.href || 'inline'),
-            contentBounds: [...document.querySelectorAll('.receipt-brand, table, .total, body > p')].map((node) => {
+            contentBounds: [...document.querySelectorAll('.print-store-receipt-brand, table, .print-store-receipt-total, .print-store-receipt-thanks')].map((node) => {
                 const rect = node.getBoundingClientRect();
                 return { name: node.className || node.tagName.toLowerCase(), left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom) };
             })
@@ -306,6 +306,9 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     expect(receiptAudit.direction).toBe('rtl');
     expect(receiptAudit.language).toBe('ar');
     expect(receiptAudit.printStylesheetHref).toContain('/css/print.css');
+    expect(receiptAudit.printStylesheetHref).toMatch(/\/css\/print\.css\?v=[a-f0-9]{16}$/);
+    expect(popupResourceEvents.filter((entry) => entry.type === 'failed')).toEqual([]);
+    expect(popupResourceEvents.find((entry) => entry.type === 'response' && entry.url.includes('/css/print.css'))?.status).toBe(200);
     expect(receiptAudit.contentBounds.every((item) => item.left >= 0 && item.right <= 794 && item.top >= 0 && item.bottom <= 1123)).toBe(true);
 
     const html = await receipt.content();
@@ -344,7 +347,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
         previewStylesheetLoaded: await preview.locator('link[href*="print.css"]').evaluate((link) => Boolean(link.sheet)),
         printStylesheetStatus: printStylesheet.status(),
         requestedPaper: 'A4 portrait via existing @page size A4; no thermal-roll dimensions are declared by the current receipt template.',
-        margins: 'Existing global @page margin is 12mm; receipt document retains its inline 24px body padding.',
+        margins: 'Canonical global @page margin is 12mm; receipt uses 16px padding from the canonical print stylesheet.',
         writes: requests.filter((entry) => entry.method !== 'GET')
     }, null, 2), 'utf8');
     await preview.close();

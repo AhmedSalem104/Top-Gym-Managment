@@ -211,6 +211,63 @@ body > .print-sheet,
   box-sizing: border-box;
 }
 
+.print-store-receipt { padding: 16px; }
+.print-store-receipt-brand { display: grid; justify-items: center; gap: 6px; padding-block-end: 14px; border-block-end: 1px solid var(--print-brand-border); text-align: center; }
+.print-store-receipt-brand img { width: 48px; height: 48px; object-fit: contain; }
+.print-store-receipt-brand h1 { margin: 0; color: var(--print-brand-primary); font-size: 18pt; }
+.print-store-receipt-brand p,
+.print-store-receipt-thanks { margin: 0; color: var(--print-brand-muted); }
+.print-store-receipt-table { width: 100%; margin-block-start: 16px; border-collapse: collapse; text-align: center; }
+.print-store-receipt-table th,
+.print-store-receipt-table td { padding: 8px; border-block-end: 1px solid var(--print-brand-border-soft); }
+.print-store-receipt-table th { color: var(--print-brand-text); background: var(--print-brand-surface); }
+.print-store-receipt-table small { color: var(--print-brand-muted); }
+.print-store-receipt-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block-start: 16px; padding-block: 10px; border-block-start: 1px solid var(--print-brand-border); font-size: 14pt; font-weight: 700; }
+.print-store-receipt-total strong { color: var(--print-brand-primary); }
+.print-store-receipt-thanks { margin-block-start: 10px; text-align: center; }
+
+@media print {
+  @page portal-report {
+    size: A4;
+    margin: 13mm;
+  }
+  .member-portal-page { page: portal-report; }
+  .member-portal-page { background: #fff; }
+  .member-portal-page .portal-shell { width: 100%; padding: 0; }
+  .member-portal-page .portal-login,
+  .member-portal-page .portal-ui-footer,
+  .member-portal-page [data-no-print] { display: none; }
+  .member-portal-page .portal-result[hidden] { display: block; }
+  .member-portal-page .portal-result { padding: 0; border: 0; box-shadow: none; }
+  .member-portal-page .portal-result-header { padding-block-end: 14px; }
+  .member-portal-page .portal-result-header h2 { font-size: var(--font-size-page-title, 24px); }
+  .member-portal-page .portal-report-content { padding-block-start: 14px; }
+  .member-portal-page .portal-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .member-portal-page .portal-section,
+  .member-portal-page .portal-table-wrap,
+  .member-portal-page .portal-member-identity,
+  .member-portal-page .portal-membership-overview { break-inside: avoid; }
+  .member-portal-page .portal-table-wrap { overflow: visible; border: 1px solid var(--border-primary); }
+  .member-portal-page .portal-table { display: table; min-width: 0; font-size: 10px; }
+  .member-portal-page .portal-table thead { position: static; width: auto; height: auto; overflow: visible; clip: auto; clip-path: none; white-space: normal; }
+  .member-portal-page .portal-table tbody { display: table-row-group; }
+  .member-portal-page .portal-table tr { display: table-row; padding: 0; border: 0; background: transparent; }
+  .member-portal-page .portal-table th,
+  .member-portal-page .portal-table td { padding: 6px 5px; }
+  .member-portal-page .portal-table td { display: table-cell; grid-template-columns: none; gap: 0; border-block-end: 1px solid var(--border-secondary); text-align: center; }
+  .member-portal-page .portal-table td::before { content: none; }
+  .member-portal-page .portal-report-signatures { margin-block-start: 18px; }
+  .member-portal-page .portal-result::after { display: block; margin-block-start: 10px; color: var(--text-muted); font-size: 10px; text-align: center; content: "صفحة " counter(page); }
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) { width: 100%; padding: 0; border: 0; box-shadow: none; }
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form,
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head,
+  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history { box-shadow: none; }
+  #detailsDialog .member-details-actions,
+  #detailsDialog .member-expiry-banner,
+  #detailsDialog #detailsClose,
+  #detailsDialog .print-dialog-actions { display: none; }
+}
+
 .print-header {
   display: flex;
   align-items: flex-start;

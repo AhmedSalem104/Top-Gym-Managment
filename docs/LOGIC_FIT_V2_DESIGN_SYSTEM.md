@@ -73,10 +73,12 @@ The active owner map must be verified against consumer tests before old CSS is r
 | Notifications | `public/css/components/notifications.css`, `public/js/notification-center.js` |
 | Gym navigation shell | `public/css/components/navigation-shell.css`, `public/js/page-tabs.js` |
 | Public Login theme button | `public/css/components/login-theme-toggle.css`; state/persistence in `public/js/theme.js` |
-| Print | `public/css/print.css` plus a narrowly scoped domain print source where existing behavior requires it |
+| Print | `public/css/print.css` is the sole presentation owner for all print and PDF outputs; feature files provide semantic document markup and scoped classes only |
 | Feature composition | existing `public/css/pages/<feature>.css`; may not redefine shared primitive semantics |
 
 PDF generation that moves a standalone `.print-sheet` into the live document must also load the canonical `print.css` into the capture document and apply brand variables to a scoped PDF host. Keep html2canvas capture coordinates at the viewport origin (`scrollX`/`scrollY` zero); do not capture a far-offscreen staging node. Inspect actual rendered pages for clipping and orphaned footers before accepting a PDF change.
+
+Standalone print windows use the shared print document decorator in `public/js/integrations/print-enhancements.js`; feature JavaScript must not embed stylesheet versions or template CSS. All `@media print` and `@page` rules belong in `public/css/print.css`, grouped under document-specific semantic classes. Preserve each document's established information hierarchy and domain-specific palette (including the scoped coaching plan variant) while sharing the central page, typography, table, and print lifecycle foundations.
 
 ### Coaching nutrition and workout print variant
 

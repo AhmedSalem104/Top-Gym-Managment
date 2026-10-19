@@ -276,26 +276,6 @@
   .portal-stars button { width: 44px; height: 44px; font-size: 22px; }
 }
 
-@media print {
-  @page { size: A4; margin: 13mm; }
-  .member-portal-page { background: var(--bg-card); }
-  .member-portal-page .portal-shell { width: 100%; padding: 0; }
-  .member-portal-page .portal-login,
-  .member-portal-page .portal-ui-footer,
-  .member-portal-page [data-no-print] { display: none; }
-  .member-portal-page .portal-result[hidden] { display: block; }
-  .portal-result { padding: 0; border: 0; box-shadow: none; }
-  .portal-result-header { padding-bottom: 14px; }
-  .portal-result-header h2 { font-size: var(--font-size-page-title, 24px); }
-  .portal-report-content { padding-top: 14px; }
-  .portal-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .portal-section, .portal-table-wrap, .portal-member-identity { break-inside: avoid; }
-  .portal-table { min-width: 0; font-size: 10px; }
-  .portal-table th, .portal-table td { padding: 6px 5px; }
-  .portal-report-signatures { margin-top: 18px; }
-  .portal-result::after { display: block; margin-top: 10px; color: var(--text-muted); font-size: 10px; text-align: center; content: "صفحة " counter(page); }
-}
-
 /* Shared client portal presentation for Independent Trainer tenants. */
 .portal-trainer-overview {
   display: grid;
@@ -855,19 +835,6 @@
 @media (prefers-reduced-motion: reduce) {
   .portal-activation-celebration.is-visible,
   .portal-activation-celebration.is-visible .portal-activation-badge { animation: none; }
-}
-
-@media print {
-  .portal-member-identity { grid-template-columns: minmax(0, 1fr) auto; }
-  .portal-membership-overview,
-  .portal-section { break-inside: avoid; }
-  .portal-table-wrap { overflow: visible; border: 1px solid var(--border-primary); }
-  .portal-table { display: table; min-width: 0; }
-  .portal-table thead { position: static; width: auto; height: auto; overflow: visible; clip: auto; clip-path: none; white-space: normal; }
-  .portal-table tbody { display: table-row-group; }
-  .portal-table tr { display: table-row; padding: 0; border: 0; background: transparent; }
-  .portal-table td { display: table-cell; grid-template-columns: none; gap: 0; padding: 6px 5px; border-bottom: 1px solid var(--border-secondary); text-align: center; }
-  .portal-table td::before { content: none; }
 }
 
 /* Portal result surface: a calm, readable member hub with one clear visual
@@ -1577,20 +1544,5 @@
 
   .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-summary strong {
     font-size: 10px;
-  }
-}
-
-@media print {
-  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) {
-    width: 100%;
-    padding: 0;
-    border: 0;
-    box-shadow: none;
-  }
-
-  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-form,
-  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-subscription-head,
-  .member-portal-page .portal-result:has(#portalSubscriptionSection:not([hidden])) .portal-request-history {
-    box-shadow: none;
   }
 }

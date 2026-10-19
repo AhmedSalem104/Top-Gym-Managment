@@ -413,8 +413,17 @@
         const brandName = branding.identity?.brandName || 'Logic Fit';
         const logo = branding.assets?.printLogo?.url || branding.assets?.primaryLogo?.url || '/assets/logic-fit-logo-horizontal.svg?v=1';
         const lines = (sale.items || []).map((item) => `<tr><td>${esc(item.productName)}<br><small>${esc(item.variantName)}</small></td><td>${esc(item.quantity)}</td><td>${money(item.lineTotal)}</td></tr>`).join('');
-        popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="${esc(window.location.origin)}/css/main.css?v=37"><link rel="stylesheet" href="${esc(window.location.origin)}/css/print.css?v=1"><title>${esc(sale.saleNumber)} | ${esc(brandName)}</title><style>body{font-family:var(--font-body,sans-serif);padding:24px;color:var(--text-primary)}.receipt-brand{display:grid;justify-items:center;gap:6px}.receipt-brand img{width:48px;height:48px;object-fit:contain}.receipt-brand h1{text-align:center;color:var(--primary);margin:0}.receipt-brand p{margin:0;color:var(--text-muted)}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:8px;border-bottom:1px solid var(--border-secondary);text-align:center}.total{display:flex;justify-content:space-between;font-weight:700;font-size:18px;margin-top:18px}@media print{button{display:none}}</style></head><body><div class="receipt-brand"><img src="${esc(logo)}" alt="${esc(brandName)}"><h1>${esc(brandName)}</h1><p>إيصال مبيعات: ${esc(sale.saleNumber)}</p></div><table><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>${lines}</tbody></table><div class="total"><span>الإجمالي</span><span>${money(sale.totalAmount)}</span></div><p>شكرًا لزيارتكم</p><script>window.onload=()=>window.print();</script></body></html>`);
-        popup.document.close();
+        const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(sale.saleNumber)} | ${esc(brandName)}</title></head><body><main class="print-sheet print-store-receipt"><header class="print-store-receipt-brand"><img src="${esc(logo)}" alt="${esc(brandName)}"><h1>${esc(brandName)}</h1><p>إيصال مبيعات: <bdi>${esc(sale.saleNumber)}</bdi></p></header><table class="print-store-receipt-table"><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>${lines}</tbody></table><div class="print-store-receipt-total"><span>الإجمالي</span><strong>${money(sale.totalAmount)}</strong></div><p class="print-store-receipt-thanks">شكرًا لزيارتكم</p></main></body></html>`;
+        Promise.resolve(window.topGymEnsureTab?.('print'))
+            .then(() => {
+                const printDocument = window.topGymPrint?.printDocument;
+                if (!printDocument) throw new Error(tr('error.print'));
+                return printDocument(popup, html);
+            })
+            .catch((error) => {
+                popup.close();
+                window.showToast?.(error.message || tr('error.print'), true, 'error');
+            });
     }
 
     async function searchCustomer() {

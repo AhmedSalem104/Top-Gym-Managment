@@ -782,6 +782,26 @@ test('payment receipt amounts use primary semantics while outstanding balances r
     assert.doesNotMatch(print, /\.print-receipt-amount strong\s*\{[^}]*color:\s*#c53030/u);
 });
 
+test('all print styling and standalone print windows have one canonical owner', () => {
+    const printCss = read('public/css/print.css');
+    const printRuntime = read('public/js/integrations/print-enhancements.js');
+    const store = read('public/js/pages/store/store.js');
+    const coaching = read('public/js/pages/coaching/coaching.js');
+    const pageStyles = fs.readdirSync(path.join(root, 'public/css/pages'))
+        .filter(file => file.endsWith('.css'))
+        .map(file => fs.readFileSync(path.join(root, 'public/css/pages', file), 'utf8'));
+
+    assert.match(printRuntime, /function printDocument\(printWindow, html\)/u);
+    assert.match(printRuntime, /data-top-gym-print-styles href=.*\/css\/print\.css/u);
+    assert.match(store, /print-store-receipt/u);
+    assert.doesNotMatch(store, /<style>|main\.css\?v=|print\.css\?v=/u);
+    assert.doesNotMatch(coaching, /buildBuilderPrintDocument|<style>@page/u);
+    assert.match(coaching, /printer\.printCoachingDraft/u);
+    assert.match(printCss, /\.print-store-receipt-table/u);
+    assert.equal(pageStyles.some(source => /@media\s+print|@page\b/u.test(source)), false,
+        'feature page styles must not own print or page rules');
+});
+
 test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {
     const phone = read('public/css/components/phone-inputs.css');
     const attendance = read('public/css/pages/attendance.css');
