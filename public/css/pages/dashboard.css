@@ -548,17 +548,16 @@
   }
 
   .overview-grid > .alerts-panel {
-    grid-column: span 5;
-    grid-row: 3;
+    grid-column: 1 / span 7;
+    grid-row: 2;
+  }
+  .overview-grid > .dashboard-day-pass-card {
+    grid-column: 8 / span 5;
+    grid-row: 2;
   }
   .overview-grid > .monthly-finance-card,
   .overview-grid > .monthly-finance-snapshot {
-    grid-column: span 7;
-    grid-row: 3;
-  }
-  .overview-grid > .dashboard-day-pass-card {
     grid-column: 1 / -1;
-    grid-row: 2;
   }
 }
 
@@ -1333,28 +1332,6 @@
   .analytics-trend-wrap { height: 210px; }
 }
 
-/* Daily passes records remain page-owned; modal presentation uses the shared
-   modal foundation and semantic modal utility classes. */
-#attendanceSection > #dayPassPanel { display: none; }
-
-/* The daily log remains available in the Attendance workspace, outside the
-   add/edit modal. */
-.day-pass-records-panel {
-  display: grid;
-  min-width: 0;
-  gap: var(--space-4);
-  margin-top: var(--space-5);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-xs);
-}
-.day-pass-records-panel .day-pass-list-head { padding-top: 0; }
-.day-pass-list-actions { display: flex; min-width: 0; align-items: center; gap: var(--space-2); }
-.day-pass-list-actions .day-pass-search { min-width: min(260px, 100%); }
-.day-pass-list-actions .btn { min-height: 42px; white-space: nowrap; }
-
 .dashboard-day-pass-card {
   display: grid;
   min-width: 0;
@@ -1423,8 +1400,8 @@
 .dashboard-day-pass-table th,
 .dashboard-day-pass-table td { padding: var(--space-3) var(--space-4); text-align: center; vertical-align: middle; line-height: 1.4; white-space: nowrap; }
 .dashboard-day-pass-table th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-muted); color: var(--color-text-soft); font-size: var(--font-xs); font-weight: var(--weight-bold); white-space: nowrap; }
-.dashboard-day-pass-table tbody tr { min-height: 0; height: 48px; }
-.dashboard-day-pass-table tbody td { height: 48px; }
+.dashboard-day-pass-table tbody tr { min-height: 48px; height: auto; }
+.dashboard-day-pass-table tbody td { height: auto; min-height: 48px; }
 .dashboard-day-pass-table tbody tr + tr td { border-top: 1px solid var(--border-color); }
 .dashboard-day-pass-table tbody tr:hover td { background: var(--color-primary-soft); }
 .dashboard-day-pass-table td:first-child { overflow: hidden; text-align: center; text-overflow: ellipsis; }
@@ -1450,6 +1427,28 @@
 }
 .dashboard-day-pass-table td small { color: var(--color-text-muted); font-family: var(--font-latin); font-size: var(--font-xs); }
 .dashboard-day-pass-table .day-pass-actions { flex-wrap: nowrap; gap: var(--space-2); }
+.dashboard-day-pass-table .day-pass-type-badge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  padding-inline: var(--space-3);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+.dashboard-day-pass-table .day-pass-type-badge.day_gym_cardio {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+.dashboard-day-pass-table .day-pass-amount {
+  direction: ltr;
+  color: var(--color-success);
+  font-family: var(--font-latin);
+  font-weight: var(--weight-bold);
+}
 
 /* Keep the identity data and row actions in separate visual zones. The phone
    placeholder belongs to the visitor identity, never to the action group. */
@@ -1499,6 +1498,7 @@
   min-height: 40px;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 
@@ -1624,19 +1624,14 @@
 }
 
 @media (max-width: 600px) {
-  .day-pass-records-panel { padding: var(--space-4); }
-  .day-pass-records-panel .day-pass-list-head { align-items: stretch; flex-direction: column; }
-  .day-pass-list-actions { width: 100%; flex-wrap: wrap; }
-  .day-pass-list-actions .day-pass-search { flex: 1 1 180px; min-width: 0; }
-  .day-pass-list-actions .btn { flex: 0 0 auto; }
   .dashboard-day-pass-head { align-items: stretch; flex-direction: column; }
   .dashboard-day-pass-actions { justify-content: stretch; }
   .dashboard-day-pass-actions .btn { flex: 1 1 0; }
   .dashboard-day-pass-kpis { grid-template-columns: 1fr; }
 }
 
-/* The current finance surface and operational alerts share the dashboard row;
-   the alert list remains backed by its existing member-status data source. */
+/* Alerts and daily passes share the second dashboard row; finance summaries
+   remain full-width below them and keep their existing data sources. */
 @media (min-width: 1280px) {
   .overview-grid {
     column-gap: var(--space-4);
@@ -1644,23 +1639,18 @@
   }
 
   .overview-grid > .alerts-panel {
-    grid-column: 1 / span 4;
+    grid-column: 1 / span 7;
     grid-row: 2;
   }
 
   .overview-grid > .dashboard-day-pass-card {
-    grid-column: 1 / -1;
-    grid-row: 3;
-  }
-
-  .overview-grid > .monthly-finance-card {
-    grid-column: 5 / span 8;
+    grid-column: 8 / span 5;
     grid-row: 2;
   }
 
+  .overview-grid > .monthly-finance-card,
   .overview-grid > .monthly-finance-snapshot {
     grid-column: 1 / -1;
-    grid-row: 4;
   }
 
   .monthly-finance-card,
@@ -1672,12 +1662,6 @@
   .monthly-finance-metric,
   .dashboard-day-pass-kpi {
     padding: var(--space-3);
-  }
-}
-
-@media (min-width: 1280px) {
-  .overview-grid:not(:has(> #monthlyFinanceCard:not([hidden]))) > .alerts-panel {
-    grid-column: 1 / -1;
   }
 }
 
@@ -1734,15 +1718,17 @@
   }
 
   .dashboard-day-pass-table .day-pass-action-button.is-compact {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
-    min-height: 42px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
   }
 
+  .dashboard-day-pass-table .day-pass-actions { gap: var(--space-1); }
+
   .dashboard-day-pass-table .day-pass-action-button.is-compact .ui-icon {
-    width: 23px;
-    height: 23px;
+    width: 16px;
+    height: 16px;
   }
 }
 
@@ -1804,12 +1790,12 @@
 .overview-grid > .stats-grid .stat-card.active .stat-icon { background: var(--success-soft); color: var(--success); }
 .overview-grid > .stats-grid .stat-card.frozen .stat-icon { background: var(--info-soft); color: var(--info); }
 
-@media (min-width: 768px) and (max-width: 1279px) {
-  .overview-grid { grid-template-columns: minmax(0, 1fr); }
-  .overview-grid > .monthly-finance-card { grid-column: 1; grid-row: 2; }
-  .overview-grid > .alerts-panel { grid-column: 1; grid-row: 3; }
-  .overview-grid > .dashboard-day-pass-card { grid-column: 1; grid-row: 4; }
-  .overview-grid > .monthly-finance-snapshot { grid-column: 1; grid-row: 5; }
+@media (min-width: 1200px) and (max-width: 1279px) {
+  .overview-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .overview-grid > .alerts-panel { grid-column: 1 / span 7; grid-row: 2; }
+  .overview-grid > .dashboard-day-pass-card { grid-column: 8 / span 5; grid-row: 2; }
+  .overview-grid > .monthly-finance-card,
+  .overview-grid > .monthly-finance-snapshot { grid-column: 1 / -1; }
 }
 
 @media (max-width: 991px) {
@@ -1877,6 +1863,7 @@
 .dashboard-overview-welcome {
   align-content: space-between;
   gap: var(--space-4);
+  border-inline-start: 3px solid var(--primary);
 }
 
 .dashboard-overview-status {
@@ -1908,8 +1895,17 @@
 .dashboard-overview-card-copy h2 strong { font-weight: var(--weight-semibold); }
 .dashboard-overview-card-copy p { margin: 0; overflow-wrap: anywhere; }
 
-.dashboard-overview-metric { align-content: space-between; }
+.dashboard-overview-metric {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+}
 .dashboard-overview-icon { width: 24px; height: 24px; color: var(--primary); }
+.dashboard-overview-metric .dashboard-overview-icon { grid-column: 1; grid-row: 1 / span 2; }
+.dashboard-overview-metric small,
+.dashboard-overview-metric strong { grid-column: 2; }
 .dashboard-overview-metric small { font-weight: var(--weight-medium); }
 .dashboard-overview-metric strong {
   min-width: 0;

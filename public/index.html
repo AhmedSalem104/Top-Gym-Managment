@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=ab18b2981491c972">
+    <link rel="stylesheet" href="/css/app-shell.css?v=8f1df92f5e2216c1">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -425,7 +425,6 @@
                     </div>
                     <div class="dashboard-day-pass-actions">
                         <button class="btn btn-primary btn-small" id="dashboardDayPassAdd" type="button"><span aria-hidden="true">+</span> إضافة حصة</button>
-                        <button class="btn btn-light btn-small" id="dashboardDayPassManage" type="button">إدارة السجل</button>
                     </div>
                 </div>
                 <div class="dashboard-day-pass-kpis" aria-label="ملخص الحصص اليومية">
@@ -968,12 +967,11 @@
                 <div class="attendance-list-head"><div><h4 data-i18n="attendance.log.title">سجل اليوم</h4><p id="attendanceListMeta" data-i18n="attendance.log.loading">جارٍ تحميل سجل الحضور…</p></div><div class="attendance-list-actions"><label class="attendance-search-wrap" for="attendanceSearch"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span class="visually-hidden" data-i18n="attendance.log.search.label">بحث في حضور اليوم بالاسم أو الهاتف</span><input class="attendance-search" id="attendanceSearch" type="search" placeholder="ابحث بالاسم أو رقم الهاتف" aria-label="بحث في حضور اليوم بالاسم أو الهاتف" data-i18n-placeholder="attendance.log.search.placeholder" data-i18n-aria-label="attendance.log.search.label" autocomplete="off"><button class="search-clear-button" id="attendanceSearchClearButton" type="button" aria-label="مسح بحث حضور اليوم" data-i18n-aria-label="attendance.log.search.clear" hidden>×</button></label><select class="attendance-status-filter" id="attendanceStatusFilter" aria-label="فلترة حالة الحضور" data-i18n-aria-label="attendance.log.filter.label"><option value="all" data-i18n="attendance.log.filter.all">كل الحالات</option><option value="inside" data-i18n="attendance.log.filter.inside">داخل الجيم</option><option value="checked_out" data-i18n="attendance.log.filter.checkedOut">تم الانصراف</option></select><button class="btn btn-light btn-small" id="attendanceRefreshButton" type="button" data-i18n="attendance.log.refresh">تحديث</button></div></div>
                 <div class="attendance-table-wrap" id="attendanceTableWrap"><div class="loading" data-i18n="attendance.log.loading">جارٍ تحميل سجل الحضور…</div></div>
             </section>
-                <dialog id="dayPassDialog" class="day-pass-dialog lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
+                <dialog id="dayPassDialog" class="day-pass-dialog day-pass-dialog--form lf-modal-shell lf-modal--md lf-modal--structured rounded-lg border-slate-200 shadow-lift">
                 <section class="day-pass-panel dialog-body dialog-body--flush" id="dayPassPanel" aria-labelledby="dayPassTitle">
                     <div class="day-pass-head modal-header">
-                        <div class="day-pass-heading modal-heading-content"><span class="day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M16 13h.01"/></svg></span><div><span>دخول يومي</span><h3 id="dayPassTitle">الحصص اليومية</h3><p>سجّل زيارة الزائر مرة واحدة، واحصل على سجل مالي ورسالة واتساب جاهزة.</p></div></div><span class="day-pass-today-badge" id="dayPassTodayCount">0 حصة اليوم</span></div>
+                        <div class="day-pass-heading modal-heading-content"><span class="day-pass-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M16 13h.01"/></svg></span><div><span>دخول يومي</span><h3 id="dayPassTitle">الحصص اليومية</h3><p>سجّل بيانات الزائر وحدد نوع الحصة وطريقة الدفع.</p></div></div></div>
                     <form class="day-pass-form modal-form-grid" id="dayPassForm">
-                        <div class="day-pass-form-lead modal-form-intro"><span>تسجيل زيارة</span><p>أدخل بيانات الزائر، ثم اختر النوع وطريقة السداد.</p></div>
                         <div class="field"><label for="dayPassVisitorName">اسم الزائر <span class="field-optional">اختياري</span></label><input id="dayPassVisitorName" maxlength="120" autocomplete="name" placeholder="اتركه فارغًا لتسجيل زائر"></div>
                         <div class="field"><label for="dayPassVisitorPhone">رقم الهاتف <span class="field-optional">اختياري</span></label><input id="dayPassVisitorPhone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" dir="ltr" data-phone-input></div>
                         <div class="field"><label for="dayPassType">نوع الحصة *</label><select id="dayPassType" required><option value="">جاري تحميل الأسعار…</option></select></div>
@@ -982,8 +980,6 @@
                         <label class="checkbox-field day-pass-whatsapp-option modal-form-option"><input id="dayPassSendWhatsApp" type="checkbox" checked><span>فتح رسالة شكر على واتساب بعد الحفظ</span></label>
                         <div class="day-pass-form-actions form-actions"><button class="btn btn-primary" type="submit" id="dayPassSaveButton">حفظ الحصة</button><button class="btn btn-light" type="button" data-day-pass-dialog-close>إلغاء</button><button class="btn btn-light" type="button" id="dayPassCancelEditButton" hidden>إلغاء التعديل</button></div>
                     </form>
-                    <div class="day-pass-list-head"><div><h4>سجل حصص اليوم</h4><p id="dayPassListMeta">جاري تحميل السجل…</p></div><div class="day-pass-list-actions"><label class="day-pass-search"><span class="visually-hidden">بحث في الحصص</span><input id="dayPassSearch" type="search" placeholder="بحث بالاسم أو الهاتف"></label><button class="btn btn-light btn-small" type="button" id="dayPassRefreshButton">تحديث السجل</button></div></div>
-                    <div class="day-pass-table-wrap table-scroll table-scroll--content-height" id="dayPassTableWrap"><div class="loading">جاري تحميل سجل الحصص…</div></div>
                 </section>
                 </dialog>
 
@@ -1248,12 +1244,12 @@
     <script defer src="/js/performance-loader.js?v=104ba552261ffaa4"></script>
     <script defer src="/js/ui-feedback.js?v=e8714df9c49d8a2c"></script>
     <script defer src="/js/loading-skeleton.js?v=7de5ff80612cbbd0"></script>
-    <script defer src="/js/auth-ui.js?v=674d93b04a663645"></script>
+    <script defer src="/js/auth-ui.js?v=c8e0bf35f4ae0408"></script>
     <script defer src="/js/branch-context.js?v=a4b17c3ebf6f638c"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
-    <script defer src="/js/core/feature-manifest.js?v=d245e8b4f24483e3"></script>
-    <script defer src="/js/feature-loader.js?v=be5aa67fc16d49ea"></script>
+    <script defer src="/js/core/feature-manifest.js?v=f11c560ad26879c6"></script>
+    <script defer src="/js/feature-loader.js?v=91bd70e925fbac57"></script>
     <script defer src="/js/core/i18n.js?v=579fadfcf354798e"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=4db195c1b9e7bbe3"></script>
     <script defer src="/js/page-tabs.js?v=8383a9be527c7f39"></script>

@@ -3,7 +3,7 @@
     window.__topGymDayPassesLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const state = { pricing: [], records: [], dashboardRecords: [], dashboardSummary: null, dashboardMonthFrom: null, initialized: false, loading: false, editingId: null, searchTimer: null };
+    const state = { pricing: [], dashboardRecords: [], dashboardSummary: null, dashboardMonthFrom: null, initialized: false, loading: false, editingId: null };
 
     function t(key, params) {
         return window.TopGymI18n?.t?.(key, params) || key;
@@ -38,10 +38,6 @@
 
     function paymentLabel(value) {
         return ({ cash: 'نقدي', card: 'بطاقة', transfer: 'تحويل', other: 'أخرى' })[value] || value || '—';
-    }
-
-    function normalizeSearch(value) {
-        return String(value || '').trim().toLocaleLowerCase('ar-EG');
     }
 
     function notify(message, icon = 'success') {
@@ -165,7 +161,7 @@
     }
 
     function getRecord(id) {
-        return [...state.records, ...state.dashboardRecords].find((item) => String(item.id) === String(id)) || null;
+        return state.dashboardRecords.find((item) => String(item.id) === String(id)) || null;
     }
 
     function closeDayPassDialog() {
@@ -181,13 +177,14 @@
         const financeCard = $('monthlyFinanceCard');
         if (!overview || !dayPassCard || dayPassCard.parentElement !== overview) return;
         const stats = overview.querySelector(':scope > .stats-grid');
-        const firstContentAfterStats = stats?.nextElementSibling || alerts || null;
-        if (dayPassCard !== firstContentAfterStats) overview.insertBefore(dayPassCard, firstContentAfterStats);
-        if (alerts && alerts.parentElement === overview && alerts !== dayPassCard.nextElementSibling) {
-            overview.insertBefore(alerts, dayPassCard.nextElementSibling || null);
+        let insertionPoint = stats?.nextElementSibling || overview.firstElementChild;
+        if (alerts?.parentElement === overview) {
+            if (alerts !== insertionPoint) overview.insertBefore(alerts, insertionPoint);
+            insertionPoint = alerts.nextElementSibling;
         }
-        if (financeCard && financeCard.parentElement === overview && alerts && alerts.parentElement === overview) {
-            overview.insertBefore(financeCard, alerts.nextElementSibling || null);
+        if (dayPassCard !== insertionPoint) overview.insertBefore(dayPassCard, insertionPoint || null);
+        if (financeCard?.parentElement === overview && financeCard !== dayPassCard.nextElementSibling) {
+            overview.insertBefore(financeCard, dayPassCard.nextElementSibling || null);
         }
     }
 
@@ -199,8 +196,7 @@
         if (panel.parentElement !== dialog) dialog.appendChild(panel);
         if (!dialog.dataset.dayPassReady) {
             const head = panel.querySelector('.day-pass-head');
-            const badge = $('dayPassTodayCount');
-            if (head && badge) {
+            if (head) {
                 const actions = document.createElement('div');
                 actions.className = 'modal-heading-actions day-pass-dialog-head-actions';
                 const closeButton = document.createElement('button');
@@ -209,7 +205,7 @@
                 closeButton.dataset.dayPassDialogClose = 'true';
                 closeButton.setAttribute('aria-label', 'إغلاق نافذة الحصص اليومية');
                 closeButton.textContent = 'إغلاق';
-                actions.append(badge, closeButton);
+                actions.append(closeButton);
                 head.append(actions);
             }
             dialog.addEventListener('cancel', (event) => {
@@ -222,11 +218,6 @@
         return dialog;
     }
 
-    function openDayPassRecords() {
-        showDayPassDialog({ reset: false });
-        window.setTimeout(() => $('dayPassDialog')?.querySelector('.day-pass-list-head')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 160);
-    }
-
     function showDayPassDialog({ reset = true } = {}) {
         const dialog = prepareDayPassDialog();
         if (!dialog) return;
@@ -234,7 +225,6 @@
         if (typeof dialog.showModal === 'function' && !dialog.open) dialog.showModal();
         else dialog.setAttribute('open', '');
         void loadPricing();
-        void loadToday();
         window.setTimeout(() => $('dayPassVisitorName')?.focus(), 120);
     }
 
@@ -261,21 +251,7 @@
         const ownerActions = owner
             ? `${iconButton('edit', 'تعديل', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>')} ${iconButton('delete', 'حذف', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>', 'day-pass-delete-button')}`
             : '';
-        return `<div class="day-pass-actions">${whatsapp}${ownerActions}${owner && !compact ? iconButton('void', 'إلغاء', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>', 'day-pass-void-button') : ''}</div>`;
-    }
-
-    function renderList() {
-        const host = $('dayPassTableWrap');
-        if (!host) return;
-        const query = normalizeSearch($('dayPassSearch')?.value);
-        const records = state.records.filter((item) => !query || `${item.reference} ${recordDisplayName(item)} ${item.visitorPhone} ${item.passTypeName}`.toLocaleLowerCase('ar-EG').includes(query));
-        if ($('dayPassTodayCount')) $('dayPassTodayCount').textContent = `${state.records.length.toLocaleString('ar-EG')} حصة اليوم`;
-        if ($('dayPassListMeta')) $('dayPassListMeta').textContent = records.length ? `${records.length.toLocaleString('ar-EG')} سجل مكتمل` : 'لا توجد حصص مسجلة اليوم.';
-        if (!records.length) {
-            host.innerHTML = '<div class="day-pass-empty">لا توجد حصص مطابقة حتى الآن.</div>';
-            return;
-        }
-        host.innerHTML = `<table class="day-pass-table"><thead><tr><th>الزائر</th><th>نوع الحصة</th><th>المبلغ</th><th>طريقة الدفع</th><th>الوقت</th><th>الإجراءات</th></tr></thead><tbody>${records.map((item) => `<tr data-day-pass-id="${item.id}"><td><div class="day-pass-identity"><strong>${escapeHtml(recordDisplayName(item))}</strong><small class="day-pass-reference" dir="ltr">${escapeHtml(item.reference || `VIS-${String(item.id).padStart(6, '0')}`)}</small><small class="day-pass-phone" dir="ltr">${escapeHtml(recordPhone(item) || 'بدون رقم')}</small></div></td><td><span class="day-pass-type-badge ${escapeHtml(item.passTypeCode)}">${escapeHtml(item.passTypeName)}</span></td><td class="day-pass-amount">${money(item.amountPaid)}</td><td>${escapeHtml(paymentLabel(item.paymentMethod))}</td><td dir="ltr">${new Intl.DateTimeFormat('ar-EG', { timeStyle: 'short' }).format(new Date(item.createdAt))}</td><td>${renderRecordActions(item)}</td></tr>`).join('')}</tbody></table>`;
+        return `<div class="day-pass-actions">${whatsapp}${ownerActions}${owner ? iconButton('void', 'إلغاء', '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>', 'day-pass-void-button') : ''}</div>`;
     }
 
     function monthRange() {
@@ -366,20 +342,6 @@
         }
     }
 
-    async function loadToday() {
-        const date = $('dayPassDate')?.value || todayIso();
-        const search = $('dayPassSearch')?.value || '';
-        try {
-            const response = await request(`/api/day-passes?${new URLSearchParams({ from: date, to: date, search, page: '1', pageSize: '100' })}`);
-            state.records = response.records || [];
-            renderList();
-            return true;
-        } catch (error) {
-            if ($('dayPassTableWrap')) $('dayPassTableWrap').innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;
-            return false;
-        }
-    }
-
     function openForm() {
         showDayPassDialog();
     }
@@ -416,7 +378,7 @@
         try {
             await request(`/api/day-passes/${encodeURIComponent(id)}`, { method: 'DELETE' });
             if (String(state.editingId) === String(id)) resetEditForm();
-            await Promise.all([loadToday(), loadDashboard()]);
+            await loadDashboard();
             window.topGymRefreshMonthlyFinance?.();
             await notify('تم حذف سجل الحصة.');
         } catch (error) {
@@ -448,7 +410,7 @@
             if (!whatsappSent && preparedWindow && !preparedWindow.closed) preparedWindow.close();
             resetEditForm();
             closeDayPassDialog();
-            await Promise.all([loadToday(), loadDashboard()]);
+            await loadDashboard();
             await notify(editingId ? 'تم تحديث سجل الحصة.' : (whatsappSent ? 'تم حفظ الحصة وتجهيز رسالة واتساب.' : 'تم حفظ الحصة وإضافتها للإيرادات.'));
             window.dispatchEvent(new CustomEvent('topgym:day-pass-created', { detail: result }));
             window.topGymRefreshMonthlyFinance?.();
@@ -464,7 +426,7 @@
         if (!window.confirm('هل تريد إلغاء هذه الحصة؟ سيتم استبعادها من التقارير والإيرادات.')) return;
         try {
             await request(`/api/day-passes/${encodeURIComponent(id)}/void`, { method: 'POST' });
-            await Promise.all([loadToday(), loadDashboard()]);
+            await loadDashboard();
             window.topGymRefreshMonthlyFinance?.();
             await notify('تم إلغاء الحصة.');
         } catch (error) {
@@ -496,21 +458,8 @@
         prepareDayPassDialog();
         $('dayPassForm')?.addEventListener('submit', submitDayPass);
         $('dayPassType')?.addEventListener('change', updatePricePreview);
-        $('dayPassRefreshButton')?.addEventListener('click', loadToday);
         $('dayPassCancelEditButton')?.addEventListener('click', resetEditForm);
-        $('dayPassSearch')?.addEventListener('input', () => { window.clearTimeout(state.searchTimer); state.searchTimer = window.setTimeout(loadToday, 250); });
-        $('dayPassTableWrap')?.addEventListener('click', (event) => {
-            const whatsappButton = event.target.closest('[data-day-pass-whatsapp]');
-            if (whatsappButton) return void whatsappForRecord(whatsappButton.dataset.dayPassWhatsapp).catch((error) => notify(error.message || 'تعذر تجهيز رسالة واتساب.', 'error'));
-            const editButton = event.target.closest('[data-day-pass-edit]');
-            if (editButton) return editRecord(editButton.dataset.dayPassEdit);
-            const deleteButton = event.target.closest('[data-day-pass-delete]');
-            if (deleteButton) return deleteRecord(deleteButton.dataset.dayPassDelete);
-            const voidButton = event.target.closest('[data-day-pass-void]');
-            if (voidButton) return voidDayPass(voidButton.dataset.dayPassVoid);
-        });
         $('dashboardDayPassAdd')?.addEventListener('click', openForm);
-        $('dashboardDayPassManage')?.addEventListener('click', openDayPassRecords);
         window.addEventListener('topgym:localechange', () => {
             renderDashboardSummary();
             renderDashboardList();
@@ -525,6 +474,8 @@
             if (editButton) return editRecord(editButton.dataset.dayPassEdit);
             const deleteButton = event.target.closest('[data-day-pass-delete]');
             if (deleteButton) return deleteRecord(deleteButton.dataset.dayPassDelete);
+            const voidButton = event.target.closest('[data-day-pass-void]');
+            if (voidButton) return voidDayPass(voidButton.dataset.dayPassVoid);
         });
         $('dayPassPricingSave')?.addEventListener('click', savePricing);
         const loadAfterAuth = () => {
@@ -544,5 +495,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
 
-    window.topGymDayPasses = Object.freeze({ loadPricing, loadToday, loadDashboard, openForm });
+    window.topGymDayPasses = Object.freeze({ loadPricing, loadDashboard, openForm });
 })();

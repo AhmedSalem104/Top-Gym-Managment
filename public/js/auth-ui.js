@@ -76,7 +76,6 @@
             attendanceCheckOutButton: 'attendance.check_out',
             dayPassSaveButton: 'day_passes.create,payments.create',
             dashboardDayPassAdd: 'day_passes.create,payments.create',
-            dashboardDayPassManage: 'day_passes.read',
             addExpenseButton: 'finance.create',
             expenseSave: 'finance.create',
             addMembershipPlanButton: 'pricing.create',
@@ -217,7 +216,6 @@
         [
             $('dashboardDayPassTotal')?.closest('.dashboard-day-pass-kpi'),
             $('dayPassPriceBox'),
-            $('dayPassTableWrap'),
             $('dashboardDayPassTableWrap')
         ].filter(Boolean).forEach((element) => {
             element.hidden = !financeAllowed;
@@ -520,7 +518,6 @@
             dashboardPrintPricingButton: 'pricing',
             dashboardPrintPricingPreviewButton: 'pricing',
             dashboardDayPassAdd: 'day_passes',
-            dashboardDayPassManage: 'day_passes',
             dayPassSaveButton: 'day_passes',
             addExpenseButton: 'finance',
             addExpenseFromTabButton: 'finance',

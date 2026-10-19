@@ -143,7 +143,7 @@
         'add-expense': { label: 'إضافة مصروف', icon: 'plus', type: 'click', selector: '#addExpenseButton, #addExpenseFromTabButton', tab: 'expenses', permission: 'finance.create', success: 'فتحت نموذج إضافة مصروف.' },
         'open-expenses': { label: 'فتح المصروفات', icon: 'wallet', type: 'navigate', tab: 'expenses', permission: 'finance.read', success: 'فتحت شاشة المصروفات.' },
         'add-day-pass': { label: 'إضافة حصة يومية', icon: 'ticket', type: 'navigate-click', tab: 'dashboard', selector: '#dashboardDayPassAdd', permission: 'day_passes.create,payments.create', success: 'فتحت نموذج تسجيل حصة يومية.' },
-        'open-day-passes': { label: 'إدارة الحصص اليومية', icon: 'ticket', type: 'navigate-click', tab: 'dashboard', selector: '#dashboardDayPassManage', permission: 'day_passes.read', success: 'فتحت سجل الحصص اليومية.' },
+        'open-day-passes': { label: 'سجل الحصص اليومية', icon: 'ticket', type: 'navigate', tab: 'dashboard', permission: 'day_passes.read', success: 'سجل الحصص اليومية متاح في لوحة التحكم.' },
         'search-library': { label: 'البحث في المكتبة', icon: 'search', type: 'focus', selector: '#librarySearch', tab: 'library', permission: 'library.read', success: 'يمكنك البحث عن تمرين أو طعام أو عضلة الآن.' },
         'add-library-item': { label: 'إضافة عنصر', icon: 'plus', type: 'click', selector: '#libraryAddButton', tab: 'library', permission: 'library.create', success: 'فتحت نموذج إضافة عنصر للمكتبة.' },
         'refresh-library': { label: 'تحديث المكتبة', icon: 'refresh', type: 'click', selector: '#libraryRefreshButton', tab: 'library', permission: 'library.read', success: 'حدّثت بيانات المكتبة.' },

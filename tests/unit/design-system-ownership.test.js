@@ -469,16 +469,17 @@ test('structured modal contract owns form dialog scroll and sticky action region
     }
 });
 
-test('Day Pass table horizontal scrolling uses the canonical Tables contract', () => {
-    const tables = read('public/css/components/tables.css');
-    const attendance = read('public/css/pages/attendance.css');
+test('daily-pass registration dialog uses the canonical structured modal and keeps its dashboard log separate', () => {
+    const dashboard = read('public/css/pages/dashboard.css');
     const html = read('public/index.html');
-    const wrapper = html.match(/<div\b[^>]*\bid="dayPassTableWrap"[^>]*>/u)?.[0] || '';
+    const dialog = html.match(/<dialog\b[^>]*\bid="dayPassDialog"[^>]*>/u)?.[0] || '';
 
-    assert.match(wrapper, /\btable-scroll\b/u);
-    assert.match(tables, /\.table-scroll[\s\S]*?overflow-x:\s*auto[\s\S]*?overflow-y:\s*hidden/u);
-    assert.match(tables, /\.table-scroll--content-height\s*\{\s*min-height:\s*max-content/u);
-    assert.doesNotMatch(attendance, /\.day-pass-table-wrap\s*\{[^}]*overflow/u);
+    assert.match(dialog, /\blf-modal-shell\b/u);
+    assert.match(dialog, /\blf-modal--structured\b/u);
+    assert.match(html, /id="dayPassForm"/u);
+    assert.doesNotMatch(html, /id="dayPassTableWrap"/u);
+    assert.match(html, /id="dashboardDayPassTableWrap"/u);
+    assert.match(dashboard, /\.dashboard-day-pass-table-wrap\s*\{[\s\S]*?overflow-x:\s*auto/u);
 });
 
 test('dynamic Branch Create dialog opts into the central structured modal contract', () => {

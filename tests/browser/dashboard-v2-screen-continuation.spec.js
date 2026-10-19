@@ -260,9 +260,11 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                     const actionButtons = [...dashboard.querySelectorAll('.dashboard-overview-shortcut-actions .btn')].filter((button) => getComputedStyle(button).display !== 'none');
                     const rect = (element) => {
                         const box = element.getBoundingClientRect();
-                        return { left: box.left, right: box.right, width: box.width, height: box.height };
+                        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
                     };
                     const statBoxes = stats.map(rect);
+                    const alerts = dashboard.querySelector('#alertsSection');
+                    const dayPasses = dashboard.querySelector('#dashboardDayPassCard');
                     return {
                         viewport: document.documentElement.clientWidth,
                         documentWidth: document.documentElement.scrollWidth,
@@ -271,6 +273,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                         theme: document.documentElement.dataset.theme,
                         locale: document.documentElement.dataset.locale,
                         dashboard: rect(dashboard),
+                        alerts: rect(alerts),
+                        dayPasses: rect(dayPasses),
                         cards: rect(cards),
                         cardBoxes: overviewCards.map(rect),
                         cardCount: overviewCards.length,
@@ -298,6 +302,11 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 expect(layout.locale).toBe(locale);
                 expect(layout.cards.width).toBeGreaterThan(0);
                 expect(layout.cards.height).toBeGreaterThan(0);
+                if (width >= 992) {
+                    expect(Math.abs(layout.alerts.top - layout.dayPasses.top), `${width}px ${locale}/${theme}: alerts and daily passes must share one row`).toBeLessThanOrEqual(1);
+                } else {
+                    expect(layout.alerts.top, `${width}px ${locale}/${theme}: alerts should precede daily passes on narrow layouts`).toBeLessThan(layout.dayPasses.top);
+                }
                 expect(layout.cardCount).toBe(5);
                 expect(layout.cardBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1), `${width}px ${locale}/${theme}: overview card exceeds viewport`).toBeTruthy();
                 if (width >= 1440) expect(layout.cardColumns).toBe(5);
@@ -354,6 +363,17 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.setViewportSize({ width: 1440, height: 900 });
         await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
         await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; document.body.dataset.theme = 'light'; });
+        await page.locator('#dayPassDialog').evaluate((dialog) => dialog.showModal());
+        await expect(page.locator('#dayPassForm')).toBeVisible();
+        await expect(page.locator('#dayPassDialog #dayPassTableWrap')).toHaveCount(0);
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-day-pass-form-1440-ar-light.png'), fullPage: false });
+        await page.locator('#dayPassDialog').evaluate((dialog) => dialog.close());
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.locator('#dayPassDialog').evaluate((dialog) => dialog.showModal());
+        await expect(page.locator('#dayPassForm')).toBeVisible();
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-day-pass-form-390-ar-light.png'), fullPage: false });
+        await page.locator('#dayPassDialog').evaluate((dialog) => dialog.close());
+        await page.setViewportSize({ width: 1440, height: 900 });
         await page.locator('#dashboardAnalyticsTab').click();
         await expect(page.locator('#dashboardAnalyticsPanel')).toBeVisible();
         runtime.setAnalyticsMode('loading');

@@ -167,7 +167,7 @@
 
     function bindLazyDashboardActions() {
         document.addEventListener('click', (event) => {
-            const button = event.target.closest('#dashboardDayPassAdd, #dashboardDayPassManage');
+            const button = event.target.closest('#dashboardDayPassAdd');
             if (!button || window.__topGymDayPassesLoaded || button.dataset.topGymFeatureLoading === 'true') return;
             event.preventDefault();
             event.stopImmediatePropagation();
