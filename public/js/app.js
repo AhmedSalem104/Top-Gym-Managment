@@ -1684,11 +1684,45 @@
                   await notify(error.message, 'error');
               }
           }
-          async function openPricingDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderPricingTable(); const dialog = $('pricingDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(membershipManagementText('error.catalogUnavailable'), 'error'); } }
-         async function openMembershipTypesDialog() { try { await loadPricingCatalog(); syncPlanOptions(); renderMembershipTypesTable(); const dialog = $('membershipTypesDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); } catch (error) { await notify(membershipManagementText('error.catalogUnavailable'), 'error'); } }
-         function closePricingDialog() { const dialog = $('pricingDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-         function closeMembershipTypesDialog() { const dialog = $('membershipTypesDialog'); if (typeof dialog.close === 'function' && dialog.open) dialog.close(); else dialog.removeAttribute('open'); }
-          async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); }, membershipManagementText('pricing.saveLoading')); closePricingDialog(); await notify(membershipManagementText('pricing.saved')); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
+         function setManagementWorkspace(name) {
+             const workspace = ['pricing', 'types'].includes(name) ? name : 'pricing';
+             const root = $('managementSection');
+             root?.querySelectorAll('[data-management-workspace-tab]').forEach((tab) => {
+                 const active = tab.dataset.managementWorkspaceTab === workspace;
+                 tab.setAttribute('aria-selected', String(active));
+                 tab.tabIndex = active ? 0 : -1;
+             });
+             root?.querySelectorAll('[data-management-workspace-panel]').forEach((panel) => {
+                 panel.hidden = panel.dataset.managementWorkspacePanel !== workspace;
+             });
+             if (root) root.dataset.activeWorkspace = workspace;
+             return workspace;
+         }
+
+         async function showManagementWorkspace(name) {
+             const workspace = setManagementWorkspace(name);
+             try {
+                 await loadPricingCatalog();
+                 syncPlanOptions();
+                 if (!$('pricingTableContainer')?.querySelector('.pricing-table, .pricing-plan-card, .empty')) renderPricingTable();
+                 if (!$('membershipTypesTableContainer')?.querySelector('.membership-types-table, .membership-type-card, .pricing-cards-empty')) renderMembershipTypesTable();
+             } catch (error) {
+                 await notify(membershipManagementText('error.catalogUnavailable'), 'error');
+             }
+             applyMembershipManagementTranslations();
+             window.dispatchEvent(new CustomEvent('topgym:management-workspace-changed', { detail: { name: workspace } }));
+         }
+
+         async function openManagementWorkspace(name) {
+             const alreadyOnManagement = document.documentElement.dataset.topGymActiveTab === 'management';
+             setManagementWorkspace(name);
+             await window.topGymActivateTab?.('management');
+             if (alreadyOnManagement) await showManagementWorkspace(name);
+         }
+
+         async function openPricingDialog() { await openManagementWorkspace('pricing'); }
+         async function openMembershipTypesDialog() { await openManagementWorkspace('types'); }
+         async function savePricing(event) { event.preventDefault(); const rows = [...$('pricingTableContainer').querySelectorAll('tr[data-plan]')]; const saveButton = $('pricingSave'); saveButton.disabled = true; try { await withLoader(async () => { const plans = rows.map((row) => ({ planCode: row.dataset.plan, planName: row.querySelector('[data-field="planName"]').value, monthlyPrice: Number(row.querySelector('[data-field="monthlyPrice"]').value || 0), prices: Object.fromEntries([...row.querySelectorAll('[data-field="typePrice"]')].map((input) => [input.dataset.typeCode, Number(input.value || 0)])) })); applyPricingCatalog(await api('/api/pricing', { method: 'PUT', body: JSON.stringify({ plans }) })); renderPricingTable(); }, membershipManagementText('pricing.saveLoading')); await notify(membershipManagementText('pricing.saved')); } catch (error) { await notify(error.message, 'error'); } finally { saveButton.disabled = false; } }
 
          function updateMembershipTypePreview() { const mode = $('membershipTypeMode').value; const duration = Number($('membershipTypeDuration').value || 0); const multiplier = Number($('membershipTypeMultiplier').value || 0); const name = $('membershipTypeName').value.trim() || membershipManagementText('type.previewFallback'); const unitKey = mode === 'days' ? (duration === 1 ? 'type.mode.daysSingular' : 'type.mode.daysPlural') : (duration === 1 ? 'type.mode.monthsSingular' : 'type.mode.monthsPlural'); const monthlyPrice = Number(state.pricing.plans.gym_only?.monthlyPrice || 0); const preview = membershipManagementText('type.preview', { name, duration: duration ? membershipManagementNumber(duration) : '—', unit: membershipManagementText(unitKey), price: membershipManagementCurrency(monthlyPrice * multiplier) }); if ($('membershipTypePreview').textContent !== preview) $('membershipTypePreview').textContent = preview; }
 
@@ -1704,13 +1738,9 @@
                  text(management.querySelector('.panel-header h3'), 'title');
                  attribute(management.querySelector('.panel-header h3'), 'id', 'membershipManagementTitle');
                  text(management.querySelector('.panel-header p'), 'description');
-                 const shortcuts = management.querySelectorAll('.management-shortcut');
-                 text(shortcuts[0]?.querySelector('strong'), 'pricingShortcut.title');
-                 text(shortcuts[0]?.querySelector('small'), 'pricingShortcut.description');
-                 text(shortcuts[1]?.querySelector('strong'), 'typesShortcut.title');
-                 text(shortcuts[1]?.querySelector('small'), 'typesShortcut.description');
-                 shortcuts[0]?.setAttribute('aria-label', membershipManagementText('pricingShortcut.title'));
-                 shortcuts[1]?.setAttribute('aria-label', membershipManagementText('typesShortcut.title'));
+                 text($('managementPricingTab'), 'pricingShortcut.title');
+                 text($('managementTypesTab'), 'typesShortcut.title');
+                 attribute(management.querySelector('.management-workspace-tabs'), 'aria-label', membershipManagementText('title'));
              }
 
              const pricingDialog = $('pricingDialog');
@@ -1721,7 +1751,6 @@
                  text(pricingDialog.querySelector('.pricing-section-head h4'), 'pricing.section.title');
                  text(pricingDialog.querySelector('.pricing-section-head p'), 'pricing.section.description');
                  text($('addMembershipPlanButton'), 'pricing.addPlan');
-                 text($('pricingClose'), 'pricing.close');
                  text($('pricingSave'), window.topGymFeedback?.isLoading?.($('pricingSave')) ? 'pricing.saveLoading' : 'pricing.save');
                  text($('dayPassPricingTitle'), 'dayPass.title');
                  const dayPassHead = $('dayPassPricingTitle')?.closest('.pricing-section-head');
@@ -1775,7 +1804,6 @@
                  if (dayPassEmpty) text(dayPassEmpty, 'dayPass.empty');
                  text(pricingContainer?.querySelector('.loading'), 'pricing.loading');
                  text(dayPassContainer?.querySelector('.loading'), 'dayPass.loading');
-                 attribute(pricingDialog, 'aria-labelledby', 'pricingDialogTitle');
                  attribute(pricingDialog, 'aria-describedby', 'pricingDialogDescription');
                  attribute(pricingDialog.querySelector('.management-dialog-heading p'), 'id', 'pricingDialogDescription');
              }
@@ -1788,9 +1816,7 @@
                  text(typesDialog.querySelector('.pricing-section-head h4'), 'types.section.title');
                  text(typesDialog.querySelector('.pricing-section-head p'), 'types.section.description');
                  text($('addMembershipTypeButton'), 'types.add');
-                 text($('membershipTypesClose'), 'types.close');
                  text($('membershipTypesTableContainer')?.querySelector('.loading'), 'types.loading');
-                 attribute(typesDialog, 'aria-labelledby', 'membershipTypesDialogTitle');
                  attribute(typesDialog, 'aria-describedby', 'membershipTypesDialogDescription');
                  attribute(typesDialog.querySelector('.management-dialog-heading p'), 'id', 'membershipTypesDialogDescription');
                  const table = $('membershipTypesTableContainer')?.querySelector('table.membership-types-table');
@@ -1887,10 +1913,14 @@
          function setupMembershipManagementTranslations() {
              if (document.documentElement.dataset.membershipManagementI18nReady === 'true') return;
              document.documentElement.dataset.membershipManagementI18nReady = 'true';
+             const workspace = $('managementWorkspacePanels');
              const pricingRoot = $('pricingDialog');
+             if (workspace && pricingRoot && pricingRoot.parentElement !== workspace) workspace.append(pricingRoot);
              if (pricingRoot) new MutationObserver(() => applyMembershipManagementTranslations()).observe(pricingRoot, { childList: true, subtree: true });
              const typesRoot = $('membershipTypesDialog');
+             if (workspace && typesRoot && typesRoot.parentElement !== workspace) workspace.append(typesRoot);
              if (typesRoot) new MutationObserver(() => applyMembershipManagementTranslations()).observe(typesRoot, { childList: true, subtree: true });
+             setManagementWorkspace('pricing');
              applyMembershipManagementTranslations();
          }
          function openMembershipTypeDialog(code = '') { const type = code ? state.pricing.types?.[code] : null; const generatedCode = `custom_${Date.now().toString(36)}`; $('editingMembershipTypeCode').value = type ? code : ''; $('membershipTypeCode').value = type ? code : generatedCode; $('membershipTypeCode').readOnly = Boolean(type); $('membershipTypeName').value = type?.label || ''; $('membershipTypeMode').value = type?.mode || 'days'; $('membershipTypeDuration').value = type?.durationValue ?? (type ? '' : 15); $('membershipTypeMultiplier').value = type?.priceMultiplier ?? (type ? '' : 0.5); $('membershipTypeSortOrder').value = type?.sortOrder ?? (Object.keys(state.pricing.types || {}).length + 1); $('membershipTypeActive').checked = type?.active !== false; applyMembershipManagementTranslations(); updateMembershipTypePreview(); const dialog = $('membershipTypeDialog'); if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
@@ -2104,9 +2134,12 @@
             setupDashboardTranslations();
             setupMemberTranslations();
             setupMembershipManagementTranslations();
-            window.addEventListener('topgym:localechange', applyMembershipManagementTranslations);
+            window.addEventListener('topgym:localechange', () => {
+                applyMembershipManagementTranslations();
+                window.topGymPricingCards?.refresh?.();
+            });
              document.querySelectorAll('dialog').forEach((dialog) => prepareDialogAccessibility(dialog));
-             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('pricingClose').addEventListener('click', closePricingDialog); $('membershipTypesClose').addEventListener('click', closeMembershipTypesDialog); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); $('memberBranchId').addEventListener('change', () => { void syncMemberScopeOptions({ preserve: true }); }); let timer; const membersSearchInput = $('searchInput'); const membersSearchClear = $('membersSearchClearButton'); const syncMembersSearchClear = () => { if (membersSearchClear && membersSearchInput) membersSearchClear.hidden = !membersSearchInput.value.trim(); }; membersSearchInput.addEventListener('input', () => { syncMembersSearchClear(); clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); membersSearchClear?.addEventListener('click', () => { clearTimeout(timer); membersSearchInput.value = ''; syncMembersSearchClear(); membersSearchInput.focus({ preventScroll: true }); void loadMembersOnly(); }); syncMembersSearchClear(); $('statusFilter').addEventListener('change', loadMembersOnly);
+             setFormDefaults(); $('memberForm').addEventListener('submit', submitMember); $('refreshButton').addEventListener('click', loadData); $('topAddMemberButton').addEventListener('click', () => openMemberDialog()); $('addMemberButton').addEventListener('click', () => openMemberDialog()); $('pricingButton').addEventListener('click', openPricingDialog); $('membershipTypesButton').addEventListener('click', openMembershipTypesDialog); $('managementSection')?.querySelectorAll('[data-management-workspace-tab]').forEach((tab) => tab.addEventListener('click', () => { void showManagementWorkspace(tab.dataset.managementWorkspaceTab); })); $('managementSection')?.addEventListener('keydown', (event) => { const current = event.target.closest('[data-management-workspace-tab]'); if (!current || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return; const tabs = [...$('managementSection').querySelectorAll('[data-management-workspace-tab]')]; const index = tabs.indexOf(current); const next = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1) : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length]; event.preventDefault(); next.focus(); void showManagementWorkspace(next.dataset.managementWorkspaceTab); }); $('memberDialogClose').addEventListener('click', closeMemberDialog); $('cancelEditButton').addEventListener('click', () => setFormDefaults(true)); $('resetButton').addEventListener('click', () => setFormDefaults(true)); $('actionForm').addEventListener('submit', submitDialog); $('dialogCancel').addEventListener('click', closeDialog); $('pricingForm').addEventListener('submit', savePricing); $('detailsClose').addEventListener('click', closeDetails); $('detailsContent').addEventListener('click', (event) => { const button = event.target.closest('[data-payment-receipt]'); if (!button) return; window.topGymPrint?.printPaymentReceipt(button.dataset.memberId, button.dataset.paymentId); }); $('addMembershipTypeButton').addEventListener('click', () => openMembershipTypeDialog()); $('membershipTypeDialogClose').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeCancel').addEventListener('click', closeMembershipTypeDialog); $('membershipTypeForm').addEventListener('submit', submitMembershipType); ['membershipTypeName', 'membershipTypeMode', 'membershipTypeDuration', 'membershipTypeMultiplier'].forEach((id) => $(id).addEventListener('input', updateMembershipTypePreview)); $('membershipTypeMode').addEventListener('change', updateMembershipTypePreview); $('membershipTypesTableContainer').addEventListener('click', (event) => { const button = event.target.closest('[data-type-action="edit"]'); if (button) openMembershipTypeDialog(button.dataset.code); }); $('membershipType').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); updateFormPricing(); }); $('membershipPlan').addEventListener('change', updateFormPricing); $('discountAmount').addEventListener('input', updateFormPricing); $('startDate').addEventListener('change', () => { if (!state.endDateManual) $('endDate').value = calculatedEndDate($('startDate').value, $('membershipType').value); }); $('endDate').addEventListener('input', () => { state.endDateManual = true; }); $('memberBranchId').addEventListener('change', () => { void syncMemberScopeOptions({ preserve: true }); }); let timer; const membersSearchInput = $('searchInput'); const membersSearchClear = $('membersSearchClearButton'); const syncMembersSearchClear = () => { if (membersSearchClear && membersSearchInput) membersSearchClear.hidden = !membersSearchInput.value.trim(); }; membersSearchInput.addEventListener('input', () => { syncMembersSearchClear(); clearTimeout(timer); timer = setTimeout(loadMembersOnly, 300); }); membersSearchClear?.addEventListener('click', () => { clearTimeout(timer); membersSearchInput.value = ''; syncMembersSearchClear(); membersSearchInput.focus({ preventScroll: true }); void loadMembersOnly(); }); syncMembersSearchClear(); $('statusFilter').addEventListener('change', loadMembersOnly);
             $('membersList').addEventListener('click', async (event) => { const button = event.target.closest('button[data-action]'); if (!button) return; if (!hasRequiredPermissions(button.dataset.requiredPermission)) { await notify('لا تملك صلاحية تنفيذ هذا الإجراء. إذا تم تفعيلها حديثًا، سجّل الخروج ثم ادخل مرة أخرى.', 'error'); return; } const id = button.dataset.id || button.closest('[data-member-id]')?.dataset.memberId; const member = state.members.find((item) => String(item.id) === String(id)); if (!member) { await notify('تعذر تحديد العضو. حدّث الصفحة وحاول مرة أخرى.', 'error'); return; } const action = button.dataset.action; if (action === 'details') { await openDetails(member); return; } if (action === 'edit') { openMemberDialog(member); return; } if (action === 'freeze' || action === 'renew' || action === 'payment') { openDialog(action, member); return; } if (action === 'resume') { try { await withLoader(() => api(`/api/members/${member.id}/resume`, { method: 'POST' }), 'جاري استئناف العضوية…'); await refreshAfterAction('تم استئناف العضوية.'); } catch (error) { await notify(error.message, 'error'); } return; } if (action === 'delete' && await confirmDelete(member.fullName)) { try { await withLoader(() => api(`/api/members/${member.id}`, { method: 'DELETE' }), 'جاري حذف العضو…'); if (String($('memberId').value) === String(member.id)) setFormDefaults(true); await refreshAfterAction('تم حذف العضو.'); } catch (error) { await notify(error.message, 'error'); } } });
             $('membersList').addEventListener('click', async (event) => {
                 const button = event.target.closest('button[data-action="refund"]');
@@ -2162,6 +2195,7 @@
                     void loadPricingCatalog();
                     void loadMembersOnly();
                 }
+                if (event.detail?.name === 'management') void showManagementWorkspace($('managementSection')?.dataset.activeWorkspace || 'pricing');
                 if (event.detail?.name === 'dashboard' && window.topGymAuth?.isOwner?.()
                     && !window.topGymAuth?.getUser?.()?.mustChangePassword) {
                     if (state.dashboard && state.saasSubscriptionLoaded) renderDashboard();

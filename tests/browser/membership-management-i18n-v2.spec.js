@@ -17,7 +17,7 @@ function json(route, body) {
     return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(body) });
 }
 
-test('membership management and pricing dialogs use central Arabic/English copy without changing drafts or issuing writes', async ({ page }, testInfo) => {
+test('membership management tabs use central Arabic/English copy without changing drafts or issuing writes', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One session captures the entire viewport/theme/locale matrix.');
     test.setTimeout(240_000);
 
@@ -78,6 +78,8 @@ test('membership management and pricing dialogs use central Arabic/English copy 
     const section = page.locator('#managementSection');
     await expect.poll(() => page.locator('html').getAttribute('data-top-gym-active-tab')).toBe('management');
     await expect(section).toBeVisible();
+    await expect(page.locator('#dayPassPricingContainer .loading')).toBeHidden();
+    await expect(page.locator('#dayPassPricingContainer .day-pass-pricing-card-grid, #dayPassPricingContainer .pricing-cards-empty')).toBeVisible();
 
     const matrix = [];
     for (const width of WIDTHS) {
@@ -94,8 +96,8 @@ test('membership management and pricing dialogs use central Arabic/English copy 
                     ? { title: 'Pricing and memberships', pricing: 'Plan pricing', types: 'Membership types' }
                     : { title: 'الأسعار والعضويات', pricing: 'أسعار الباقات', types: 'أنواع العضويات' };
                 await expect(section.locator('.panel-header h3')).toHaveText(expected.title);
-                await expect(section.locator('.management-shortcut').first()).toContainText(expected.pricing);
-                await expect(section.locator('.management-shortcut').nth(1)).toContainText(expected.types);
+                await expect(section.locator('#managementPricingTab')).toContainText(expected.pricing);
+                await expect(section.locator('#managementTypesTab')).toContainText(expected.types);
                 await expect(page.locator('html')).toHaveAttribute('dir', english ? 'ltr' : 'rtl');
                 const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
                 expect(pageWidth, `page overflow at ${width}/${theme}/${locale}`).toBeLessThanOrEqual(width);
@@ -103,19 +105,22 @@ test('membership management and pricing dialogs use central Arabic/English copy 
                 await section.screenshot({ path: path.join(OUTPUT, screenFile), animations: 'disabled' });
 
                 const readsBeforePricing = reads.filter((entry) => entry.path === '/api/pricing').length;
-                await section.locator('[data-open-dialog-button="pricingButton"]').click();
+                await section.locator('#managementPricingTab').click();
                 const pricingDialog = page.locator('#pricingDialog');
                 await expect(pricingDialog).toBeVisible();
+                await expect(pricingDialog).toHaveAttribute('role', 'tabpanel');
                 await expect(pricingDialog.locator('#pricingDialogTitle')).toHaveText(expected.pricing);
                 await expect(pricingDialog.locator('.pricing-table thead')).toContainText(english ? 'Monthly price' : 'السعر الشهري');
                 await expect(pricingDialog.locator('.pricing-table thead')).toContainText(english ? 'Custom price' : 'سعر مستقل');
                 const gymOnlyCard = pricingDialog.locator('#pricingTableContainer .pricing-plan-card[data-plan="gym_only"]');
                 const gymCardioCard = pricingDialog.locator('#pricingTableContainer .pricing-plan-card[data-plan="gym_cardio"]');
-                await expect(gymOnlyCard.locator('[data-field="planName"]')).toHaveValue('باقة تجريبية عربية');
+                const retainedDraft = matrix.length > 0;
+                await expect(gymOnlyCard.locator('[data-field="planName"]')).toHaveValue(retainedDraft ? 'Draft Gym Name' : 'باقة تجريبية عربية');
                 await expect(gymCardioCard.locator('[data-field="planName"]')).toHaveValue('Gym + Cardio QA');
                 const planName = gymOnlyCard.locator('[data-field="planName"]');
                 const monthlyPrice = gymOnlyCard.locator('[data-field="monthlyPrice"]');
                 const durationPrice = gymOnlyCard.locator('[data-field="typePrice"]').first();
+                await expect(monthlyPrice).toHaveValue(retainedDraft ? '731.25' : '350.00');
                 await planName.fill('Draft Gym Name');
                 await monthlyPrice.fill('731.25');
                 await durationPrice.fill('612.50');
@@ -130,13 +135,12 @@ test('membership management and pricing dialogs use central Arabic/English copy 
                 const pricingFile = `pricing-${width}-${theme}-${locale}.png`;
                 await pricingDialog.screenshot({ path: path.join(OUTPUT, pricingFile), animations: 'disabled' });
                 expect(pricingReadCount).toBeLessThanOrEqual(readsBeforePricing + 1);
-                // The shared responsive dialog owner replaces the footer close control
-                // with its accessible mobile header affordance; Escape is the stable
-                // keyboard close contract at every viewport.
-                await page.keyboard.press('Escape');
-                await expect(pricingDialog).not.toBeVisible();
+                // Selecting another inline workspace hides this panel but keeps
+                // its controls and draft mounted for the return trip.
+                await section.locator('#managementTypesTab').click();
+                await expect(pricingDialog).toBeHidden();
 
-                await section.locator('[data-open-dialog-button="membershipTypesButton"]').click();
+                await section.locator('#managementTypesTab').click();
                 const typesDialog = page.locator('#membershipTypesDialog');
                 await expect(typesDialog).toBeVisible();
                 await expect(typesDialog.locator('#membershipTypesDialogTitle')).toHaveText(expected.types);
@@ -173,11 +177,12 @@ test('membership management and pricing dialogs use central Arabic/English copy 
                 const typeFile = `type-form-${width}-${theme}-${locale}.png`;
                 await typeDialog.screenshot({ path: path.join(OUTPUT, typeFile), animations: 'disabled' });
                 await typeDialog.locator('#membershipTypeCancel').click();
-                await page.keyboard.press('Escape');
-                await expect(typesDialog).not.toBeVisible();
+                await expect(typesDialog).toBeVisible();
 
-                await section.locator('[data-open-dialog-button="pricingButton"]').click();
+                await section.locator('#managementPricingTab').click();
                 await expect(pricingDialog).toBeVisible();
+                await expect(gymOnlyCard.locator('[data-field="planName"]')).toHaveValue('Draft Gym Name');
+                await expect(gymOnlyCard.locator('[data-field="monthlyPrice"]')).toHaveValue('731.25');
                 await pricingDialog.locator('#addMembershipPlanButton').click();
                 const planDialog = page.locator('#membershipPlanDialog');
                 await expect(planDialog).toBeVisible();
@@ -195,22 +200,21 @@ test('membership management and pricing dialogs use central Arabic/English copy 
                 const planFile = `plan-form-${width}-${theme}-${locale}.png`;
                 await planDialog.screenshot({ path: path.join(OUTPUT, planFile), animations: 'disabled' });
                 await planDialog.locator('#membershipPlanCancel').click();
-                await page.keyboard.press('Escape');
-                await expect(pricingDialog).not.toBeVisible();
+                await expect(pricingDialog).toBeVisible();
 
                 const bounds = await page.evaluate(() => ({
                     viewport: innerWidth,
                     pageWidth: document.documentElement.scrollWidth,
                     bodyWidth: document.body.scrollWidth,
                     direction: getComputedStyle(document.getElementById('managementSection')).direction,
-                    pricingDialogWidth: document.getElementById('pricingDialog').getBoundingClientRect().width,
+                    pricingPanelWidth: document.getElementById('pricingDialog').getBoundingClientRect().width,
                     typeDialogWidth: document.getElementById('membershipTypeDialog').getBoundingClientRect().width,
                     planDialogWidth: document.getElementById('membershipPlanDialog').getBoundingClientRect().width
                 }));
                 expect(bounds.pageWidth).toBeLessThanOrEqual(width);
                 expect(bounds.bodyWidth).toBeLessThanOrEqual(width);
                 expect(bounds.direction).toBe(english ? 'ltr' : 'rtl');
-                expect(bounds.pricingDialogWidth).toBeLessThanOrEqual(width + 1);
+                expect(bounds.pricingPanelWidth).toBeLessThanOrEqual(width + 1);
                 matrix.push({ width, theme, locale, ...bounds, screenshots: [screenFile, pricingFile, typesFile, typeFile, planFile] });
             }
         }

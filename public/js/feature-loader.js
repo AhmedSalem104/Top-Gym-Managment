@@ -450,7 +450,7 @@
             // part of the first authenticated paint. Loading them together
             // after the app controller keeps the critical path deterministic.
             await Promise.allSettled([
-                loadScript('/js/dialog-enhancements.js?v=1e9fae4cd3db8acd', 'dialog-enhancements'),
+                loadScript('/js/dialog-enhancements.js?v=2fff3ff24aebbb0d', 'dialog-enhancements'),
                 loadScript('/js/table-cards.js?v=d291147d5c5749ad', 'table-cards'),
                 loadExternalAsset('sweetalert')
             ]);

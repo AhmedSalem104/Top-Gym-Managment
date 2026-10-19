@@ -449,11 +449,15 @@ test('dynamic Branch Create dialog opts into the central structured modal contra
     assert.match(source, /<form[^>]*\bclass="dialog-body branches-form"/u);
 });
 
-test('Platform Admin nested modal layout uses the shared scroll-body contract', () => {
+test('Platform Admin nested modals use the shared scroll-body contract while pricing workspaces remain inline', () => {
     const modal = read('public/css/components/modal-foundation.css');
     const enhancer = read('public/js/dialog-enhancements.js');
+    const html = read('public/index.html');
 
-    assert.match(enhancer, /structuredLayoutById[\s\S]*platformActionDialog[\s\S]*platformRegistrationCredentialsDialog[\s\S]*pricingDialog[\s\S]*membershipTypesDialog/u);
+    assert.match(enhancer, /structuredLayoutById[\s\S]*platformActionDialog[\s\S]*platformRegistrationCredentialsDialog/u);
+    assert.doesNotMatch(enhancer, /pricingDialog|membershipTypesDialog/u);
+    assert.match(html, /<section id="pricingDialog"[^>]*role="tabpanel"/u);
+    assert.match(html, /<section id="membershipTypesDialog"[^>]*role="tabpanel"/u);
     assert.match(modal, /\.lf-modal-layout[\s\S]*overflow:\s*hidden/u);
     assert.match(modal, /\.lf-modal-layout\s*>\s*:is\(\.dialog-body,\s*\.dialog-scroll-content\)[\s\S]*overflow-y:\s*auto/u);
     assert.match(modal, /\.lf-modal-layout\s*>\s*:is\(\.dialog-actions,\s*\.form-actions\):not\(:has\(>[\s\S]*display:\s*none/u);

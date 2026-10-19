@@ -16,7 +16,7 @@ const viewports = [
   { name: '1920', width: 1920, height: 1080 }
 ];
 const screenIds = ['dashboardSection', 'membersSection', 'traineesSection', 'managementSection', 'backupHistorySection', 'attendanceSection', 'expensesSection', 'librarySection', 'reportsSection', 'brandingSection', 'memberPaymentMethodsSection', 'saasBillingSection', 'permissionsSection', 'intelligenceSection', 'feedbackSection', 'storeSection', 'memberSubscriptionRequestsSection', 'portalAnalyticsSection'];
-const dialogIds = ['actionDialog', 'pricingDialog', 'membershipTypesDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog'];
+const dialogIds = ['actionDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog'];
 const lazyDialogFragments = [
   { source: '/dialogs/library.html?v=phase3-6', ids: ['libraryFormDialog', 'libraryDetailsDialog'] },
   { source: '/dialogs/coaching.html?v=phase3-6', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] },

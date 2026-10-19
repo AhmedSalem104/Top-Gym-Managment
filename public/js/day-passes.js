@@ -485,10 +485,6 @@
         openWhatsapp(sale, message);
     }
 
-    function pricingDialogOpened() {
-        window.setTimeout(() => { void loadPricing(); }, 0);
-    }
-
     function isAuthenticated() {
         return Boolean(window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.());
     }
@@ -531,11 +527,6 @@
             if (deleteButton) return deleteRecord(deleteButton.dataset.dayPassDelete);
         });
         $('dayPassPricingSave')?.addEventListener('click', savePricing);
-        document.addEventListener('click', (event) => {
-            if (event.target.closest('#pricingButton')) pricingDialogOpened();
-        }, true);
-        const pricingDialog = $('pricingDialog');
-        if (pricingDialog) new MutationObserver(() => { if (pricingDialog.hasAttribute('open')) pricingDialogOpened(); }).observe(pricingDialog, { attributes: true, attributeFilter: ['open'] });
         const loadAfterAuth = () => {
             const user = window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.();
             if (!user || user.mustChangePassword) return;

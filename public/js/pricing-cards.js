@@ -115,7 +115,8 @@
     }
 
     function findSourceTable(host, tableClass) {
-        return [...host.querySelectorAll(`table.${tableClass}`)].find((table) => table.dataset.pricingCardsSource !== 'true');
+        const tables = [...host.querySelectorAll(`table.${tableClass}`)];
+        return tables.find((table) => table.dataset.pricingCardsSource === 'true') || tables[0];
     }
 
     function createEmptyState(message) {
@@ -343,6 +344,8 @@
     const start = () => {
         enhanceAll();
     };
+
+    window.topGymPricingCards = Object.freeze({ refresh: enhanceAll });
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
     else start();

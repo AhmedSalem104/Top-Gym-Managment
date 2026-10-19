@@ -34,8 +34,6 @@
         backupRestoreDialog: 'lg',
         memberDialog: 'lg',
         dayPassDialog: 'md',
-        pricingDialog: 'xl',
-        membershipTypesDialog: 'xl',
         libraryFormDialog: 'lg',
         externalTraineeDialog: 'xl',
         coachingBuilderDialog: 'workspace'
@@ -43,8 +41,6 @@
     const structuredLayoutById = new Set([
         'platformActionDialog',
         'platformRegistrationCredentialsDialog',
-        'pricingDialog',
-        'membershipTypesDialog',
         'membersFiltersDialog'
     ]);
 

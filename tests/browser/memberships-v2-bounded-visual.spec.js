@@ -14,7 +14,7 @@ function json(route, payload) {
     return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
 }
 
-test('membership management keeps balanced hierarchy and usable dialogs across viewport, theme and direction', async ({ page }, testInfo) => {
+test('membership management keeps balanced hierarchy and usable inline tabs across viewport, theme and direction', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal viewport, theme and direction matrix.');
     const plan = planCatalog.PLAN_CONFIGURATIONS.find((item) => item.code === 'business');
     const writes = [];
@@ -63,51 +63,38 @@ test('membership management keeps balanced hierarchy and usable dialogs across v
                 }, { themeValue: theme, localeValue: locale });
 
                 const section = page.locator('#managementSection');
-                const shortcuts = section.locator('.management-shortcuts');
                 await expect(section).toBeVisible();
                 expect(await page.locator('html').getAttribute('dir')).toBe(locale === 'ar' ? 'rtl' : 'ltr');
-                const shortcutPadding = await shortcuts.evaluate((element) => {
-                    const style = getComputedStyle(element);
-                    return { top: parseFloat(style.paddingTop), bottom: parseFloat(style.paddingBottom) };
-                });
-                expect(shortcutPadding.top, `unused reserved header space at ${width}px/${theme}/${locale}`).toBe(shortcutPadding.bottom);
+                const pricingTab = section.locator('#managementPricingTab');
+                const typesTab = section.locator('#managementTypesTab');
+                await expect(pricingTab).toHaveAttribute('role', 'tab');
+                await expect(typesTab).toHaveAttribute('role', 'tab');
+                for (const tab of [pricingTab, typesTab]) {
+                    const tabBounds = await tab.boundingBox();
+                    expect(tabBounds?.height, `tab touch target at ${width}px/${theme}/${locale}`).toBeGreaterThanOrEqual(44);
+                }
                 expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
                 await section.screenshot({ path: path.join(OUTPUT_DIR, `management-${width}-${theme}-${locale}.png`) });
 
-                for (const [action, dialogId] of [['pricingButton', 'pricingDialog'], ['membershipTypesButton', 'membershipTypesDialog']]) {
-                    await section.locator(`[data-open-dialog-button="${action}"]`).click();
-                    const dialog = page.locator(`#${dialogId}`);
-                    await expect(dialog).toBeVisible();
-                    const layout = await dialog.evaluate((element) => {
-                        const dialogRect = element.getBoundingClientRect();
-                        const close = element.querySelector(':scope > .dialog-close-button');
+                for (const [tab, panelId] of [[pricingTab, 'pricingDialog'], [typesTab, 'membershipTypesDialog']]) {
+                    await tab.click();
+                    const panel = page.locator(`#${panelId}`);
+                    await expect(panel).toBeVisible();
+                    const bounds = await panel.evaluate((element) => {
+                        const panelRect = element.getBoundingClientRect();
                         const heading = element.querySelector('.management-dialog-heading h3');
-                        const closeRect = close.getBoundingClientRect();
                         const headingRect = heading.getBoundingClientRect();
-                        const textRange = document.createRange();
-                        textRange.selectNodeContents(heading);
-                        const headingTextRects = [...textRange.getClientRects()].map((rect) => ({
-                            left: rect.left,
-                            right: rect.right,
-                            top: rect.top,
-                            bottom: rect.bottom
-                        }));
                         return {
-                            dialog: { left: dialogRect.left, right: dialogRect.right, top: dialogRect.top, bottom: dialogRect.bottom },
-                            close: { left: closeRect.left, right: closeRect.right, top: closeRect.top, bottom: closeRect.bottom, width: closeRect.width, height: closeRect.height },
-                            heading: { left: headingRect.left, right: headingRect.right, top: headingRect.top, bottom: headingRect.bottom },
-                            headingTextRects,
-                            overlaps: headingTextRects.some((rect) => closeRect.left < rect.right && closeRect.right > rect.left && closeRect.top < rect.bottom && closeRect.bottom > rect.top)
+                            panel: { left: panelRect.left, right: panelRect.right, width: panelRect.width },
+                            heading: { left: headingRect.left, right: headingRect.right },
+                            headingInside: headingRect.left >= panelRect.left && headingRect.right <= panelRect.right
                         };
                     });
-                    expect(layout.dialog.left).toBeGreaterThanOrEqual(-1);
-                    expect(layout.dialog.right).toBeLessThanOrEqual(width + 1);
-                    expect(layout.close.width).toBeGreaterThanOrEqual(44);
-                    expect(layout.close.height).toBeGreaterThanOrEqual(44);
-                    expect(layout.overlaps, `${dialogId} close control overlaps its heading at ${width}px/${theme}/${locale}`).toBe(false);
-                    await dialog.screenshot({ path: path.join(OUTPUT_DIR, `${dialogId}-${width}-${theme}-${locale}.png`) });
-                    matrix.push({ width, theme, locale, dialog: dialogId, ...layout });
-                    await dialog.evaluate((element) => element.close());
+                    expect(bounds.panel.left).toBeGreaterThanOrEqual(-1);
+                    expect(bounds.panel.right).toBeLessThanOrEqual(width + 1);
+                    expect(bounds.headingInside, `${panelId} heading clipped at ${width}px/${theme}/${locale}`).toBe(true);
+                    await panel.screenshot({ path: path.join(OUTPUT_DIR, `${panelId}-${width}-${theme}-${locale}.png`) });
+                    matrix.push({ width, theme, locale, panel: panelId, ...bounds });
                 }
             }
         }

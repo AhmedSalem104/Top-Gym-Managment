@@ -55,32 +55,32 @@
   padding: var(--space-5);
 }
 
-#managementSection .management-shortcuts {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border-color: var(--border-secondary);
+#managementSection .management-workspace-tabs { margin-block: var(--space-4); }
+
+#managementSection .management-workspace-panels,
+#managementSection .management-workspace-panel { min-width: 0; }
+
+#managementSection .management-workspace-panel {
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
-  padding: var(--space-4);
 }
 
-#managementSection .management-shortcut {
-  min-height: 96px;
-  border-width: 1px;
-  box-shadow: var(--shadow-xs);
+#managementSection .management-inline-form { display: grid; min-width: 0; }
+
+#managementSection .management-workspace-content {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-5);
+  padding: var(--space-5);
 }
 
-#managementSection .management-shortcut:first-of-type {
-  border-color: var(--primary-border);
-  background: var(--bg-card);
-}
-
-#managementSection .management-shortcut:last-of-type {
-  border-color: var(--primary-border);
-  background: var(--bg-card);
-}
-
-#managementSection .management-shortcut:last-of-type .management-shortcut-icon {
-  background: var(--primary-soft);
-  color: var(--primary);
+#managementSection .dialog-actions.dialog-footer {
+  display: flex;
+  justify-content: flex-start;
+  border-top: 1px solid var(--border-color);
+  padding: var(--space-4) var(--space-5);
 }
 
 #pricingDialog { border-color: var(--primary-border); }
@@ -165,9 +165,9 @@
 
 #pricingDialog .pricing-table-scroll,
 #membershipTypesDialog .pricing-table-scroll {
-  max-height: 212px;
+  max-height: none;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: visible;
   padding: 0;
   background: transparent;
 }
@@ -188,14 +188,6 @@
 #membershipTypesDialog .pricing-table-scroll::-webkit-scrollbar-thumb {
   border-radius: var(--radius-pill);
   background: var(--border-strong);
-}
-
-#membershipTypesDialog #membershipTypesTableContainer {
-  max-height: 360px;
-}
-
-#pricingDialog #dayPassPricingContainer {
-  max-height: 240px;
 }
 
 #pricingDialog .pricing-table,
@@ -328,9 +320,8 @@
   color: var(--text-on-primary);
 }
 
-/* Pricing management dialogs use three independent zones: the header and
-   footer stay in place while only the content region scrolls. This prevents
-   sticky layers from covering fields or table rows when the catalog grows. */
+/* Inline pricing workspaces use the same tokens as dialogs without inheriting
+   modal sizing or scroll constraints. */
 .management-dialog-header {
   align-items: center;
   flex: 0 0 auto;
@@ -344,14 +335,6 @@
   display: grid;
   min-width: 0;
   gap: var(--space-1);
-}
-
-/* The canonical dialog close control is anchored at the physical left edge.
-   In LTR, the first header item starts at that same edge, so reserve its
-   touch-target width in these two management dialogs to keep title text clear. */
-html[dir="ltr"] #pricingDialog .management-dialog-heading,
-html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
-  margin-inline-start: calc(var(--ui-touch-target) + var(--space-2));
 }
 
 .management-dialog-eyebrow {
@@ -395,26 +378,11 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   color: var(--primary);
 }
 
-.dialog-scroll-content {
-  display: grid;
-  min-height: 0;
-  align-content: start;
-  gap: var(--space-5);
-}
-
-#pricingDialog .dialog-scroll-content .day-pass-pricing-section {
+#pricingDialog .management-workspace-content .day-pass-pricing-section {
   margin-top: 0;
 }
 
-#pricingDialog .dialog-footer,
-#membershipTypesDialog .dialog-footer {
-  border-top: 1px solid var(--border-color);
-  background: var(--color-surface);
-  box-shadow: none;
-}
-
-#pricingDialog .dialog-footer .btn,
-#membershipTypesDialog .dialog-footer .btn {
+#pricingDialog .dialog-actions.dialog-footer .btn {
   min-width: 112px;
 }
 
@@ -423,19 +391,13 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
     padding: var(--space-4);
   }
 
-  .dialog-scroll-content {
+  #managementSection .management-workspace-content {
     gap: var(--space-4);
     padding: var(--space-4);
   }
 
-  #pricingDialog .dialog-footer,
-  #membershipTypesDialog .dialog-footer {
-    flex-wrap: wrap;
-  }
-
-  #pricingDialog .dialog-footer .btn,
-  #membershipTypesDialog .dialog-footer .btn {
-    flex: 1 1 150px;
+  #managementSection .dialog-actions.dialog-footer {
+    padding: var(--space-3) var(--space-4);
   }
 }
 
@@ -471,11 +433,8 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
 }
 
 @media (max-width: 767px) {
-  #pricingDialog,
-  #membershipTypesDialog { width: calc(100% - 20px); }
-
-  #managementSection .management-shortcuts { grid-template-columns: 1fr; }
-  #managementSection .management-shortcut { min-height: 82px; }
+  #managementSection .management-workspace-tabs { width: 100%; }
+  #managementSection .management-workspace-tabs > [role="tab"] { flex: 1 1 0; }
 }
 
 .day-pass-pricing-section {
@@ -1579,38 +1538,13 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   line-height: 1.55;
 }
 
-#managementSection .management-shortcuts {
-  gap: var(--space-3);
-  padding: var(--space-4);
-}
-
-#managementSection .management-shortcut {
-  min-height: 70px;
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-#managementSection .management-shortcut-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-}
-
-#managementSection .management-shortcut-icon .ui-icon {
-  width: 17px;
-  height: 17px;
-}
-
-#managementSection .management-shortcut-arrow { width: 16px; }
-
-/* Both management dialogs share the same width and scroll contract. The
-   content area owns vertical scrolling, while wide tables can scroll only
-   horizontally inside their own wrapper when the viewport is narrow. */
+/* Catalog tables remain in normal page flow; only genuinely wide tables may
+   scroll horizontally within their own wrapper. */
 #pricingDialog .pricing-table-scroll,
 #membershipTypesDialog .pricing-table-scroll {
   min-width: 0;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: visible;
 }
 
 #pricingDialog .pricing-table,
@@ -1618,16 +1552,13 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   margin: 0;
 }
 
-@media (max-width: 767px) {
-  #managementSection .management-shortcut { min-height: 82px; }
-}
-
 /* Pricing catalogs are edited as cards so every price keeps a readable label
-   and a comfortable input width without forcing the dialog into a wide table. */
+   and a comfortable input width without forcing the page beyond its content. */
 #pricingDialog .pricing-table-scroll,
 #membershipTypesDialog .pricing-table-scroll {
   max-height: none;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 #pricingDialog #pricingTableContainer,
@@ -1882,39 +1813,6 @@ html[dir="ltr"] #membershipTypesDialog .management-dialog-heading {
   border-color: var(--primary-border);
   background: var(--primary-soft);
   color: var(--color-primary);
-}
-
-/* Membership dialogs use the shared generated close control. Complete its
-   feature surface so it never falls back to the browser's default button
-   border or padding in either theme. Geometry and close behavior stay owned
-   by the canonical dialog foundation. */
-#pricingDialog > .dialog-close-button,
-#membershipTypesDialog > .dialog-close-button {
-  box-sizing: border-box;
-  border: 1px solid var(--border-secondary);
-  padding: 0;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
-}
-
-#pricingDialog > .dialog-close-button > .ui-icon,
-#membershipTypesDialog > .dialog-close-button > .ui-icon {
-  display: block;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-}
-
-#pricingDialog > .dialog-close-button:hover,
-#membershipTypesDialog > .dialog-close-button:hover {
-  border-color: var(--danger-border);
-}
-
-#pricingDialog > .dialog-close-button:focus-visible,
-#membershipTypesDialog > .dialog-close-button:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
 }
 
 .pricing-plan-card-actions .pricing-card-action:hover:not(:disabled) {
