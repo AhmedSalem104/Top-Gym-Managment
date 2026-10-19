@@ -281,7 +281,7 @@
     function scheduleNotificationCenter() {
         const load = async () => {
             if (window.topGymNotificationCenter || !window.topGymAuth?.getUser?.()) return;
-            await loadScript('/js/notification-center.js?v=56bb4da9834f63ff', 'notification-center');
+            await loadScript('/js/notification-center.js?v=3cff98f409897d04', 'notification-center');
         };
         const schedule = () => {
             if ('requestIdleCallback' in window) window.requestIdleCallback(() => void load().catch(() => null), { timeout: 1600 });

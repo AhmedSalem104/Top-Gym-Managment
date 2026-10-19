@@ -163,19 +163,33 @@ test('notification category filter uses localized keyboard-accessible choices an
     await expect(englishPayment).toHaveText('Payments');
     await expect(englishPayment).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('#notificationCenterPanel')).toHaveAttribute('dir', 'ltr');
-    const selectedBounds = await englishPayment.evaluate((choice) => {
-        const bounds = choice.getBoundingClientRect();
-        const groupBounds = choice.parentElement.getBoundingClientRect();
-        return { left: bounds.left, right: bounds.right, groupLeft: groupBounds.left, groupRight: groupBounds.right };
+    const choiceLayout = await englishGroup.evaluate((element) => {
+        const groupBounds = element.getBoundingClientRect();
+        const choices = [...element.querySelectorAll('[data-notification-category]')].map((choice) => {
+            const bounds = choice.getBoundingClientRect();
+            return { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom };
+        });
+        return {
+            groupLeft: groupBounds.left,
+            groupRight: groupBounds.right,
+            horizontalOverflow: element.scrollWidth > element.clientWidth,
+            choices
+        };
     });
-    expect(selectedBounds.left).toBeGreaterThanOrEqual(selectedBounds.groupLeft - 1);
-    expect(selectedBounds.right).toBeLessThanOrEqual(selectedBounds.groupRight + 1);
+    expect(choiceLayout.horizontalOverflow).toBe(false);
+    for (const bounds of choiceLayout.choices) {
+        expect(bounds.left).toBeGreaterThanOrEqual(choiceLayout.groupLeft - 1);
+        expect(bounds.right).toBeLessThanOrEqual(choiceLayout.groupRight + 1);
+    }
+    expect(new Set(choiceLayout.choices.map((choice) => choice.top)).size).toBeGreaterThan(1);
     await page.screenshot({ path: testInfo.outputPath('notification-filter-en-mobile.png') });
 
     const bounds = await englishGroup.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds.width).toBeLessThanOrEqual(390);
-    expect(await englishGroup.evaluate((element) => element.scrollWidth >= element.clientWidth)).toBe(true);
+    expect(await englishGroup.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
+        await englishGroup.evaluate((element) => element.clientWidth)
+    );
 });
 
 test('notification empty and error states are rendered in the list region', async ({ page }) => {

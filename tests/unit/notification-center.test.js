@@ -22,6 +22,10 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /data-notification-category="subscription"/);
     assert.match(center, /categoryFilter\.addEventListener\('keydown'/);
     assert.doesNotMatch(center, /<select id="notificationCategoryFilter"/);
+    assert.match(center, /class="notification-center-filter logicfit-filter-choices logicfit-filter-choices--wrap"/u,
+        'notification filter uses the shared wrapping choice variant');
+    assert.match(read('public/css/components/tabs.css'), /\.logicfit-filter-choices\.logicfit-filter-choices--wrap\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow:\s*visible;/u,
+        'the canonical wrapping choice variant does not scroll horizontally');
     assert.match(read('public/index.html'), /<details class="topbar-more-menu">[\s\S]*?<div class="top-actions topbar-quick-actions">/u,
         'the More action precedes notifications in the shared topbar action order');
     assert.doesNotMatch(read('public/index.html'), /id="topPricingButton"/u,

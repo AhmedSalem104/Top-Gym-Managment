@@ -614,7 +614,7 @@
           </button>
         </div>
         <span class="notification-center-filter-label" id="notificationCategoryFilterLabel">تصفية الإشعارات</span>
-        <div id="notificationCategoryFilter" class="notification-center-filter logicfit-filter-choices" role="radiogroup" aria-labelledby="notificationCategoryFilterLabel">
+        <div id="notificationCategoryFilter" class="notification-center-filter logicfit-filter-choices logicfit-filter-choices--wrap" role="radiogroup" aria-labelledby="notificationCategoryFilterLabel">
           <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="true" tabindex="0" data-notification-category="">كل الإشعارات</button>
           <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="registration">التسجيل</button>
           <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="membership">العضويات</button>
