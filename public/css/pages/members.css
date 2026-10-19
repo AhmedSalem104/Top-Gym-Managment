@@ -93,8 +93,9 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
 
 .members-filter-tabs-row {
   display: flex;
+  width: 100%;
   min-width: 0;
-  align-items: center;
+  align-items: stretch;
   gap: var(--space-2);
   overflow-x: auto;
   overscroll-behavior-inline: contain;
@@ -103,13 +104,16 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
 }
 
 .members-filter-tabs-row > .logicfit-filter-choices {
-  width: max-content;
+  width: auto;
   max-width: none;
-  flex: 0 0 auto;
+  min-width: calc(5 * var(--ui-touch-target) + 4 * var(--space-1));
+  flex: 5 0 0;
   gap: var(--space-1);
 }
 
 .members-filter-tabs-row > .members-sort-choices {
+  min-width: calc(3 * var(--ui-touch-target) + 2 * var(--space-1));
+  flex: 3 0 0;
   padding-inline-start: var(--space-2);
   border-inline-start: 1px solid var(--border-secondary);
 }

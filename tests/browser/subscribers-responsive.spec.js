@@ -277,6 +277,12 @@ test('subscribers use the table on desktop and a single responsive card list on 
     await expect(page.locator('.members-filter-tabs-row [data-filter-choices-for="sortFilter"] [role="radio"]')).toHaveCount(3);
     await page.locator('.members-filter-tabs-row [data-filter-choices-for="sortFilter"] [data-filter-value="remaining"]').click();
     await expect(page.locator('#sortFilter')).toHaveValue('remaining');
+    const filterTabSizes = await page.locator('.members-filter-tabs-row [role="radio"]').evaluateAll((buttons) => buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+    }));
+    expect(Math.max(...filterTabSizes.map(({ width }) => width)) - Math.min(...filterTabSizes.map(({ width }) => width))).toBeLessThanOrEqual(2);
+    expect(new Set(filterTabSizes.map(({ height }) => height)).size).toBe(1);
     await page.screenshot({ path: test.info().outputPath('subscribers-filters-mobile.png'), fullPage: true });
     await expect(page.locator('.members-mobile-pagination > span')).toHaveText('1 / 33');
     await page.locator('.members-mobile-pagination [aria-label="التالي"]').click();

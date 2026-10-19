@@ -79,6 +79,18 @@ test('prominent icon sizing is a token-backed Buttons variant', () => {
     assert.doesNotMatch(dashboard, /backup-history[^\n]*\.ui-icon\s*\{/u);
 });
 
+test('member filter groups use the canonical equal-choice variant and visible selected treatment', () => {
+    const tabs = read('public/css/components/tabs.css');
+    const members = read('public/css/pages/members.css');
+    const app = read('public/js/app.js');
+
+    assert.match(tabs, /logicfit-filter-choices--equal \.logicfit-filter-choice\s*\{[^}]*min-width:\s*var\(--ui-touch-target\);[^}]*flex:\s*1 1 0;/u);
+    assert.match(tabs, /logicfit-filter-choices--outlined \.logicfit-filter-choice\[aria-checked="true"\][\s\S]*?background:\s*var\(--primary-soft\)[\s\S]*?box-shadow:\s*inset 0 0 0 1px var\(--primary-border\)/u);
+    assert.match(members, /\.members-filter-tabs-row\s*>\s*\.members-sort-choices\s*\{[^}]*flex:\s*3 0 0;/u);
+    assert.match(app, /statusChoices\.classList\.add\('logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--equal'/u);
+    assert.match(app, /sortChoices\.classList\.add\('logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--equal'/u);
+});
+
 test('retired RF visual aliases have no consumers or token definitions in canonical CSS sources', () => {
     const cssRoot = path.join(root, 'public/css');
     const sourcePaths = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

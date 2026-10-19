@@ -1157,8 +1157,8 @@
             sortField.classList.add('visually-hidden');
             statusField.querySelector('span')?.classList.add('visually-hidden');
             sortField.querySelector('span')?.classList.add('visually-hidden');
-            statusChoices.classList.add('logicfit-filter-choices--outlined', 'members-status-choices');
-            sortChoices.classList.add('logicfit-filter-choices--outlined', 'members-sort-choices');
+            statusChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-status-choices');
+            sortChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-sort-choices');
             filterRow.append(statusField, statusChoices, sortField, sortChoices);
             const clearButton = document.createElement('button');
             clearButton.className = 'btn btn-light btn-small members-clear-filters';
