@@ -137,10 +137,21 @@ test('Member feedback filter tabs and today date defaults', async ({ page }, tes
         }
     }
 
+    let readsBeforeFilterChange = runtime.feedbackReads.length;
     await page.locator('[data-filter-choices-for="memberFeedbackRatingFilter"] [data-filter-value="5"]').click();
     await expect(page.locator('#memberFeedbackRatingFilter')).toHaveValue('5');
+    await expect.poll(() => runtime.feedbackReads.length).toBe(readsBeforeFilterChange + 1);
+    expect(runtime.feedbackReads.at(-1)).toContain('rating=5');
+    readsBeforeFilterChange = runtime.feedbackReads.length;
     await page.locator('[data-filter-choices-for="memberFeedbackTypeFilter"] [data-filter-value="suggestion"]').click();
     await expect(page.locator('#memberFeedbackTypeFilter')).toHaveValue('suggestion');
+    await expect.poll(() => runtime.feedbackReads.length).toBe(readsBeforeFilterChange + 1);
+    expect(runtime.feedbackReads.at(-1)).toContain('noteType=suggestion');
+    readsBeforeFilterChange = runtime.feedbackReads.length;
+    await page.locator('#memberFeedbackFromFilter').fill('2026-10-01');
+    await expect.poll(() => runtime.feedbackReads.length).toBe(readsBeforeFilterChange + 1);
+    expect(runtime.feedbackReads.at(-1)).toContain('from=2026-10-01');
+    await expect(page.locator('[data-feedback-filter-period-title]')).toHaveText('Submission period');
     const readsBeforeReset = runtime.feedbackReads.length;
     await page.locator('#memberFeedbackReset').click();
     await expect.poll(() => runtime.feedbackReads.length).toBe(readsBeforeReset + 1);

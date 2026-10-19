@@ -100,8 +100,14 @@ test('member feedback rating and type use canonical wrapped choices with local t
     assert.match(helper, /if \(choiceField\) select\.insertAdjacentElement\('afterend', group\)/u);
     assert.match(feature, /input\.defaultValue = today;[\s\S]*?if \(!input\.value\) input\.value = today;/u);
     assert.match(feature, /logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--wrap'/u);
+    assert.match(feature, /memberFeedbackRatingFilter',\s*'memberFeedbackTypeFilter',\s*'memberFeedbackFromFilter',\s*'memberFeedbackToFilter'/u);
+    assert.match(feature, /const requestId = \+\+state\.requestId;[\s\S]*?state\.controller\?\.abort\(\);/u);
     assert.match(filters, /\.member-feedback-filter-field\s*\{[^}]*grid-column:\s*span 6/u);
+    assert.match(filters, /\.member-feedback-filter-field--rating/u);
+    assert.match(filters, /\.member-feedback-filter-field--type/u);
+    assert.match(filters, /\.member-feedback-date-range\s*\{[^}]*grid-column:\s*span 6/u);
     assert.match(filters, /\.member-feedback-filters\s*\{[^}]*grid-template-columns:\s*repeat\(12,\s*minmax\(0,\s*1fr\)\)/u);
+    assert.match(read('public/index.html'), /data-feedback-filter-period-title/u);
 });
 
 test('retired RF visual aliases have no consumers or token definitions in canonical CSS sources', () => {

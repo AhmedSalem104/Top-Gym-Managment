@@ -9,7 +9,7 @@
     const listElement = $('memberFeedbackList');
     const metaElement = $('memberFeedbackMeta');
     const paginationElement = $('memberFeedbackPagination');
-    const state = { page: 1, pageSize: 10, controller: null, loading: false, view: 'loading', items: [], pagination: null };
+    const state = { page: 1, pageSize: 10, controller: null, requestId: 0, view: 'loading', items: [], pagination: null };
     const fallbackText = {
         'feedback.value.unavailable': '—',
         'feedback.error.description': 'حدثت مشكلة أثناء تحميل التقييمات. حاول مرة أخرى.'
@@ -73,6 +73,7 @@
         setLabel('memberFeedbackFromFilter', 'feedback.filter.from');
         setLabel('memberFeedbackToFilter', 'feedback.filter.to');
         setLabel('memberFeedbackSearch', 'feedback.filter.search');
+        setText(section.querySelector('[data-feedback-filter-period-title]'), 'feedback.filter.period');
         setText($('memberFeedbackReset'), 'feedback.reset');
         const search = $('memberFeedbackSearch');
         if (search) search.placeholder = t('feedback.filter.search.placeholder');
@@ -175,24 +176,24 @@
     }
 
     async function load() {
-        if (!listElement || state.loading) return;
-        state.loading = true;
-        state.view = 'loading';
+        if (!listElement) return;
+        const requestId = ++state.requestId;
         state.controller?.abort();
-        state.controller = new AbortController();
+        const controller = new AbortController();
+        state.controller = controller;
+        state.view = 'loading';
         renderCurrentState();
         try {
-            const data = await window.topGymApi.request(`/api/member-feedback?${queryString()}`, { signal: state.controller.signal });
+            const data = await window.topGymApi.request(`/api/member-feedback?${queryString()}`, { signal: controller.signal });
+            if (requestId !== state.requestId) return;
             state.items = Array.isArray(data.feedback) ? data.feedback : [];
             state.pagination = data.pagination || null;
             state.view = 'results';
             renderCurrentState();
         } catch (error) {
-            if (error.name === 'AbortError') return;
+            if (error.name === 'AbortError' || requestId !== state.requestId) return;
             state.view = 'error';
             renderCurrentState();
-        } finally {
-            state.loading = false;
         }
     }
 
@@ -212,6 +213,12 @@
     });
     $('memberFeedbackReset')?.addEventListener('click', resetFilters);
     $('memberFeedbackRefresh')?.addEventListener('click', () => void load());
+    ['memberFeedbackRatingFilter', 'memberFeedbackTypeFilter', 'memberFeedbackFromFilter', 'memberFeedbackToFilter'].forEach((id) => {
+        $(id)?.addEventListener('change', () => {
+            state.page = 1;
+            void load();
+        });
+    });
     let searchTimer;
     $('memberFeedbackSearch')?.addEventListener('input', () => {
         window.clearTimeout(searchTimer);
