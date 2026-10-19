@@ -234,6 +234,13 @@
     function applyPageLocale() {
         const section = $('intelligenceSection');
         if (!section) return;
+        const planTypeTabs = $('intelligencePlanForm')?.querySelector('.intelligence-plan-type');
+        if (planTypeTabs) {
+            planTypeTabs.setAttribute('aria-label', t('plans.type.label'));
+            planTypeTabs.querySelectorAll('[data-intelligence-type]').forEach((button) => {
+                button.textContent = t(button.dataset.intelligenceType === 'diet' ? 'plans.type.diet' : 'plans.type.workout');
+            });
+        }
         preserveDynamicCopy(section);
         window.TopGymI18n?.annotateText?.(section, 'intelligenceScreen.', [
             '#intelligenceStats', '#intelligencePriorities', '#intelligenceChurnTable',
@@ -303,10 +310,22 @@
 
     function setPlanType(type) {
         state.type = type;
-        document.querySelectorAll('[data-intelligence-type]').forEach((button) => {
+        const planTypeTabs = $('intelligencePlanForm')?.querySelector('.intelligence-plan-type');
+        planTypeTabs?.classList.add('tabs', 'tabs--section-switcher');
+        planTypeTabs?.querySelectorAll('[data-intelligence-type]').forEach((button) => {
+            button.classList.add('tab-button');
+            const buttonType = button.dataset.intelligenceType;
+            const panelId = buttonType === 'diet' ? 'intelligenceDietFields' : 'intelligenceWorkoutFields';
+            button.id = `intelligencePlanType-${buttonType}`;
+            button.setAttribute('aria-controls', panelId);
             const active = button.dataset.intelligenceType === type;
             button.classList.toggle('is-active', active);
             button.setAttribute('aria-selected', String(active));
+        });
+        [['intelligenceWorkoutFields', 'workout'], ['intelligenceDietFields', 'diet']].forEach(([panelId, buttonType]) => {
+            const panel = $(panelId);
+            panel?.setAttribute('role', 'tabpanel');
+            panel?.setAttribute('aria-labelledby', `intelligencePlanType-${buttonType}`);
         });
         $('intelligenceWorkoutFields').hidden = type !== 'workout';
         $('intelligenceDietFields').hidden = type !== 'diet';

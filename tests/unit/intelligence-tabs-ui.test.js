@@ -18,6 +18,11 @@ test('operational intelligence uses equal accessible local tabs without replacin
     assert.match(script, /nodes:\s*\[plans\]/u);
     assert.match(script, /role',\s*'tabpanel'/u);
     assert.match(script, /setAttribute\('aria-selected',\s*String\(active\)\)/u);
+    assert.match(script, /planTypeTabs\?\.classList\.add\('tabs',\s*'tabs--section-switcher'\)/u);
+    assert.match(script, /button\.textContent\s*=\s*t\(button\.dataset\.intelligenceType\s*===\s*'diet'/u);
+    assert.match(script, /setAttribute\('aria-controls',\s*panelId\)/u);
+    assert.match(styles, /\.intelligence-plan-type\s*>\s*\[role="tab"\]\s*\{\s*flex:\s*1/u);
+    assert.doesNotMatch(styles, /\.intelligence-plan-type button\.is-active/u);
     assert.match(script, /event\.key === 'Home'[\s\S]*?event\.key === 'End'[\s\S]*?event\.key === 'ArrowRight'[\s\S]*?event\.key === 'ArrowLeft'/u);
     assert.match(styles, /\.intelligence-content-tabs[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/u);
     assert.match(translations, /'intelligenceScreen\.tabs\.overview':\s*'نظرة عامة'/u);

@@ -66,6 +66,49 @@ async function installReadOnlyFixtures(page) {
     };
 }
 
+test('AI workout and nutrition plan tabs are distinct, localized, and preserve their selected form panels', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The focused tab check runs once in the desktop browser project.');
+    const runtime = await installReadOnlyFixtures(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/index.html#intelligence', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#intelligenceSection')).toBeVisible();
+    await page.locator('[data-intelligence-content-tab="plans"]').click();
+
+    const workout = page.locator('[data-intelligence-type="workout"]');
+    const nutrition = page.locator('[data-intelligence-type="diet"]');
+    const group = page.locator('.intelligence-plan-type');
+    await expect(group).toHaveAttribute('aria-label', '\u0646\u0648\u0639 \u0627\u0644\u062e\u0637\u0629');
+    await expect(workout).toHaveAttribute('aria-selected', 'true');
+    await expect(workout).toHaveAttribute('aria-controls', 'intelligenceWorkoutFields');
+    await expect(nutrition).toHaveAttribute('aria-controls', 'intelligenceDietFields');
+    expect(await workout.evaluate((button) => getComputedStyle(button).backgroundColor)).toBe('rgb(0, 112, 243)');
+    await page.screenshot({ path: test.info().outputPath('intelligence-plan-tabs-workout.png'), fullPage: true });
+    await nutrition.click();
+    await expect(nutrition).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#intelligenceDietFields')).toBeVisible();
+    await expect(page.locator('#intelligenceWorkoutFields')).toBeHidden();
+    await page.screenshot({ path: test.info().outputPath('intelligence-plan-tabs-nutrition.png'), fullPage: true });
+    await workout.click();
+    await expect(page.locator('#intelligenceWorkoutFields')).toBeVisible();
+    expect(runtime.writes).toEqual([]);
+
+    for (const language of ['en', 'ar']) {
+        for (const theme of ['light', 'dark']) {
+            await page.evaluate(({ lang, mode }) => {
+                document.documentElement.dataset.theme = mode;
+                document.body.dataset.theme = mode;
+                window.TopGymI18n.set(lang, { persist: false });
+            }, { lang: language, mode: theme });
+            await expect(workout).toHaveText(language === 'en' ? 'Workout plan' : '\u062e\u0637\u0629 \u062a\u062f\u0631\u064a\u0628');
+            await expect(nutrition).toHaveText(language === 'en' ? 'Nutrition plan' : '\u062e\u0637\u0629 \u062a\u063a\u0630\u064a\u0629');
+            const contrast = await nutrition.evaluate((button) => getComputedStyle(button).color);
+            expect(contrast).not.toBe('rgba(0, 0, 0, 0)');
+        }
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.screenshot({ path: test.info().outputPath('intelligence-plan-tabs-desktop.png'), fullPage: true });
+});
+
 test('intelligence central Arabic/English presentation preserves data and state across themes and viewports', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'A single desktop project records all requested viewports.');
     test.setTimeout(180_000);
