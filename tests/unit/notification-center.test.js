@@ -26,8 +26,12 @@ test('notification center is loaded only by account shells and uses safe same-or
         'notification filter uses the shared wrapping choice variant');
     assert.match(read('public/css/components/tabs.css'), /\.logicfit-filter-choices\.logicfit-filter-choices--wrap\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow:\s*visible;/u,
         'the canonical wrapping choice variant does not scroll horizontally');
-    assert.match(read('public/index.html'), /<details class="topbar-more-menu">[\s\S]*?<div class="top-actions topbar-quick-actions">/u,
-        'the More action precedes notifications in the shared topbar action order');
+    assert.match(read('public/index.html'), /<div class="top-actions topbar-quick-actions">[\s\S]*?<details class="topbar-more-menu">/u,
+        'notifications precede the More action in the shared topbar order');
+    assert.match(read('public/css/components/navigation-shell.css'), /body \.topbar-quick-actions\s*\{[^}]*order:\s*0;/u,
+        'notification actions retain the first visual order slot');
+    assert.match(read('public/css/components/navigation-shell.css'), /body \.topbar-more-menu\s*\{\s*order:\s*2;/u,
+        'More follows notification actions in both reading directions');
     assert.doesNotMatch(read('public/index.html'), /id="topPricingButton"/u,
         'pricing quick action is not rendered in the topbar');
     assert.match(read('public/index.html'), /id="pricingButton"/u,

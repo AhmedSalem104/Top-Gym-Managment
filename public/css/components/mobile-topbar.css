@@ -126,6 +126,7 @@
 @media (min-width: 1280px) {
   .app-shell > .topbar .topbar-inner { padding-inline: var(--app-content-gutter-wide); }
   .app-shell > .topbar #branchContextShell { max-width: 400px; }
+  .app-shell > .topbar .topbar-more-menu > .topbar-more-trigger { display: none; }
 }
 
 @media (max-width: 1023px) {

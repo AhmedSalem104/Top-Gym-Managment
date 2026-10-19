@@ -281,11 +281,11 @@ test.describe('real dynamically-created branches page V2', () => {
                         if (locale === 'ar') {
                             expect(geometry.menu.x).toBeGreaterThan(geometry.context.x);
                             expect(geometry.context.x).toBeGreaterThan(geometry.notification.x);
-                            expect(geometry.more.x).toBeGreaterThan(geometry.notification.x);
+                            expect(geometry.notification.x).toBeGreaterThan(geometry.more.x);
                         } else {
                             expect(geometry.menu.x).toBeLessThan(geometry.context.x);
                             expect(geometry.context.x).toBeLessThan(geometry.notification.x);
-                            expect(geometry.more.x).toBeLessThan(geometry.notification.x);
+                            expect(geometry.notification.x).toBeLessThan(geometry.more.x);
                         }
                         expect(geometry.documentWidth).toBeLessThanOrEqual(width);
 
@@ -322,7 +322,8 @@ test.describe('real dynamically-created branches page V2', () => {
                     } else {
                         await expect(menu).toBeHidden();
                         await expect(page.locator('#branchContextMobileTrigger')).toBeHidden();
-                        await expect(more).toBeVisible();
+                        if (width >= 1280) await expect(more).toBeHidden();
+                        else await expect(more).toBeVisible();
                         await expect(page.locator('.topbar-language-toggle')).toBeVisible();
                         await expect(page.locator('#themeToggleButton')).toBeVisible();
                         await expect(page.locator('#globalKioskToggle')).toBeVisible();
