@@ -14,6 +14,8 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     const styles = read('public/css/components/navigation-shell.css');
     const topbarStyles = read('public/css/components/mobile-topbar.css');
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
+    assert.match(index, /id="mobileNavToggle"[^>]*>[\s\S]*?<svg class="ui-icon"[^>]*aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"\/><\/svg>[\s\S]*?<span class="visually-hidden" data-mobile-nav-label/u);
+    assert.match(index, /class="topbar-language-toggle"[\s\S]*?<button[^>]*data-locale-choice="ar"[^>]*>ar<\/button>\s*<button[^>]*data-locale-choice="en"[^>]*>en<\/button>/u);
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
     assert.match(index, /id="mobileNavCurrent"/);
