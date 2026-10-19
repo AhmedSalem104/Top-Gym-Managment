@@ -12,12 +12,13 @@ test('subscriber action and more-menu icons share the same visual box on desktop
     assert.match(source, /\.members-mobile-actions \.table-action-visible \.action-icon,\s*\.members-mobile-actions \.action-menu-toggle \.action-menu-icon\s*\{\s*width:\s*16px;\s*height:\s*16px;\s*flex:\s*0 0 16px;/u);
 });
 
-test('mobile member filters use a content-sized bottom sheet rather than full-screen modal', () => {
+test('member status and sort filters share one inline tab row without a filter dialog', () => {
     const html = fs.readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
-    assert.match(source, /@media \(max-width: 767px\)\s*\{[^}]*\.members-filter-dialog\s*\{[^}]*inset-block:\s*auto max\(12px, env\(safe-area-inset-bottom\)\);[^}]*max-height:\s*min\(78dvh, calc\(100dvh - 24px - env\(safe-area-inset-bottom\)\)\);/u);
-    assert.match(source, /\.members-filter-dialog \.dialog-body\s*\{\s*height:\s*auto;\s*max-height:\s*inherit;/u);
-    assert.match(html, /id="membersFiltersDialog"[^>]*lf-modal--structured/u);
-    assert.doesNotMatch(html, /id="membersFiltersDialog"[^>]*lf-modal--mobile-fullscreen/u);
+    const app = fs.readFileSync(path.join(__dirname, '../../public/js/app.js'), 'utf8');
+    assert.match(source, /\.members-filter-tabs-row\s*\{[^}]*display:\s*flex;/u);
+    assert.match(app, /filterRow\.append\(statusField,\s*statusChoices,\s*sortField,\s*sortChoices\)/u);
+    assert.doesNotMatch(html, /id="membersFiltersDialog"/u);
+    assert.doesNotMatch(source, /\.members-filter-dialog/u);
 });
 
 test('subscriber row action geometry is theme-independent, with one mobile size', () => {
