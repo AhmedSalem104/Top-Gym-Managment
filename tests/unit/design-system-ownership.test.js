@@ -69,6 +69,16 @@ test('shared empty, loading, and error surfaces have canonical component owners'
     assert.match(alerts, /body \.error-state[\s\S]*?--danger-border[\s\S]*?--danger-soft/u);
 });
 
+test('prominent icon sizing is a token-backed Buttons variant', () => {
+    const buttons = read('public/css/components/buttons.css');
+    const tokens = read('public/css/tokens.css');
+    const dashboard = read('public/css/pages/dashboard.css');
+
+    assert.match(buttons, /\.btn\.btn-icon--prominent \.ui-icon\s*\{[^}]*width:\s*var\(--icon-size-prominent\)[^}]*height:\s*var\(--icon-size-prominent\)[^}]*flex:\s*0 0 var\(--icon-size-prominent\)/u);
+    assert.match(tokens, /--icon-size-prominent:\s*24px/u);
+    assert.doesNotMatch(dashboard, /backup-history[^\n]*\.ui-icon\s*\{/u);
+});
+
 test('retired RF visual aliases have no consumers or token definitions in canonical CSS sources', () => {
     const cssRoot = path.join(root, 'public/css');
     const sourcePaths = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

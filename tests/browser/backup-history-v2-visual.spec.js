@@ -175,6 +175,7 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                             rowText: [...table.querySelectorAll('tbody tr')].map((row) => row.innerText.trim())
                         })),
                         visibleActions: [...root.querySelectorAll('.backup-history-actions .btn')].filter((button) => getComputedStyle(button).display !== 'none').length,
+                        actionIconSizes: [...root.querySelectorAll('.backup-history-actions .btn .ui-icon')].map((icon) => ({ width: parseFloat(getComputedStyle(icon).width), height: parseFloat(getComputedStyle(icon).height) })),
                         outsideViewport: [...root.querySelectorAll('*')].filter((node) => !node.closest('.backup-history-wrap')).map((node) => ({
                             name: node.id ? `#${node.id}` : node.className?.baseVal || node.className || node.tagName,
                             rect: rect(node)
@@ -195,6 +196,8 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                 expect(layout.tables[0].wrapperBorder).toBe('solid');
                 expect(layout.tables.every((table) => table.wrapperWidth > 0 && table.wrapperScrollWidth >= table.wrapperWidth)).toBeTruthy();
                 expect(layout.visibleActions).toBeGreaterThan(0);
+                expect(layout.actionIconSizes.length).toBeGreaterThan(0);
+                expect(layout.actionIconSizes.every(({ width, height }) => width >= 24 && height >= 24), JSON.stringify(layout.actionIconSizes)).toBe(true);
                 expect(layout.outsideViewport, `${width}px ${locale}/${theme}: screen content outside viewport`).toEqual([]);
                 if (width <= 390) {
                     expect(layout.tables.every((table) => table.firstRecordLayout?.display === 'grid'), `${width}px: responsive table cards must be mounted`).toBeTruthy();

@@ -222,6 +222,13 @@ body .btn-icon.btn-danger:hover:not(:disabled) {
   flex: 0 0 auto;
 }
 
+.btn.btn-icon--prominent .ui-icon {
+  width: var(--icon-size-prominent);
+  min-width: var(--icon-size-prominent);
+  height: var(--icon-size-prominent);
+  flex: 0 0 var(--icon-size-prominent);
+}
+
 .auth-submit {
   width: 100%;
   min-height: 56px;

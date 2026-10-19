@@ -23,7 +23,6 @@
         platformActionDialog: 'lg',
         platformRegistrationCredentialsDialog: 'lg',
         detailsDialog: 'lg',
-        membersFiltersDialog: 'sm',
         trainerClientDetailsDialog: 'lg',
         trainerTimelineDialog: 'lg',
         coachingProfileDialog: 'lg',
@@ -41,7 +40,6 @@
     const structuredLayoutById = new Set([
         'platformActionDialog',
         'platformRegistrationCredentialsDialog',
-        'membersFiltersDialog'
     ]);
 
     function hydrateDialog(dialog) {

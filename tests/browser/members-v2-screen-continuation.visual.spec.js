@@ -510,11 +510,6 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 boxShadow: getComputedStyle(document.activeElement).boxShadow
             }));
             expect(focus.isVisible, `keyboard focus-visible after search ${width}px ${theme}`).toBe(true);
-            if (isMobile) {
-                expect(await page.locator('.members-filter-disclosure > summary').evaluate((node) => node === document.activeElement)).toBe(true);
-            } else {
-                expect(focus.id).toBe('sortFilter');
-            }
             expect(focus.outline !== 'none' || focus.outlineWidth !== '0px' || focus.boxShadow !== 'none').toBe(true);
 
             const screenshotPath = path.join(OUTPUT, `members-${width}-${theme}-${locale}.png`);
@@ -525,14 +520,23 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
             await page.screenshot({ path: screenshotPath, fullPage: false });
 
             if (isMobile) {
-                const statusGroup = page.locator('.members-status-filter [data-filter-choices-for="statusFilter"]');
+                const statusGroup = page.locator('.members-filter-tabs-row [data-filter-choices-for="statusFilter"]');
                 await expect(statusGroup).toBeVisible();
                 await expect(statusGroup.locator('[role="radio"]')).toHaveCount(5);
+                const sortGroup = page.locator('.members-filter-tabs-row [data-filter-choices-for="sortFilter"]');
+                await expect(sortGroup).toBeVisible();
+                await expect(sortGroup.locator('[role="radio"]')).toHaveCount(3);
                 for (const [value, tone] of [['active', 'success'], ['expiring_soon', 'warning'], ['expired', 'danger'], ['frozen', 'primary']]) {
                     await expect(statusGroup.locator(`[data-filter-value="${value}"]`)).toHaveAttribute('data-filter-tone', tone);
                 }
-                const noStatusOverflow = await statusGroup.evaluate((group) => group.scrollWidth <= group.clientWidth);
-                expect(noStatusOverflow, `status filter tabs must wrap without scrolling at ${width}px`).toBe(true);
+                const oneLineTabs = await page.locator('.members-filter-tabs-row').evaluate((row) => {
+                    const groups = [...row.querySelectorAll('.logicfit-filter-choices')];
+                    return groups.length === 2 && groups.every((group) => Math.abs(group.getBoundingClientRect().top - groups[0].getBoundingClientRect().top) < 1);
+                });
+                expect(oneLineTabs, `status and sort tabs should share one horizontal line at ${width}px`).toBe(true);
+                await statusGroup.locator('[aria-checked="true"]').focus();
+                await page.keyboard.press('Home');
+                await expect(page.locator('#statusFilter')).toHaveValue('');
                 const statusOptions = await page.locator('#statusFilter option').allTextContents();
                 expect(statusOptions).toEqual(locale === 'ar'
                     ? ['كل الحالات', 'نشطة', 'قريبة الانتهاء', 'منتهية', 'مجمدة']
@@ -540,26 +544,13 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 await statusGroup.locator('[data-filter-value="active"]').click();
                 await expect(page.locator('#statusFilter')).toHaveValue('active');
                 await expect(statusGroup.locator('[data-filter-value="active"]')).toHaveAttribute('aria-checked', 'true');
-                await page.locator('.members-filter-disclosure > summary').click();
-                const dialog = page.locator('#membersFiltersDialog');
-                await expect(dialog).toBeVisible();
-                await expect(dialog.locator('#statusFilter')).toHaveCount(0);
-                await expect(dialog.locator('#sortFilter')).toBeVisible();
-                await expect(dialog.locator('.members-filter-field')).toHaveCount(1);
-                await expect(dialog.locator('.members-filter-field').locator('span')).toHaveText(locale === 'ar' ? 'ترتيب النتائج' : 'Sort results');
-                await expect(dialog.locator('.members-filter-field').locator('select')).toHaveAttribute('aria-label', locale === 'ar' ? 'ترتيب القائمة' : 'Sort members');
-                const sortOptions = await dialog.locator('#sortFilter option').allTextContents();
+                const sortOptions = await page.locator('#sortFilter option').allTextContents();
                 expect(sortOptions).toEqual(locale === 'ar'
                     ? ['الأقرب انتهاءً', 'الأحدث تسجيلًا', 'الأعلى مبلغًا متبقيًا']
                     : ['Expiring soonest', 'Recently registered', 'Highest balance due']);
-                const dialogBounds = await dialog.boundingBox();
-                expect(dialogBounds.x, `filter dialog left ${width}px ${theme}`).toBeGreaterThanOrEqual(-1);
-                expect(dialogBounds.x + dialogBounds.width, `filter dialog right ${width}px ${theme}`).toBeLessThanOrEqual(width + 1);
-                expect(dialogBounds.height, `mobile filter sheet should size to its fields at ${width}px`).toBeLessThan(await page.evaluate(() => innerHeight * 0.8));
-                expect(dialogBounds.y + dialogBounds.height, `filter sheet should respect the lower viewport edge at ${width}px`).toBeLessThanOrEqual(await page.evaluate(() => innerHeight + 1));
+                await sortGroup.locator('[data-filter-value="remaining"]').click();
+                await expect(page.locator('#sortFilter')).toHaveValue('remaining');
                 await page.screenshot({ path: path.join(OUTPUT, `members-filters-${width}-${theme}-${locale}.png`) });
-                await page.keyboard.press('Escape');
-                await expect(dialog).toBeHidden();
             }
 
             // Exercise every dialog at each responsive width in Arabic Light,

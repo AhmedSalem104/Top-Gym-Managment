@@ -204,7 +204,7 @@
         }
     }
 
-    const filterChoiceIds = new Set(['statusFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackTypeFilter', 'tenantTypeFilter']);
+    const filterChoiceIds = new Set(['statusFilter', 'sortFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackTypeFilter', 'tenantTypeFilter']);
     const filterTone = (value) => {
         const normalized = String(value || '').toLowerCase();
         if (!normalized) return 'neutral';

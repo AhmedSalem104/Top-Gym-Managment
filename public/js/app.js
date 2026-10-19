@@ -1096,8 +1096,7 @@
         function applyMembersTranslations() {
             const root = document.getElementById('membersSection');
             if (!root) return;
-            const filtersDialogRoot = document.getElementById('membersFiltersDialog');
-            const find = (selector) => root.querySelector(selector) || filtersDialogRoot?.querySelector(selector) || null;
+            const find = (selector) => root.querySelector(selector) || null;
             const setText = (selector, key) => { const element = find(selector); if (element) element.textContent = membersText(key); };
             const setAttr = (selector, name, key) => { const element = find(selector); if (element) element.setAttribute(name, membersText(key)); };
             setAttr('.members-toolbar', 'aria-label', 'toolbar.aria');
@@ -1118,10 +1117,6 @@
             ];
             const statusLabel = find('#statusFilter')?.closest('.members-filter-field')?.querySelector('span');
             if (statusLabel) statusLabel.textContent = membersText('filter.status');
-            const statusHeading = root.querySelector('#membersStatusFilterTitle');
-            if (statusHeading) statusHeading.textContent = membersText('filter.status');
-            const statusSection = root.querySelector('.members-status-filter');
-            if (statusSection) statusSection.setAttribute('aria-label', membersText('filter.status'));
             setAttr('#statusFilter', 'aria-label', 'filter.statusAria');
             const sortLabel = find('#sortFilter')?.closest('.members-filter-field')?.querySelector('span');
             if (sortLabel) sortLabel.textContent = membersText('filter.sort');
@@ -1130,19 +1125,6 @@
                 const select = find(selector);
                 options.forEach(([value, key]) => { const option = [...(select?.options || [])].find((item) => item.value === value); if (option) option.textContent = membersText(key); });
             });
-            const dialog = filtersDialogRoot;
-            if (dialog) {
-                dialog.querySelector('#membersFiltersTitle').textContent = membersText('filter.dialogTitle');
-                dialog.querySelector('#membersFiltersDescription').textContent = membersText('filter.dialogDescription');
-                const close = dialog.querySelector('#membersFiltersClose');
-                if (close) { close.textContent = membersText('filter.close'); close.setAttribute('aria-label', membersText('filter.close')); }
-                const clear = dialog.querySelector('#membersFiltersClear');
-                if (clear) clear.textContent = membersText('filter.clear');
-                const apply = dialog.querySelector('#membersFiltersApply');
-                if (apply) apply.textContent = membersText('filter.apply');
-            }
-            const disclosure = root.querySelector('.members-filter-disclosure summary');
-            if (disclosure) { const label = disclosure.querySelector('span'); if (label) label.textContent = membersText('filter.disclosure'); }
             const clearButton = root.querySelector('.members-clear-filters');
             if (clearButton) clearButton.textContent = membersText('filter.clear');
             const loading = root.querySelector('#membersList .loading');
@@ -1156,7 +1138,7 @@
         membersMobileMedia.addEventListener?.('change', () => {
             if (state.members?.length) renderMembers();
         });
-        function setupMembersMobileFilters() {
+        function setupMembersFilterTabs() {
             const controls = document.querySelector('#membersSection .members-toolbar-controls');
             const search = controls?.querySelector('.members-search-field');
             const searchInput = controls?.querySelector('#searchInput');
@@ -1166,54 +1148,27 @@
             const statusField = statusInput?.closest('.members-filter-field');
             const statusChoices = membersRoot?.querySelector('[data-filter-choices-for="statusFilter"]');
             const sortField = sortInput?.closest('.members-filter-field');
-            const dialog = document.getElementById('membersFiltersDialog');
-            const dialogFields = document.getElementById('membersFilterDialogFields');
-            if (!controls || !search || !statusField || !sortField || !dialog || !dialogFields || controls.querySelector('.members-filter-disclosure')) return;
-            const statusSection = document.createElement('section');
-            statusSection.className = 'members-status-filter';
-            statusSection.setAttribute('aria-labelledby', 'membersStatusFilterTitle');
-            statusSection.innerHTML = '<h4 id="membersStatusFilterTitle"></h4>';
-            controls.closest('.members-toolbar')?.before(statusSection);
+            const sortChoices = membersRoot?.querySelector('[data-filter-choices-for="sortFilter"]');
+            if (!controls || !search || !statusField || !sortField || !statusChoices || !sortChoices || membersRoot.querySelector('.members-filter-tabs-row')) return;
+            const filterRow = document.createElement('div');
+            filterRow.className = 'members-filter-tabs-row';
+            controls.closest('.members-toolbar')?.before(filterRow);
             statusField.classList.add('visually-hidden');
-            statusSection.append(statusField);
-            if (statusChoices) {
-                statusChoices.classList.add('logicfit-filter-choices--wrap', 'logicfit-filter-choices--outlined');
-                statusSection.append(statusChoices);
-            }
-            const disclosure = document.createElement('details');
-            disclosure.className = 'members-filter-disclosure';
-            disclosure.innerHTML = '<summary><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10m-7 6h4"/></svg><span></span><span class="members-filter-count" aria-live="polite"></span></summary><div class="members-filter-fields"></div>';
-            const fields = disclosure.querySelector('.members-filter-fields');
-            search.after(disclosure);
+            sortField.classList.add('visually-hidden');
+            statusField.querySelector('span')?.classList.add('visually-hidden');
+            sortField.querySelector('span')?.classList.add('visually-hidden');
+            statusChoices.classList.add('logicfit-filter-choices--outlined', 'members-status-choices');
+            sortChoices.classList.add('logicfit-filter-choices--outlined', 'members-sort-choices');
+            filterRow.append(statusField, statusChoices, sortField, sortChoices);
             const clearButton = document.createElement('button');
             clearButton.className = 'btn btn-light btn-small members-clear-filters';
             clearButton.type = 'button';
             clearButton.textContent = 'مسح الفلاتر';
             clearButton.hidden = true;
-            disclosure.after(clearButton);
-            const count = disclosure.querySelector('.members-filter-count');
-            const summary = disclosure.querySelector('summary');
-            const clearDialogButton = document.getElementById('membersFiltersClear');
-            const closeDialog = () => { if (dialog.open) dialog.close(); };
-            const syncLayout = () => {
-                if (membersMobileMedia.matches) {
-                    fields.append(sortField);
-                    dialogFields.append(fields);
-                    disclosure.hidden = false;
-                } else {
-                    controls.insertBefore(sortField, disclosure);
-                    disclosure.append(fields);
-                    disclosure.after(clearButton);
-                    disclosure.hidden = true;
-                    disclosure.open = false;
-                    closeDialog();
-                }
-            };
+            search.after(clearButton);
             const updateCount = () => {
                 const sortActive = Boolean(sortInput?.value && sortInput.value !== 'expiry');
                 const anyActive = Boolean(statusInput?.value) || sortActive || Boolean(String(searchInput?.value || '').trim());
-                count.textContent = sortActive ? '1' : '';
-                disclosure.classList.toggle('has-active-filters', sortActive);
                 clearButton.hidden = !anyActive;
             };
             const clearFilters = () => {
@@ -1221,37 +1176,24 @@
                 if (statusInput) statusInput.value = '';
                 if (sortInput) sortInput.value = 'expiry';
                 window.LogicFitFilterChoiceGroup?.hydrate(statusInput);
+                window.LogicFitFilterChoiceGroup?.hydrate(sortInput);
                 const searchClear = document.getElementById('membersSearchClearButton');
                 if (searchClear) searchClear.hidden = true;
                 updateCount();
-                disclosure.open = false;
-                closeDialog();
                 void loadMembersOnly();
             };
             document.getElementById('membersList')?.addEventListener('click', (event) => {
                 if (event.target.closest('[data-members-clear-filters]')) clearFilters();
             });
-            summary?.addEventListener('click', (event) => {
-                if (!membersMobileMedia.matches) return;
-                event.preventDefault();
-                disclosure.open = true;
-                if (!dialog.open) dialog.showModal();
-            });
-            document.getElementById('membersFiltersClose')?.addEventListener('click', closeDialog);
-            document.getElementById('membersFiltersApply')?.addEventListener('click', closeDialog);
-            dialog.addEventListener('close', () => { disclosure.open = false; });
             statusInput?.addEventListener('change', updateCount);
             sortInput?.addEventListener('change', updateCount);
             searchInput?.addEventListener('input', updateCount);
             clearButton.addEventListener('click', clearFilters);
-            clearDialogButton?.addEventListener('click', clearFilters);
-            membersMobileMedia.addEventListener?.('change', syncLayout);
-            statusSection.querySelector('#membersStatusFilterTitle').textContent = membersText('filter.status');
-            statusSection.setAttribute('aria-label', membersText('filter.status'));
-            syncLayout();
+            filterRow.querySelector('[data-filter-choices-for="statusFilter"]')?.setAttribute('aria-label', membersText('filter.statusAria'));
+            filterRow.querySelector('[data-filter-choices-for="sortFilter"]')?.setAttribute('aria-label', membersText('filter.sortAria'));
             updateCount();
         }
-        setupMembersMobileFilters();
+        setupMembersFilterTabs();
 
         function closeMemberDialog() { const dialog = $('memberDialog'); closeDialogSafely(dialog); }
         function canCreateMember() {
