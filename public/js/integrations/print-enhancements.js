@@ -101,7 +101,7 @@
             }
 
             function printStylesheetLink() {
-                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=963a19c0caa198dc') + '">' + printBrandVariables();
+                return '<link rel="stylesheet" data-top-gym-print-styles href="' + assetUrl('/css/print.css?v=fd509e5269619e8a') + '">' + printBrandVariables();
             }
 
             function printBrandMarkup(subtitle = null) {

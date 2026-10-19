@@ -802,6 +802,15 @@ test('all print styling and standalone print windows have one canonical owner', 
         'feature page styles must not own print or page rules');
 });
 
+test('print documents use compact shared spacing without reserving full media height for missing images', () => {
+    const printCss = read('public/css/print.css');
+    assert.match(printCss, /\.print-header\s*\{[^}]*padding:\s*3px 0 9px/su);
+    assert.match(printCss, /\.print-section\s*\{[^}]*margin:\s*0 0 10px/su);
+    assert.match(printCss, /\.print-footer\s*\{[^}]*margin-top:\s*14px/su);
+    assert.match(printCss, /\.coaching-plan-media-empty\s*\{[^}]*min-height:\s*16mm/su);
+    assert.match(printCss, /\.coaching-plan-summary\s*\{[^}]*padding:\s*3mm/su);
+});
+
 test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {
     const phone = read('public/css/components/phone-inputs.css');
     const attendance = read('public/css/pages/attendance.css');

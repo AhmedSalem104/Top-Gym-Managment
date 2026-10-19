@@ -120,7 +120,7 @@ The former `visual-redesign.css` layer was retired on 2026-10-11 after its remai
 
 ## 8. Evidence required for screen acceptance
 
-For each real route/view and role-dependent composition, record before/after screenshots, tested locale, theme, viewport, relevant states, preserved actions/contracts and test command/results. Print acceptance additionally requires actual rendered PDF/print preview inspection for existing formats and short/long content. Mark unrun or inaccessible cases honestly; do not infer coverage from a static inventory.
+For each real route/view and role-dependent composition, record before/after screenshots, tested locale, theme, viewport, relevant states, preserved actions/contracts and test command/results. Print acceptance additionally requires actual rendered PDF/print preview inspection for existing formats and short/long content. Use a deliberate compact document rhythm: avoid oversized page insets, repeated section gaps, and blank media blocks while preserving legible type, real-image dimensions, section hierarchy, and page-break integrity. Missing-image placeholders should be visibly neutral but materially shorter than loaded report imagery. Mark unrun or inaccessible cases honestly; do not infer coverage from a static inventory.
 
 ## 9. Login entry presentation
 
