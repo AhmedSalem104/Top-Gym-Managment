@@ -49,16 +49,26 @@
    visual language distinct prevents the two management tables from reading
    like one mixed data set. */
 #managementSection .management-tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-card);
   background: var(--bg-surface);
   padding: var(--space-5);
 }
 
-#managementSection .management-workspace-tabs { margin-block: 0; }
+#managementSection .management-heading-copy { min-width: 0; }
+
+#managementSection .management-workspace-tabs { margin-block: 0; flex: 0 0 auto; }
 
 #managementSection .management-workspace-panels,
-#managementSection .management-workspace-panel { min-width: 0; }
+#managementSection .management-workspace-panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 
 #managementSection .management-workspace-panel {
   border: 1px solid var(--border-secondary);
@@ -374,6 +384,7 @@
 }
 
 @media (max-width: 767px) {
+  #managementSection .management-tab-header { align-items: stretch; flex-direction: column; gap: var(--space-3); }
   #managementSection .management-workspace-tabs { width: 100%; }
   #managementSection .management-workspace-tabs > [role="tab"] { flex: 1 1 0; }
 }
@@ -1462,6 +1473,7 @@
 
 /* Compact management workspace ----------------------------------------- */
 #managementSection {
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   padding: var(--space-4);
 }

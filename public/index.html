@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=ac0969c5f5f8debd">
+    <link rel="stylesheet" href="/css/app-shell.css?v=ad8f5faf88e1bd36">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -567,10 +567,11 @@
 
             <!-- The tab router owns this panel's visibility; owner-only controls stay scoped to the tab and its actions. -->
             <section class="management-tab-panel panel" id="managementSection" hidden>
-                <div class="panel-header management-tab-header"><div><span class="management-eyebrow">إدارة النظام</span><h3>الأسعار والعضويات</h3><p>تحكم في الباقات وأنواع العضويات من مكان واحد.</p></div></div>
-                <div class="tabs tabs--surface management-workspace-tabs" role="tablist" aria-label="إدارة العضويات والاشتراكات">
+                <div class="panel-header management-tab-header"><div class="management-heading-copy"><span class="management-eyebrow">إدارة النظام</span><h3>الأسعار والعضويات</h3><p>تحكم في الباقات وأنواع العضويات من مكان واحد.</p></div>
+                <div class="tabs tabs--section-switcher management-workspace-tabs" role="tablist" aria-label="إدارة العضويات والاشتراكات">
                     <button class="tab-button" id="managementPricingTab" type="button" role="tab" aria-controls="pricingDialog" aria-selected="true" data-management-workspace-tab="pricing" data-owner-only data-required-permission="pricing.read">أسعار الباقات</button>
                     <button class="tab-button" id="managementTypesTab" type="button" role="tab" aria-controls="membershipTypesDialog" aria-selected="false" data-management-workspace-tab="types" data-owner-only data-required-permission="pricing.read" tabindex="-1">أنواع العضويات</button>
+                </div>
                 </div>
                 <div class="management-workspace-panels" id="managementWorkspacePanels"></div>
             </section>
@@ -1248,7 +1249,7 @@
     <script defer src="/js/branch-context.js?v=a4b17c3ebf6f638c"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
-    <script defer src="/js/core/feature-manifest.js?v=e66504a18da65ca8"></script>
+    <script defer src="/js/core/feature-manifest.js?v=a0702c1cf473cae1"></script>
     <script defer src="/js/feature-loader.js?v=1a8c151a016326f9"></script>
     <script defer src="/js/core/i18n.js?v=f36b4c81146b602c"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=d3f6770d2f5f6f50"></script>
