@@ -123,6 +123,14 @@ async function makePdfFromPrintPopup(page, popup, testInfo, fileBase, expectedLo
         fs.promises.copyFile(pdfPath, path.join(evidenceDir, `${fileBase}.pdf`)),
         fs.promises.copyFile(screenshotPath, path.join(evidenceDir, `${fileBase}.png`))
     ]);
+    await popup.setViewportSize({ width: 390, height: 844 });
+    await popup.emulateMedia({ media: 'screen' });
+    const mobileLayout = await popup.evaluate(() => ({
+        width: window.innerWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        sheetWidth: Math.round(document.querySelector('.print-sheet').getBoundingClientRect().width)
+    }));
+    expect(mobileLayout.scrollWidth).toBeLessThanOrEqual(mobileLayout.width);
     if (process.env.COACHING_PRINT_DELIVERABLES === '1' && expectedLocale === 'ar'
         && ['coaching-workout-print-ar', 'coaching-diet-print-ar'].includes(fileBase)) {
         const outputDir = path.join(__dirname, '../../output/pdf');
@@ -303,6 +311,12 @@ test('workout and nutrition system PDFs follow the selected Arabic/English local
             const text = await popup.locator('.print-system-document').innerText();
             expect(text).not.toMatch(/print\.coaching\.[\w.]+|\{\{\s*[\w.-]+\s*\}\}/u);
             if (type === 'workout') {
+                expect(await popup.locator('.coaching-plan-entry').count()).toBe(3);
+                expect(await popup.locator('.coaching-timeline').count()).toBe(0);
+                expect(await popup.locator('.coaching-plan-appendix-entry').count()).toBe(3);
+                await expect(popup.locator('.coaching-plan-appendix')).toContainText(locale === 'en' ? 'Keep a neutral back.' : 'حافظ على وضع الظهر.');
+                expect(await popup.locator('.coaching-plan-metric > span').filter({ hasText: /^RPE$/u }).count()).toBe(3);
+                expect(await popup.locator('.coaching-plan-metric > span').filter({ hasText: locale === 'en' ? /^Rest$/u : /^الراحة$/u }).count()).toBe(3);
                 expect(text).toContain(locale === 'en' ? 'Workout program' : 'برنامج تدريب رياضي');
                 expect(text).toContain(locale === 'en' ? 'Training load and muscle distribution' : 'الحمل التدريبي وتوزيع العضلات');
                 expect(text).toContain(locale === 'en' ? 'Barbell Squat' : 'سكوات بالبار');
@@ -339,6 +353,7 @@ test('workout and nutrition system PDFs follow the selected Arabic/English local
             expect(text).toContain(locale === 'en' ? 'Print QA Client' : memberName);
             const output = await makePdfFromPrintPopup(page, popup, testInfo, `coaching-${type}-${locale}`, locale);
             expect(output.pdfBytes).toBeGreaterThan(5_000);
+            expect(output.pageCount).toBe(type === 'diet' ? 1 : 2);
 
         }
     }
