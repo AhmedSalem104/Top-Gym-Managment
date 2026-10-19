@@ -195,12 +195,15 @@ test('branch context menu uses theme surfaces and comfortable option sizing', as
             return {
                 background: getComputedStyle(menuElement).backgroundColor,
                 expectedSurface,
+                menuCenter: menuElement?.getBoundingClientRect().left + (menuElement?.getBoundingClientRect().width || 0) / 2,
+                fieldCenter: document.querySelector('[data-context-field="branch"]')?.getBoundingClientRect().left + (document.querySelector('[data-context-field="branch"]')?.getBoundingClientRect().width || 0) / 2,
                 optionHeight: optionElement?.getBoundingClientRect().height || 0,
                 optionFontSize: Number.parseFloat(getComputedStyle(optionElement).fontSize)
             };
         });
         expect(metrics.background).toBe(metrics.expectedSurface);
-        expect(metrics.optionHeight).toBeGreaterThanOrEqual(44);
+        expect(metrics.optionHeight).toBeGreaterThanOrEqual(48);
+        expect(Math.abs(metrics.menuCenter - metrics.fieldCenter)).toBeLessThanOrEqual(1);
         expect(metrics.optionFontSize).toBeGreaterThanOrEqual(12);
         await page.keyboard.press('Escape');
         await expect(menu).toBeHidden();
@@ -232,15 +235,18 @@ test('context dropdown stays a simple click menu and does not move on hover', as
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(menu).toBeVisible();
     await expect(menu).toHaveCSS('opacity', '1');
-    await expect(menu).toHaveCSS('transform', 'none');
 
     const firstOption = menu.locator('[data-context-option]').first();
+    const menuBeforeOptionHover = await menu.boundingBox();
     const optionBounds = await firstOption.boundingBox();
     expect(optionBounds).not.toBeNull();
     await page.mouse.move(optionBounds.x + optionBounds.width / 2, optionBounds.y + optionBounds.height / 2);
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(menu).toBeVisible();
     await expect(firstOption).toBeVisible();
+    const menuAfterOptionHover = await menu.boundingBox();
+    expect(Math.abs(menuAfterOptionHover.x - menuBeforeOptionHover.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(menuAfterOptionHover.y - menuBeforeOptionHover.y)).toBeLessThanOrEqual(1);
 
     await page.locator('.app-shell').click({ position: { x: 8, y: 100 } });
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');

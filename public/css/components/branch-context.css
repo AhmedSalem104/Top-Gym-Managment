@@ -616,6 +616,21 @@ body .app-shell > .topbar .branch-context-trigger-chevron{
   }
 }
 
+@media (min-width: 1024px){
+body .app-shell > .topbar #branchContextShell .branch-context-menu{
+    inset-inline: auto;
+    inset-inline-start: 50%;
+    max-height: 300px;
+    transform: translateX(-50%);
+  }
+body:dir(rtl) .app-shell > .topbar #branchContextShell .branch-context-menu{
+    transform: translateX(50%);
+  }
+body .app-shell > .topbar #branchContextShell .branch-context-option{
+    min-height: 48px;
+  }
+}
+
 /* Branch/section dropdown state and menu presentation. */
 body .branch-context-kicker{
   min-width: 112px;
