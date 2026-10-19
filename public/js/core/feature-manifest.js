@@ -8,12 +8,12 @@
     // responsible for ordering, deduplication and failure handling.
     const features = {
         dashboard: { dependencies: [], styles: [], scripts: [] },
-        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=dc08aea3211454bb', '/js/alerts-enhancements.js?v=2e544843569c67e1'] },
+        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=eefff1b81b706954', '/js/alerts-enhancements.js?v=2e544843569c67e1'] },
         finance: { dependencies: [], styles: [], scripts: ['/js/pages/finance/monthly-finance.js?v=7babea564de77758'] },
         'member-details': { dependencies: ['phone-inputs'], styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9'], scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/member-details-ui.js?v=d77efb7c54c2101b', '/js/member-portal-admin.js?v=2cfe4527c5945568', '/js/member-coaching-summary.js?v=3a03f0385ae1a7c4'] },
         members: {
             dependencies: ['phone-inputs'],
-            styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=10359bb5b637a417', '/css/pages/memberships.css?v=dc90f3ebc900c7c2', '/css/pages/attendance.css?v=0084361639c8be97'],
+            styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=c1901cc47d99c00d', '/css/pages/memberships.css?v=dc90f3ebc900c7c2', '/css/pages/attendance.css?v=0084361639c8be97'],
             scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/design-enhancements.js?v=7cb3534cdb088420', '/js/pages/members/action-menu.js?v=5fbf53dc6091090c', '/js/pagination.js?v=1b3ed821f3d06ef7', '/js/pages/attendance/attendance.js?v=ea2b366f93949e69']
         },
         coaching: { dependencies: ['phone-inputs'], dialogs: [{ source: '/dialogs/coaching.html?v=fd46e3e838a9f25f', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] }], styles: ['/css/pages/coaching.css?v=562410b687a81637'], scripts: ['/js/exercise-assets.js?v=eaa0cc582e5ca1e2', '/js/muscle-assets.js?v=b9a3cbb54908d372', '/js/pages/coaching/coaching.js?v=325ee8f5adc7bb6e'] },

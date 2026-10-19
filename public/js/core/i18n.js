@@ -8755,7 +8755,6 @@
 
         const shellText = [
             ['#topAddMemberButton', 'shell.addMember'],
-            ['#topPricingButton', 'shell.pricing'],
             ['#refreshButton > span', 'shell.refresh'],
             ['#authLogoutButton > span', 'shell.logout']
         ];

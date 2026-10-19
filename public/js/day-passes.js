@@ -532,7 +532,7 @@
         });
         $('dayPassPricingSave')?.addEventListener('click', savePricing);
         document.addEventListener('click', (event) => {
-            if (event.target.closest('#pricingButton, #topPricingButton')) pricingDialogOpened();
+            if (event.target.closest('#pricingButton')) pricingDialogOpened();
         }, true);
         const pricingDialog = $('pricingDialog');
         if (pricingDialog) new MutationObserver(() => { if (pricingDialog.hasAttribute('open')) pricingDialogOpened(); }).observe(pricingDialog, { attributes: true, attributeFilter: ['open'] });

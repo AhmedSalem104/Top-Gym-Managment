@@ -252,6 +252,7 @@
 
   function refreshLocale() {
     if (!root || !panel) return;
+    panel.dir = locale() === 'en' ? 'ltr' : 'rtl';
     const setLabel = (selector, key, fallback, attribute = 'textContent') => {
       const element = panel.querySelector(selector);
       if (element) {
@@ -266,8 +267,8 @@
     setLabel('.notification-center-heading small', 'panel.description', 'آخر المستجدات في حسابك');
     setLabel('[data-notification-close]', 'action.closePanel', 'إغلاق الإشعارات', 'aria-label');
     setLabel('[data-notification-close]', 'action.close', 'إغلاق', 'title');
-    setLabel('.notification-center-filter-wrap .visually-hidden', 'filter.label', 'تصفية الإشعارات');
-    const filter = panel.querySelector('#notificationCategoryFilter');
+    setLabel('.notification-center-filter-label', 'filter.label', 'تصفية الإشعارات');
+    const filter = panel.querySelector('.notification-center-filter');
     if (filter) {
       const labels = {
         '': ['filter.all', 'كل الإشعارات'],
@@ -278,10 +279,14 @@
         coaching: ['category.coaching', 'التدريب'],
         subscription: ['category.subscription', 'الاشتراكات']
       };
-      [...filter.options].forEach((option) => {
-        const [key, fallback] = labels[option.value] || ['filter.all', 'كل الإشعارات'];
-        option.textContent = t(key, fallback);
+      [...filter.querySelectorAll('[data-notification-category]')].forEach((choice) => {
+        const [key, fallback] = labels[choice.dataset.notificationCategory] || ['filter.all', 'كل الإشعارات'];
+        choice.textContent = t(key, fallback);
+        const selected = choice.dataset.notificationCategory === state.category;
+        choice.setAttribute('aria-checked', String(selected));
+        choice.tabIndex = selected ? 0 : -1;
       });
+      filter.querySelector('[aria-checked="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
     setLabel('[data-notification-refresh]', 'action.refreshAccessible', 'تحديث الإشعارات', 'aria-label');
     setLabel('[data-notification-refresh]', 'action.refresh', 'تحديث', 'title');
@@ -602,14 +607,21 @@
         </button>
       </header>
       <div class="notification-center-toolbar">
-        <span class="notification-center-summary" data-notification-summary>كل التنبيهات مقروءة</span>
-        <div class="notification-center-head-actions">
-          <label class="notification-center-filter-wrap" for="notificationCategoryFilter"><span class="visually-hidden">تصفية الإشعارات</span>
-            <select id="notificationCategoryFilter" class="notification-center-filter"><option value="">كل الإشعارات</option><option value="registration">التسجيل</option><option value="membership">العضويات</option><option value="payment">المدفوعات</option><option value="system">النظام</option></select>
-          </label>
+        <div class="notification-center-toolbar-summary">
+          <span class="notification-center-summary" data-notification-summary>كل التنبيهات مقروءة</span>
           <button type="button" class="notification-center-icon-button" data-notification-refresh aria-label="تحديث الإشعارات" title="تحديث">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.5-4.7L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4.7L20 16"/><path d="M20 20v-4h-4"/></svg>
           </button>
+        </div>
+        <span class="notification-center-filter-label" id="notificationCategoryFilterLabel">تصفية الإشعارات</span>
+        <div id="notificationCategoryFilter" class="notification-center-filter logicfit-filter-choices" role="radiogroup" aria-labelledby="notificationCategoryFilterLabel">
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="true" tabindex="0" data-notification-category="">كل الإشعارات</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="registration">التسجيل</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="membership">العضويات</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="payment">المدفوعات</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="system">النظام</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="coaching">التدريب</button>
+          <button type="button" class="logicfit-filter-choice" role="radio" aria-checked="false" tabindex="-1" data-notification-category="subscription">الاشتراكات</button>
         </div>
       </div>
       <div class="notification-center-list" data-notification-list role="list" aria-live="polite"><div class="notification-center-empty">افتح المركز لعرض الإشعارات.</div></div>
@@ -628,20 +640,37 @@
     endOfListElement = panel.querySelector('[data-notification-end]');
     closeButton = panel.querySelector('[data-notification-close]');
     const categoryFilter = panel.querySelector('#notificationCategoryFilter');
-    const coachingOption = document.createElement('option');
-    coachingOption.value = 'coaching';
-    coachingOption.textContent = '\u0627\u0644\u062a\u062f\u0631\u064a\u0628';
-    categoryFilter.appendChild(coachingOption);
-    const subscriptionOption = document.createElement('option');
-    subscriptionOption.value = 'subscription';
-    subscriptionOption.textContent = '\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643\u0627\u062a';
-    categoryFilter.appendChild(subscriptionOption);
     refreshLocale();
     window.addEventListener('topgym:localechange', refreshLocale);
     trigger.addEventListener('click', () => toggle());
     closeButton.addEventListener('click', () => toggle(false));
     refreshButton.addEventListener('click', () => void load());
-    categoryFilter.addEventListener('change', () => { state.category = categoryFilter.value; state.loaded = false; state.page = 1; void load(); });
+    categoryFilter.addEventListener('click', (event) => {
+      const choice = event.target.closest('[data-notification-category]');
+      if (!choice || !categoryFilter.contains(choice) || choice.dataset.notificationCategory === state.category) return;
+      state.category = choice.dataset.notificationCategory;
+      state.loaded = false;
+      state.page = 1;
+      refreshLocale();
+      void load();
+    });
+    categoryFilter.addEventListener('keydown', (event) => {
+      const choices = [...categoryFilter.querySelectorAll('[data-notification-category]')];
+      const currentIndex = choices.indexOf(event.target);
+      if (currentIndex < 0) return;
+      const rtl = panel.dir === 'rtl' || (!panel.dir && document.documentElement.dir === 'rtl');
+      const forwardKey = rtl ? 'ArrowLeft' : 'ArrowRight';
+      const backwardKey = rtl ? 'ArrowRight' : 'ArrowLeft';
+      let nextIndex = currentIndex;
+      if (event.key === forwardKey) nextIndex = (currentIndex + 1) % choices.length;
+      else if (event.key === backwardKey) nextIndex = (currentIndex - 1 + choices.length) % choices.length;
+      else if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = choices.length - 1;
+      else return;
+      event.preventDefault();
+      choices[nextIndex].focus();
+      choices[nextIndex].click();
+    });
     markAllButton.addEventListener('click', () => void markAllRead());
     loadMoreButton.addEventListener('click', () => void load({ append: true }));
     mobileViewportQuery = window.matchMedia('(max-width: 640px)');

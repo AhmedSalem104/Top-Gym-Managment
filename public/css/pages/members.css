@@ -74,7 +74,6 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
 }
 
 /* Pricing and membership configuration lives in its own Owner-only tab. */
-#topPricingButton,
 #dashboardPrintPricingButton,
 #pricingButton,
 #membershipTypesButton {

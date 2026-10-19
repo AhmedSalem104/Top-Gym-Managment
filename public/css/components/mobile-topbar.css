@@ -41,7 +41,7 @@
 
 .topbar-language-toggle {
   display: inline-flex;
-  min-height: 40px;
+  min-height: var(--ui-touch-target);
   align-items: center;
   gap: 2px;
   padding: 3px;
@@ -51,8 +51,8 @@
 }
 
 .topbar-language-toggle > button {
-  min-width: 38px;
-  min-height: 32px;
+  min-width: var(--ui-touch-target);
+  min-height: var(--ui-touch-target);
   padding-inline: var(--space-2);
   border: 0;
   border-radius: var(--radius-sm);

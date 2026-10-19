@@ -18,7 +18,16 @@ test('notification center is loaded only by account shells and uses safe same-or
     assert.match(center, /aria-modal/);
     assert.match(center, /mobileLayer\.appendChild\(panel\)/);
     assert.match(center, /event\.key === 'Escape'/);
-    assert.match(center, /notificationCategoryFilter/);
+    assert.match(center, /id="notificationCategoryFilter"[^>]+role="radiogroup"/);
+    assert.match(center, /data-notification-category="subscription"/);
+    assert.match(center, /categoryFilter\.addEventListener\('keydown'/);
+    assert.doesNotMatch(center, /<select id="notificationCategoryFilter"/);
+    assert.match(read('public/index.html'), /<details class="topbar-more-menu">[\s\S]*?<div class="top-actions topbar-quick-actions">/u,
+        'the More action precedes notifications in the shared topbar action order');
+    assert.doesNotMatch(read('public/index.html'), /id="topPricingButton"/u,
+        'pricing quick action is not rendered in the topbar');
+    assert.match(read('public/index.html'), /id="pricingButton"/u,
+        'the existing pricing action remains available in the members workspace');
     assert.match(center, /params\.set\('category', state\.category\)/);
     assert.match(center, /notification-center-item-icon/);
     assert.match(center, /notification-center-item-action/);

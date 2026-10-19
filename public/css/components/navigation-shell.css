@@ -1128,11 +1128,6 @@
     width: calc(100% - 12px);
   }
 
-  .topbar-quick-actions .header-search,
-  .topbar-quick-actions #topPricingButton {
-    display: none;
-  }
-
   .app-shell > main.page {
     width: calc(100% - 16px);
   }
@@ -2546,7 +2541,6 @@ body .topbar-quick-actions {
   margin: 0;
 }
 
-body .topbar-quick-actions #topPricingButton,
 body .topbar-quick-actions #refreshButton {
   display: none !important;
 }

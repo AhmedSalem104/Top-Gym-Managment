@@ -253,7 +253,7 @@ test.describe('real dynamically-created branches page V2', () => {
                     const more = page.locator('.topbar-more-trigger');
                     await expect(context).toBeVisible();
 
-                    if (width < 768) {
+                    if (width < 1024) {
                         await expect(menu).toBeVisible();
                         await expect(notification).toBeVisible();
                         await expect(more).toBeVisible();
@@ -281,22 +281,22 @@ test.describe('real dynamically-created branches page V2', () => {
                         if (locale === 'ar') {
                             expect(geometry.menu.x).toBeGreaterThan(geometry.context.x);
                             expect(geometry.context.x).toBeGreaterThan(geometry.notification.x);
-                            expect(geometry.notification.x).toBeGreaterThan(geometry.more.x);
+                            expect(geometry.more.x).toBeGreaterThan(geometry.notification.x);
                         } else {
                             expect(geometry.menu.x).toBeLessThan(geometry.context.x);
                             expect(geometry.context.x).toBeLessThan(geometry.notification.x);
-                            expect(geometry.notification.x).toBeLessThan(geometry.more.x);
+                            expect(geometry.more.x).toBeLessThan(geometry.notification.x);
                         }
                         expect(geometry.documentWidth).toBeLessThanOrEqual(width);
 
                         await more.click();
-                        await expect(page.locator('#languageToggleButton')).toBeVisible();
+                        await expect(page.locator('.topbar-language-toggle')).toBeVisible();
                         await expect(page.locator('#themeToggleButton')).toBeVisible();
                         await expect(page.locator('#globalKioskToggle')).toBeVisible();
                         if (width === 390 && locale === 'ar' && theme === 'light') {
                             await page.screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-${locale}-${theme}-more-open.png`) });
                         }
-                        for (const selector of ['#languageToggleButton', '#themeToggleButton', '#globalKioskToggle']) {
+                        for (const selector of ['.topbar-language-toggle', '#themeToggleButton', '#globalKioskToggle']) {
                             const box = await page.locator(selector).boundingBox();
                             expect(box.width, `${selector} touch width at ${width}px`).toBeGreaterThanOrEqual(44);
                             expect(box.height, `${selector} touch height at ${width}px`).toBeGreaterThanOrEqual(44);
@@ -322,17 +322,10 @@ test.describe('real dynamically-created branches page V2', () => {
                     } else {
                         await expect(menu).toBeHidden();
                         await expect(page.locator('#branchContextMobileTrigger')).toBeHidden();
-                        if (width < 1024) {
-                            await expect(more).toBeVisible();
-                            await more.click();
-                            await expect(page.locator('#languageToggleButton')).toBeVisible();
-                            await page.keyboard.press('Escape');
-                        } else {
-                            await expect(more).toBeHidden();
-                            await expect(page.locator('#languageToggleButton')).toBeVisible();
-                            await expect(page.locator('#themeToggleButton')).toBeVisible();
-                            await expect(page.locator('#globalKioskToggle')).toBeVisible();
-                        }
+                        await expect(more).toBeVisible();
+                        await expect(page.locator('.topbar-language-toggle')).toBeVisible();
+                        await expect(page.locator('#themeToggleButton')).toBeVisible();
+                        await expect(page.locator('#globalKioskToggle')).toBeVisible();
                         if (width === 1440 && locale === 'ar' && theme === 'light') {
                             await page.locator('.topbar').screenshot({ path: testInfo.outputPath(`topbar-desktop-${width}-${locale}-${theme}.png`) });
                             await page.screenshot({ path: testInfo.outputPath(`gym-shell-desktop-${width}-${locale}-${theme}.png`), fullPage: true });

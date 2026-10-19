@@ -126,6 +126,58 @@ test('notification panel retains desktop popover behavior and is not a mobile mo
     await expect(trigger).toBeFocused();
 });
 
+test('notification category filter uses localized keyboard-accessible choices and preserves server filtering', async ({ page }, testInfo) => {
+    const categoryRequests = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.pathname === '/api/notifications' && url.searchParams.has('category')) {
+            categoryRequests.push(url.searchParams.get('category'));
+        }
+    });
+    await installNotificationFixture(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    await page.locator('.notification-center-trigger').click();
+
+    const group = page.getByRole('radiogroup', { name: 'تصفية الإشعارات' });
+    const choices = group.getByRole('radio');
+    await expect(choices).toHaveCount(7);
+    const membership = group.locator('[data-notification-category="membership"]');
+    await membership.click();
+    await expect(membership).toHaveAttribute('aria-checked', 'true');
+    await expect.poll(() => categoryRequests).toContain('membership');
+    await page.screenshot({ path: testInfo.outputPath('notification-filter-ar-mobile.png') });
+
+    await membership.focus();
+    await page.keyboard.press('ArrowLeft');
+    const payment = group.locator('[data-notification-category="payment"]');
+    await expect(payment).toBeFocused();
+    await expect(payment).toHaveAttribute('aria-checked', 'true');
+    await expect.poll(() => categoryRequests).toContain('payment');
+
+    await page.evaluate(() => window.TopGymI18n.set('en'));
+    const englishGroup = page.getByRole('radiogroup', { name: 'Filter notifications' });
+    const englishPayment = englishGroup.locator('[data-notification-category="payment"]');
+    await expect(englishGroup).toHaveAttribute('aria-labelledby', 'notificationCategoryFilterLabel');
+    await expect(englishGroup.locator('[data-notification-category=""]')).toHaveText('All notifications');
+    await expect(englishPayment).toHaveText('Payments');
+    await expect(englishPayment).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#notificationCenterPanel')).toHaveAttribute('dir', 'ltr');
+    const selectedBounds = await englishPayment.evaluate((choice) => {
+        const bounds = choice.getBoundingClientRect();
+        const groupBounds = choice.parentElement.getBoundingClientRect();
+        return { left: bounds.left, right: bounds.right, groupLeft: groupBounds.left, groupRight: groupBounds.right };
+    });
+    expect(selectedBounds.left).toBeGreaterThanOrEqual(selectedBounds.groupLeft - 1);
+    expect(selectedBounds.right).toBeLessThanOrEqual(selectedBounds.groupRight + 1);
+    await page.screenshot({ path: testInfo.outputPath('notification-filter-en-mobile.png') });
+
+    const bounds = await englishGroup.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds.width).toBeLessThanOrEqual(390);
+    expect(await englishGroup.evaluate((element) => element.scrollWidth >= element.clientWidth)).toBe(true);
+});
+
 test('notification empty and error states are rendered in the list region', async ({ page }) => {
     await installNotificationFixture(page, 'empty');
     await page.setViewportSize({ width: 390, height: 844 });
