@@ -105,7 +105,7 @@ test('page and section heading presentation has canonical typography, layout, an
     assert.match(layout, /\.section-heading\s*\{[^}]*min-height:\s*44px[^}]*var\(--space-4\)[^}]*var\(--border-secondary\)[^}]*var\(--space-3\)/u);
     assert.match(responsive, /\.section-heading\s*\{[^}]*align-items:\s*flex-start[^}]*flex-direction:\s*column[^}]*gap:\s*var\(--space-3\)/u);
     assert.doesNotMatch(visual, /body \.page-header h2|body \.section-heading|body \.members-panel h3/u);
-    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-section-heading\s*\{[^}]*margin-top:\s*2px/u);
+    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-overview-cards\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u);
     assert.doesNotMatch(theme, /\.dashboard-section-heading/u, 'dashboard-specific responsive styling belongs to the dashboard page owner');
 });
 
@@ -153,11 +153,11 @@ test('Dashboard overview cards are owned by the dashboard page and use live data
 
     assert.doesNotMatch(visual, /\.dashboard-hero(?:[\s:#.[,]|$)|dashboard-hero-enter/u);
     assert.doesNotMatch(dashboard, /dashboard-hero|logic-fit-login-gym\.webp/u);
-    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*border-radius:\s*var\(--radius-overview-card\)/u);
-    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*background:\s*var\(--bg-surface\)/u);
+    assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*padding:\s*0[^}]*border:\s*0[^}]*background:\s*transparent/u);
     assert.match(dashboard, /\.dashboard-overview-cards\s*\{[^}]*display:\s*grid/u);
     assert.match(dashboard, /\.dashboard-overview-card\s*\{[^}]*var\(--radius-overview-card\)/u);
-    assert.match(dashboard, /@media\s*\(max-width:\s*767px\)[\s\S]*?\.dashboard-overview-cards/u);
+    assert.match(dashboard, /@media\s*\(min-width:\s*1280px\)[\s\S]*?\.dashboard-overview-cards\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/u);
+    assert.match(dashboard, /@media\s*\(min-width:\s*768px\)\s*and\s*\(max-width:\s*1023px\)[\s\S]*?\.dashboard-overview-cards\s*\{[^}]*grid-template-columns:\s*repeat\(8,\s*minmax\(0,\s*1fr\)\)/u);
     assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);
     assert.match(html, /class="dashboard-overview-cards"[\s\S]*?data-dashboard-member-count[\s\S]*?data-dashboard-overview-plan[\s\S]*?data-dashboard-overview-date/u);
     assert.match(html, /class="dashboard-overview-shell"[\s\S]*?id="dashboardOverviewTitle"[\s\S]*?class="dashboard-overview-cards"/u);
@@ -287,10 +287,10 @@ test('superseded branch-context positioning layer is removed while desktop and m
         'branch context selectors stay in document flow so they cannot cover adjacent shell actions');
     assert.doesNotMatch(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*absolute/u,
         'desktop and tablet context must not overlay the action row');
-    assert.match(mobile, /\.topbar-mobile-row\s*\{[^}]*grid-template-columns:\s*44px minmax\(0,\s*1fr\) 96px/u,
-        'the mobile navigation, single context button and action group remain in one grid row');
-    assert.match(mobile, /\.topbar-mobile-row > #branchContextShell\s*\{[^}]*display:\s*block[^}]*width:\s*auto/u,
-        'the mobile context selector is a single compact row item');
+    assert.match(mobile, /\.topbar-controls\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto/u,
+        'mobile controls allocate one compact row to navigation, context and utility actions');
+    assert.match(mobile, /#branchContextShell\s*\{[^}]*position:\s*relative[^}]*display:\s*block[^}]*width:\s*100%/u,
+        'the mobile context selector is a single full-width grid item within the middle track');
     assert.match(html, /id="branchContextMobileTrigger"/u,
         'the mobile context item exposes one trigger for branch and section selection');
     assert.match(navigation, /\.app-shell > \.topbar \.topbar-inner/u,
