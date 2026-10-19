@@ -137,6 +137,10 @@ test('member subscription requests use central Arabic/English i18n across viewpo
                         bodyWidth: document.body.scrollWidth,
                         screenWidth: screen.scrollWidth,
                         screenClientWidth: screen.clientWidth,
+                        overflowingElements: [...screen.querySelectorAll('*')].filter((element) => {
+                            const rect = element.getBoundingClientRect();
+                            return rect.width > 0 && (rect.right > innerWidth + 1 || rect.left < -1);
+                        }).slice(0, 12).map((element) => ({ selector: element.tagName.toLowerCase() + (element.id ? `#${element.id}` : '') + (typeof element.className === 'string' && element.className.trim() ? `.${element.className.trim().replace(/\s+/gu, '.')}` : ''), left: Math.round(element.getBoundingClientRect().left), right: Math.round(element.getBoundingClientRect().right), width: Math.round(element.getBoundingClientRect().width) })),
                         requestCardColumns: getComputedStyle(document.querySelector('.member-requests-table tbody tr')).gridTemplateColumns.trim().split(/\s+/u).length,
                         direction: getComputedStyle(screen).direction,
                         theme: document.documentElement.dataset.theme,
@@ -150,7 +154,7 @@ test('member subscription requests use central Arabic/English i18n across viewpo
                 });
                 expect(snapshot.documentWidth, `${width}px ${theme} ${locale}: document overflow`).toBeLessThanOrEqual(width);
                 expect(snapshot.bodyWidth, `${width}px ${theme} ${locale}: body overflow`).toBeLessThanOrEqual(width);
-                expect(snapshot.screenWidth, `${width}px ${theme} ${locale}: screen overflow`).toBeLessThanOrEqual(snapshot.screenClientWidth + 1);
+                expect(snapshot.screenWidth, `${width}px ${theme} ${locale}: screen overflow ${JSON.stringify(snapshot.overflowingElements)}`).toBeLessThanOrEqual(snapshot.screenClientWidth + 1);
                 if (width <= 430) expect(snapshot.requestCardColumns, `${width}px ${theme} ${locale}: single-column request record`).toBe(1);
                 expect(snapshot.direction).toBe(locale === 'ar' ? 'rtl' : 'ltr');
                 expect(snapshot.theme).toBe(theme);

@@ -204,9 +204,102 @@
         }
     }
 
+    const filterChoiceIds = new Set(['statusFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackTypeFilter', 'tenantTypeFilter']);
+    const filterTone = (value) => {
+        const normalized = String(value || '').toLowerCase();
+        if (!normalized) return 'neutral';
+        if (/expired|rejected|cancelled|failed|inactive|suspended/.test(normalized)) return 'danger';
+        if (/active|approved|inside|completed|success/.test(normalized)) return 'success';
+        if (/pending|expiring|paused|frozen|review/.test(normalized)) return 'warning';
+        if (/^all$|checked_out|archived|draft/.test(normalized)) return 'neutral';
+        return 'primary';
+    };
+
+    function syncFilterChoices(select, group) {
+        if (!select?.isConnected || !group?.isConnected) return;
+        group.replaceChildren(...[...select.options].map((option, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'logicfit-filter-choice';
+            button.setAttribute('role', 'radio');
+            button.setAttribute('aria-checked', String(option.value === select.value));
+            button.tabIndex = option.value === select.value || (!select.value && index === 0) ? 0 : -1;
+            button.dataset.filterValue = option.value;
+            button.dataset.filterTone = filterTone(option.value);
+            button.disabled = option.disabled;
+            button.textContent = option.label || option.textContent;
+            button.addEventListener('click', () => chooseFilter(select, group, option.value, true));
+            button.addEventListener('keydown', (event) => handleFilterKeydown(event, select, group, button));
+            return button;
+        }));
+        group.setAttribute('aria-label', select.getAttribute('aria-label') || select.labels?.[0]?.textContent?.trim() || 'Filter');
+    }
+
+    function chooseFilter(select, group, value, dispatch) {
+        const changed = select.value !== value;
+        select.value = value;
+        syncFilterChoices(select, group);
+        group.querySelector('[aria-checked="true"]')?.focus({ preventScroll: true });
+        if (changed && dispatch) select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function handleFilterKeydown(event, select, group, button) {
+        const enabled = [...group.querySelectorAll('[role="radio"]:not(:disabled)')];
+        const index = enabled.indexOf(button);
+        let nextIndex = index;
+        if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = enabled.length - 1;
+        else if (['ArrowRight', 'ArrowDown'].includes(event.key)) nextIndex = (index + (document.documentElement.dir === 'rtl' && event.key === 'ArrowRight' ? -1 : 1) + enabled.length) % enabled.length;
+        else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) nextIndex = (index + (document.documentElement.dir === 'rtl' && event.key === 'ArrowLeft' ? 1 : -1) + enabled.length) % enabled.length;
+        else return;
+        event.preventDefault();
+        const target = enabled[nextIndex];
+        if (target) chooseFilter(select, group, target.dataset.filterValue, true);
+    }
+
+    function enhanceFilter(select) {
+        if (!filterChoiceIds.has(select.id) || select.options.length < 2 || select.options.length > 6) return;
+        if (select.dataset.filterChoicesReady === 'true') {
+            const existing = document.querySelector(`[data-filter-choices-for="${CSS.escape(select.id)}"]`);
+            if (existing) syncFilterChoices(select, existing);
+            return;
+        }
+        select.dataset.filterChoicesReady = 'true';
+        select.classList.add('logicfit-filter-native-source');
+        select.tabIndex = -1;
+        select.setAttribute('aria-hidden', 'true');
+        const group = document.createElement('div');
+        group.className = 'logicfit-filter-choices';
+        group.setAttribute('role', 'radiogroup');
+        group.setAttribute('aria-orientation', 'horizontal');
+        group.dataset.filterChoicesFor = select.id;
+        const field = select.closest('label.members-filter-field') || select.closest('label');
+        (field || select).insertAdjacentElement('afterend', group);
+        select.addEventListener('change', () => syncFilterChoices(select, group));
+        new MutationObserver(() => syncFilterChoices(select, group)).observe(select, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-label'] });
+        syncFilterChoices(select, group);
+    }
+
+    function hydrateFilterChoices(root = document) {
+        if (root.matches?.('select')) enhanceFilter(root);
+        root.querySelectorAll?.('select').forEach(enhanceFilter);
+    }
+
+    function initializeFilterChoices() {
+        hydrateFilterChoices();
+        const observer = new MutationObserver((mutations) => mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) hydrateFilterChoices(node);
+        })));
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
     window.LogicFitFeedback = Object.freeze({ inferLoadingText, start, stop, run, toast, announce, isLoading: (button) => Boolean(button && activeButtons.has(button)) });
     window.topGymFeedback = window.LogicFitFeedback;
     window.topGymStartButtonLoading = start;
     window.topGymStopButtonLoading = stop;
     window.topGymRunAction = run;
+    window.LogicFitFilterChoiceGroup = Object.freeze({ hydrate: hydrateFilterChoices });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeFilterChoices, { once: true });
+    else initializeFilterChoices();
+    window.addEventListener('topgym:localechange', () => hydrateFilterChoices());
 })();

@@ -11,27 +11,23 @@
         const translated = window.TopGymI18n?.t?.(key);
         return escapeAttribute(translated && translated !== key ? translated : fallback);
     };
+    const localizedFallback = (arabic, english) => document.documentElement?.lang?.toLowerCase().startsWith('ar') ? arabic : english;
+    function loadingState(label, size = 'section', fallback) {
+        const accessibleLabel = loadingLabel(label, fallback || localizedFallback('جارٍ التحميل', 'Loading'));
+        return `<div class="logicfit-loading-state" data-loading-size="${size}" role="status" aria-live="polite" aria-atomic="true" aria-busy="true" aria-label="${accessibleLabel}"><span class="logicfit-loader logicfit-loader--${size === 'page' ? 'page' : 'section'}" aria-hidden="true"></span><span>${accessibleLabel}</span></div>`;
+    }
     const blocks = (count, className = 'skeleton-line') => Array.from({ length: clamp(count, 1, 12) }, () => `<span class="skeleton-block ${safeClassName(className)}" aria-hidden="true"></span>`).join('');
 
     function table({ rows = 5, columns = 4, className = '' } = {}) {
-        const rowCount = clamp(rows, 1, 12);
-        const columnCount = clamp(columns, 2, 12);
-        const classes = ['skeleton-table', safeClassName(className)].filter(Boolean).join(' ');
-        const style = `--skeleton-columns: repeat(${columnCount}, minmax(0, 1fr));`;
-        const row = `<div class="skeleton-table-row">${blocks(columnCount, 'skeleton-table-cell')}</div>`;
-        return `<div class="${classes}" style="${style}" role="status" aria-label="${loadingLabel('data', 'جارٍ تحميل البيانات')}"><div class="skeleton-table-head">${blocks(columnCount, 'skeleton-table-cell is-head')}</div>${row.repeat(rowCount)}</div>`;
+        return loadingState('data', 'section', localizedFallback('جارٍ تحميل البيانات', 'Loading data'));
     }
 
     function list({ rows = 4, className = '' } = {}) {
-        const rowCount = clamp(rows, 1, 12);
-        const classes = ['skeleton-list', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="${loadingLabel('data', 'جارٍ تحميل البيانات')}">${Array.from({ length: rowCount }, () => `<div class="skeleton-list-row"><span class="skeleton-block skeleton-avatar" aria-hidden="true"></span><span class="skeleton-list-copy">${blocks(2)}</span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>`).join('')}</div>`;
+        return loadingState('data', 'section', localizedFallback('جارٍ تحميل البيانات', 'Loading data'));
     }
 
     function cards({ count = 4, className = '' } = {}) {
-        const cardCount = clamp(count, 1, 12);
-        const classes = ['skeleton-cards', safeClassName(className)].filter(Boolean).join(' ');
-        return `<div class="${classes}" role="status" aria-label="${loadingLabel('indicators', 'جارٍ تحميل المؤشرات')}">${Array.from({ length: cardCount }, () => `<div class="skeleton-card"><div class="skeleton-card-head"><span class="skeleton-block skeleton-title" aria-hidden="true"></span><span class="skeleton-block skeleton-chip" aria-hidden="true"></span></div>${blocks(2)}</div>`).join('')}</div>`;
+        return loadingState('indicators', 'section', localizedFallback('جارٍ تحميل البيانات', 'Loading data'));
     }
 
     function text({ lines = 2, className = '' } = {}) {
@@ -69,7 +65,7 @@
 
     function start(host, markup, { preserve = false } = {}) {
         if (!host) return;
-        if (preserve) host.querySelectorAll(':scope > .skeleton-region-error').forEach((notice) => notice.remove());
+        host.querySelectorAll(':scope > .skeleton-region-error, :scope > .logicfit-refresh-indicator').forEach((notice) => notice.remove());
         host.classList.add('skeleton-region');
         host.setAttribute('aria-busy', 'true');
         host.dataset.loadingState = preserve ? 'refreshing' : 'initial';
@@ -78,12 +74,21 @@
 
     function refresh(host) {
         start(host, '', { preserve: true });
+        if (!host) return;
+        const indicator = document.createElement('span');
+        indicator.className = 'logicfit-refresh-indicator';
+        indicator.setAttribute('role', 'status');
+        indicator.setAttribute('aria-live', 'polite');
+        indicator.setAttribute('aria-label', loadingLabel('data', localizedFallback('جارٍ تحديث البيانات', 'Refreshing data')));
+        indicator.innerHTML = '<span class="logicfit-loader logicfit-loader--button" aria-hidden="true"></span>';
+        host.append(indicator);
     }
 
     function ready(host) {
         if (!host) return;
         host.classList.remove('skeleton-region');
         host.classList.remove('skeleton-error');
+        host.querySelectorAll(':scope > .logicfit-refresh-indicator').forEach((indicator) => indicator.remove());
         host.removeAttribute('aria-busy');
         delete host.dataset.loadingState;
     }
@@ -91,6 +96,7 @@
     function error(host, markup = '', { preserve = false } = {}) {
         if (!host) return;
         host.classList.add('skeleton-region', 'skeleton-error');
+        host.querySelectorAll(':scope > .logicfit-refresh-indicator').forEach((indicator) => indicator.remove());
         host.setAttribute('aria-busy', 'false');
         host.dataset.loadingState = 'error';
         if (preserve && markup) host.insertAdjacentHTML('afterbegin', markup);
@@ -119,9 +125,8 @@
     window.topGymSkeleton = Object.freeze({ avatar, cards, chart, error, form, hydrate, kpi, list, ready, refresh, select, start, table, text });
 
     const localizedSkeletonLabels = [
-        ['.skeleton-table[role="status"]', 'data'],
-        ['.skeleton-list[role="status"]', 'data'],
-        ['.skeleton-cards[role="status"]', 'indicators'],
+        ['.logicfit-loading-state[role="status"]', 'data'],
+        ['.logicfit-refresh-indicator[role="status"]', 'data'],
         ['.skeleton-text[role="status"]', 'text'],
         ['.skeleton-avatar[role="status"]', 'avatar'],
         ['.skeleton-kpi[role="status"]', 'metric'],

@@ -96,6 +96,22 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     const dataRequestCount = () => runtime.requests.filter((request) => request.pathname !== '/api/notifications/stream').length;
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.stack || error.message));
+    const selectLocale = async (locale) => {
+        const button = page.locator(`.topbar-language-toggle [data-locale-choice="${locale}"]`);
+        if (!(await button.isVisible())) {
+            const menu = page.locator('.topbar-more-menu');
+            if (!(await menu.getAttribute('open'))) await menu.locator('summary').click();
+        }
+        await button.click();
+    };
+    const toggleTheme = async () => {
+        const button = page.locator('#themeToggleButton');
+        if (!(await button.isVisible())) {
+            const menu = page.locator('.topbar-more-menu');
+            if (!(await menu.getAttribute('open'))) await menu.locator('summary').click();
+        }
+        await button.click();
+    };
 
     await page.goto('/index.html?attendance-central-i18n#dashboard', { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => Boolean(window.TopGymI18n));
@@ -107,7 +123,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await expect(page.locator('#attendancePresentCount')).toHaveText('٢');
     await expect(page.locator('#attendanceTableWrap')).toContainText('أحمد QA Member');
     await expect(page.locator('#attendanceTableWrap')).toContainText('تسجيل انصراف');
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('.topbar-language-toggle [data-locale-choice="en"]')).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
 
     // Resolve the member once using only a synthetic GET fixture, then ensure a
@@ -122,7 +138,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     page.on('framenavigated', (frame) => { if (frame === page.mainFrame()) mainFrameNavigations.push(frame.url()); });
 
     const beforeToggle = dataRequestCount();
-    await page.locator('#languageToggleButton').click();
+    await selectLocale('en');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('#attendanceTitle')).toHaveText('Attendance');
@@ -174,7 +190,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
 
     // Verify the same localized dialog surface in Dark without interacting
     // with the inert header while it is modal.
-    await page.locator('#themeToggleButton').click();
+    await toggleTheme();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.evaluate(() => document.querySelector('#qrReaderDialog').showModal());
     await expect(qrDialog.locator('[data-i18n="attendance.qr.reader.title"]')).toHaveText('مسح QR Code');
@@ -187,7 +203,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await page.screenshot({ path: path.join(QR_DIALOG_EVIDENCE_DIR, 'qr-dialog-390-en-dark.png') });
     await generatedQrClose.click();
     await expect(qrDialog).not.toBeVisible();
-    await page.locator('#themeToggleButton').click();
+    await toggleTheme();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
@@ -197,7 +213,7 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await expect(page.locator('#attendanceTableWrap')).toContainText('Automatically checked out');
     const selectedFilter = await page.locator('#attendanceStatusFilter').inputValue();
     const requestCountBeforeLiveSwitch = dataRequestCount();
-    await page.locator('#languageToggleButton').click();
+    await page.evaluate(() => window.TopGymI18n.set('ar'));
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('#attendanceTableWrap')).toContainText('انصرف تلقائيًا');
     await expect(page.locator('#attendanceSection [data-phone-input-help]')).toHaveText('أدخل الرقم بدون مفتاح الدولة.');
@@ -214,13 +230,13 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
         for (const locale of ['ar', 'en']) {
             if (await page.evaluate(() => window.TopGymI18n.get()) !== locale) {
                 const requestCount = dataRequestCount();
-                await page.locator('#languageToggleButton').click();
+                await page.evaluate((value) => window.TopGymI18n.set(value), locale);
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 expect(dataRequestCount(), JSON.stringify(runtime.requests)).toBe(requestCount);
             }
             for (const theme of ['light', 'dark']) {
                 if (await page.evaluate(() => document.documentElement.dataset.theme) !== theme) {
-                    await page.locator('#themeToggleButton').click();
+                    await toggleTheme();
                     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
                 }
                 const layout = await page.evaluate(() => ({

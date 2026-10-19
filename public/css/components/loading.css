@@ -12,50 +12,48 @@
 /* Keep the shared loading surface owned here instead of in global polish
    layers. The skeleton-specific structure below remains unchanged. */
 body .loading {
-  min-height: 84px;
+  min-height: 120px;
   display: grid;
   place-items: center;
-  border: 1px dashed var(--border-primary);
-  border-radius: 14px;
-  background: var(--bg-card-hover);
   color: var(--text-muted);
 }
 
 div.loading,
 div.loading-state,
 div.page-loading {
-  position: relative;
-  display: block;
-  min-height: 142px;
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
   padding: var(--space-4);
-  overflow: hidden;
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface);
-  color: transparent;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 div.loading:not(.skeleton-loading-host)::before,
 div.loading-state:not(.skeleton-loading-host)::before,
 div.page-loading:not(.skeleton-loading-host)::before {
   display: block;
-  width: 100%;
-  height: 12px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-card-hover);
-  box-shadow: 0 30px 0 var(--bg-card-hover), 0 60px 0 var(--bg-card-hover);
+  width: var(--loader-size-section);
+  height: var(--loader-size-section);
+  padding: var(--loader-inset-section);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color-primary);
+  --logicfit-loader-mask: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+  -webkit-mask: var(--logicfit-loader-mask);
+  mask: var(--logicfit-loader-mask);
+  -webkit-mask-composite: source-out;
+  mask-composite: subtract;
   content: "";
+  animation: logicfit-loader-spin var(--loader-duration) linear infinite;
 }
 
 div.loading:not(.skeleton-loading-host)::after,
 div.loading-state:not(.skeleton-loading-host)::after,
 div.page-loading:not(.skeleton-loading-host)::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 20%, rgb(255 255 255 / 0.08) 45%, transparent 70%);
-  content: "";
-  transform: translateX(-100%);
-  animation: top-gym-skeleton-shimmer 1.25s ease-in-out infinite;
+  content: none;
 }
 
 .skeleton-loading-host {
@@ -233,18 +231,6 @@ div.page-loading:not(.skeleton-loading-host)::after {
   position: relative;
 }
 
-.skeleton-region[data-loading-state="refreshing"]::after {
-  position: absolute;
-  top: 0;
-  inset-inline: 0;
-  height: 2px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
-  content: "";
-  pointer-events: none;
-  animation: top-gym-progress-slide 1.15s cubic-bezier(.4, 0, .2, 1) infinite;
-}
-
 .skeleton-region[data-loading-state="error"] {
   min-height: 64px;
 }
@@ -314,16 +300,51 @@ div.page-loading:not(.skeleton-loading-host)::after {
   border: 0;
 }
 
+.logicfit-loader,
 .spinner,
 .auth-spinner,
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--primary-border);
-  border-top-color: var(--color-primary);
+.loading-spinner,
+.logicfit-button-spinner,
+.portal-spinner,
+.portal-library-loader,
+.logicfit-inline-spinner,
+.trainer-studio-spinner,
+.password-change-submit-spinner {
+  display: inline-block;
+  box-sizing: border-box;
+  width: var(--loader-size-section);
+  height: var(--loader-size-section);
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  padding: var(--loader-inset-section);
+  border: 0;
   border-radius: 50%;
-  animation: top-gym-spin 0.75s linear infinite;
+  background: var(--loader-color, var(--color-primary));
+  --logicfit-loader-mask: conic-gradient(#0000 10%, #000), linear-gradient(#000 0 0) content-box;
+  -webkit-mask: var(--logicfit-loader-mask);
+  mask: var(--logicfit-loader-mask);
+  -webkit-mask-composite: source-out;
+  mask-composite: subtract;
+  animation: logicfit-loader-spin var(--loader-duration) linear infinite;
 }
+
+.logicfit-loader--page { width: var(--loader-size-page); height: var(--loader-size-page); padding: var(--loader-inset-page); }
+.logicfit-loader--section { width: var(--loader-size-section); height: var(--loader-size-section); padding: var(--loader-inset-section); }
+.logicfit-loader--button,
+.logicfit-button-spinner,
+.auth-spinner,
+.loading-spinner,
+.portal-spinner,
+.logicfit-inline-spinner,
+.password-change-submit-spinner { width: var(--loader-size-button); height: var(--loader-size-button); padding: var(--loader-inset-button); }
+.logicfit-button-spinner { --loader-color: currentColor; }
+.portal-spinner { --loader-color: var(--text-on-primary); }
+.auth-spinner { display: none; }
+.portal-spinner { display: none; }
+.password-change-submit-spinner { display: none; margin-inline-start: var(--space-2); }
+.portal-library-loader { width: 24px; height: 24px; padding: 4px; }
+.trainer-studio-spinner { width: 25px; height: 25px; padding: 4px; }
+.logicfit-inline-spinner { width: 16px; height: 16px; padding: 3px; }
 
 .auth-spinner {
   display: none;
@@ -363,9 +384,53 @@ body .loading-skeleton {
   100% { background-position: -200% 0; }
 }
 
-@keyframes top-gym-spin {
+@keyframes logicfit-loader-spin {
   to { transform: rotate(360deg); }
 }
+
+.logicfit-loading-state {
+  display: grid;
+  min-height: var(--loading-state-min-height, 120px);
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.logicfit-loading-state[data-loading-size="page"] { --loading-state-min-height: 220px; }
+.logicfit-loading-state[data-loading-size="compact"] { --loading-state-min-height: 64px; padding: var(--space-2); }
+.logicfit-loading-state .logicfit-loader { color: var(--color-primary); }
+.logicfit-refresh-indicator {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--color-primary);
+}
+.logicfit-refresh-indicator .logicfit-loader { width: 16px; height: 16px; padding: 3px; }
+
+@keyframes logicfit-member-result-enter {
+  from { opacity: 0; transform: translateY(var(--motion-offset-page)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *) {
+  animation: logicfit-member-result-enter var(--motion-duration-menu) var(--motion-easing-enter) both;
+}
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(1) { animation-delay: 0ms; }
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(2) { animation-delay: var(--member-row-stagger); }
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(3) { animation-delay: calc(var(--member-row-stagger) * 2); }
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(4) { animation-delay: calc(var(--member-row-stagger) * 3); }
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(5) { animation-delay: calc(var(--member-row-stagger) * 4); }
+.members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *):nth-child(n + 6) { animation-delay: var(--member-row-stagger-cap); }
 
 @keyframes top-gym-skeleton {
   to { background-position: -200% 0; }
@@ -378,15 +443,32 @@ body .loading-skeleton {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .logicfit-loader,
+  .spinner,
+  .auth-spinner,
+  .loading-spinner,
+  .logicfit-button-spinner,
+  .portal-spinner,
+  .portal-library-loader,
+  .logicfit-inline-spinner,
+  .trainer-studio-spinner,
+  .password-change-submit-spinner,
   .top-progress-bar,
   .skeleton,
   .skeleton-row,
   .skeleton-line,
   .skeleton-card::after,
   div.loading::after,
+  div.loading::before,
   div.loading-state::after,
   div.page-loading::after,
-  .skeleton-region[data-loading-state="refreshing"]::after { animation: none; }
+  .members-list.is-result-entering :is(.members-table tbody > tr, .members-mobile-list > *) { animation: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logicfit-loading-state::before { content: ""; width: 12px; height: 12px; border: 2px solid currentColor; border-radius: 50%; }
+  .logicfit-loading-state .logicfit-loader,
+  .logicfit-refresh-indicator .logicfit-loader { display: none; }
 }
 
 @media (max-width: 768px) {

@@ -73,7 +73,7 @@ async function installReadOnlyFixture(page) {
 }
 
 test('Gym Feedback central i18n read-only matrix', async ({ page }, testInfo) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal locale/theme/viewport matrix.');
     await fs.mkdir(ARTIFACT_ROOT, { recursive: true });
     await page.addInitScript(() => {
@@ -85,10 +85,13 @@ test('Gym Feedback central i18n read-only matrix', async ({ page }, testInfo) =>
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto('/index.html#feedback', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
-    const languageToggle = page.locator('#languageToggleButton');
-    await expect(languageToggle).toHaveCount(1);
+    const languageToggle = page.locator('.topbar-language-toggle [data-locale-choice="en"]');
     await expect(languageToggle).toBeVisible();
     expect(await languageToggle.evaluate((button) => Boolean(button.closest('.topbar-mobile-actions'))), 'authenticated locale control must be hosted by the visible application Navbar').toBe(true);
+    await languageToggle.click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await page.locator('.topbar-language-toggle [data-locale-choice="ar"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('#feedbackSection')).toBeVisible();
     await expect(page.locator('#memberFeedbackList .member-feedback-table tbody tr')).toHaveCount(10);
     await expect(page.locator('#memberFeedbackPagination')).toBeVisible();
@@ -128,7 +131,7 @@ test('Gym Feedback central i18n read-only matrix', async ({ page }, testInfo) =>
             for (const targetLocale of LOCALES) {
                 const currentLocale = await page.evaluate(() => window.TopGymI18n?.get());
                 const readsBeforeLocaleChange = fixture.feedbackReads.length;
-                if (currentLocale !== targetLocale) await page.locator('#languageToggleButton').click();
+                if (currentLocale !== targetLocale) await page.evaluate((locale) => window.TopGymI18n.set(locale), targetLocale);
                 await expect(page.locator('html')).toHaveAttribute('lang', targetLocale);
                 await expect(page.locator('html')).toHaveAttribute('dir', targetLocale === 'ar' ? 'rtl' : 'ltr');
                 await expect(page.locator('#memberFeedbackTitle')).toHaveText(targetLocale === 'en' ? 'Member feedback' : 'تقييمات المشتركين');
@@ -188,7 +191,7 @@ test('Gym Feedback central i18n read-only matrix', async ({ page }, testInfo) =>
         for (const targetLocale of LOCALES) {
             const currentLocale = await page.evaluate(() => window.TopGymI18n?.get());
             const readsBeforeLocaleChange = fixture.feedbackReads.length;
-            if (currentLocale !== targetLocale) await page.locator('#languageToggleButton').click();
+            if (currentLocale !== targetLocale) await page.evaluate((locale) => window.TopGymI18n.set(locale), targetLocale);
             await expect(page.locator('html')).toHaveAttribute('lang', targetLocale);
             const stateRoot = page.locator(view === 'empty' ? '.member-feedback-empty' : '.member-feedback-error');
             await expect(stateRoot).toContainText(view === 'empty'

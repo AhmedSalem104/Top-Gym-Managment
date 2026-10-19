@@ -1,14 +1,7 @@
 /* Unified interaction feedback: one language and one visual contract for
    buttons, toasts and assistive status updates across all app surfaces. */
 .logicfit-button-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
   flex: 0 0 16px;
-  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: logicfit-feedback-spin .72s linear infinite;
 }
 
 .logicfit-button-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -95,7 +88,6 @@ button[data-loading="true"] { cursor: wait; }
 .logicfit-feedback-toast .toast-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
 .logicfit-feedback-toast.is-leaving { animation: logicfit-feedback-toast-out var(--motion-duration-exit) var(--motion-easing-exit) both; }
 
-@keyframes logicfit-feedback-spin { to { transform: rotate(360deg); } }
 @keyframes logicfit-feedback-toast-in { from { opacity: 0; transform: translateY(var(--motion-offset-small)); } to { opacity: 1; transform: translateY(0); } }
 @keyframes logicfit-feedback-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(var(--motion-offset-small)); } }
 

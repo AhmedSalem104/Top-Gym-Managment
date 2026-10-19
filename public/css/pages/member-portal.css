@@ -100,7 +100,6 @@
 .portal-security-note small { margin-top: 2px; color: var(--text-secondary); font-size: var(--font-size-secondary); line-height: 1.6; }
 .portal-submit { min-height: var(--control-height-large); }
 .portal-submit[aria-busy="true"] { opacity: .82; }
-.portal-spinner { display: none; width: 17px; height: 17px; border: 2px solid var(--border-secondary); border-top-color: var(--text-on-primary); border-radius: 50%; animation: portal-spin .7s linear infinite; }
 .portal-submit[aria-busy="true"] .portal-spinner { display: inline-block; }
 .portal-error { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
 .portal-result { padding: 32px; background: var(--bg-card); border: 1px solid var(--border-primary); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
@@ -249,8 +248,6 @@
 .portal-feedback-message { margin: 0; color: var(--danger-text); font-size: 13px; font-weight: 700; }
 .portal-feedback-message.success { color: var(--success-text); }
 
-@keyframes portal-spin { to { transform: rotate(360deg); } }
-
 @media (max-width: 760px) {
   .member-portal-page { background-attachment: scroll; }
   .member-portal-page .portal-shell { width: min(100% - 24px, 620px); padding-top: 22px; }
@@ -319,10 +316,6 @@
 @media (max-width: 520px) {
   .portal-trainer-identity { align-items: flex-start; flex-direction: column; gap: 10px; }
   .portal-trainer-mode { align-self: flex-start; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .portal-spinner { animation: none; }
 }
 
 /* Member portal hub and interactive anatomy guide. */
@@ -490,7 +483,6 @@
 .portal-library-state-wide { grid-column: 1 / -1; min-height: 190px; border: 1px dashed var(--text-disabled); border-radius: 14px; background: var(--bg-card); }
 .portal-library-error { color: var(--danger-text); }
 .portal-library-error strong { color: var(--danger-text); }
-.portal-library-loader { width: 24px; height: 24px; border: 3px solid var(--info-soft); border-top-color: var(--primary); border-radius: 50%; animation: portal-spin .7s linear infinite; }
 .portal-library-content.is-loading { opacity: .62; pointer-events: none; }
 
 .portal-library-modal { position: fixed; z-index: var(--z-modal, 90); inset: 0; display: grid; overflow: hidden; place-items: center; padding: 18px; background: var(--overlay); }
@@ -568,7 +560,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .portal-tool-card, .portal-anatomy-hotspot { transition: none; }
-  .portal-library-loader { animation: none; }
 }
 
 /* Member record isolation -------------------------------------------------

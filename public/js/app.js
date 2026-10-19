@@ -127,7 +127,7 @@
         function planLabel(plan) { return state.pricing.plans[plan]?.label || DEFAULT_PRICING.plans[plan]?.label || plan || 'جيم فقط'; }
          function calculateClientPricing(type, plan, discount) { const monthlyPrice = Number(state.pricing.plans[plan]?.monthlyPrice || DEFAULT_PRICING.plans[plan]?.monthlyPrice || 0); const code = resolvedTypeCode(type); const config = typeConfig(code); const configuredPrice = state.pricing.prices?.[plan]?.[code]; const listPrice = configuredPrice === undefined ? monthlyPrice * Number(config.priceMultiplier || 1) : Number(configuredPrice); const discountAmount = Math.max(0, Number(discount) || 0); return { listPrice, discountAmount, amountDue: Math.max(0, listPrice - discountAmount) }; }
 
-         async function withLoader(task, message = '') { return window.topGymPerformance?.withLoader ? window.topGymPerformance.withLoader(task, { label: message }) : task(); }
+         async function withLoader(task, message = '', options = {}) { return window.topGymPerformance?.withLoader ? window.topGymPerformance.withLoader(task, { label: message, ...options }) : task(); }
 
         function showToast(message, error = false, type = '') { const toast = $('toast'); if (!toast) return; const kind = ['success', 'error', 'warning', 'info'].includes(type) ? type : (error ? 'error' : 'success'); const icons = { info: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg>', warning: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v4M12 17h.01"/></svg>', error: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg>', success: '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>' }; const item = document.createElement('div'); item.className = `toast-item ${kind}`; item.setAttribute('role', kind === 'error' ? 'alert' : 'status'); item.innerHTML = `<span class="toast-icon" aria-hidden="true">${icons[kind]}</span><span class="toast-message">${escapeHtml(message)}</span><button class="toast-close" type="button" aria-label="إغلاق">×</button>`; toast.appendChild(item); toast.className = 'toast show'; const close = () => { if (item.dataset.closed) return; item.dataset.closed = 'true'; item.classList.add('is-leaving'); window.setTimeout(() => { item.remove(); if (!toast.children.length) toast.className = 'toast'; }, 180); }; item.querySelector('.toast-close')?.addEventListener('click', close); window.setTimeout(close, kind === 'error' ? 5000 : 3000); }
         function getTopLayerDialog() {
@@ -310,6 +310,17 @@
             return window.topGymApi.request(path, paymentRequestOptions(path, options));
         }
 
+        function membersListRequestUrl() {
+            const params = new URLSearchParams({
+                search: $('searchInput')?.value.trim() || '',
+                status: $('statusFilter')?.value || '',
+                sort: $('sortFilter')?.value || '',
+                page: '1',
+                pageSize: String(state.membersPageSize || 5)
+            });
+            return `/api/members?${params}`;
+        }
+
         function applyPricingCatalog(pricing) {
             state.pricing = pricing || DEFAULT_PRICING;
             state.pricingLoadedAt = Date.now();
@@ -414,6 +425,10 @@
             // trainer while the auth redirect is settling.
             if (!authenticatedUser || isIndependentTrainerTenant()) return;
             if (dataLoadPromise) return dataLoadPromise;
+            const isMembersStart = requestedTab() === 'members';
+            const silentRequests = isMembersStart
+                ? ['/api/branches/bootstrap', '/api/dashboard', '/api/pricing', membersListRequestUrl()]
+                : [];
             const loadPromise = withLoader(async () => {
                 // Resolve the authoritative branch context before any
                 // branch-scoped request. This removes the startup race where
@@ -466,7 +481,7 @@
                         dashboardSection?.setAttribute('aria-busy', 'false');
                     }
                 }
-            }, `جاري تحميل بيانات ${brandName()}…`);
+            }, `جاري تحميل بيانات ${brandName()}…`, { silent: isMembersStart, silentRequests });
             const trackedPromise = loadPromise.finally(() => {
                 if (dataLoadPromise === trackedPromise) dataLoadPromise = null;
             });
@@ -489,7 +504,7 @@
             membersAbortController = new AbortController();
             const controller = membersAbortController;
             membersLoadKey = queryKey;
-            const loadPromise = withLoader(async () => {
+            const loadPromise = (async () => {
                 state.pagination = null;
                 if ($('membersPagination')) $('membersPagination').hidden = true;
                 const membersList = $('membersList');
@@ -501,9 +516,9 @@
                 } else if (membersList) {
                     membersList.innerHTML = '<div class="loading">جاري تحديث القائمة…</div>';
                 }
-                 try { const params = new URLSearchParams({ search: $('searchInput').value.trim(), status: $('statusFilter').value, sort: $('sortFilter').value, page: '1', pageSize: String(state.membersPageSize || 5) }); const response = await api(`/api/members?${params}`, { signal: controller.signal }); state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); window.topGymSkeleton?.ready(membersList); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
+                 try { const response = await api(membersListRequestUrl(), { signal: controller.signal }); const shouldAnimateResults = queryKey !== membersLastLoadedKey; state.members = response.members || []; state.pagination = response.pagination || null; state.detailsCache = new Map(); renderMembers(); if (shouldAnimateResults) animateMemberResults(membersList); window.topGymSkeleton?.ready(membersList); membersLastLoadedKey = queryKey; membersLastLoadedAt = Date.now(); }
                 catch (error) { if (error.name !== 'AbortError') { window.topGymSkeleton?.error(membersList, `<div class="skeleton-region-error"><strong>تعذر تحميل المشتركين.</strong><span>${escapeHtml(error.message || 'حاول مرة أخرى.')}</span><button type="button" class="btn btn-light btn-small" data-members-retry>إعادة المحاولة</button></div>`, { preserve: true }); await notify(error.message, 'error'); } }
-            }, `جاري تحديث قائمة ${brandName()}…`);
+            })();
             const trackedPromise = loadPromise.finally(() => {
                 if (membersLoadPromise === trackedPromise) membersLoadPromise = null;
             });
@@ -1066,6 +1081,18 @@
                 : `<div class="members-empty-state" role="status"><span class="members-empty-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M8 10h4"/></svg></span><strong>${escapeHtml(membersText('empty.title'))}</strong><p>${escapeHtml(membersText('empty.description'))}</p><button class="btn btn-primary btn-small" type="button" data-members-clear-filters>${escapeHtml(membersText('empty.clear'))}</button></div>`;
         }
 
+        function animateMemberResults(host) {
+            if (!host || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const rows = [...host.querySelectorAll('.members-table tbody > tr, .members-mobile-list > *')].slice(0, 7);
+            if (!rows.length) return;
+            host.classList.remove('is-result-entering');
+            void host.offsetWidth;
+            host.classList.add('is-result-entering');
+            rows.at(-1).addEventListener('animationend', (event) => {
+                if (event.target === rows.at(-1)) host.classList.remove('is-result-entering');
+            }, { once: true });
+        }
+
         function applyMembersTranslations() {
             const root = document.getElementById('membersSection');
             if (!root) return;
@@ -1132,6 +1159,7 @@
             const statusInput = controls?.querySelector('#statusFilter');
             const sortInput = controls?.querySelector('#sortFilter');
             const statusField = statusInput?.closest('.members-filter-field');
+            const statusChoices = controls?.querySelector('[data-filter-choices-for="statusFilter"]');
             const sortField = sortInput?.closest('.members-filter-field');
             const dialog = document.getElementById('membersFiltersDialog');
             const dialogFields = document.getElementById('membersFilterDialogFields');
@@ -1153,11 +1181,14 @@
             const closeDialog = () => { if (dialog.open) dialog.close(); };
             const syncLayout = () => {
                 if (membersMobileMedia.matches) {
-                    fields.append(statusField, sortField);
+                    fields.append(statusField);
+                    if (statusChoices) fields.append(statusChoices);
+                    fields.append(sortField);
                     dialogFields.append(fields);
                     disclosure.hidden = false;
                 } else {
                     controls.insertBefore(statusField, disclosure);
+                    if (statusChoices) controls.insertBefore(statusChoices, disclosure);
                     controls.insertBefore(sortField, disclosure);
                     disclosure.append(fields);
                     disclosure.after(clearButton);
@@ -1177,6 +1208,7 @@
                 if (searchInput) searchInput.value = '';
                 if (statusInput) statusInput.value = '';
                 if (sortInput) sortInput.value = 'expiry';
+                window.LogicFitFilterChoiceGroup?.hydrate(statusInput);
                 const searchClear = document.getElementById('membersSearchClearButton');
                 if (searchClear) searchClear.hidden = true;
                 updateCount();
@@ -1963,7 +1995,8 @@
                     updateDetailsPhoneDisplay(cached.member || member);
                 }
                 else {
-                    const details = await withLoader(() => api(`/api/members/${member.id}/details`), 'جاري تحميل ملف العميل…');
+                    const detailsPath = `/api/members/${member.id}/details`;
+                    const details = await withLoader(() => api(detailsPath), 'جاري تحميل ملف العميل…', { silent: true, silentRequests: [detailsPath] });
                     detailsCache.set(member.id, details);
                     renderDetails(details);
                     updateDetailsPhoneDisplay(details.member || member);

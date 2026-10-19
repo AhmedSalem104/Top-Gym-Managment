@@ -65,7 +65,7 @@ test('shared empty, loading, and error surfaces have canonical component owners'
     const alerts = read('public/css/components/alerts.css');
 
     assert.match(empty, /body \.empty-state[\s\S]*?--border-primary[\s\S]*?--bg-card-hover[\s\S]*?--text-muted/u);
-    assert.match(loading, /body \.loading[\s\S]*?--border-primary[\s\S]*?--bg-card-hover/u);
+    assert.match(loading, /body \.loading\s*\{[^}]*min-height:\s*120px[^}]*color:\s*var\(--text-muted\)/u);
     assert.match(alerts, /body \.error-state[\s\S]*?--danger-border[\s\S]*?--danger-soft/u);
 });
 
@@ -660,7 +660,7 @@ test('Platform Admin presentation is owned by its page stylesheet, not visual-re
     assert.match(saas, /body \.saas-page-header h2,\s*body \.saas-panel h4\s*\{[^}]*color:\s*var\(--text-primary\)/u);
     assert.doesNotMatch(visual, /body \.skeleton,\s*body \.loading-skeleton\s*\{/u);
     const loading = read('public/css/components/loading.css');
-    assert.match(loading, /body \.skeleton,\s*body \.loading-skeleton\s*\{[^}]*var\(--radius-lg\)[^}]*var\(--bg-card-hover\)[^}]*var\(--border-secondary\)[^}]*logicfit-skeleton-shimmer/u);
+    assert.match(loading, /\.logicfit-loader,[\s\S]*?mask-composite:\s*subtract[\s\S]*?@keyframes logicfit-loader-spin/u);
 });
 
 test('Platform navigation visual states are owned by its feature stylesheet', () => {

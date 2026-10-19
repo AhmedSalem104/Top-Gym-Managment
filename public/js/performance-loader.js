@@ -4,6 +4,7 @@
 
     const state = {
         activeTasks: 0,
+        suppressedRequests: new Map(),
         authTaskRelease: null,
         hideTimer: 0,
         showTimer: 0,
@@ -36,30 +37,45 @@
         if (state.label) state.label.textContent = label;
     }
 
-    function skeletonCardsMarkup() {
-        return Array.from({ length: 3 }, () => '<span class="skeleton-card"><span class="skeleton-card-head"><i class="skeleton-block skeleton-avatar"></i><i class="skeleton-block skeleton-chip"></i></span><i class="skeleton-block skeleton-title"></i><i class="skeleton-block skeleton-line"></i><i class="skeleton-block skeleton-line is-short"></i></span>').join('');
+    function requestKey(url) {
+        try {
+            const parsed = new URL(url, window.location?.href || 'http://localhost');
+            return `${parsed.pathname}${parsed.search}`;
+        }
+        catch { return String(url).split('?')[0]; }
     }
 
-    function skeletonTableMarkup() {
-        const cells = (className = '') => Array.from({ length: 4 }, () => `<i class="skeleton-block skeleton-table-cell ${className}"></i>`).join('');
-        return `<span class="skeleton-table"><span class="skeleton-table-head">${cells('is-head')}</span>${Array.from({ length: 5 }, () => `<span class="skeleton-table-row">${cells()}</span>`).join('')}</span>`;
+    function reserveSilentRequests(urls = []) {
+        const keys = urls.map(requestKey);
+        keys.forEach((key) => state.suppressedRequests.set(key, (state.suppressedRequests.get(key) || 0) + 1));
+        return () => keys.forEach((key) => {
+            const count = state.suppressedRequests.get(key) || 0;
+            if (count <= 1) state.suppressedRequests.delete(key);
+            else state.suppressedRequests.set(key, count - 1);
+        });
     }
 
-    function enhanceSkeletons(scope = document) {
+    function consumeSilentRequest(url) {
+        const key = requestKey(url);
+        const count = state.suppressedRequests.get(key) || 0;
+        if (!count) return false;
+        if (count <= 1) state.suppressedRequests.delete(key);
+        else state.suppressedRequests.set(key, count - 1);
+        return true;
+    }
+
+    function annotateLoadingHosts(scope = document) {
         const candidates = [];
         if (scope?.nodeType === 1 && scope.matches?.('div.loading, div.loading-state, div.page-loading')) candidates.push(scope);
         scope?.querySelectorAll?.('div.loading, div.loading-state, div.page-loading').forEach((element) => candidates.push(element));
         candidates.forEach((element) => {
-            if (element.dataset.skeletonEnhanced === 'true') return;
-            if (element.closest('[hidden]')) return;
-            const label = element.textContent.trim();
-            const context = `${element.id} ${element.parentElement?.id || ''} ${element.className}`.toLowerCase();
-            const isTable = /table|history|attendance|memberslist|daypasstable|pricing/.test(context);
-            element.dataset.skeletonEnhanced = 'true';
-            element.classList.add('skeleton-loading-host');
+            if (element.dataset.loadingAnnotated === 'true') return;
+            element.dataset.loadingAnnotated = 'true';
             element.setAttribute('role', 'status');
+            element.setAttribute('aria-live', 'polite');
+            element.setAttribute('aria-busy', 'true');
+            const label = element.textContent.trim();
             if (label) element.setAttribute('aria-label', label);
-            element.innerHTML = isTable ? skeletonTableMarkup() : `<span class="skeleton-cards">${skeletonCardsMarkup()}</span>`;
         });
     }
 
@@ -98,6 +114,14 @@
     }
 
     async function withLoader(task, options = {}) {
+        if (options?.silent) {
+            const releaseSilentRequests = reserveSilentRequests(options.silentRequests);
+            try {
+                return await task();
+            } finally {
+                releaseSilentRequests();
+            }
+        }
         const label = typeof options === 'string' ? options : options.label;
         const release = startTask(label);
         try {
@@ -119,7 +143,7 @@
         window.fetch = (...args) => {
             const input = args[0];
             const url = typeof input === 'string' ? input : input?.url || '';
-            const release = String(url).includes('/api/') ? startTask(requestLabel(String(url))) : null;
+            const release = String(url).includes('/api/') && !consumeSilentRequest(String(url)) ? startTask(requestLabel(String(url))) : null;
             try {
                 return Promise.resolve(nativeFetch(...args)).finally(() => release?.());
             } catch (error) {
@@ -140,15 +164,15 @@
     }
 
     if (document.body) {
-        enhanceSkeletons();
+        annotateLoadingHosts();
         new MutationObserver((records) => {
             records.forEach((record) => {
                 if (record.type === 'attributes') {
-                    if (!record.target.hidden) enhanceSkeletons(record.target);
+                    if (!record.target.hidden) annotateLoadingHosts(record.target);
                     return;
                 }
                 record.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) enhanceSkeletons(node);
+                    if (node.nodeType === 1) annotateLoadingHosts(node);
                 });
             });
         }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });

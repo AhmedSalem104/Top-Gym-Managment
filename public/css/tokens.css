@@ -315,6 +315,15 @@
   --motion-offset-small: 4px;
   --motion-offset-page: 8px;
   --motion-dialog-scale: 0.98;
+  --loader-size-page: 50px;
+  --loader-size-section: 32px;
+  --loader-size-button: 16px;
+  --loader-inset-page: 8px;
+  --loader-inset-section: 6px;
+  --loader-inset-button: 3px;
+  --loader-duration: 900ms;
+  --member-row-stagger: 30ms;
+  --member-row-stagger-cap: 180ms;
 
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
@@ -338,6 +347,7 @@
     --motion-offset-small: 0px;
     --motion-offset-page: 0px;
     --motion-dialog-scale: 1;
+    --loader-duration: 1ms;
   }
 }
 

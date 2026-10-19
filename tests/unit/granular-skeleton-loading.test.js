@@ -30,6 +30,40 @@ test('shared skeleton utility exposes bounded component primitives without artif
     assert.doesNotMatch(source, /setTimeout|setInterval/);
 });
 
+test('table/list/card initial loading uses the shared spinner without synthetic data skeletons', () => {
+    const utility = read('public/js/loading-skeleton.js');
+    const performanceLoader = read('public/js/performance-loader.js');
+    const styles = read('public/css/components/loading.css');
+
+    assert.equal((utility.match(/return loadingState\(/gu) || []).length, 3);
+    assert.match(utility, /aria-busy', 'true'/u);
+    assert.match(utility, /logicfit-refresh-indicator/u);
+    assert.doesNotMatch(performanceLoader, /skeletonCardsMarkup|skeletonTableMarkup|element\.innerHTML\s*=\s*isTable/u);
+    assert.match(performanceLoader, /suppressedRequests:\s*new Map\(\)/u);
+    assert.match(performanceLoader, /function requestKey\([\s\S]*parsed\.pathname\}\$\{parsed\.search\}/u);
+    assert.match(performanceLoader, /consumeSilentRequest\(String\(url\)\)/u);
+    assert.doesNotMatch(performanceLoader, /suppressedTasks/u);
+    assert.match(read('public/js/app.js'), /silentRequests\s*\}\);/u);
+    assert.match(read('public/js/app.js'), /silentRequests:\s*\[detailsPath\]/u);
+    assert.match(styles, /\.logicfit-loader[\s\S]*?--loader-size-section[\s\S]*?mask-composite:\s*subtract/u);
+    assert.match(styles, /\.members-list\.is-result-entering[\s\S]*?animation-delay:\s*var\(--member-row-stagger-cap\)/u);
+    assert.match(styles, /prefers-reduced-motion[\s\S]*?members-list\.is-result-entering[\s\S]*?animation:\s*none/u);
+});
+
+test('central filter choice groups preserve the native filter event contract and use radio semantics', () => {
+    const source = read('public/js/ui-feedback.js');
+
+    for (const id of ['statusFilter', 'attendanceStatusFilter', 'platformRequestStatus', 'requestStatusFilter', 'gymRegistrationStatusFilter', 'tenantStatusFilter', 'memberSubscriptionRequestStatus', 'reportsMembershipStatus', 'reportsCoachingStatus', 'memberFeedbackTypeFilter', 'tenantTypeFilter']) {
+        assert.match(source, new RegExp(`'${id}'`, 'u'));
+    }
+    assert.match(source, /setAttribute\('role', 'radiogroup'\)/u);
+    assert.match(source, /setAttribute\('role', 'radio'\)/u);
+    assert.match(source, /setAttribute\('aria-checked'/u);
+    assert.ok(source.indexOf('/expired|rejected|cancelled|failed|inactive/') < source.indexOf('/active|approved|inside|completed|success/'), 'negative states must be classified before active-like substrings');
+    assert.match(source, /dispatchEvent\(new Event\('change', \{ bubbles: true \}\)\)/u);
+    assert.doesNotMatch(source, /role', 'tablist|\/api\//u);
+});
+
 test('shared skeleton accessible labels follow the centralized Arabic and English locale', () => {
     const source = read('public/js/loading-skeleton.js');
     const localeLabels = {
@@ -62,7 +96,7 @@ test('existing loading skeleton labels update when locale changes before the req
     };
     const document = {
         addEventListener() {},
-        querySelectorAll(selector) { return selector.includes('.skeleton-list') ? [loadingRegion] : []; }
+        querySelectorAll(selector) { return selector.includes('.logicfit-loading-state') ? [loadingRegion] : []; }
     };
     const window = {
         TopGymI18n: { t: (key) => translations[locale][key] || key },
