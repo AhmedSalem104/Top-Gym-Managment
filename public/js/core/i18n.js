@@ -4354,6 +4354,7 @@
             'branchesScreen.confirm.archive': 'سيتم إيقاف العمليات الجديدة مع الاحتفاظ بالسجل. هل تريد المتابعة؟',
             'nav.aria': 'أقسام الإدارة',
             'nav.mobile.heading': 'أقسام الجيم',
+            'nav.mobile.menu': 'القائمة',
             'nav.mobile.open': 'فتح القائمة',
             'nav.mobile.close': 'إغلاق القائمة',
             'nav.group.workspace': 'مساحة العمل',
@@ -4803,7 +4804,7 @@
             , 'dashboard.memberships.frozen': 'مجمدة الآن'
             , 'dashboard.memberships.frozenCaption': 'متوقفة مؤقتًا'
             , 'dashboard.alerts.eyebrow': 'متابعة اليوم'
-            , 'dashboard.alerts.title': 'التنبيهات اليومية'
+            , 'dashboard.alerts.title': 'التنبيهات'
             , 'dashboard.alerts.description': 'راجع الحالات التي تحتاج إلى إجراء سريع'
             , 'dashboard.alerts.count': '{{count}} تنبيه'
             , 'dashboard.alerts.emptyCount': 'لا توجد تنبيهات'
@@ -6573,6 +6574,7 @@
             'branchesScreen.confirm.archive': 'New operations will stop while the history is retained. Continue?',
             'nav.aria': 'Administration sections',
             'nav.mobile.heading': 'Gym sections',
+            'nav.mobile.menu': 'Menu',
             'nav.mobile.open': 'Open navigation',
             'nav.mobile.close': 'Close navigation',
             'nav.group.workspace': 'Workspace',
@@ -7022,7 +7024,7 @@
             , 'dashboard.memberships.frozen': 'Frozen now'
             , 'dashboard.memberships.frozenCaption': 'Temporarily paused'
             , 'dashboard.alerts.eyebrow': 'Today’s follow-up'
-            , 'dashboard.alerts.title': 'Daily alerts'
+            , 'dashboard.alerts.title': 'Alerts'
             , 'dashboard.alerts.description': 'Review cases that need prompt action'
             , 'dashboard.alerts.count': '{{count}} alerts'
             , 'dashboard.alerts.emptyCount': 'No alerts'
@@ -8668,11 +8670,14 @@
     }
 
     function updateLanguageButton() {
-        const segmented = document.querySelector('#authScreen .auth-locale-segmented[data-locale-segmented]');
+        const authenticated = document.body?.dataset.topGymAuthenticated === 'true';
+        const segmented = authenticated
+            ? document.querySelector('.topbar-language-toggle[data-locale-segmented]')
+            : document.querySelector('#authScreen .auth-locale-segmented[data-locale-segmented]');
         if (segmented) {
             const target = currentLocale === 'ar' ? 'en' : 'ar';
             const switchKey = target === 'en' ? 'language.switchToEnglish' : 'language.switchToArabic';
-            const exposeLoginToggle = document.body?.dataset.topGymAuthenticated !== 'true';
+            const exposeLoginToggle = !authenticated;
             segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
                 const locale = button.dataset.localeChoice;
                 button.setAttribute('aria-pressed', String(locale === currentLocale));
@@ -8691,7 +8696,7 @@
             const host = segmented.closest('.auth-reference-controls');
             segmented.setAttribute('aria-label', t('login.locale.label'));
             host?.setAttribute('aria-label', t('login.controls.label'));
-            if (document.body?.dataset.topGymAuthenticated !== 'true') return;
+            return;
         }
         if (!languageButton) return;
         const target = currentLocale === 'ar' ? 'en' : 'ar';
@@ -8721,10 +8726,12 @@
         document.getElementById('pageTabs')?.setAttribute('aria-label', t('nav.aria'));
         const mobileNav = document.getElementById('mobileNavToggle');
         if (mobileNav) {
-            mobileNav.setAttribute('aria-label', t('shell.menu'));
-            mobileNav.setAttribute('title', t('shell.menu'));
+            const navOpen = document.querySelector('.app-shell.mobile-nav-open');
+            const menuLabel = t(navOpen ? 'nav.mobile.close' : 'nav.mobile.menu');
+            mobileNav.setAttribute('aria-label', menuLabel);
+            mobileNav.setAttribute('title', menuLabel);
             const hiddenLabel = mobileNav.querySelector('[data-mobile-nav-label]');
-            if (hiddenLabel) hiddenLabel.textContent = t('shell.menu');
+            if (hiddenLabel) hiddenLabel.textContent = t('nav.mobile.menu');
         }
         const close = document.getElementById('mobileNavClose');
         if (close) {
@@ -8794,7 +8801,7 @@
                 ? (topbarActions || genericSwitcher || rootLoginActions)
                 : (rootLoginActions || genericSwitcher || topbarActions);
         if (!actions) return;
-        const segmented = !authenticated && actions.querySelector('[data-locale-segmented]');
+        const segmented = actions.querySelector('[data-locale-segmented]');
         if (segmented) {
             segmented.querySelectorAll('[data-locale-choice]').forEach((button) => {
                 if (button.dataset.localeChoiceBound === 'true') return;

@@ -47,7 +47,7 @@
   display: block;
   flex: 0 0 auto;
   border-bottom: 1px solid var(--sidebar-divider);
-  background: var(--bg-header);
+  background: var(--bg-surface);
   color: var(--sidebar-text);
   box-shadow: var(--shadow-sm);
 }
@@ -864,7 +864,7 @@
     padding-inline: var(--space-2);
   }
 
-  .app-shell > main.page {
+  body .app-shell > main.page {
     grid-column: 2;
     grid-row: 2;
     width: 100%;
@@ -1399,17 +1399,14 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
    workspace remains below the topbar in the content column. */
 @media (min-width: 1200px) {
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) {
-    grid-template-rows: 80px minmax(0, 1fr);
+    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
   }
 
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > .page-tabs {
-    top: 0;
-    grid-row: 1 / -1;
-    height: 100vh;
-    min-height: 100vh;
-    height: 100dvh;
-    min-height: 100dvh;
-    max-height: none;
+    top: var(--app-topbar-height);
+    grid-row: 2;
+    height: calc(100dvh - var(--app-topbar-height));
+    min-height: 0;
   }
 
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > main.page {
@@ -1419,7 +1416,7 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
 
 /* Gym shell refinement: one full-height navigation rail, one compact context
    control in the top bar, and an information hierarchy that matches daily use. */
-.workspace-contextbar { display: none !important; }
+.workspace-contextbar { display: none; }
 
 .topbar-controls {
   flex-wrap: nowrap;
@@ -1837,15 +1834,19 @@ body .app-shell > main.page {
 }
 
 body .app-shell > .topbar {
-  border-bottom: 1px solid rgb(255 255 255 / .08);
-  background: linear-gradient(112deg, #071326 0%, #0c1b32 62%, #102a4b 100%);
-  box-shadow: 0 8px 26px rgb(7 19 38 / .18);
+  border-bottom: 1px solid var(--border-secondary);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
 }
 
+body .app-shell > .topbar .topbar-controls { color: var(--text-primary); }
+
 body .topbar-inner {
-  min-height: 76px;
-  width: min(100% - 36px, 1540px);
-  padding-block: 12px;
+  min-height: var(--app-topbar-height);
+  width: 100%;
+  padding-inline: var(--app-content-gutter-compact);
+  padding-block: var(--space-2);
 }
 
 body .topbar-brand-area .brand-mark {
@@ -1875,10 +1876,10 @@ body .topbar-quick-actions .header-refresh,
 body .topbar-theme-toggle,
 body .kiosk-toggle-button,
 body .mobile-nav-toggle {
-  border-color: rgb(255 255 255 / .14);
-  border-radius: 12px;
-  background: rgb(255 255 255 / .07);
-  color: #d6e3f4;
+  border-color: var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
 }
 
 body .topbar-quick-actions .header-search:hover,
@@ -1895,16 +1896,16 @@ body .kiosk-toggle-button:hover,
 body .kiosk-toggle-button:focus-visible,
 body .mobile-nav-toggle:hover,
 body .mobile-nav-toggle:focus-visible {
-  border-color: rgb(92 168 255 / .58);
-  background: rgb(92 168 255 / .16);
-  color: #fff;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary);
   transform: translateY(-1px);
 }
 
 body .auth-account-avatar {
-  border-color: rgb(92 168 255 / .55);
-  background: rgb(92 168 255 / .16);
-  color: #ddecff;
+  border-color: var(--primary-border);
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 body .app-shell > .page-tabs {
@@ -1971,17 +1972,13 @@ body .sidebar-brand {
 body .app-shell > .page-tabs,
 body .app-shell > .page-tabs:hover,
 body .app-shell > .page-tabs:focus-within {
-  background-color: #071326;
-  background-image: linear-gradient(180deg, rgb(3 10 26 / .94), rgb(4 13 31 / .39)), url('/assets/gym-sidebar-aesthetic.jpg');
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-blend-mode: normal;
+  background-color: var(--bg-sidebar);
+  background-image: none;
 }
 
 body .app-shell > .page-tabs::before {
-  background: linear-gradient(180deg, rgb(2 8 22 / .18), rgb(2 8 22 / .62));
-  opacity: 1;
+  background: transparent;
+  opacity: 0;
 }
 
 body .app-shell > .page-tabs > .page-tab {
@@ -2219,15 +2216,15 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
     transition: transform var(--motion-duration-page) var(--motion-easing-enter), visibility 0s linear var(--motion-duration-page);
   }
 
-  .app-shell.mobile-nav-open > .page-tabs,
-  .app-shell > .page-tabs.is-mobile-open {
+  body .app-shell.mobile-nav-open > .page-tabs,
+  body .app-shell > .page-tabs.is-mobile-open {
     transform: translateX(0);
     visibility: visible;
     pointer-events: auto;
     transition-delay: 0s;
   }
 
-  html[dir="ltr"] .app-shell > .page-tabs {
+  html[dir="ltr"] body .app-shell > .page-tabs {
     inset-inline-end: auto;
     inset-inline-start: 0;
     border-inline-start: 0;
@@ -2933,4 +2930,161 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   body .app-shell > .topbar .branch-context-shell {
     transition: none;
   }
+}
+
+/* Canonical shell tracks: the header spans the viewport; the workspace below
+   it owns the directional sidebar and the page surface. */
+@media (min-width: 1024px) {
+  body .app-shell {
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
+    overflow-x: clip;
+  }
+
+  body .app-shell.sidebar-expanded,
+  body .app-shell:has(> .page-tabs.is-hovered),
+  body .app-shell:has(> .page-tabs:focus-within),
+  body .app-shell:has(> .page-tabs.sidebar-pinned) {
+    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
+  }
+
+  body .app-shell > .topbar {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  body .app-shell > .page-tabs {
+    position: sticky;
+    inset-block-start: var(--app-topbar-height);
+    z-index: var(--z-content);
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    height: calc(100dvh - var(--app-topbar-height));
+    min-height: 0;
+    align-self: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    background: var(--bg-sidebar);
+  }
+
+  .app-shell > main.page {
+    grid-column: 2;
+    grid-row: 2;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: var(--app-content-top-gap) var(--app-content-gutter-compact) var(--space-10);
+  }
+
+  .app-shell > .page-tabs > .mobile-nav-header,
+  .app-shell > .mobile-nav-backdrop { display: none; }
+  .app-shell > .page-tabs > #authAccountBar { order: 100; margin-block-start: auto; }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  body .app-shell { --sidebar-width-expanded: var(--app-sidebar-width-compact); }
+  body .app-shell > main.page { padding-inline: var(--app-content-gutter-compact); }
+}
+
+@media (min-width: 1280px) {
+  body .app-shell { --sidebar-width-expanded: var(--app-sidebar-width-wide); }
+  body .app-shell > main.page { padding-inline: var(--app-content-gutter-wide); }
+}
+
+@media (max-width: 1023px) {
+  body .app-shell {
+    display: grid;
+    min-height: 100dvh;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow-x: clip;
+  }
+
+  body .app-shell > .topbar { grid-column: 1; grid-row: 1; min-width: 0; }
+  body .app-shell > main.page {
+    grid-column: 1;
+    grid-row: 2;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: var(--app-content-top-gap) var(--app-content-gutter-compact) var(--space-10);
+  }
+
+  body .app-shell > .page-tabs {
+    position: fixed;
+    z-index: var(--z-overlay);
+    inset-block: var(--app-topbar-height) 0;
+    inset-inline-end: 0;
+    display: flex;
+    width: min(320px, 88vw);
+    height: auto;
+    max-height: calc(100dvh - var(--app-topbar-height));
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-3) var(--space-3) max(var(--space-4), env(safe-area-inset-bottom));
+    border: 0;
+    border-inline-start: 1px solid var(--sidebar-divider);
+    border-radius: 0;
+    background: var(--bg-sidebar);
+    box-shadow: var(--shadow-popup);
+    transform: translateX(110%);
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .app-shell.mobile-nav-open > .page-tabs,
+  .app-shell > .page-tabs.is-mobile-open {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  html[dir="ltr"] .app-shell > .page-tabs {
+    inset-inline-end: auto;
+    inset-inline-start: 0;
+    border-inline-start: 0;
+    border-inline-end: 1px solid var(--sidebar-divider);
+    transform: translateX(-110%);
+  }
+
+  html[dir="ltr"] body .app-shell.mobile-nav-open > .page-tabs,
+  html[dir="ltr"] body .app-shell > .page-tabs.is-mobile-open { transform: translateX(0); }
+
+  body .app-shell > .page-tabs > .mobile-nav-header { display: flex; flex: 0 0 auto; }
+  body .app-shell > .page-tabs > .sidebar-brand { display: flex; width: auto; min-width: 0; align-self: stretch; justify-content: flex-start; margin-inline: 0; padding-inline: var(--space-2); }
+  body .app-shell > .page-tabs > #authAccountBar { order: 100; margin-block-start: auto; }
+  body .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy { max-width: 220px; }
+  body .app-shell > .page-tabs > .sidebar-section-label { display: block; }
+  body .app-shell > .page-tabs > .page-tab,
+  body .app-shell > .page-tabs > .smart-assistant-launcher { width: 100%; }
+
+  body .app-shell > .mobile-nav-backdrop:not([hidden]) {
+    position: fixed;
+    z-index: calc(var(--z-overlay) - 1);
+    inset: var(--app-topbar-height) 0 0;
+    display: block;
+    background: var(--overlay);
+  }
+
+  body.mobile-nav-open { overflow: hidden; }
+}
+
+@media (max-width: 767px) {
+  body .app-shell > .topbar { min-height: var(--app-topbar-height-mobile); }
+  body .app-shell > main.page { padding: var(--app-content-gutter-mobile) var(--app-content-gutter-mobile) var(--space-8); }
+  body .app-shell > .page-tabs { inset-block-start: var(--app-topbar-height-mobile); max-height: calc(100dvh - var(--app-topbar-height-mobile)); }
+  body .app-shell > .mobile-nav-backdrop:not([hidden]) { inset-block-start: var(--app-topbar-height-mobile); }
 }

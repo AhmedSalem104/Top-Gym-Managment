@@ -1,6 +1,17 @@
 :root {
   color-scheme: light;
 
+  /* Responsive application shell geometry. */
+  --app-topbar-height: 64px;
+  --app-topbar-height-mobile: 56px;
+  --app-sidebar-width-wide: 240px;
+  --app-sidebar-width-compact: 208px;
+  --app-content-gutter-wide: 24px;
+  --app-content-gutter-compact: 16px;
+  --app-content-gutter-mobile: 12px;
+  --app-content-top-gap: 16px;
+  --app-layout-gap: 16px;
+
   /* Core surfaces. Components should consume these semantic roles rather
      than choosing a color for a page or state themselves. */
   --bg-app: #f5f7fb;
@@ -119,7 +130,7 @@
   --nav-action-cyan: var(--nav-context-cyan);
   --nav-action-cyan-surface: var(--nav-context-cyan-soft);
   --sidebar-width-collapsed: 64px;
-  --sidebar-width-expanded: 248px;
+  --sidebar-width-expanded: 240px;
 
   /* Shared member-card and authentication aliases. */
   --color-page: var(--bg-app);

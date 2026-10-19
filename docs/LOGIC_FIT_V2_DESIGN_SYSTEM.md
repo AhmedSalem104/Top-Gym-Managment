@@ -98,11 +98,11 @@ One primitive has one visual owner. A feature may compose primitives but may not
 - **Badges:** semantic soft colors, 6px radius and 22/26/30px sizes. Never alter business status meanings.
 - **Tabs/segmented controls:** preserve route, selected value, lazy loading and event behavior. Mobile may adapt width/scroll without hiding destinations.
 - **Gym Dashboard views:** the Dashboard page may use the canonical inset-surface tab variant for local views. Its default Overview view contains the existing overview cards, alerts and daily passes; Analytics remains a separate owner-authorized view. These local tabs must not alter the global page-navigation routes or permission checks.
-- **Navigation:** preserve item inventory, routes, permission visibility, group membership semantics, branch context and deep links. Collapsed/mobile forms retain access to all authorized destinations.
+- **Navigation:** preserve item inventory, routes, permission visibility, group membership semantics, branch context and deep links. At desktop widths the topbar spans the full viewport above the workspace; the directional sidebar begins below it (240px from 1280px, 208px from 1024px). Tablet and phone widths use the existing accessible navigation drawer. The compact header retains the branch/section context, notifications and account; locale/theme/fullscreen remain available through the account menu. All controls retain their existing handlers and permission checks.
 
 ## 5. Responsive and accessibility rules
 
-QA targets: 320, 375, 390, 768, 1024, 1440 and 1920px. The expected layout is intentionally adapted at each width; never merely scale desktop. No unintended page overflow, clipped actions/menus, hidden permission-gated controls or unreadable financial values.
+QA targets: 320, 375, 390, 430, 768, 1024, 1280, 1440 and 1920px. The shell uses a 64px desktop/tablet topbar and 56px phone topbar; content gutters are 24px from 1280px, 16px from 768px, and 12px below 768px. Dashboard overview cards use five equal columns from 1280px, three columns from 1024px, an 8-column adaptive composition from 768px, and four columns on phones. The expected layout is intentionally adapted at each width; never merely scale desktop. No unintended page overflow, clipped actions/menus, hidden permission-gated controls or unreadable financial values.
 
 All controls need keyboard operation, visible focus, semantic names/roles/states and touch-sized targets. Contrast target is WCAG AA for normal text; state meaning cannot rely on color alone. Respect `prefers-reduced-motion`, safe areas and browser zoom. Visual and accessibility acceptance must be evidenced in the browser, not inferred from CSS declarations.
 

@@ -73,7 +73,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
     expect(dimensions.document, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
     expect(dimensions.body, JSON.stringify(dimensions)).toBeLessThanOrEqual(dimensions.viewport + 1);
 
-    if (width <= 767) {
+    if (width <= 1023) {
         await expect(page.locator('#mobileNavToggle')).toBeVisible();
         await expect(page.locator('#pageTabs')).toBeHidden();
         await page.locator('#mobileNavToggle').click();
@@ -87,9 +87,6 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
         await expect(page.locator('#pageTabs')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
-    } else if (width < 1200) {
-        await expect(page.locator('#mobileNavToggle')).toBeHidden();
-        await expect(page.locator('#pageTabs')).toBeVisible();
     } else {
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
         await expect(page.locator('#pageTabs')).toBeVisible();

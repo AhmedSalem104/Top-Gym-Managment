@@ -225,16 +225,17 @@
         const tooltip = initSidebarTooltip(rail);
 
         const shell = rail.closest('.app-shell');
-        const desktopMediaQuery = window.matchMedia('(min-width: 1200px)');
+        const desktopMediaQuery = window.matchMedia('(min-width: 1024px)');
         const pinToggle = rail.querySelector('#sidebarPinToggle');
         const pinStorageKey = 'logic-fit.sidebar-pinned';
 
         let hoverOpenTimer = null;
         let hoverReleaseTimer = null;
-        let isPinned = false;
+        let isPinned = true;
 
         try {
-            isPinned = window.localStorage.getItem(pinStorageKey) === 'true';
+            const storedPin = window.localStorage.getItem(pinStorageKey);
+            isPinned = storedPin === null ? true : storedPin === 'true';
         } catch {
             isPinned = false;
         }
@@ -351,12 +352,10 @@
         const backdrop = document.getElementById('mobileNavBackdrop');
         if (!rail || !shell || !toggle) return;
 
-        // Only the phone layout is an off-canvas drawer. Tablet keeps the
-        // navigation visible, so it must remain interactive and exposed to
-        // assistive technology at 768px and above.
-        const mediaQuery = window.matchMedia('(max-width: 767px)');
-        const openLabel = '\u0641\u062a\u062d \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
-        const closeLabel = '\u0625\u063a\u0644\u0627\u0642 \u0627\u0644\u0642\u0627\u0626\u0645\u0629';
+        // Tablet and phone navigation share the existing accessible drawer.
+        const mediaQuery = window.matchMedia('(max-width: 1023px)');
+        const openLabel = () => window.TopGymI18n?.t('nav.mobile.menu') || 'Menu';
+        const closeLabel = () => window.TopGymI18n?.t('nav.mobile.close') || 'Close menu';
         let lastFocusedElement = null;
 
         const focusableItems = () => Array.from(rail.querySelectorAll('button:not([hidden]):not([disabled]), a[href]:not([hidden])'))
@@ -379,11 +378,8 @@
             document.body.classList.toggle('mobile-nav-open', nextOpen);
             rail.classList.toggle('is-mobile-open', nextOpen);
             toggle.setAttribute('aria-expanded', String(nextOpen));
-            toggle.setAttribute('aria-label', nextOpen ? closeLabel : openLabel);
-            toggle.setAttribute('title', nextOpen ? closeLabel : openLabel);
-            const toggleLabel = toggle.querySelector('[data-mobile-nav-label]');
-            if (toggleLabel) toggleLabel.textContent = nextOpen ? closeLabel : openLabel;
-
+            toggle.setAttribute('aria-label', nextOpen ? closeLabel() : openLabel());
+            toggle.setAttribute('title', nextOpen ? closeLabel() : openLabel());
             if (backdrop) {
                 backdrop.hidden = !nextOpen;
                 backdrop.setAttribute('aria-hidden', String(!nextOpen));

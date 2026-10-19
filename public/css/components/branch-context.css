@@ -9,10 +9,10 @@
   min-height: var(--control-height-large);
   max-width: min(100%, 540px);
   padding: 4px 6px;
-  border: 1px solid color-mix(in srgb, var(--primary-border) 42%, var(--sidebar-border));
-  border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--sidebar-bg) 98%, var(--primary) 2%), color-mix(in srgb, var(--sidebar-bg) 88%, var(--primary) 12%));
-  color: var(--sidebar-text);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   box-shadow: var(--shadow-sm);
   isolation: isolate;
 }
@@ -74,7 +74,7 @@ html[dir="ltr"] body .app-shell > .topbar #branchContextShell[data-context-open=
 }
 
 .branch-context-kicker strong {
-  color: var(--sidebar-text);
+  color: var(--text-primary);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: -.01em;
@@ -82,7 +82,7 @@ html[dir="ltr"] body .app-shell > .topbar #branchContextShell[data-context-open=
 
 .branch-context-kicker small,
 .branch-context-field-copy small {
-  color: var(--sidebar-text-muted);
+  color: var(--text-muted);
   font-size: 8px;
   font-weight: 700;
   line-height: 1.3;
@@ -120,7 +120,7 @@ html[dir="ltr"] body .app-shell > .topbar #branchContextShell[data-context-open=
   border: 0;
   outline: 0;
   background: transparent;
-  color: var(--sidebar-text);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -135,8 +135,8 @@ html[dir="ltr"] body .app-shell > .topbar #branchContextShell[data-context-open=
 }
 
 .branch-context-field-copy select option {
-  background: var(--sidebar-bg);
-  color: var(--sidebar-text);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 .branch-context-status {
