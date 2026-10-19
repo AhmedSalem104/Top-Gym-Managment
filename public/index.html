@@ -1129,12 +1129,8 @@
     </dialog>
     <section id="pricingDialog" class="management-workspace-panel management-workspace-panel--pricing" data-management-workspace-panel="pricing" role="tabpanel" aria-labelledby="managementPricingTab" hidden>
         <form class="management-inline-form" id="pricingForm">
-            <header class="dialog-header management-dialog-header">
-                <div class="management-dialog-heading"><span class="management-dialog-eyebrow">إدارة الإيرادات</span><h3 id="pricingDialogTitle">أسعار الباقات</h3><p>تحكم في أسعار الباقات وقيمة كل مدة من مساحة واحدة.</p></div>
-                <span class="management-dialog-mark" aria-hidden="true">01</span>
-            </header>
             <div class="management-workspace-content">
-                <div class="pricing-section-head"><div><h4>أسعار الباقات</h4><p>اضبط السعر الشهري وسعر كل مدة بشكل مستقل لكل باقة.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" data-owner-only type="button">+ إضافة باقة جديدة</button></div>
+                <div class="pricing-section-head"><div><h4 id="pricingDialogTitle">أسعار الباقات</h4><p id="pricingDialogDescription">تحكم في أسعار الباقات وقيمة كل مدة من مساحة واحدة.</p></div><button class="btn btn-primary btn-small" id="addMembershipPlanButton" data-owner-only type="button">+ إضافة باقة جديدة</button></div>
                 <div class="pricing-table-scroll" id="pricingTableContainer"><div class="loading">جاري تحميل الأسعار…</div></div>
                 <section class="day-pass-pricing-section" aria-labelledby="dayPassPricingTitle">
                     <div class="pricing-section-head"><div><h4 id="dayPassPricingTitle">أسعار الحصص اليومية</h4><p>اضبط سعر دخول اليوم الواحد بشكل مستقل عن اشتراكات الأعضاء.</p></div><span class="day-pass-pricing-note">إيراد مستقل</span></div>
@@ -1147,12 +1143,8 @@
     </section>
     <section id="membershipTypesDialog" class="management-workspace-panel management-workspace-panel--types" data-management-workspace-panel="types" role="tabpanel" aria-labelledby="managementTypesTab" hidden>
         <div class="management-inline-form">
-            <header class="dialog-header management-dialog-header">
-                <div class="management-dialog-heading"><span class="management-dialog-eyebrow">إدارة الاشتراكات</span><h3 id="membershipTypesDialogTitle">أنواع العضويات</h3><p>أضف أو عدّل مدد العضويات ومعاملات أسعارها بشكل مستقل.</p></div>
-                <span class="management-dialog-mark management-dialog-mark-success" aria-hidden="true">02</span>
-            </header>
             <div class="management-workspace-content">
-                <div class="pricing-section-head"><div><h4>أنواع العضويات</h4><p>مثل نصف الشهر، الشهرية، الربع سنوية وباقي المدد.</p></div><button class="btn btn-primary btn-small" id="addMembershipTypeButton" data-owner-only type="button">+ إضافة نوع جديد</button></div>
+                <div class="pricing-section-head"><div><h4 id="membershipTypesDialogTitle">أنواع العضويات</h4><p id="membershipTypesDialogDescription">أضف أو عدّل مدد العضويات ومعاملات أسعارها بشكل مستقل.</p></div><button class="btn btn-primary btn-small" id="addMembershipTypeButton" data-owner-only type="button">+ إضافة نوع جديد</button></div>
                 <div class="pricing-table-scroll" id="membershipTypesTableContainer"><div class="loading">جاري تحميل أنواع العضويات…</div></div>
             </div>
         </div>
@@ -1256,10 +1248,10 @@
     <script defer src="/js/branch-context.js?v=a4b17c3ebf6f638c"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
-    <script defer src="/js/core/feature-manifest.js?v=f82d806f16ed0a7c"></script>
+    <script defer src="/js/core/feature-manifest.js?v=e66504a18da65ca8"></script>
     <script defer src="/js/feature-loader.js?v=1a8c151a016326f9"></script>
     <script defer src="/js/core/i18n.js?v=f36b4c81146b602c"></script>
-    <script defer src="/js/app-shell-bootstrap.js?v=0fb47fa1c75f91cf"></script>
+    <script defer src="/js/app-shell-bootstrap.js?v=d3f6770d2f5f6f50"></script>
     <script defer src="/js/page-tabs.js?v=8383a9be527c7f39"></script>
 </body>
 </html>

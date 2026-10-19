@@ -458,6 +458,9 @@ test('Platform Admin nested modals use the shared scroll-body contract while pri
     assert.doesNotMatch(enhancer, /pricingDialog|membershipTypesDialog/u);
     assert.match(html, /<section id="pricingDialog"[^>]*role="tabpanel"/u);
     assert.match(html, /<section id="membershipTypesDialog"[^>]*role="tabpanel"/u);
+    assert.doesNotMatch(html, /class="management-dialog-heading"/u);
+    assert.match(html, /<h4 id="pricingDialogTitle"/u);
+    assert.match(html, /<h4 id="membershipTypesDialogTitle"/u);
     assert.match(modal, /\.lf-modal-layout[\s\S]*overflow:\s*hidden/u);
     assert.match(modal, /\.lf-modal-layout\s*>\s*:is\(\.dialog-body,\s*\.dialog-scroll-content\)[\s\S]*overflow-y:\s*auto/u);
     assert.match(modal, /\.lf-modal-layout\s*>\s*:is\(\.dialog-actions,\s*\.form-actions\):not\(:has\(>[\s\S]*display:\s*none/u);

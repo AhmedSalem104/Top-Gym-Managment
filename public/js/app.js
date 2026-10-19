@@ -1745,11 +1745,8 @@
 
              const pricingDialog = $('pricingDialog');
              if (pricingDialog) {
-                 text(pricingDialog.querySelector('.management-dialog-eyebrow'), 'pricing.eyebrow');
                  text($('pricingDialogTitle'), 'pricing.title');
-                 text(pricingDialog.querySelector('.management-dialog-heading p'), 'pricing.description');
-                 text(pricingDialog.querySelector('.pricing-section-head h4'), 'pricing.section.title');
-                 text(pricingDialog.querySelector('.pricing-section-head p'), 'pricing.section.description');
+                 text($('pricingDialogDescription'), 'pricing.description');
                  text($('addMembershipPlanButton'), 'pricing.addPlan');
                  text($('pricingSave'), window.topGymFeedback?.isLoading?.($('pricingSave')) ? 'pricing.saveLoading' : 'pricing.save');
                  text($('dayPassPricingTitle'), 'dayPass.title');
@@ -1805,20 +1802,15 @@
                  text(pricingContainer?.querySelector('.loading'), 'pricing.loading');
                  text(dayPassContainer?.querySelector('.loading'), 'dayPass.loading');
                  attribute(pricingDialog, 'aria-describedby', 'pricingDialogDescription');
-                 attribute(pricingDialog.querySelector('.management-dialog-heading p'), 'id', 'pricingDialogDescription');
              }
 
              const typesDialog = $('membershipTypesDialog');
              if (typesDialog) {
-                 text(typesDialog.querySelector('.management-dialog-eyebrow'), 'types.eyebrow');
                  text($('membershipTypesDialogTitle'), 'types.title');
-                 text(typesDialog.querySelector('.management-dialog-heading p'), 'types.description');
-                 text(typesDialog.querySelector('.pricing-section-head h4'), 'types.section.title');
-                 text(typesDialog.querySelector('.pricing-section-head p'), 'types.section.description');
+                 text($('membershipTypesDialogDescription'), 'types.description');
                  text($('addMembershipTypeButton'), 'types.add');
                  text($('membershipTypesTableContainer')?.querySelector('.loading'), 'types.loading');
                  attribute(typesDialog, 'aria-describedby', 'membershipTypesDialogDescription');
-                 attribute(typesDialog.querySelector('.management-dialog-heading p'), 'id', 'membershipTypesDialogDescription');
                  const table = $('membershipTypesTableContainer')?.querySelector('table.membership-types-table');
                  if (table) {
                      const headerKeys = ['types.column.type', 'types.column.duration', 'types.column.multiplier', 'types.column.status', 'types.column.action'];

@@ -82,7 +82,7 @@ test('membership management keeps balanced hierarchy and usable inline tabs acro
                     await expect(panel).toBeVisible();
                     const bounds = await panel.evaluate((element) => {
                         const panelRect = element.getBoundingClientRect();
-                        const heading = element.querySelector('.management-dialog-heading h3');
+                        const heading = element.querySelector('.pricing-section-head h4');
                         const headingRect = heading.getBoundingClientRect();
                         return {
                             panel: { left: panelRect.left, right: panelRect.right, width: panelRect.width },
