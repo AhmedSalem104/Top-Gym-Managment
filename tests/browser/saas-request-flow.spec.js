@@ -385,6 +385,7 @@ test('failed subscription submit keeps dialog and entered form state and restore
 
 test('payment proof preview opens actual image bytes through the authenticated API client, not JSON metadata', async ({ page }) => {
     await openBilling(page, async () => null, [requestRow()]);
+    await page.locator('#saasRequestsTab').click();
     await page.route('**/api/saas/payment-proofs/88/file', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
     await page.keyboard.press('Escape');
     const popupPromise = page.waitForEvent('popup');

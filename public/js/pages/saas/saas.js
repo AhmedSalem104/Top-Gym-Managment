@@ -92,6 +92,15 @@
         setText('.saas-back-button span', 'saasBilling.navigation.back');
         setText('.saas-breadcrumb span', 'saasBilling.navigation.platform');
         setText('.saas-breadcrumb strong', 'saasBilling.navigation.current');
+        setText('#saasSummaryOverviewTitle', 'saasBilling.summary.overviewTitle');
+        setText('.saas-renewal-section .saas-eyebrow', 'saasBilling.renewal.kicker');
+        setText('#saasRenewalTitle', 'saasBilling.renewal.title');
+        const renewalDescription = root.querySelector('.saas-renewal-description');
+        if (renewalDescription) renewalDescription.textContent = t('saasBilling.renewal.description');
+        const billingTabs = root.querySelector('.saas-billing-tabs');
+        if (billingTabs) billingTabs.setAttribute('aria-label', t('saasBilling.tabs.aria'));
+        root.querySelector('[data-saas-billing-tab="plans"]')?.replaceChildren(document.createTextNode(t('saasBilling.plans.title')));
+        root.querySelector('[data-saas-billing-tab="requests"]')?.replaceChildren(document.createTextNode(t('saasBilling.requests.title')));
 
         setText('.saas-plans-panel .saas-eyebrow', 'saasBilling.plans.kicker');
         setText('#saasPlansTitle', 'saasBilling.plans.title');
@@ -162,9 +171,6 @@
             if (chooseLabel) chooseLabel.textContent = t('saasBilling.form.choosePlanTerm');
         }
         const actionBar = root.querySelector('.saas-plan-action-bar');
-        const actionBarParts = actionBar?.querySelectorAll('div > span, div > strong, button span:last-child');
-        if (actionBarParts?.[0]) actionBarParts[0].textContent = t('saasBilling.form.manageTitle');
-        if (actionBarParts?.[1]) actionBarParts[1].textContent = t('saasBilling.form.managePrompt');
         const openRequest = actionBar?.querySelector('button span:last-child');
         if (openRequest) openRequest.textContent = t('saasBilling.form.openRequest');
         const message = $('saasSubscriptionMessage');
@@ -361,7 +367,8 @@
         const page = $('saasBillingSection');
         const panel = page?.querySelector('.saas-request-panel');
         const plansPanel = page?.querySelector('.saas-plans-panel');
-        if (!page || !panel || !plansPanel || panel.dataset.dialogReady === 'true') return;
+        const renewalSection = page?.querySelector('.saas-renewal-section');
+        if (!page || !panel || !plansPanel || !renewalSection || panel.dataset.dialogReady === 'true') return;
         panel.dataset.dialogReady = 'true';
         const dialog = document.createElement('dialog');
         dialog.className = 'saas-request-dialog lf-modal-shell lf-modal--md lf-modal--structured';
@@ -435,11 +442,10 @@
         if (actions) dialog.appendChild(actions);
         const actionBar = document.createElement('div');
         actionBar.className = 'saas-plan-action-bar';
-        actionBar.innerHTML = `<div><span>${escapeHtml(t('saasBilling.form.manageTitle'))}</span><strong>${escapeHtml(t('saasBilling.form.managePrompt'))}</strong></div>`;
         const trigger = document.createElement('button');
         trigger.className = 'btn btn-primary saas-request-open';
         trigger.type = 'button';
-        trigger.innerHTML = `<span aria-hidden="true">＋</span><span>${escapeHtml(t('saasBilling.form.openRequest'))}</span>`;
+        trigger.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span>' + escapeHtml(t('saasBilling.form.openRequest')) + '</span>';
         trigger.addEventListener('click', async () => {
             if (state.submitting || trigger.disabled) return;
             trigger.disabled = true;
@@ -456,13 +462,13 @@
             }
         });
         actionBar.appendChild(trigger);
-        plansPanel.parentElement.insertBefore(actionBar, plansPanel);
+        renewalSection.appendChild(actionBar);
         const pendingState = document.createElement('section');
         pendingState.id = 'saasPendingRequestState';
         pendingState.className = 'saas-panel';
         pendingState.setAttribute('aria-live', 'polite');
         pendingState.hidden = true;
-        actionBar.parentElement.insertBefore(pendingState, plansPanel);
+        renewalSection.appendChild(pendingState);
         renderRequestContext();
         renderPendingRequest(state.pendingRequest);
     }
@@ -684,6 +690,39 @@
     }
 
     function bind() {
+        const billingTabs = $('saasBillingSection')?.querySelector('.saas-billing-tabs');
+        const activateBillingTab = (tab, moveFocus = false) => {
+            if (!tab || tab.getAttribute('aria-selected') === 'true') {
+                if (moveFocus) tab?.focus();
+                return;
+            }
+            billingTabs?.querySelectorAll('[role="tab"]').forEach((candidate) => {
+                const selected = candidate === tab;
+                candidate.setAttribute('aria-selected', String(selected));
+                candidate.tabIndex = selected ? 0 : -1;
+                const panel = $(candidate.getAttribute('aria-controls'));
+                if (panel) panel.hidden = !selected;
+            });
+            if (moveFocus) tab.focus();
+        };
+        billingTabs?.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-saas-billing-tab]');
+            if (tab) activateBillingTab(tab);
+        });
+        billingTabs?.addEventListener('keydown', (event) => {
+            const tabs = [...billingTabs.querySelectorAll('[role="tab"]')];
+            const current = tabs.indexOf(event.target.closest('[role="tab"]'));
+            if (current < 0) return;
+            const rtl = getComputedStyle(billingTabs).direction === 'rtl';
+            let next = current;
+            if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = tabs.length - 1;
+            else if (event.key === 'ArrowRight') next = (current + (rtl ? -1 : 1) + tabs.length) % tabs.length;
+            else if (event.key === 'ArrowLeft') next = (current + (rtl ? 1 : -1) + tabs.length) % tabs.length;
+            else return;
+            event.preventDefault();
+            activateBillingTab(tabs[next], true);
+        });
         $('saasSubscriptionForm')?.addEventListener('submit', submit);
         $('saasPlanSelect')?.addEventListener('change', (event) => { selectPlan(event.target.value); renderRequestPricing(); });
         $('saasSubscriptionForm')?.addEventListener('change', (event) => {

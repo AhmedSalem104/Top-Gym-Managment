@@ -80,11 +80,35 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
     });
     await page.locator('[data-page-tab="saas-billing"]').click();
     await expect(page.locator('#saasBillingSection')).toBeVisible();
+    await expect(page.locator('#saasSummaryOverviewTitle')).toHaveText(/General summary|الملخص العام/);
+    await expect(page.locator('.saas-renewal-section #saasRenewalTitle')).toBeVisible();
+    await expect(page.locator('.saas-plan-action-bar .saas-request-open')).toBeVisible();
+    await expect.poll(() => page.locator('.saas-request-open').evaluate((button) => getComputedStyle(button).animationName)).toBe('saas-request-cta-enter');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => page.locator('.saas-request-open').evaluate((button) => getComputedStyle(button).animationName)).toBe('none');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(page.locator('#saasPlansTab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#saasPlansPanel')).toBeVisible();
+    await expect(page.locator('#saasRequestsPanel')).toBeHidden();
+    await page.locator('.saas-request-open').click();
+    await expect(page.locator('.saas-request-dialog')).toBeVisible();
+    await expect(page.locator('#saasSubscriptionForm')).toBeVisible();
+    await expect(page.locator('#saasSubscriptionSubmit')).toBeVisible();
+    await page.locator('.saas-request-dialog [data-dialog-close-generated]').click();
     await expect(page.locator('#saasPlansList [data-saas-plan-card]')).toHaveCount(4);
     await expect(page.locator('#saasPlansList .saas-plan-current-badge')).toHaveCount(1);
     await expect(page.locator('#saasPlansList .saas-plan-features, #saasPlansList .saas-plan-entitlements, #saasPlansList [data-saas-feature-key]')).toHaveCount(0);
     await expect(page.locator('#saasRequestsList tr')).toHaveCount(1);
     await expect(page.locator('.saas-summary-dates bdi')).toHaveCount(2);
+    await page.locator('#saasRequestsTab').click();
+    await expect(page.locator('#saasRequestsTab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#saasRequestsPanel')).toBeVisible();
+    await expect(page.locator('#saasPlansPanel')).toBeHidden();
+    await page.screenshot({ path: path.join(OUTPUT, 'saas-billing-history-1440-light-ar.png'), fullPage: true, animations: 'disabled' });
+    await page.locator('#saasRequestsTab').press('ArrowLeft');
+    await expect(page.locator('#saasPlansTab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('#saasPlansPanel')).toBeVisible();
+    await expect(page.locator('#saasRequestsPanel')).toBeHidden();
 
     for (const width of WIDTHS) {
         await page.setViewportSize({ width, height: width <= 390 ? 900 : 960 });
@@ -110,6 +134,10 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
                         .map((element) => element.dataset.label || element.textContent.trim());
                     return {
                         title: root?.querySelector('#saasBillingTitle')?.textContent.trim(),
+                        overviewTitle: root?.querySelector('#saasSummaryOverviewTitle')?.textContent.trim(),
+                        renewalTitle: root?.querySelector('#saasRenewalTitle')?.textContent.trim(),
+                        plansTab: root?.querySelector('#saasPlansTab')?.textContent.trim(),
+                        requestsTab: root?.querySelector('#saasRequestsTab')?.textContent.trim(),
                         lang: document.documentElement.lang,
                         dir: document.documentElement.dir,
                         rootTheme: document.documentElement.dataset.theme,
@@ -155,6 +183,10 @@ test('saas billing read-only responsive visual matrix: widths, themes and locale
                 expect(state.requestTableRows).toBe(1);
                 expect(state.lang).toBe(locale);
                 expect(state.dir).toBe(locale === 'ar' ? 'rtl' : 'ltr');
+                expect(state.overviewTitle).toBe(locale === 'ar' ? 'الملخص العام' : 'General summary');
+                expect(state.renewalTitle).toBe(locale === 'ar' ? 'تجديد الباقة' : 'Renew your plan');
+                expect(state.plansTab).toBe(locale === 'ar' ? 'الباقات المتاحة' : 'Available plans');
+                expect(state.requestsTab).toBe(locale === 'ar' ? 'سجل طلبات الاشتراك' : 'Subscription request history');
                 expect(state.rootTheme).toBe(theme);
                 expect(state.bodyTheme).toBe(theme);
                 if (width <= 389) expect(state.historyCells.every((cell) => cell.display === 'grid')).toBe(true);

@@ -24,7 +24,7 @@
         management: { dependencies: [], styles: ['/css/pages/memberships.css?v=8067256324d3fc12'], scripts: ['/js/pricing-cards.js?v=2f78224cc53b4807', '/js/day-passes.js?v=aa638612f49c24e7'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=ea39cc8ee328ed3a'], scripts: ['/js/pages/branding/branding.js?v=45d5109ed0894dca'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=2ad87db27d7f7f63'], scripts: ['/js/pages/management/member-payment-methods.js?v=04c55f9eaed5899a'] },
-        'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=e6c87e7bfc3d3da5'], scripts: ['/js/pages/saas/saas.js?v=5e467e2ca4cb392b'] },
+        'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=b0e01e6a1587d047'], scripts: ['/js/pages/saas/saas.js?v=af699af7554a9c8c'] },
         'backup-history': { dependencies: [], dialogs: [{ source: '/dialogs/backup.html?v=70e6e8d8ebdf6a5a', ids: ['backupRestoreDialog'] }], styles: [], scripts: ['/js/pages/management/backup.js?v=e961a7ba4a09d254'] },
         'member-subscription-requests': { dependencies: [], styles: ['/css/pages/member-subscription-requests.css?v=ae6acf9cecdf829a'], scripts: ['/js/pages/management/member-subscription-requests.js?v=59bdc7a9c38cb326'] },
         'portal-analytics': { dependencies: [], styles: ['/css/pages/portal-analytics.css?v=1c97f396bef6694b'], scripts: ['/js/pages/management/portal-analytics.js?v=6ee02804bcf15ebd'] },
