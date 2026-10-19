@@ -58,7 +58,7 @@ th {
 
 tbody tr {
   min-height: 68px;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 tbody tr:hover {
@@ -576,7 +576,7 @@ body table td {
 }
 
 body table tbody tr {
-  transition: background-color 140ms ease;
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 body table tbody tr:hover {

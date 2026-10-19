@@ -2,7 +2,7 @@
     if (window.__topGymAppShellBootstrapLoaded) return;
     window.__topGymAppShellBootstrapLoaded = true;
 
-    const source = '/js/app.js?v=4b6609556eb19fd4';
+    const source = '/js/app.js?v=74505098abf3fd94';
     let loadPromise = null;
     let appUsableResolve;
     let appUsableReject;

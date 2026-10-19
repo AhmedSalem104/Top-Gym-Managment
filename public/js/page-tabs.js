@@ -627,6 +627,50 @@
         }
     }
 
+    const routeSurfaceIds = {
+        dashboard: 'dashboardSection',
+        members: 'membersSection',
+        expenses: 'expensesSection',
+        management: 'managementSection',
+        branding: 'brandingSection',
+        'member-payment-methods': 'memberPaymentMethodsSection',
+        'saas-billing': 'saasBillingSection',
+        'backup-history': 'backupHistorySection',
+        'member-subscription-requests': 'memberSubscriptionRequestsSection',
+        'portal-analytics': 'portalAnalyticsSection',
+        permissions: 'permissionsSection',
+        reports: 'reportsSection',
+        attendance: 'attendanceSection',
+        library: 'librarySection',
+        trainees: 'traineesSection',
+        intelligence: 'intelligenceSection',
+        store: 'storeSection',
+        branches: 'branchesSection',
+        feedback: 'feedbackSection'
+    };
+
+    function animateActiveRouteSurface(tabName) {
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || window.matchMedia?.('print').matches) return;
+        const surface = document.getElementById(routeSurfaceIds[tabName]) || document.getElementById('dashboardSection');
+        if (!surface || surface.hidden || typeof surface.animate !== 'function') return;
+        surface.getAnimations().forEach((animation) => {
+            if (animation.id === 'logicfit-page-transition') animation.cancel();
+        });
+        const tokens = getComputedStyle(document.documentElement);
+        const durationToken = tokens.getPropertyValue('--motion-duration-page').trim();
+        const durationValue = Number.parseFloat(durationToken);
+        const duration = Number.isFinite(durationValue)
+            ? durationValue * (durationToken.endsWith('ms') ? 1 : durationToken.endsWith('s') ? 1000 : 1)
+            : 250;
+        const offset = tokens.getPropertyValue('--motion-offset-page').trim() || '8px';
+        const easing = tokens.getPropertyValue('--motion-easing-enter').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+        const animation = surface.animate([
+            { opacity: 0, transform: `translateY(${offset})` },
+            { opacity: 1, transform: 'translateY(0)' }
+        ], { duration, easing, fill: 'none' });
+        animation.id = 'logicfit-page-transition';
+    }
+
     function renderFeatureAccessState(tabName, access) {
         const host = document.getElementById('dashboardSection');
         if (!host) return;
@@ -687,6 +731,7 @@
         if (requestedFeature && featureAccess && featureAccess.allowed !== true) {
             renderFeatureAccessState(name, featureAccess);
             if (token !== activationToken) return;
+            animateActiveRouteSurface(name);
             activeTabName = name;
             document.documentElement.dataset.topGymActiveTab = name;
             window.history.replaceState(null, '', `#${name}`);
@@ -706,6 +751,7 @@
         }
         if (token !== activationToken) return;
         renderTab(name);
+        animateActiveRouteSurface(name);
         activeTabName = name;
         document.documentElement.dataset.topGymActiveTab = name;
         window.history.replaceState(null, '', `#${name}`);

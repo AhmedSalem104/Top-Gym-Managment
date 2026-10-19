@@ -808,7 +808,7 @@ test('print documents use compact shared spacing without reserving full media he
     assert.match(printCss, /\.print-section\s*\{[^}]*margin:\s*0 0 10px/su);
     assert.match(printCss, /\.print-footer\s*\{[^}]*margin-top:\s*14px/su);
     assert.match(printCss, /\.coaching-plan-media-empty\s*\{[^}]*min-height:\s*16mm/su);
-    assert.match(printCss, /\.coaching-plan-summary\s*\{[^}]*padding:\s*3mm/su);
+    assert.match(printCss, /\.coaching-plan-summary\s*\{[^}]*padding:\s*2\.5mm/su);
 });
 
 test('attendance phone feedback delegates hidden-state behavior to the canonical phone component', () => {

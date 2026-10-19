@@ -23,10 +23,11 @@ function makeFixture() {
     fs.mkdirSync(path.join(publicDir, 'js', 'pages', 'store'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'pages'), { recursive: true });
     fs.mkdirSync(path.join(publicDir, 'css', 'components'), { recursive: true });
-    fs.writeFileSync(path.join(publicDir, 'index.html'), '<meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=old">\n<link rel="stylesheet" href="/css/app-shell.css?v=old">\n<script defer src="/js/theme.js?v=old"></script>\n<script defer src="/js/branch-context.js?v=old"></script>\n<script defer src="/js/core/feature-manifest.js?v=old"></script>\n<script defer src="/js/core/i18n.js?v=old"></script>\n<script defer src="/js/app-shell-bootstrap.js?v=old"></script>\n<script defer src="/js/feature-loader.js?v=old"></script>\n');
+    fs.writeFileSync(path.join(publicDir, 'index.html'), '<meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=old">\n<link rel="stylesheet" href="/css/app-shell.css?v=old">\n<script defer src="/js/theme.js?v=old"></script>\n<script defer src="/js/branch-context.js?v=old"></script>\n<script defer src="/js/page-tabs.js?v=old"></script>\n<script defer src="/js/core/feature-manifest.js?v=old"></script>\n<script defer src="/js/core/i18n.js?v=old"></script>\n<script defer src="/js/app-shell-bootstrap.js?v=old"></script>\n<script defer src="/js/feature-loader.js?v=old"></script>\n');
     fs.writeFileSync(path.join(publicDir, 'login.html'), '<script defer src="/js/core/i18n.js?v=old"></script>\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'core', 'feature-manifest.js'), "const features = { 'saas-billing': { scripts: ['/js/pages/saas/saas.js?v=old'] }, 'portal-analytics': { scripts: ['/js/pages/management/portal-analytics.js?v=old'] }, coaching: { scripts: ['/js/pages/coaching/coaching.js?v=old'] }, library: { scripts: ['/js/pages/library/library.js?v=old'] }, attendance: { styles: ['/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, members: { styles: ['/css/pages/members.css?v=old', '/css/pages/attendance.css?v=old', '/css/components/member-digital-card.css?v=old'], scripts: ['/js/pages/members/action-menu.js?v=old', '/js/pages/attendance/attendance.js?v=old', '/js/member-digital-card.js?v=old'] }, 'member-details': { styles: ['/css/components/member-digital-card.css?v=old'], scripts: ['/js/member-digital-card.js?v=old'] } };\n");
     fs.writeFileSync(path.join(publicDir, 'js', 'branch-context.js'), 'window.branchContextBuild = 1;\n');
+    fs.writeFileSync(path.join(publicDir, 'js', 'page-tabs.js'), 'window.pageTabsBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'theme.js'), 'window.themeBuild = 1;\n');
     fs.writeFileSync(path.join(publicDir, 'js', 'app-shell-bootstrap.js'), "loadScript('/js/app.js?v=old');\n");
     fs.writeFileSync(path.join(publicDir, 'js', 'feature-loader.js'), "loadScript('/js/pages/store/bar-pos.js?v=old');\n");
@@ -58,6 +59,7 @@ test('SaaS asset fingerprint changes with content and remains stable for unchang
         assert.equal(first.libraryVersion, repeated.libraryVersion);
         assert.equal(first.portalAnalyticsVersion, repeated.portalAnalyticsVersion);
         assert.equal(first.branchContextVersion, repeated.branchContextVersion);
+        assert.equal(first.pageTabsVersion, repeated.pageTabsVersion);
         assert.equal(first.appShellStyleVersion, repeated.appShellStyleVersion);
         assert.equal(first.authSurfaceStyleVersion, repeated.authSurfaceStyleVersion);
         assert.equal(first.i18nVersion, repeated.i18nVersion);
@@ -98,6 +100,11 @@ test('SaaS asset fingerprint changes with content and remains stable for unchang
         assert.notEqual(changedBranchContext.branchContextVersion, first.branchContextVersion);
         assert.match(changedBranchContext.generatedIndex, new RegExp(`/js/branch-context\\.js\\?v=${changedBranchContext.branchContextVersion}`));
 
+        fs.writeFileSync(path.join(root, 'public', 'js', 'page-tabs.js'), 'window.pageTabsBuild = 2;\n');
+        const changedPageTabs = planRuntimeAssetVersions(root);
+        assert.notEqual(changedPageTabs.pageTabsVersion, first.pageTabsVersion);
+        assert.match(changedPageTabs.generatedIndex, new RegExp(`/js/page-tabs\\.js\\?v=${changedPageTabs.pageTabsVersion}`));
+
         fs.writeFileSync(path.join(root, 'public', 'css', 'app-shell.css'), '.shell { color: navy; }\n');
         const changedAppShellStyle = planRuntimeAssetVersions(root);
         assert.notEqual(changedAppShellStyle.appShellStyleVersion, first.appShellStyleVersion);
@@ -121,6 +128,7 @@ test('content fingerprints are stable across Windows and Unix line endings', () 
             'public/css/app-shell.css',
             'public/css/login-entry.css',
             'public/js/branch-context.js',
+            'public/js/page-tabs.js',
             'public/js/core/feature-manifest.js',
             'public/js/pages/saas/saas.js',
             'public/js/pages/coaching/coaching.js',
@@ -141,6 +149,7 @@ test('content fingerprints are stable across Windows and Unix line endings', () 
         assert.equal(crlf.libraryVersion, first.libraryVersion);
         assert.equal(crlf.portalAnalyticsVersion, first.portalAnalyticsVersion);
         assert.equal(crlf.branchContextVersion, first.branchContextVersion);
+        assert.equal(crlf.pageTabsVersion, first.pageTabsVersion);
         assert.equal(crlf.appShellStyleVersion, first.appShellStyleVersion);
         assert.equal(crlf.authSurfaceStyleVersion, first.authSurfaceStyleVersion);
         assert.equal(crlf.manifestVersion, first.manifestVersion);
@@ -309,6 +318,7 @@ test('checked-in HTML and manifest are synchronized to content-derived immutable
     assert.match(plan.generatedIndex, new RegExp(`/js/core/feature-manifest\\.js\\?v=${plan.manifestVersion}`));
     assert.match(plan.generatedIndex, new RegExp(`/js/branch-context\\.js\\?v=${plan.branchContextVersion}`));
     assert.match(plan.generatedIndex, new RegExp(`/css/app-shell\\.css\\?v=${plan.appShellStyleVersion}`));
+    assert.match(plan.generatedIndex, new RegExp(`/js/page-tabs\\.js\\?v=${plan.pageTabsVersion}`));
     assert.match(plan.generatedIndex, new RegExp(`/css/login-entry\\.css\\?v=${plan.authSurfaceStyleVersion}`));
     assert.match(plan.generatedIndex, new RegExp(`/js/core/i18n\\.js\\?v=${plan.i18nVersion}`));
     assert.equal(plan.generatedHtmlFiles.size, 0, 'all HTML consumers of central i18n must match its content fingerprint');

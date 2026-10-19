@@ -109,6 +109,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const resolvedAuthSurfaceStylePath = path.join(projectRoot, 'public', 'css', 'login-entry.css');
     const resolvedManifestPath = path.join(projectRoot, 'public', 'js', 'core', 'feature-manifest.js');
     const resolvedBranchContextAssetPath = path.join(projectRoot, 'public', 'js', 'branch-context.js');
+    const resolvedPageTabsAssetPath = path.join(projectRoot, 'public', 'js', 'page-tabs.js');
     const resolvedSaasAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'saas', 'saas.js');
     const resolvedCoachingAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'coaching', 'coaching.js');
     const resolvedLibraryAssetPath = path.join(projectRoot, 'public', 'js', 'pages', 'library', 'library.js');
@@ -124,6 +125,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
     const authSurfaceStyleVersion = sha256File(resolvedAuthSurfaceStylePath);
     const manifest = fs.readFileSync(resolvedManifestPath, 'utf8');
     const branchContextVersion = sha256File(resolvedBranchContextAssetPath);
+    const pageTabsVersion = sha256File(resolvedPageTabsAssetPath);
     const saasVersion = sha256File(resolvedSaasAssetPath);
     const coachingVersion = sha256File(resolvedCoachingAssetPath);
     const libraryVersion = sha256File(resolvedLibraryAssetPath);
@@ -139,8 +141,14 @@ function planRuntimeAssetVersions(projectRoot = root) {
         (match, prefix, suffix) => `${prefix}/js/branch-context.js?v=${branchContextVersion}${suffix}`,
         'branch context script reference'
     );
-    const versionedAuthSurfaceIndex = replaceExactlyOnce(
+    const versionedPageTabsIndex = replaceExactlyOnce(
         versionedBranchContextIndex,
+        /(<script\b[^>]*\bsrc=["'])\/js\/page-tabs\.js(?:\?v=[^"']*)?(["'][^>]*>)/i,
+        (match, prefix, suffix) => `${prefix}/js/page-tabs.js?v=${pageTabsVersion}${suffix}`,
+        'page tabs script reference'
+    );
+    const versionedAuthSurfaceIndex = replaceExactlyOnce(
+        versionedPageTabsIndex,
         /(<meta\b[^>]*\bname=["']auth-surface-stylesheet["'][^>]*\bcontent=["'])\/css\/login-entry\.css(?:\?v=[^"']*)?(["'][^>]*>)/i,
         (match, prefix, suffix) => `${prefix}/css/login-entry.css?v=${authSurfaceStyleVersion}${suffix}`,
         'auth surface stylesheet reference'
@@ -200,6 +208,7 @@ function planRuntimeAssetVersions(projectRoot = root) {
         generatedAssetFiles,
         portalAnalyticsVersion,
         branchContextVersion,
+        pageTabsVersion,
         appShellStyleVersion,
         authSurfaceStyleVersion,
         saasVersion,
@@ -223,7 +232,7 @@ function run() {
             process.exitCode = 1;
             return;
         }
-        console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; app shell CSS ${plan.appShellStyleVersion}; i18n ${plan.i18nVersion}; SaaS ${plan.saasVersion}; portal analytics ${plan.portalAnalyticsVersion}; library ${plan.libraryVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
+        console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; page tabs ${plan.pageTabsVersion}; app shell CSS ${plan.appShellStyleVersion}; i18n ${plan.i18nVersion}; SaaS ${plan.saasVersion}; portal analytics ${plan.portalAnalyticsVersion}; library ${plan.libraryVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
         return;
     }
 
@@ -232,7 +241,7 @@ function run() {
         for (const [filePath, content] of plan.generatedAssetFiles) fs.writeFileSync(filePath, content, 'utf8');
         for (const [filePath, content] of plan.generatedHtmlFiles) fs.writeFileSync(filePath, content, 'utf8');
     }
-    console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; app shell CSS ${plan.appShellStyleVersion}; i18n ${plan.i18nVersion}; SaaS ${plan.saasVersion}; portal analytics ${plan.portalAnalyticsVersion}; library ${plan.libraryVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
+    console.log(`[ASSET-VERSION-OK] branch context ${plan.branchContextVersion}; page tabs ${plan.pageTabsVersion}; app shell CSS ${plan.appShellStyleVersion}; i18n ${plan.i18nVersion}; SaaS ${plan.saasVersion}; portal analytics ${plan.portalAnalyticsVersion}; library ${plan.libraryVersion}; attendance JS ${plan.attendanceScriptVersion}; attendance CSS ${plan.attendanceStyleVersion}; manifest ${plan.manifestVersion}`);
 }
 
 if (require.main === module) run();

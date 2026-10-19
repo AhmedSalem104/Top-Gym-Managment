@@ -291,6 +291,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.setViewportSize({ width: 1440, height: 900 });
         await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
         await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; document.body.dataset.theme = 'light'; });
+        await page.locator('#dashboardAnalyticsTab').click();
+        await expect(page.locator('#dashboardAnalyticsPanel')).toBeVisible();
         runtime.setAnalyticsMode('loading');
         await page.evaluate(() => { void window.topGymRefreshDashboardAnalytics?.(); });
         await expect(page.locator('#dashboardAnalyticsLoading')).toBeVisible();

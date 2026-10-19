@@ -29,8 +29,8 @@ body .platform-link-btn {
   font-weight: var(--weight-medium);
   line-height: 1.35;
   white-space: nowrap;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast),
-    box-shadow var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter),
+    box-shadow var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -189,7 +189,7 @@ button[data-action] {
   border-radius: var(--radius-control);
   background: var(--color-surface);
   color: var(--color-text-muted);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .btn-icon:hover:not(:disabled),

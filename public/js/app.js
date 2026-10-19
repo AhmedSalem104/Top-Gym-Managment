@@ -546,10 +546,17 @@
         }
 
         function applyDashboardTranslations() {
-            const root = $('dashboardSection');
+            const appRoot = $('dashboardSection');
+            const root = $('dashboardViewPanels') || appRoot;
             const i18n = window.TopGymI18n;
-            if (!root || !i18n) return;
+            if (!appRoot || !root || !i18n) return;
             i18n.annotateText(root, 'dashboard.');
+            const heading = appRoot.querySelector('.dashboard-section-heading');
+            const dashboardTabs = $('dashboardViewTabs');
+            const initialSkeleton = $('dashboardInitialSkeleton');
+            if (heading) i18n.annotateText(heading, 'dashboard.');
+            if (dashboardTabs) i18n.annotateText(dashboardTabs, 'dashboard.');
+            if (initialSkeleton) i18n.annotateText(initialSkeleton, 'dashboard.');
             const setAttribute = (selector, attribute, key) => {
                 const element = root.querySelector(selector);
                 if (element) element.setAttribute(attribute, i18n.t(key));
@@ -635,6 +642,7 @@
 
         function setupDashboardTranslations() {
             const root = $('dashboardSection');
+            const dashboardRoot = $('dashboardViewPanels') || root;
             if (!root || root.dataset.localeObserverReady === 'true') return;
             root.dataset.localeObserverReady = 'true';
             const expenseObservedRoots = new WeakSet();
@@ -713,7 +721,11 @@
                 if (screen && !expenseObservedRoots.has(screen)) bindExpenseRoot(screen);
                 if (dialog && !expenseObservedRoots.has(dialog)) bindExpenseRoot(dialog);
             };
-            const expenseHostObserver = new MutationObserver(localizeExpenses);
+            const containsExpenseRoot = (node) => node instanceof Element
+                && (node.matches('#expensesSection, #expenseDialog') || Boolean(node.querySelector('#expensesSection, #expenseDialog')));
+            const expenseHostObserver = new MutationObserver((records) => {
+                if (records.some((record) => [...record.addedNodes].some(containsExpenseRoot))) localizeExpenses();
+            });
             expenseHostObserver.observe(root, { childList: true, subtree: true });
             window.addEventListener('topgym:localechange', () => {
                 localizeExpenses();
@@ -728,10 +740,9 @@
                 window.requestAnimationFrame(() => {
                     scheduled = false;
                     if (isDashboardViewActive()) applyDashboardTranslations();
-                    localizeExpenses(root);
                 });
             };
-            new MutationObserver(schedule).observe(root, { childList: true, subtree: true });
+            new MutationObserver(schedule).observe(dashboardRoot, { childList: true, subtree: true });
             window.addEventListener('topgym:localechange', () => {
                 if (!isDashboardViewActive()) return;
             if (state.dashboard && isDashboardViewActive()) renderDashboard();

@@ -21,9 +21,9 @@
   /* Navigation motion is intentionally local to the shell. Keeping these
      values here prevents a sidebar refinement from changing motion elsewhere
      in the product. */
-  --sidebar-rail-transition: 240ms cubic-bezier(0.22, 1, 0.36, 1);
-  --sidebar-item-transition: 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  --sidebar-label-transition: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --sidebar-rail-transition: var(--motion-duration-page) var(--motion-easing-enter);
+  --sidebar-item-transition: var(--motion-duration-menu) var(--motion-easing-enter);
+  --sidebar-label-transition: var(--motion-duration-menu) var(--motion-easing-enter);
 }
 
 /* App lifecycle states stay with the shell so release/lock transitions do not
@@ -215,7 +215,7 @@
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-text);
   padding: 0;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .topbar-theme-toggle:hover,
@@ -344,7 +344,7 @@
   background: var(--danger-soft);
   color: var(--danger-text);
   padding: 0;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .auth-logout-button > span {
@@ -682,7 +682,7 @@
   white-space: nowrap;
   opacity: 0;
   transform: translateY(-50%) translateX(4px);
-  transition: opacity 160ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .sidebar-floating-tooltip.is-visible {
@@ -810,7 +810,7 @@
     opacity: 0;
     transform: translateX(-4px);
     visibility: hidden;
-    transition: max-inline-size var(--sidebar-label-transition), opacity 140ms ease, transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
+    transition: max-inline-size var(--sidebar-label-transition), opacity var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
   }
 
   .app-shell > .page-tabs > .sidebar-brand {
@@ -851,7 +851,7 @@
     opacity: 1;
     transform: none;
     visibility: visible;
-    transition: max-inline-size var(--sidebar-label-transition), opacity 160ms ease 40ms, transform var(--sidebar-label-transition), visibility 0s;
+    transition: max-inline-size var(--sidebar-label-transition), opacity var(--motion-duration-menu) var(--motion-easing-enter) 40ms, transform var(--sidebar-label-transition), visibility 0s;
   }
 
   .app-shell > .page-tabs.is-hovered > .sidebar-brand,
@@ -1718,7 +1718,7 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
     opacity: 0;
     transform: translateX(-4px);
     visibility: hidden;
-    transition: max-inline-size var(--sidebar-label-transition), opacity 140ms ease, transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
+    transition: max-inline-size var(--sidebar-label-transition), opacity var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--sidebar-label-transition), visibility 0s linear var(--sidebar-label-transition);
   }
 
   .app-shell > .page-tabs.is-hovered > .page-tab,
@@ -1755,7 +1755,7 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
     opacity: 1;
     transform: none;
     visibility: visible;
-    transition: max-inline-size var(--sidebar-label-transition), opacity 160ms ease 40ms, transform var(--sidebar-label-transition), visibility 0s;
+    transition: max-inline-size var(--sidebar-label-transition), opacity var(--motion-duration-menu) var(--motion-easing-enter) 40ms, transform var(--sidebar-label-transition), visibility 0s;
   }
 
   .app-shell > .page-tabs.is-hovered > .sidebar-brand,
@@ -2072,7 +2072,7 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
 
 @media (min-width: 1200px) {
   .app-shell {
-    transition: grid-template-columns 280ms cubic-bezier(.22, 1, .36, 1);
+    transition: grid-template-columns var(--motion-duration-page) var(--motion-easing-enter);
     will-change: grid-template-columns;
   }
 
@@ -2216,7 +2216,7 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
     transform: translateX(110%);
     visibility: hidden;
     pointer-events: none;
-    transition: transform 260ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 260ms;
+    transition: transform var(--motion-duration-page) var(--motion-easing-enter), visibility 0s linear var(--motion-duration-page);
   }
 
   .app-shell.mobile-nav-open > .page-tabs,
@@ -2423,7 +2423,7 @@ body .app-shell > .page-tabs > .page-tab[aria-selected="true"] {
   .app-shell > .page-tabs > .page-tab > span,
   .app-shell > .page-tabs > .page-tab .ui-icon,
   .sidebar-section-label {
-    transition: none !important;
+    transition: none;
   }
 }
 
@@ -2830,7 +2830,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-trigger {
   background: transparent;
   box-shadow: none;
   transform: none;
-  transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast);
+  transition: color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 body .app-shell > .topbar .topbar-controls > #authAccountBar .auth-logout-button {

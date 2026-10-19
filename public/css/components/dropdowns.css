@@ -55,6 +55,14 @@ body .popover {
   padding: var(--space-2);
 }
 
+.action-menu-panel:not([hidden]) {
+  animation: logicfit-popover-enter var(--motion-duration-menu) var(--motion-easing-enter) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-menu-panel:not([hidden]) { animation: none; }
+}
+
 .action-menu-panel.is-floating {
   position: fixed;
   inset: auto;

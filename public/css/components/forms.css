@@ -28,7 +28,7 @@ label.form-label {
   border-radius: var(--radius-md);
   background: var(--color-surface-muted);
   padding: var(--space-3);
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .file-upload-control.is-dragging,
@@ -120,7 +120,7 @@ textarea,
   color: var(--color-text);
   caret-color: var(--color-primary);
   font-size: var(--font-size-body);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+  transition: border-color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 input:not([type="checkbox"]):not([type="radio"]),
@@ -312,7 +312,7 @@ body .platform-search-field {
   background: var(--color-surface-elevated);
   color: var(--color-text);
   box-shadow: none;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 body .members-search-field:hover,

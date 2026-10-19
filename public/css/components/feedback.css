@@ -46,7 +46,7 @@ button[data-loading="true"] { cursor: wait; }
   padding: 11px 12px;
   box-shadow: var(--shadow-popup);
   pointer-events: auto;
-  animation: logicfit-feedback-toast-in 180ms ease-out both;
+  animation: logicfit-feedback-toast-in var(--motion-duration-menu) var(--motion-easing-enter) both;
 }
 
 .toast > .toast-item.success { border-color: var(--success-border); }
@@ -62,7 +62,7 @@ button[data-loading="true"] { cursor: wait; }
 .toast > .toast-item .toast-message { min-width: 0; color: var(--text-secondary); font-size: var(--font-sm, 13px); font-weight: var(--weight-semibold, 600); line-height: 1.55; }
 .toast > .toast-item .toast-close { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 18px; line-height: 1; }
 .toast > .toast-item .toast-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-.toast > .toast-item.is-leaving { animation: logicfit-feedback-toast-out 180ms ease-in both; }
+.toast > .toast-item.is-leaving { animation: logicfit-feedback-toast-out var(--motion-duration-exit) var(--motion-easing-exit) both; }
 
 .logicfit-feedback-toast {
   display: grid;
@@ -77,7 +77,7 @@ button[data-loading="true"] { cursor: wait; }
   padding: 11px 12px;
   box-shadow: var(--shadow-popup);
   pointer-events: auto;
-  animation: logicfit-feedback-toast-in 180ms ease-out both;
+  animation: logicfit-feedback-toast-in var(--motion-duration-menu) var(--motion-easing-enter) both;
 }
 
 .logicfit-feedback-toast.success { border-color: var(--success-border); }
@@ -93,11 +93,11 @@ button[data-loading="true"] { cursor: wait; }
 .logicfit-feedback-toast .toast-message { min-width: 0; color: var(--text-secondary); font-size: var(--font-sm, 13px); font-weight: var(--weight-semibold, 600); line-height: 1.55; }
 .logicfit-feedback-toast .toast-close { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 18px; line-height: 1; }
 .logicfit-feedback-toast .toast-close:hover { background: var(--bg-card-hover); color: var(--text-primary); }
-.logicfit-feedback-toast.is-leaving { animation: logicfit-feedback-toast-out 180ms ease-in both; }
+.logicfit-feedback-toast.is-leaving { animation: logicfit-feedback-toast-out var(--motion-duration-exit) var(--motion-easing-exit) both; }
 
 @keyframes logicfit-feedback-spin { to { transform: rotate(360deg); } }
-@keyframes logicfit-feedback-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes logicfit-feedback-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(8px); } }
+@keyframes logicfit-feedback-toast-in { from { opacity: 0; transform: translateY(var(--motion-offset-small)); } to { opacity: 1; transform: translateY(0); } }
+@keyframes logicfit-feedback-toast-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(var(--motion-offset-small)); } }
 
 @media (max-width: 560px) {
   #toast,

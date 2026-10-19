@@ -39,7 +39,7 @@ test('Mobile navigation drawer keeps focus contained and supports reduced motion
     assert.match(source, /event\.key === 'Escape'/u);
     assert.match(source, /event\.key !== 'Tab'/u);
     assert.match(source, /lastFocusedElement\.focus\(\)/u);
-    assert.match(styles, /transition: transform 260ms cubic-bezier/u);
+    assert.match(styles, /transition: transform var\(--motion-duration-page\) var\(--motion-easing-enter\)/u);
     assert.match(styles, /env\(safe-area-inset-top\)/u);
     assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.app-shell > \.page-tabs[\s\S]*?transition: none/u);
 });

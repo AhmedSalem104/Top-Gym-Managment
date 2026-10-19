@@ -295,6 +295,16 @@
   --builder-border: var(--builder-diet-border);
   --builder-stage-bg: var(--builder-diet-stage-bg);
 
+  --motion-duration-interaction: 140ms;
+  --motion-duration-menu: 200ms;
+  --motion-duration-page: 250ms;
+  --motion-duration-exit: 160ms;
+  --motion-easing-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-easing-exit: ease-in;
+  --motion-offset-small: 4px;
+  --motion-offset-page: 8px;
+  --motion-dialog-scale: 0.98;
+
   --transition-fast: 150ms ease;
   --transition-normal: 220ms ease;
   --transition-slow: 320ms ease;
@@ -306,6 +316,18 @@
   --z-overlay: 80;
   --z-modal: 90;
   --z-toast: 100;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-interaction: 1ms;
+    --motion-duration-menu: 1ms;
+    --motion-duration-page: 1ms;
+    --motion-duration-exit: 1ms;
+    --motion-offset-small: 0px;
+    --motion-offset-page: 0px;
+    --motion-dialog-scale: 1;
+  }
 }
 
 html[data-theme="dark"],

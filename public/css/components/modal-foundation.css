@@ -23,10 +23,25 @@ dialog.lf-modal-shell,
   color: var(--color-text);
   box-shadow: var(--shadow-popup, var(--shadow-lg));
   isolation: isolate;
+  opacity: 0;
+  transform: scale(var(--motion-dialog-scale));
+  transition: opacity var(--motion-duration-exit) var(--motion-easing-exit), transform var(--motion-duration-exit) var(--motion-easing-exit), display var(--motion-duration-exit) allow-discrete, overlay var(--motion-duration-exit) allow-discrete;
+  transition-behavior: allow-discrete;
 }
 
 dialog.lf-modal-shell[open] {
   display: block;
+  opacity: 1;
+  transform: scale(1);
+  transition-duration: var(--motion-duration-page);
+  transition-timing-function: var(--motion-easing-enter);
+}
+
+@starting-style {
+  dialog.lf-modal-shell[open] {
+    opacity: 0;
+    transform: scale(var(--motion-dialog-scale));
+  }
 }
 
 dialog.lf-modal-shell.lf-modal--structured[open] {
@@ -141,6 +156,21 @@ dialog.lf-modal-shell.lf-modal--structured[open] {
 dialog.lf-modal-shell::backdrop {
   background: var(--overlay);
   backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity var(--motion-duration-exit) var(--motion-easing-exit), display var(--motion-duration-exit) allow-discrete, overlay var(--motion-duration-exit) allow-discrete;
+  transition-behavior: allow-discrete;
+}
+
+dialog.lf-modal-shell[open]::backdrop {
+  opacity: 1;
+  transition-duration: var(--motion-duration-page);
+  transition-timing-function: var(--motion-easing-enter);
+}
+
+@starting-style {
+  dialog.lf-modal-shell[open]::backdrop {
+    opacity: 0;
+  }
 }
 
 .lf-modal-shell.lf-modal--sm { width: min(480px, calc(100vw - 32px)); }

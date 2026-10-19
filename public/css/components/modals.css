@@ -16,6 +16,24 @@ dialog:not(.lf-modal-shell),
 
 dialog:not(.lf-modal-shell) {
   padding: 0;
+  opacity: 0;
+  transform: scale(var(--motion-dialog-scale));
+  transition: opacity var(--motion-duration-exit) var(--motion-easing-exit), transform var(--motion-duration-exit) var(--motion-easing-exit), display var(--motion-duration-exit) allow-discrete, overlay var(--motion-duration-exit) allow-discrete;
+  transition-behavior: allow-discrete;
+}
+
+dialog:not(.lf-modal-shell)[open] {
+  opacity: 1;
+  transform: scale(1);
+  transition-duration: var(--motion-duration-page);
+  transition-timing-function: var(--motion-easing-enter);
+}
+
+@starting-style {
+  dialog:not(.lf-modal-shell)[open] {
+    opacity: 0;
+    transform: scale(var(--motion-dialog-scale));
+  }
 }
 
 /* One predictable close affordance for every native popup. It stays in the
@@ -69,6 +87,22 @@ dialog:not(.lf-modal-shell)::backdrop,
 .modal-overlay {
   background: var(--overlay);
   backdrop-filter: blur(2px);
+}
+
+dialog:not(.lf-modal-shell)::backdrop {
+  opacity: 0;
+  transition: opacity var(--motion-duration-exit) var(--motion-easing-exit), display var(--motion-duration-exit) allow-discrete, overlay var(--motion-duration-exit) allow-discrete;
+  transition-behavior: allow-discrete;
+}
+
+dialog:not(.lf-modal-shell)[open]::backdrop {
+  opacity: 1;
+  transition-duration: var(--motion-duration-page);
+  transition-timing-function: var(--motion-easing-enter);
+}
+
+@starting-style {
+  dialog:not(.lf-modal-shell)[open]::backdrop { opacity: 0; }
 }
 
 .modal-content,

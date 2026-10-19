@@ -169,3 +169,9 @@ The Gym Owner platform-subscription view uses a compact, five-part subscription 
 ## 16. Tenant payment-method administration and marks
 
 The Gym Owner's manual transfer methods use the existing canonical table and structured dialog components. The list is a compact responsive table/card summary; full fields are edited only inside the dialog. “Apply” changes the in-memory branding draft only; existing Save Draft and Publish actions remain the only server-write/publish actions. A central fixed-ID catalog maps the supported Vodafone Cash, InstaPay, and Other types to localized labels and approved local marks. Display names remain editable data and never determine a logo. Legacy methods without `typeId` use the generic payment mark and are not auto-classified. The member portal receives only the existing active, published projection, with an optional type identifier for presentation; this is not a payment integration.
+
+## 17. Motion tokens and interaction
+
+Shared motion uses the `--motion-*` tokens in `public/css/tokens.css`: 140ms for direct interaction, 200ms for menus/tabs, 250ms for page/dialog entry, 160ms for exits, the V2 enter easing, a 4px menu offset, an 8px maximum page offset, and a 0.98 dialog scale origin. Existing `--transition-*` aliases remain for components not yet migrated; new motion must use the canonical motion tokens and must not introduce `transition: all`.
+
+The authenticated shell and navigation stay in place while only the active route surface receives a short opacity/vertical-entry animation. Tabs animate the active indicator and do not restart the page transition. Dialogs, context/action menus, and mobile navigation use opacity/transform entrance motion where appropriate. Motion must not delay navigation, requests, saves, confirmation, or content visibility. All motion honors `prefers-reduced-motion`; print output remains static. Preserve layout geometry, keyboard/focus behavior, and existing component lifecycle.

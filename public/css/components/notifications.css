@@ -32,7 +32,7 @@
   background: var(--bg-surface);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: border-color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .notification-center-trigger:hover,
@@ -140,7 +140,7 @@
   background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition: border-color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .notification-center-icon-button:hover,
@@ -197,7 +197,7 @@
   background: transparent;
   direction: rtl;
   text-align: start;
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter);
 }
 
 .notification-center-item:hover { background: var(--bg-card-hover); }
@@ -298,7 +298,7 @@
   background: var(--bg-surface, var(--bg-card));
   box-shadow: 0 18px 44px rgb(10 28 52 / 20%);
   color: var(--text-primary);
-  animation: notification-center-toast-in 180ms ease-out both;
+  animation: notification-center-toast-in var(--motion-duration-menu) var(--motion-easing-enter) both;
 }
 .notification-center-live-toast.is-actionable { cursor: pointer; }
 .notification-center-live-toast-title { font-size: .92rem; font-weight: 850; line-height: 1.4; }
@@ -322,7 +322,7 @@
 }
 .notification-center-live-toast-close:hover { background: var(--border-secondary); color: var(--text-primary); }
 @keyframes notification-center-toast-in {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(calc(var(--motion-offset-small) * -1)); }
   to { opacity: 1; transform: translateY(0); }
 }
 
