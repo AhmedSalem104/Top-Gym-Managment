@@ -385,6 +385,101 @@
         } catch (error) { setMessage(error.message || t('message.manualError'), 'error'); }
     }
 
+    function initContentTabs() {
+        const section = $('intelligenceSection');
+        const dashboardGrid = section?.querySelector('.intelligence-dashboard-grid');
+        const stats = $('intelligenceStats');
+        const priorities = dashboardGrid?.querySelector('.intelligence-priorities-card');
+        const assistant = dashboardGrid?.querySelector('.intelligence-query-card');
+        const retention = section?.querySelector('.intelligence-churn-card');
+        const plans = section?.querySelector('.intelligence-plans-card');
+        const message = $('intelligenceMessage');
+        if (!section || !dashboardGrid || !stats || !priorities || !assistant || !retention || !plans || !message) return;
+
+        const definitions = [
+            { id: 'overview', key: 'tabs.overview', nodes: [stats, priorities, retention] },
+            { id: 'assistant', key: 'tabs.assistant', nodes: [assistant] },
+            { id: 'plans', key: 'tabs.plans', nodes: [plans] }
+        ];
+        const tablist = document.createElement('div');
+        tablist.className = 'tabs tabs--section-switcher intelligence-content-tabs';
+        tablist.id = 'intelligenceContentTabs';
+        tablist.setAttribute('role', 'tablist');
+        tablist.setAttribute('aria-label', t('tabs.aria'));
+        tablist.dataset.i18nAriaLabel = 'intelligenceScreen.tabs.aria';
+
+        const panels = document.createElement('div');
+        panels.className = 'intelligence-content-panels';
+        panels.id = 'intelligenceContentPanels';
+
+        definitions.forEach((definition, index) => {
+            const tab = document.createElement('button');
+            tab.type = 'button';
+            tab.className = 'tab-button';
+            tab.id = `intelligenceTab-${definition.id}`;
+            tab.dataset.intelligenceContentTab = definition.id;
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-selected', String(index === 0));
+            tab.setAttribute('aria-controls', `intelligencePanel-${definition.id}`);
+            tab.tabIndex = index === 0 ? 0 : -1;
+            tab.dataset.i18n = `intelligenceScreen.${definition.key}`;
+            tab.textContent = t(definition.key);
+            tablist.append(tab);
+
+            const panel = document.createElement('section');
+            panel.className = 'intelligence-content-panel';
+            panel.id = `intelligencePanel-${definition.id}`;
+            panel.dataset.intelligenceContentPanel = definition.id;
+            panel.setAttribute('role', 'tabpanel');
+            panel.setAttribute('aria-labelledby', tab.id);
+            panel.tabIndex = 0;
+            panel.hidden = index !== 0;
+            panel.setAttribute('aria-hidden', String(index !== 0));
+            panel.toggleAttribute('inert', index !== 0);
+            definition.nodes.forEach((node) => panel.append(node));
+            panels.append(panel);
+        });
+
+        dashboardGrid.remove();
+        message.after(tablist, panels);
+
+        const activate = (name, moveFocus = false) => {
+            const selectedTab = tablist.querySelector(`[data-intelligence-content-tab="${name}"]`);
+            if (!selectedTab) return;
+            tablist.querySelectorAll('[data-intelligence-content-tab]').forEach((tab) => {
+                const active = tab === selectedTab;
+                tab.setAttribute('aria-selected', String(active));
+                tab.tabIndex = active ? 0 : -1;
+            });
+            panels.querySelectorAll('[data-intelligence-content-panel]').forEach((panel) => {
+                const active = panel.dataset.intelligenceContentPanel === name;
+                panel.hidden = !active;
+                panel.setAttribute('aria-hidden', String(!active));
+                panel.toggleAttribute('inert', !active);
+            });
+            if (moveFocus) selectedTab.focus({ preventScroll: true });
+        };
+
+        tablist.addEventListener('click', (event) => {
+            const tab = event.target.closest('[data-intelligence-content-tab]');
+            if (tab && tablist.contains(tab)) activate(tab.dataset.intelligenceContentTab);
+        });
+        tablist.addEventListener('keydown', (event) => {
+            const current = event.target.closest('[data-intelligence-content-tab]');
+            if (!current) return;
+            const available = [...tablist.querySelectorAll('[data-intelligence-content-tab]')];
+            const direction = document.documentElement.dir === 'rtl' ? -1 : 1;
+            let index = available.indexOf(current);
+            if (event.key === 'Home') index = 0;
+            else if (event.key === 'End') index = available.length - 1;
+            else if (event.key === 'ArrowRight') index = (index + direction + available.length) % available.length;
+            else if (event.key === 'ArrowLeft') index = (index - direction + available.length) % available.length;
+            else return;
+            event.preventDefault();
+            activate(available[index].dataset.intelligenceContentTab, true);
+        });
+    }
+
     function bindEvents() {
         $('intelligenceRefreshButton')?.addEventListener('click', () => void refresh());
         $('intelligenceQueryForm')?.addEventListener('submit', submitQuestion);
@@ -413,6 +508,7 @@
         window.addEventListener('topgym:localechange', applyPageLocale);
     }
 
+    initContentTabs();
     bindEvents();
     setPlanType('workout');
     applyPageLocale();

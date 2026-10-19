@@ -77,11 +77,23 @@ test('intelligence central Arabic/English presentation preserves data and state 
     await expect(section.locator('.intelligence-table tbody tr')).toHaveCount(1, { timeout: 20_000 });
 
     const records = [];
-    await page.locator('#intelligenceQuery').fill('سؤال محفوظ لا يجب تغييره');
+    const overviewTab = page.locator('[data-intelligence-content-tab="overview"]');
+    const assistantTab = page.locator('[data-intelligence-content-tab="assistant"]');
+    const plansTab = page.locator('[data-intelligence-content-tab="plans"]');
+    await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+    await overviewTab.focus();
+    await page.keyboard.press('End');
+    await expect(plansTab).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Home');
+    await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+    await plansTab.click();
     await page.locator('#intelligenceDays').fill('5');
     await page.locator('#intelligenceLimitations').fill('قيد عربي محفوظ');
     await page.locator('#intelligenceMemberId').selectOption('99002');
     await page.locator('#intelligenceGoal').selectOption('fat_loss');
+    await assistantTab.click();
+    await page.locator('#intelligenceQuery').fill('سؤال محفوظ لا يجب تغييره');
+    await overviewTab.click();
     const widths = [320, 375, 390, 768, 1024, 1440, 1920];
     for (const width of widths) {
         for (const theme of ['light', 'dark']) {
@@ -97,19 +109,25 @@ test('intelligence central Arabic/English presentation preserves data and state 
 
                 await expect(page.locator('#intelligenceTitle')).toHaveText(language === 'en' ? 'Intelligence decision center' : 'مركز القرار الذكي');
                 await expect(page.locator('#intelligenceRefreshButton')).toHaveText(language === 'en' ? 'Refresh analysis' : 'تحديث التحليل');
+                await expect(overviewTab).toHaveText(language === 'en' ? 'Overview' : 'نظرة عامة');
+                await expect(assistantTab).toHaveText(language === 'en' ? 'AI assistant' : 'المساعد الذكي');
+                await expect(plansTab).toHaveText(language === 'en' ? 'Plan builder' : 'إنشاء الخطط');
+                await assistantTab.click();
                 await expect(page.locator('#intelligenceQueryForm button[type="submit"]')).toHaveText(language === 'en' ? 'Analyze question' : 'تحليل السؤال');
-                await expect(page.locator('#intelligencePlanForm button[type="submit"]')).toHaveText(language === 'en' ? 'Generate smart suggestion' : 'إنشاء اقتراح ذكي');
-                await expect(page.locator('#intelligenceChurnTable th').first()).toHaveText(language === 'en' ? 'Member' : 'المشترك');
-                await expect(page.locator('#intelligenceChurnTable')).toContainText('اسم عضو طويل للتحقق من تخطيط خلايا الجدول');
-                await expect(page.locator('#intelligenceChurnTable')).toContainText('سبب اصطناعي لاختبار العرض');
-                await expect(page.locator('#intelligencePriorities')).toContainText('مراجعة انتهاء الاشتراك');
                 await expect(page.locator('#intelligencePromptList')).toContainText('ملخص العضويات');
-                await expect(page.locator('#intelligenceMemberId option:checked')).toContainText('عميل اختبار');
                 await expect(page.locator('#intelligenceQuery')).toHaveValue('سؤال محفوظ لا يجب تغييره');
+                await plansTab.click();
+                await expect(page.locator('#intelligencePlanForm button[type="submit"]')).toHaveText(language === 'en' ? 'Generate smart suggestion' : 'إنشاء اقتراح ذكي');
+                await expect(page.locator('#intelligenceMemberId option:checked')).toContainText('عميل اختبار');
                 await expect(page.locator('#intelligenceDays')).toHaveValue('5');
                 await expect(page.locator('#intelligenceLimitations')).toHaveValue('قيد عربي محفوظ');
                 await expect(page.locator('#intelligenceMemberId')).toHaveValue('99002');
                 await expect(page.locator('#intelligenceGoal')).toHaveValue('fat_loss');
+                await overviewTab.click();
+                await expect(page.locator('#intelligenceChurnTable th').first()).toHaveText(language === 'en' ? 'Member' : 'المشترك');
+                await expect(page.locator('#intelligenceChurnTable')).toContainText('اسم عضو طويل للتحقق من تخطيط خلايا الجدول');
+                await expect(page.locator('#intelligenceChurnTable')).toContainText('سبب اصطناعي لاختبار العرض');
+                await expect(page.locator('#intelligencePriorities')).toContainText('مراجعة انتهاء الاشتراك');
 
                 const metrics = await section.evaluate((root) => {
                     const wrapper = root.querySelector('.intelligence-churn-table-wrap');
@@ -161,6 +179,15 @@ test('intelligence central Arabic/English presentation preserves data and state 
                 const screenshotPath = path.resolve(OUTPUT_DIR, `${width}-${theme}-${language}.png`);
                 await section.screenshot({ path: screenshotPath, animations: 'disabled' });
                 records.push({ width, theme, direction, ...metrics, screenshot: screenshotPath });
+
+                if (width === 390 || width === 1440) {
+                    for (const [tabName, tab] of [['overview', overviewTab], ['assistant', assistantTab], ['plans', plansTab]]) {
+                        await tab.click();
+                        const tabScreenshot = path.resolve(OUTPUT_DIR, `${width}-${theme}-${language}-${tabName}.png`);
+                        await section.screenshot({ path: tabScreenshot, animations: 'disabled' });
+                    }
+                    await overviewTab.click();
+                }
 
                 if (width < 768 && theme === 'light' && language === 'ar') {
                     const scrolledMember = await section.evaluate((root) => {

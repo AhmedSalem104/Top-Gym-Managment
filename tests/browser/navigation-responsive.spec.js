@@ -141,6 +141,58 @@ test('responsive navigation stays organized and accessible at each viewport', as
     }
 });
 
+test('sidebar width and logout danger treatment remain consistent in light and dark themes', async ({ page }) => {
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    const metrics = [];
+
+    for (const width of [390, 1100, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        for (const theme of ['light', 'dark']) {
+            await page.evaluate((value) => window.TopGymTheme.set(value), theme);
+            await page.waitForFunction(() => {
+                const logout = document.querySelector('#authAccountBar .auth-logout-button');
+                const probe = document.createElement('span');
+                probe.style.color = 'var(--danger-text)';
+                probe.style.backgroundColor = 'var(--danger-soft)';
+                document.body.append(probe);
+                const expected = getComputedStyle(probe);
+                const actual = getComputedStyle(logout);
+                const matches = actual.color === expected.color && actual.backgroundColor === expected.backgroundColor;
+                probe.remove();
+                return matches;
+            });
+            metrics.push(await page.evaluate(() => {
+                const shell = document.querySelector('.app-shell');
+                const logout = document.querySelector('#authAccountBar .auth-logout-button');
+                const probe = document.createElement('span');
+                probe.style.color = 'var(--danger-text)';
+                probe.style.backgroundColor = 'var(--danger-soft)';
+                document.body.append(probe);
+                const expected = getComputedStyle(probe);
+                const actual = getComputedStyle(logout);
+                const result = {
+                    expanded: getComputedStyle(shell).getPropertyValue('--sidebar-width-expanded').trim(),
+                    collapsed: getComputedStyle(shell).getPropertyValue('--sidebar-width-collapsed').trim(),
+                    logoutColor: actual.color,
+                    logoutBackground: actual.backgroundColor,
+                    expectedColor: expected.color,
+                    expectedBackground: expected.backgroundColor,
+                    theme: document.documentElement.dataset.theme
+                };
+                probe.remove();
+                return result;
+            }));
+        }
+    }
+
+    expect(metrics.filter((item) => item.expanded === '256px')).toHaveLength(4);
+    expect(metrics.filter((item) => item.expanded === '224px')).toHaveLength(2);
+    expect(metrics.every((item) => item.collapsed === '72px')).toBe(true);
+    expect(metrics.every((item) => item.logoutColor === item.expectedColor), JSON.stringify(metrics)).toBe(true);
+    expect(metrics.every((item) => item.logoutBackground === item.expectedBackground), JSON.stringify(metrics)).toBe(true);
+});
+
 test('branch and section dropdowns support keyboard selection and dismiss predictably', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });

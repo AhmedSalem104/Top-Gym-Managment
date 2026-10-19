@@ -38,8 +38,19 @@ test('desktop sidebar hover contract expands a safe layout track and reveals lab
     assert.match(script, /hoverOpenTimer\s*=\s*window\.setTimeout\(revealRail,\s*120\)/u);
 });
 
+test('sidebar width tokens provide a wider desktop rail and expanded navigation', () => {
+    const tokens = fs.readFileSync(path.join(root, 'public/css/tokens.css'), 'utf8');
+
+    assert.match(tokens, /--sidebar-width-collapsed:\s*72px/u);
+    assert.match(tokens, /--sidebar-width-expanded:\s*256px/u);
+    assert.match(tokens, /--app-sidebar-width-compact:\s*224px/u);
+    assert.match(tokens, /--app-sidebar-width-wide:\s*256px/u);
+});
+
 test('navigation polish keeps desktop controls usable and coordinated', () => {
     const source = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+    const markup = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+    const authUi = fs.readFileSync(path.join(root, 'public/js/auth-ui.js'), 'utf8');
 
     assert.match(source, /grid-template-columns:\s*var\(--sidebar-width-collapsed\)\s+minmax\(0,\s*1fr\)[\s\S]*?transition:\s*grid-template-columns\s+var\(--sidebar-rail-transition\)/u);
     assert.match(source, /\.app-shell:not\(:has\(> \.workspace-contextbar:not\(\[hidden\]\)\)\)\s*>\s*\.page-tabs[\s\S]*?top:\s*0[\s\S]*?grid-row:\s*1\s*\/\s*-1/u);
@@ -50,6 +61,12 @@ test('navigation polish keeps desktop controls usable and coordinated', () => {
     assert.match(source, /auth-logout-button \.ui-icon[\s\S]*?stroke-width:\s*2\.2px/u);
     assert.match(source, /page-tabs::-webkit-scrollbar[\s\S]*?width:\s*5px/u);
     assert.match(source, /sidebar-floating-tooltip[\s\S]*?pointer-events:\s*none/u);
+    assert.match(source, /#authAccountBar \.auth-logout-button \{[\s\S]*?background:\s*var\(--danger-soft\)[\s\S]*?color:\s*var\(--danger-text\)/u);
+    assert.match(source, /#authAccountBar \.auth-logout-button:hover[\s\S]*?background:\s*var\(--danger-border\)[\s\S]*?color:\s*var\(--danger-text\)/u);
+    assert.match(markup, /class="btn btn-danger btn-small auth-logout-button"/u);
+    assert.match(authUi, /button\.className\s*=\s*'btn btn-danger btn-small auth-logout-button'/u);
+    const buttons = fs.readFileSync(path.join(root, 'public/css/components/buttons.css'), 'utf8');
+    assert.match(buttons, /body button\.btn\.btn-danger[\s\S]*?color:\s*var\(--danger-text\)/u);
 });
 
 test('Gym App shell styles have one canonical source', () => {

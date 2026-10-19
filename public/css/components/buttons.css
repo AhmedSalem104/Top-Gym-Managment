@@ -120,6 +120,8 @@ body [data-variant="ghost"] {
 }
 
 body .btn-danger,
+body button.btn-danger,
+body button.btn.btn-danger,
 body .danger-action,
 body .platform-btn.danger,
 body [data-variant="danger"] {
@@ -129,6 +131,8 @@ body [data-variant="danger"] {
 }
 
 body .btn-danger:hover:not(:disabled),
+body button.btn-danger:hover:not(:disabled),
+body button.btn.btn-danger:hover:not(:disabled),
 body .danger-action:hover:not(:disabled),
 body .platform-btn.danger:hover:not(:disabled),
 body [data-variant="danger"]:hover:not(:disabled) {

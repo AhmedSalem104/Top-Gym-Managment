@@ -442,7 +442,7 @@
             button = document.createElement('button');
             button.id = 'authLogoutButton';
             button.type = 'button';
-            button.className = 'btn btn-light btn-small auth-logout-button';
+            button.className = 'btn btn-danger btn-small auth-logout-button';
             button.textContent = 'تسجيل الخروج';
             button.hidden = true;
             button.setAttribute('aria-label', 'تسجيل الخروج');
