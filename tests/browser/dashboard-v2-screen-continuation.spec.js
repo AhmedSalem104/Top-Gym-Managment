@@ -17,6 +17,7 @@ async function installReadOnlyDashboardFixture(page) {
     const writes = [];
     const thirdParty = [];
     let analyticsMode = 'empty';
+    let dashboardMode = 'ready';
     const plan = planCatalog.PLAN_CONFIGURATIONS.find((item) => item.code === 'business');
 
     await page.route('**/*', async (route) => {
@@ -68,6 +69,7 @@ async function installReadOnlyDashboardFixture(page) {
         } else if (pathname === '/api/bootstrap') {
             payload = { branches: [{ id: 98201, name: 'QA Main Branch', status: 'active' }], sections: [] };
         } else if (pathname === '/api/dashboard') {
+            if (dashboardMode === 'slow') await new Promise((resolve) => setTimeout(resolve, 900));
             payload = { stats: { total: 125, active: 98, expiringSoon: 8, expired: 12, frozen: 7 }, alerts: [] };
         } else if (pathname === '/api/saas/subscription') {
             payload = { subscription: { status: 'active', plan: { code: 'business', name: plan.name }, startsAt: '2026-01-01' } };
@@ -76,10 +78,71 @@ async function installReadOnlyDashboardFixture(page) {
         return route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
     });
 
-    return { writes, thirdParty, setAnalyticsMode: (mode) => { analyticsMode = mode; } };
+    return {
+        writes,
+        thirdParty,
+        setAnalyticsMode: (mode) => { analyticsMode = mode; },
+        setDashboardMode: (mode) => { dashboardMode = mode; }
+    };
 }
 
 test.describe('Dashboard V2 visual continuation (read-only)', () => {
+    test('never mounts the obsolete top loading row during slow direct open, reload or navigation', async ({ page }, testInfo) => {
+        test.setTimeout(30_000);
+        const width = testInfo.project.name.startsWith('mobile') ? 320 : 1440;
+        await page.setViewportSize({ width, height: width <= 390 ? 700 : 900 });
+        const runtime = await installReadOnlyDashboardFixture(page);
+        runtime.setDashboardMode('slow');
+
+        const assertNoTopLoadingRow = async () => {
+            const rowCount = await page.locator('#dashboardInitialSkeleton, #dashboardSection > .dashboard-initial-skeleton, #dashboardSection > .skeleton-cards').count();
+            expect(rowCount, 'The obsolete top loading row must not be created in the DOM.').toBe(0);
+            const layout = await page.locator('#dashboardSection').evaluate((root) => {
+                const firstVisibleChild = [...root.children].find((element) => {
+                    const style = getComputedStyle(element);
+                    return !element.hidden && style.display !== 'none' && style.visibility !== 'hidden';
+                });
+                return {
+                    hasTopLoadingRegion: Boolean(root.querySelector(':scope > .loading, :scope > .skeleton-cards')),
+                    firstChildClass: firstVisibleChild?.className || '',
+                    firstChildOffsetWithinDashboard: firstVisibleChild
+                        ? firstVisibleChild.getBoundingClientRect().top - root.getBoundingClientRect().top
+                        : null
+                };
+            });
+            expect(layout.hasTopLoadingRegion).toBe(false);
+            expect(layout.firstChildClass).toContain('dashboard-view-tabs');
+            return layout.firstChildOffsetWithinDashboard;
+        };
+
+        await page.goto('/index.html?noTopSkeleton=direct#dashboard', { waitUntil: 'domcontentloaded' });
+        const dashboard = page.locator('#dashboardSection');
+        await expect(dashboard).toHaveClass(/data-loading/u);
+        const directOpenTop = await assertNoTopLoadingRow();
+        await page.screenshot({ path: testInfo.outputPath('dashboard-no-top-skeleton-slow.png'), fullPage: true });
+        await expect(dashboard).not.toHaveClass(/data-loading/u, { timeout: 15_000 });
+        await expect(page.locator('.dashboard-overview-cards')).toBeVisible();
+        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(5);
+        await expect(page.locator('[data-dashboard-member-count]')).toHaveText(/125|١٢٥/u);
+        await page.screenshot({ path: testInfo.outputPath('dashboard-no-top-skeleton-loaded.png'), fullPage: true });
+        expect(Math.abs((await assertNoTopLoadingRow()) - directOpenTop)).toBeLessThanOrEqual(1);
+
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await expect(dashboard).toHaveClass(/data-loading/u);
+        const reloadTop = await assertNoTopLoadingRow();
+        await page.screenshot({ path: testInfo.outputPath('dashboard-no-top-skeleton-reload.png'), fullPage: true });
+        await expect(dashboard).not.toHaveClass(/data-loading/u, { timeout: 15_000 });
+        expect(Math.abs((await assertNoTopLoadingRow()) - reloadTop)).toBeLessThanOrEqual(1);
+
+        await page.evaluate(() => { window.location.hash = '#members'; });
+        await expect(page.locator('#membersSection')).toBeVisible();
+        await expect(page.locator('.dashboard-overview-shell')).toBeHidden();
+        await page.evaluate(() => { window.location.hash = '#dashboard'; });
+        await expect(page.locator('.dashboard-overview-shell')).toBeVisible();
+        expect(Math.abs((await assertNoTopLoadingRow()) - reloadTop)).toBeLessThanOrEqual(1);
+        expect(runtime.writes).toEqual([]);
+    });
+
     test('overview cards are exclusive to Dashboard for direct routes, reload and browser history', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'Route-scope browser verification runs once in the desktop project.');
         const runtime = await installReadOnlyDashboardFixture(page);

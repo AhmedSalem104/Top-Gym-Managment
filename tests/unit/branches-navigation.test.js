@@ -14,7 +14,7 @@ test('dynamically injected Branches tab keeps delegated navigation and Gym-only 
 
     assert.match(tabs, /tabRail\?\.addEventListener\('click'/u);
     assert.match(tabs, /name === 'branches' && user\.tenantType !== 'gym'/u);
-    assert.match(tabs, /setHidden\(dashboardInitialSkeleton, !isDashboard\)/u);
+    assert.doesNotMatch(tabs, /dashboardInitialSkeleton/u);
     assert.match(branches, /button\.dataset\.branchTabReady = 'true'/u);
     assert.match(branches, /button\.setAttribute\('aria-label', translateShared\('nav\.branches', 'الفروع والأقسام'\)\)/u);
     assert.match(branches, /tab\.toggleAttribute\('inert', !show\)/u);

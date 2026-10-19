@@ -553,10 +553,8 @@
             i18n.annotateText(root, 'dashboard.');
             const heading = appRoot.querySelector('.dashboard-section-heading');
             const dashboardTabs = $('dashboardViewTabs');
-            const initialSkeleton = $('dashboardInitialSkeleton');
             if (heading) i18n.annotateText(heading, 'dashboard.');
             if (dashboardTabs) i18n.annotateText(dashboardTabs, 'dashboard.');
-            if (initialSkeleton) i18n.annotateText(initialSkeleton, 'dashboard.');
             const setAttribute = (selector, attribute, key) => {
                 const element = root.querySelector(selector);
                 if (element) element.setAttribute(attribute, i18n.t(key));

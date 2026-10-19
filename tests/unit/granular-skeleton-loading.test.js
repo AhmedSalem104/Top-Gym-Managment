@@ -81,6 +81,7 @@ test('members, dashboard, platform and trainer surfaces use component-scoped loa
     const index = read('public/index.html');
     const trainerMarkup = read('public/trainer-workspace.html');
     const trainerScript = read('public/js/trainer-workspace.js');
+    const appScript = read('public/js/app.js');
     const dashboardStyles = read('public/css/pages/dashboard.css');
 
     assert.match(index, /id="membersList"[^>]+data-skeleton-kind="table"/);
@@ -95,7 +96,9 @@ test('members, dashboard, platform and trainer surfaces use component-scoped loa
     assert.match(trainerScript, /function beginRegionLoading\(/);
     assert.match(trainerScript, /topGymSkeleton\?\.ready/);
     assert.match(index, /class="dashboard-overview-cards"[\s\S]*data-dashboard-member-count/u);
-    assert.match(dashboardStyles, /#dashboardSection\.data-loading \.dashboard-initial-skeleton\s*\{\s*display:\s*block/u);
+    assert.doesNotMatch(index, /dashboardInitialSkeleton|dashboard-initial-skeleton/u);
+    assert.doesNotMatch(appScript, /dashboardInitialSkeleton/u);
+    assert.doesNotMatch(dashboardStyles, /dashboard-initial-skeleton/u);
     assert.match(dashboardStyles, /#dashboardSection\.data-loading \.dashboard-overview-card \[data-dashboard-member-count\],[\s\S]*?background:\s*var\(--bg-card-hover\)/u);
 });
 

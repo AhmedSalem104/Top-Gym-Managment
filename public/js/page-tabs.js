@@ -519,7 +519,6 @@
         const dashboardOverviewShell = document.querySelector('.dashboard-overview-shell');
         const dashboardHero = document.querySelector('.dashboard-page-actions');
         const dashboardSectionHeading = document.querySelector('.dashboard-section-heading');
-        const dashboardInitialSkeleton = document.getElementById('dashboardInitialSkeleton');
         const workspace = document.querySelector('.workspace');
         const membersSection = document.getElementById('membersSection');
         const expensesSection = document.getElementById('expensesSection');
@@ -571,10 +570,8 @@
         setHidden(dashboardSectionHeading, !isDashboard);
         setHidden(dashboardOverviewShell, !isDashboard);
         setHidden(overview, !isDashboard);
-        setHidden(dashboardInitialSkeleton, !isDashboard);
         setHidden(dashboardViewTabs, !isDashboard);
         setHidden(dashboardViewPanels, !isDashboard);
-        dashboardInitialSkeleton?.setAttribute('aria-hidden', String(!isDashboard));
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);
         setHidden(managementSection, !isManagement);

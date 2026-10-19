@@ -1586,17 +1586,6 @@
   font-size: var(--font-xs);
 }
 
-.dashboard-initial-skeleton { display: none; }
-
-#dashboardSection:not(.data-loading) .dashboard-initial-skeleton {
-  display: none;
-}
-
-#dashboardSection.data-loading .dashboard-initial-skeleton {
-  display: block;
-  margin-top: var(--space-6);
-}
-
 #dashboardSection.data-loading .stats-grid .stat-value {
   display: block;
   width: 42%;

@@ -418,7 +418,7 @@ These hooks identify places where Loading/Empty/Error/Success/Status behavior sh
 | `branchContextStatus` | `public/index.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
 | `brandingStatusCopy` | `public/index.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
 | `coachingMessage` | `public/index.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
-| `dashboardInitialSkeleton` | `public/index.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
+| `dashboardInitialSkeleton` | `public/index.html` | REMOVED — obsolete top-level loading placeholder; dashboard metric loading remains in its canonical cards |
 | `externalTraineesPagination` | `public/index.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
 | `gymRegistrationPagination` | `public/platform-admin.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
 | `gymRegistrationStatusFilter` | `public/platform-admin.html` | SOURCE DISCOVERED — STATE QA REQUIRED |
