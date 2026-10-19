@@ -420,16 +420,11 @@
         return key ? translate(`backupHistory.type.${key}`) : translate('backupHistory.type.unknown');
     }
 
-    function auditEventLabel(value) {
-        const key = ({ BACKUP_CREATED: 'created', BACKUP_VERIFIED: 'verified', BACKUP_DOWNLOADED: 'downloaded', BACKUP_DELETED: 'deleted', RESTORE_REQUESTED: 'restoreRequested', RESTORE_STARTED: 'restoreStarted', RESTORE_COMPLETED: 'restoreCompleted', RESTORE_FAILED: 'restoreFailed' })[String(value || '').toUpperCase()];
-        return key ? translate(`backupHistory.event.${key}`) : translate('backupHistory.event.unknown');
-    }
-
     function renderVisibleHistory(data = {}) {
         const records = Array.isArray(data.records) ? data.records : (Array.isArray(data.archives) ? data.archives : []);
-        const audit = Array.isArray(data.audit) ? data.audit : (Array.isArray(data.operations) ? data.operations : []);
+        const visibleRecords = records.filter((item) => String(item.status || '').toUpperCase() !== 'DELETED');
         const retentionDays = Number(data.retention?.tenant_daily || 30);
-        const rows = records.map((item) => {
+        const rows = visibleRecords.map((item) => {
             const status = String(item.status || '').toUpperCase();
             const id = escapeHtml(item.id);
             const actions = status === 'VERIFIED'
@@ -438,16 +433,13 @@
             const canDelete = !['RUNNING', 'UPLOADED', 'VERIFYING', 'DELETED'].includes(status);
             return `<tr><td><strong>${escapeHtml(item.fileName || '—')}</strong><small>${escapeHtml(formatHistoryDate(item.createdAt || item.generatedAt))}</small></td><td>${escapeHtml(recoveryTypeLabel(item.backupType || item.format))}</td><td>${recoveryStatusMarkup(status)}</td><td>${escapeHtml(translate('backupHistory.rows.count', { count: formatHistoryNumber(item.rowCount) }))}</td><td>${formatBytes(item.sizeBytes ?? item.contentBytes)}</td><td>${escapeHtml(formatHistoryDate(item.verifiedAt))}</td><td><div class="backup-history-actions">${actions}${canDelete ? `<button type="button" class="btn btn-danger btn-small backup-history-delete" data-backup-record-delete-id="${id}">${escapeHtml(translate('backupHistory.action.delete'))}</button>` : ''}${actions || canDelete ? '' : '—'}</div></td></tr>`;
         }).join('');
-        const auditRows = audit.slice(0, 8).map((item) => `<tr><td>${escapeHtml(formatHistoryDate(item.createdAt))}</td><td>${escapeHtml(auditEventLabel(item.eventType || item.operationType))}</td><td>${recoveryStatusMarkup(item.result === 'success' ? 'VERIFIED' : item.result)}</td><td>${escapeHtml(item.reason || item.fileName || '—')}</td></tr>`).join('');
         const storageNotice = data.storage && data.storage.configured !== true
             ? `<div class="backup-storage-warning" role="status"><strong>${escapeHtml(translate('backupHistory.storage.title'))}</strong><p>${escapeHtml(translate('backupHistory.storage.description'))}</p></div>`
             : '';
         const columns = (keys) => keys.map((key) => `<th>${escapeHtml(translate(key))}</th>`).join('');
         const archiveColumns = columns(['backupHistory.column.file', 'backupHistory.column.type', 'backupHistory.column.status', 'backupHistory.column.data', 'backupHistory.column.size', 'backupHistory.column.verifiedAt', 'backupHistory.column.actions']);
-        const auditColumns = columns(['backupHistory.column.date', 'backupHistory.column.operation', 'backupHistory.column.result', 'backupHistory.column.reason']);
         const archiveEmpty = `<tr><td colspan="7">${escapeHtml(translate('backupHistory.empty.archives'))}</td></tr>`;
-        const auditEmpty = `<tr><td colspan="4">${escapeHtml(translate('backupHistory.empty.audit'))}</td></tr>`;
-        return `${storageNotice}<div class="backup-history-block"><div class="backup-history-block-head"><strong>${escapeHtml(translate('backupHistory.section.archives'))}</strong><span>${escapeHtml(translate('backupHistory.section.retention', { count: formatHistoryNumber(retentionDays) }))}</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr>${archiveColumns}</tr></thead><tbody>${rows || archiveEmpty}</tbody></table></div></div><div class="backup-history-block"><div class="backup-history-block-head"><strong>${escapeHtml(translate('backupHistory.section.audit'))}</strong><span>${escapeHtml(translate('backupHistory.audit.count', { count: formatHistoryNumber(audit.slice(0, 8).length) }))}</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr>${auditColumns}</tr></thead><tbody>${auditRows || auditEmpty}</tbody></table></div></div>`;
+        return `${storageNotice}<div class="backup-history-block"><div class="backup-history-block-head"><strong>${escapeHtml(translate('backupHistory.section.archives'))}</strong><span>${escapeHtml(translate('backupHistory.section.retention', { count: formatHistoryNumber(retentionDays) }))}</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr>${archiveColumns}</tr></thead><tbody>${rows || archiveEmpty}</tbody></table></div></div>`;
     }
 
     async function downloadArchive(id, trigger) {

@@ -21,7 +21,6 @@ const fixture = `
     <section class="backup-history-section backup-history-page panel" aria-labelledby="backupHistoryPageTitle">
       <header class="backup-history-section-head backup-history-page-head"><div class="backup-history-page-heading"><h3 id="backupHistoryPageTitle">سجل النسخ الاحتياطية</h3><p>سجل النسخ والعمليات الأخيرة.</p></div><div class="backup-history-page-actions"><button class="btn btn-primary btn-small">تحديث السجل</button></div></header>
       <div class="backup-history-block"><div class="backup-history-block-head"><strong>النسخ المحفوظة للجيم</strong><span>الاحتفاظ بالنسخ</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-archive-table"><thead><tr><th>الملف</th><th>النوع</th><th>الحالة</th><th>البيانات</th><th>الحجم</th><th>آخر تحقق</th><th>الإجراءات</th></tr></thead><tbody><tr><td><strong>backup-long-name-2026-10-12.json.gz</strong><small>2026/10/12</small></td><td>نسخة يدوية</td><td><span class="backup-history-status verified">تم التحقق</span></td><td>1,250 صف</td><td>18 MB</td><td>2026/10/12</td><td><div class="backup-history-actions"><button class="btn btn-light btn-small">تحميل</button><button class="btn btn-danger btn-small">حذف</button></div></td></tr><tr><td colspan="7">لا توجد نسخ محفوظة لهذا الجيم حتى الآن.</td></tr></tbody></table></div></div>
-      <div class="backup-history-block"><div class="backup-history-block-head"><strong>سجل التدقيق</strong><span>عمليات معروضة</span></div><div class="backup-history-wrap"><table class="backup-history-table backup-operations-table"><thead><tr><th>التاريخ</th><th>العملية</th><th>النتيجة</th><th>السبب</th></tr></thead><tbody><tr><td>2026/10/12</td><td>إنشاء نسخة</td><td><span class="backup-history-status success">ناجحة</span></td><td>نسخ يومي طويل لتجربة وضوح الجدول على الشاشة الصغيرة.</td></tr><tr><td colspan="4">لا يوجد سجل عمليات حتى الآن.</td></tr></tbody></table></div></div>
     </section>
   </main>`;
 
@@ -79,7 +78,7 @@ test('permissions empty state and backup history remain legible across viewport 
                         && (item.left < -1 || item.right > document.documentElement.clientWidth + 1))
                 };
             });
-            expect(measurements.wrapperBorder).toBe('none');
+            expect(measurements.wrapperBorder).toBe('solid');
             expect(measurements.emptyCellText).toBe('');
             expect(measurements.pageWidth, JSON.stringify(measurements.overflowing)).toBeLessThanOrEqual(measurements.viewportWidth + 1);
             if (viewport.width <= 767) {

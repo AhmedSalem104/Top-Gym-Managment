@@ -25,7 +25,7 @@
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=ea39cc8ee328ed3a'], scripts: ['/js/pages/branding/branding.js?v=45d5109ed0894dca'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=2ad87db27d7f7f63'], scripts: ['/js/pages/management/member-payment-methods.js?v=04c55f9eaed5899a'] },
         'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=e6c87e7bfc3d3da5'], scripts: ['/js/pages/saas/saas.js?v=5e467e2ca4cb392b'] },
-        'backup-history': { dependencies: [], dialogs: [{ source: '/dialogs/backup.html?v=70e6e8d8ebdf6a5a', ids: ['backupRestoreDialog'] }], styles: [], scripts: ['/js/pages/management/backup.js?v=acf0ccb2fea58125'] },
+        'backup-history': { dependencies: [], dialogs: [{ source: '/dialogs/backup.html?v=70e6e8d8ebdf6a5a', ids: ['backupRestoreDialog'] }], styles: [], scripts: ['/js/pages/management/backup.js?v=8d05f3e34639ea2c'] },
         'member-subscription-requests': { dependencies: [], styles: ['/css/pages/member-subscription-requests.css?v=ae6acf9cecdf829a'], scripts: ['/js/pages/management/member-subscription-requests.js?v=59bdc7a9c38cb326'] },
         'portal-analytics': { dependencies: [], styles: ['/css/pages/portal-analytics.css?v=1c97f396bef6694b'], scripts: ['/js/pages/management/portal-analytics.js?v=6ee02804bcf15ebd'] },
         permissions: { dependencies: [], dialogs: [{ source: '/dialogs/permissions.html?v=607567176d80280e', ids: ['authUserDialog'] }], styles: ['/css/pages/permissions.css?v=bd0a22918e83ac5a'], scripts: ['/js/pages/management/permissions.js?v=4756391c15a9ab22', '/js/pages/management/auth-users.js?v=1a7d17c0eb008225'] },

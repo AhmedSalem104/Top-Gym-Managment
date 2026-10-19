@@ -67,7 +67,9 @@ async function installReadOnlyBackupFixture(page) {
                     retention: { tenant_daily: 30 },
                     records: [
                         { id: 'fixture-verified-1', fileName: 'logic-fit-gym-backup-2026-10-12.json.gz', backupType: 'tenant_daily', status: 'VERIFIED', rowCount: 1250, sizeBytes: 18874368, createdAt: '2026-10-12T12:15:00.000Z', verifiedAt: '2026-10-12T12:18:00.000Z' },
-                        { id: 'fixture-pending-2', fileName: 'logic-fit-gym-backup-2026-10-11.json.gz', backupType: 'tenant_manual', status: 'PENDING', rowCount: 987, sizeBytes: 5242880, createdAt: '2026-10-11T08:40:00.000Z', verifiedAt: null }
+                        { id: 'fixture-pending-2', fileName: 'logic-fit-gym-backup-2026-10-11.json.gz', backupType: 'tenant_manual', status: 'PENDING', rowCount: 987, sizeBytes: 5242880, createdAt: '2026-10-11T08:40:00.000Z', verifiedAt: null },
+                        { id: 'fixture-verified-3', fileName: 'logic-fit-gym-backup-2026-10-10.json.gz', backupType: 'tenant_daily', status: 'VERIFIED', rowCount: 1102, sizeBytes: 14680064, createdAt: '2026-10-10T12:15:00.000Z', verifiedAt: '2026-10-10T12:17:00.000Z' },
+                        { id: 'fixture-deleted-4', fileName: 'deleted-backup-must-not-render.json.gz', backupType: 'tenant_daily', status: 'DELETED', rowCount: 12, sizeBytes: 1024, createdAt: '2026-10-09T12:15:00.000Z', verifiedAt: null }
                     ],
                     audit: [
                         { eventType: 'BACKUP_CREATED', result: 'success', reason: 'Scheduled nightly backup', fileName: 'logic-fit-gym-backup-2026-10-12.json.gz', createdAt: '2026-10-12T12:15:00.000Z' },
@@ -99,7 +101,6 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
     const referencedKeys = [...featureSource.matchAll(/translate\(['"]([^'"]+)['"]/gu)].map((match) => match[1]);
     ['pending', 'running', 'uploaded', 'verifying', 'verified', 'failed', 'expired', 'deleted', 'success', 'unknown'].forEach((name) => referencedKeys.push(`backupHistory.status.${name}`));
     ['tenantDaily', 'tenantManual', 'tenantPreRestore', 'unknown'].forEach((name) => referencedKeys.push(`backupHistory.type.${name}`));
-    ['created', 'verified', 'downloaded', 'deleted', 'restoreRequested', 'restoreStarted', 'restoreCompleted', 'restoreFailed', 'unknown'].forEach((name) => referencedKeys.push(`backupHistory.event.${name}`));
     ['download', 'inspect', 'restore'].forEach((name) => referencedKeys.push(`backupHistory.operation.${name}`));
     const uniqueReferencedKeys = [...new Set(referencedKeys)];
     const pageErrors = [];
@@ -117,8 +118,9 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
             await page.goto('/index.html#backup-history', { waitUntil: 'domcontentloaded' });
             await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
             await expect(page.locator('#backupHistorySection')).toBeVisible();
-            await expect(page.locator('#backupHistoryList .backup-archive-table tbody tr')).toHaveCount(2);
-            await expect(page.locator('#backupHistoryList .backup-operations-table tbody tr')).toHaveCount(3);
+            await expect(page.locator('#backupHistoryList .backup-archive-table tbody tr')).toHaveCount(3);
+            await expect(page.locator('#backupHistoryList .backup-operations-table')).toHaveCount(0);
+            await expect(page.locator('#backupHistoryList')).not.toContainText('deleted-backup-must-not-render.json.gz');
             if (width <= 767) {
                 await expect(page.locator('#backupHistoryList .backup-archive-table')).toHaveAttribute('data-responsive-cards', 'true');
             }
@@ -161,6 +163,7 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                             scrollWidth: table.scrollWidth,
                             wrapperWidth: table.closest('.backup-history-wrap').clientWidth,
                             wrapperScrollWidth: table.closest('.backup-history-wrap').scrollWidth,
+                            wrapperBorder: getComputedStyle(table.closest('.backup-history-wrap')).borderTopStyle,
                             wrapperOverflowX: getComputedStyle(table.closest('.backup-history-wrap')).overflowX,
                             headers: [...table.querySelectorAll('thead th')].map((cell) => cell.innerText.trim()),
                             rows: table.querySelectorAll('tbody tr').length,
@@ -184,11 +187,12 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                 expect(layout.documentWidth, `${width}px ${locale}/${theme}: document overflow`).toBeLessThanOrEqual(width);
                 expect(layout.bodyWidth, `${width}px ${locale}/${theme}: body overflow`).toBeLessThanOrEqual(width);
                 expect(layout.page.width).toBeGreaterThan(0);
-                expect(layout.blocks).toHaveLength(2);
-                expect(layout.tables.map((table) => table.rows)).toEqual([2, 3]);
-                expect(layout.tables.map((table) => table.headers.length)).toEqual([7, 4]);
+                expect(layout.blocks).toHaveLength(1);
+                expect(layout.tables.map((table) => table.rows)).toEqual([3]);
+                expect(layout.tables.map((table) => table.headers.length)).toEqual([7]);
                 expect(layout.tables[0].rowText[0]).toContain('logic-fit-gym-backup-2026-10-12.json.gz');
-                expect(layout.tables[1].rowText[2]).toContain('A deliberately long audit explanation');
+                expect(layout.tables.flatMap((table) => table.rowText).join(' ')).not.toContain('deleted-backup-must-not-render.json.gz');
+                expect(layout.tables[0].wrapperBorder).toBe('solid');
                 expect(layout.tables.every((table) => table.wrapperWidth > 0 && table.wrapperScrollWidth >= table.wrapperWidth)).toBeTruthy();
                 expect(layout.visibleActions).toBeGreaterThan(0);
                 expect(layout.outsideViewport, `${width}px ${locale}/${theme}: screen content outside viewport`).toEqual([]);
@@ -199,7 +203,6 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                 if (locale === 'en') {
                     expect(layout.dir, 'the central locale switcher should apply LTR direction').toBe('ltr');
                     expect(layout.tables[0].headers).toEqual(['File', 'Type', 'Status', 'Data', 'Size', 'Last verified', 'Actions']);
-                    expect(layout.tables[1].headers).toEqual(['Date', 'Operation', 'Result', 'Reason']);
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('Verified');
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('Daily backup');
                     await expect(page.locator('.backup-history-download').first()).toHaveText('Download');
@@ -209,7 +212,6 @@ test('Backup history V2 actual screen: read-only viewport, theme and locale visu
                 } else {
                     expect(layout.dir).toBe('rtl');
                     expect(layout.tables[0].headers).toEqual(['الملف', 'النوع', 'الحالة', 'البيانات', 'الحجم', 'آخر تحقق', 'الإجراءات']);
-                    expect(layout.tables[1].headers).toEqual(['التاريخ', 'العملية', 'النتيجة', 'السبب']);
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('تم التحقق');
                     await expect(page.locator('.backup-archive-table tbody tr').first()).toContainText('نسخة يومية');
                     await expect(page.locator('.backup-history-download').first()).toHaveText('تحميل');
@@ -310,7 +312,7 @@ test('Backup history loading, empty and error states remain localized and usable
     } finally {
         runtime.releaseHistory();
     }
-    await expect(section.locator('.backup-archive-table tbody tr')).toHaveCount(2);
+    await expect(section.locator('.backup-archive-table tbody tr')).toHaveCount(3);
 
     const dismissToasts = async () => {
         const closeButtons = page.locator('#toast .toast-close');
@@ -328,7 +330,6 @@ test('Backup history loading, empty and error states remain localized and usable
                 runtime.setScenario('empty');
                 await page.locator('#backupHistoryRefresh').click();
                 await expect(section.locator('.backup-archive-table tbody td[colspan="7"]')).toHaveText(locale === 'en' ? 'No saved backups for this gym yet.' : 'لا توجد نسخ محفوظة لهذا الجيم حتى الآن.');
-                await expect(section.locator('.backup-operations-table tbody td[colspan="4"]')).toHaveText(locale === 'en' ? 'No operations have been recorded yet.' : 'لا يوجد سجل عمليات حتى الآن.');
                 await dismissToasts();
                 const emptyScreenshot = `backup-history-empty-${width}-${locale}-${theme}.png`;
                 await section.screenshot({ path: path.join(ARTIFACT_DIR, emptyScreenshot), animations: 'disabled' });
