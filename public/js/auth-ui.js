@@ -509,8 +509,6 @@
         if (accountName) accountName.textContent = user?.name || brandName();
         if (accountEmail) accountEmail.textContent = user?.email || '—';
         if (accountAvatar) accountAvatar.textContent = initials(user?.name);
-        const topbarAvatar = document.querySelector('[data-topbar-account-avatar]');
-        if (topbarAvatar) topbarAvatar.textContent = initials(user?.name);
         if (!permissions.canAccessTab(user, window.location.hash.slice(1))) {
             window.location.hash = `#${permissions.firstAccessibleTab(user)}`;
         }

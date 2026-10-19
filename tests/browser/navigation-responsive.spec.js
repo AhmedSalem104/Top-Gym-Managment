@@ -58,6 +58,52 @@ async function installNavigationRuntime(page) {
     });
 }
 
+test('branch and section context values keep distinct readable theme colors; account trigger is not an avatar', async ({ page }, testInfo) => {
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    const branch = page.locator('#branchContextShell [data-context-field="branch"] .branch-context-trigger');
+    const section = page.locator('#branchContextShell [data-context-field="section"] .branch-context-trigger');
+    await expect(branch).toBeVisible();
+    await expect(section).toBeVisible();
+    await expect(page.locator('.topbar-account-avatar')).toHaveCount(0);
+    await expect(page.locator('.topbar-more-trigger')).toHaveAttribute('aria-label', /More|المزيد/u);
+
+    for (const theme of ['light', 'dark']) {
+        await page.evaluate((value) => {
+            document.documentElement.dataset.theme = value;
+            document.body.dataset.theme = value;
+        }, theme);
+        const colors = await page.evaluate(() => {
+            const read = (selector) => getComputedStyle(document.querySelector(selector)).color;
+            return {
+                branch: read('#branchContextShell [data-context-field="branch"] .branch-context-trigger'),
+                section: read('#branchContextShell [data-context-field="section"] .branch-context-trigger'),
+                surface: getComputedStyle(document.querySelector('.topbar')).backgroundColor
+            };
+        });
+        expect(colors.branch).not.toBe(colors.section);
+        const contrast = await page.evaluate(({ foregrounds, background }) => {
+            const channels = (value) => value.match(/[\d.]+/gu).slice(0, 3).map(Number).map((channel) => {
+                const normalized = channel / 255;
+                return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+            });
+            const luminance = (value) => {
+                const [r, g, b] = channels(value);
+                return .2126 * r + .7152 * g + .0722 * b;
+            };
+            const b = luminance(background);
+            return foregrounds.map((foreground) => {
+                const a = luminance(foreground);
+                return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+            });
+        }, { foregrounds: [colors.branch, colors.section], background: colors.surface });
+        expect(contrast[0], `${theme} branch context contrast ${JSON.stringify({ colors, contrast })}`).toBeGreaterThanOrEqual(4.5);
+        expect(contrast[1], `${theme} section context contrast`).toBeGreaterThanOrEqual(4.5);
+        const screenshot = testInfo.outputPath(`branch-context-${theme}.png`);
+        await page.screenshot({ path: screenshot, fullPage: false });
+    }
+});
+
 test('responsive navigation stays organized and accessible at each viewport', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     // `/` is the auth-aware login entry when no server session cookie exists;

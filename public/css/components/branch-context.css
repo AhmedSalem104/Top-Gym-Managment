@@ -1045,6 +1045,14 @@ body .app-shell > .topbar #branchContextShell [data-context-field="section"] .br
   background: var(--nav-context-section-surface);
   color: var(--nav-context-section-accent);
 }
+body .app-shell > .topbar #branchContextShell [data-context-field="branch"] .branch-context-trigger,
+body .app-shell > .topbar #branchContextShell [data-context-field="branch"] .branch-context-trigger-chevron{
+  color: var(--nav-context-branch-accent);
+}
+body .app-shell > .topbar #branchContextShell [data-context-field="section"] .branch-context-trigger,
+body .app-shell > .topbar #branchContextShell [data-context-field="section"] .branch-context-trigger-chevron{
+  color: var(--nav-context-section-accent);
+}
 body .app-shell > .topbar #branchContextShell .branch-context-field-icon > svg{
   display: block;
   width: 19px;

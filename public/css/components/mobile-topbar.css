@@ -32,18 +32,6 @@
 .topbar-more-trigger:hover,
 .topbar-more-trigger:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); }
 .topbar-more-trigger:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.topbar-account-avatar {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--primary);
-  font-size: var(--font-sm);
-  font-weight: var(--weight-semibold);
-}
-
 .topbar-more-items {
   display: flex;
   min-width: 0;
