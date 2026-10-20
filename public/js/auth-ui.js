@@ -509,10 +509,8 @@
         const topbarProfile = $('topbarProfile');
         const topbarProfileName = document.querySelector('[data-topbar-profile-name]');
         const topbarProfileRole = document.querySelector('[data-topbar-profile-role]');
-        const topbarProfileInitials = document.querySelector('[data-topbar-profile-initials]');
         if (topbarProfile) topbarProfile.hidden = !user;
         if (topbarProfileName) topbarProfileName.textContent = user?.name || '';
-        if (topbarProfileInitials) topbarProfileInitials.textContent = initials(user?.name);
         if (topbarProfileRole) {
             const roleKey = user?.role === 'Owner' ? 'shell.role.owner' : user?.role === 'PlatformAdmin' ? 'shell.role.admin' : 'shell.role.assistant';
             topbarProfileRole.textContent = window.TopGymI18n?.t(roleKey) || roleLabel(user?.role);

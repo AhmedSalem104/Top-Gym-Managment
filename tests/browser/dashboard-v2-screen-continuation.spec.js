@@ -191,6 +191,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         const runtime = await installReadOnlyDashboardFixture(page, { multipleScopes: true });
         await page.goto('/index.html?dashboardScope=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('#dashboardScopeBar')).toBeVisible({ timeout: 15000 });
+        const scopeButtonSize = await page.locator('#dashboardScopeOpen').evaluate((element) => element.getBoundingClientRect().height);
+        expect(scopeButtonSize).toBeGreaterThanOrEqual(48);
         await expect(page.locator('#branchContextShell')).toBeHidden();
         await expect(page.locator('#dashboardScopeBranch')).toHaveText('QA Main Branch');
         await page.evaluate(() => window.addEventListener('topgym:branch-context-changed', (event) => {
@@ -205,6 +207,11 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.locator('#dashboardScopeOpen').click();
         const dialog = page.locator('#dashboardScopeDialog');
         await expect(dialog).toBeVisible();
+        const dialogFrame = await dialog.boundingBox();
+        expect(dialogFrame.width).toBeGreaterThan(500);
+        expect(dialogFrame.height).toBeLessThanOrEqual(900);
+        await expect(page.locator('.dashboard-scope-dialog-heading-icon')).toBeVisible();
+        await page.screenshot({ path: testInfo.outputPath('dashboard-scope-dialog-desktop.png'), fullPage: false });
         await expect(page.locator('#dashboardScopeBranchSelect option')).toContainText(['QA Main Branch', 'QA Riverside Branch']);
         await page.locator('#dashboardScopeBranchSelect').selectOption('98202');
         await expect(page.locator('#dashboardScopeSectionSelect option')).toContainText(['QA Riverside Section']);
@@ -245,9 +252,25 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.locator('#dashboardScopeOpen').click();
         await expect(dialog).toBeVisible();
-        const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-        expect(mobileOverflow).toBeLessThanOrEqual(1);
-        await page.screenshot({ path: testInfo.outputPath('dashboard-scope-mobile.png'), fullPage: true });
+        for (const width of [320, 390, 768]) {
+            await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
+            const geometry = await page.evaluate(() => {
+                const dialogRect = document.querySelector('#dashboardScopeDialog').getBoundingClientRect();
+                const headerRect = document.querySelector('.dashboard-scope-dialog-heading').getBoundingClientRect();
+                return {
+                    viewport: document.documentElement.clientWidth,
+                    document: document.documentElement.scrollWidth,
+                    dialog: { left: dialogRect.left, right: dialogRect.right, top: dialogRect.top, bottom: dialogRect.bottom },
+                    heading: { left: headerRect.left, right: headerRect.right }
+                };
+            });
+            expect(geometry.document, `${width}px page overflow`).toBeLessThanOrEqual(geometry.viewport + 1);
+            expect(geometry.dialog.left, `${width}px dialog left`).toBeGreaterThanOrEqual(-1);
+            expect(geometry.dialog.right, `${width}px dialog right`).toBeLessThanOrEqual(geometry.viewport + 1);
+            expect(geometry.heading.left, `${width}px heading left`).toBeGreaterThanOrEqual(geometry.dialog.left);
+            expect(geometry.heading.right, `${width}px heading right`).toBeLessThanOrEqual(geometry.dialog.right);
+            if (width === 320 || width === 390) await page.screenshot({ path: testInfo.outputPath(`dashboard-scope-dialog-${width}.png`), fullPage: false });
+        }
         await page.locator('#dashboardScopeCancel').click();
 
         await page.evaluate(() => { window.location.hash = '#members'; });

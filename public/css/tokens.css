@@ -253,6 +253,7 @@
   --control-height-small: 32px;
   --control-height-medium: 40px;
   --control-height-large: 44px;
+  --control-height-prominent: 48px;
 
   /* Shared UI foundation contract. These values are global semantic tokens,
      not implementation details of the foundation stylesheet. */

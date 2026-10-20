@@ -799,7 +799,8 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
     await loginPage.close();
 });
 
-test('navbar settings dropdown is anchored to More and stays open while settings change', async ({ page }) => {
+test('navbar settings are inline on desktop and remain in the anchored More menu on compact screens', async ({ page }) => {
+    test.setTimeout(90_000);
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     const screenshotDirectory = path.resolve(process.cwd(), 'qa/artifacts/navbar-settings-refinement');
@@ -808,7 +809,6 @@ test('navbar settings dropdown is anchored to More and stays open while settings
     const details = page.locator('.topbar-more-menu');
     const trigger = page.locator('.topbar-more-trigger');
     const panel = page.locator('.topbar-more-items');
-    await expect(details).not.toHaveAttribute('open', '');
     await expect(page.locator('#globalKioskToggle')).toHaveCount(0);
     await expect(page.locator('#attendanceKioskButton')).toHaveCount(1);
 
@@ -821,14 +821,17 @@ test('navbar settings dropdown is anchored to More and stays open while settings
                     window.TopGymI18n.set(nextLocale);
                     window.TopGymTheme.set(nextTheme);
                 }, { locale, theme });
-                await page.locator('.notification-center-trigger').click();
-                await expect(details).not.toHaveAttribute('open', '');
-                await page.keyboard.press('Escape');
-                if (await page.locator('#topbarProfile').isVisible()) {
-                    await page.locator('#topbarProfile').click();
+                const compact = width < 1024;
+                if (compact) {
                     await expect(details).not.toHaveAttribute('open', '');
+                    await expect(trigger).toBeVisible();
+                    await expect(panel).toBeHidden();
+                    await trigger.click();
+                } else {
+                    await expect(details).toHaveAttribute('open', '');
+                    await expect(trigger).toBeHidden();
+                    await expect(panel).toBeVisible();
                 }
-                await trigger.click();
                 await expect(panel).toBeVisible();
                 await expect(panel.locator('.topbar-settings-section')).toHaveCount(2);
                 await expect(panel.locator('#themeToggleButton')).toHaveAttribute('role', 'switch');
@@ -843,15 +846,23 @@ test('navbar settings dropdown is anchored to More and stays open while settings
                         direction: document.documentElement.dir,
                         viewportWidth: innerWidth,
                         triggerBottom: triggerRect.bottom,
+                        navbar: document.querySelector('.app-shell > .topbar').getBoundingClientRect().toJSON(),
                         panel: { left: panelRect.left, right: panelRect.right, top: panelRect.top, width: panelRect.width, height: panelRect.height },
                         scrollWidth: document.documentElement.scrollWidth
                     };
                 });
-                expect(geometry.panel.width).toBeLessThanOrEqual(350);
-                expect(geometry.panel.left).toBeGreaterThanOrEqual(0);
-                expect(geometry.panel.right).toBeLessThanOrEqual(width);
-                expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.triggerBottom - 1);
-                expect(geometry.panel.height).toBeLessThanOrEqual(820);
+                if (compact) {
+                    expect(geometry.panel.width).toBeLessThanOrEqual(350);
+                    expect(geometry.panel.left).toBeGreaterThanOrEqual(0);
+                    expect(geometry.panel.right).toBeLessThanOrEqual(width);
+                    expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.triggerBottom - 1);
+                    expect(geometry.panel.height).toBeLessThanOrEqual(820);
+                } else {
+                    expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.navbar.top - 1);
+                    expect(geometry.panel.top + geometry.panel.height).toBeLessThanOrEqual(geometry.navbar.bottom + 1);
+                    expect(geometry.panel.width).toBeGreaterThan(350);
+                    await expect(page.locator('.topbar-profile-avatar')).toHaveCount(0);
+                }
                 expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
                 if (width === 320 && !captures.has('mobile')) {
                     await page.screenshot({ path: path.join(screenshotDirectory, `navbar-settings-mobile-320-${locale}-${theme}.png`), fullPage: false });
@@ -865,15 +876,60 @@ test('navbar settings dropdown is anchored to More and stays open while settings
                     await page.screenshot({ path: path.join(screenshotDirectory, 'navbar-settings-desktop-1440-en-dark.png'), fullPage: false });
                     captures.add('desktop');
                 }
-                await page.keyboard.press('Escape');
-                await expect(panel).toBeHidden();
-                await expect(trigger).toBeFocused();
+                if (compact) {
+                    await page.keyboard.press('Escape');
+                    await expect(panel).toBeHidden();
+                    await expect(trigger).toBeFocused();
+                }
         }
     }
 
-    await page.setViewportSize({ width: 1440, height: 900 });
+    for (const width of [1024, 1280, 1440]) {
+        await page.setViewportSize({ width, height: 820 });
+        for (const [locale, theme] of [['ar', 'light'], ['ar', 'dark'], ['en', 'light'], ['en', 'dark']]) {
+            await page.evaluate(({ nextLocale, nextTheme }) => {
+                window.TopGymI18n.set(nextLocale);
+                window.TopGymTheme.set(nextTheme);
+            }, { nextLocale: locale, nextTheme: theme });
+            const layout = await page.evaluate(() => {
+                const rect = (selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element || getComputedStyle(element).display === 'none') return null;
+                    const box = element.getBoundingClientRect();
+                    return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+                };
+                return {
+                    viewport: document.documentElement.clientWidth,
+                    document: document.documentElement.scrollWidth,
+                    menuOpen: document.querySelector('.topbar-more-menu').open,
+                    triggerVisible: getComputedStyle(document.querySelector('.topbar-more-trigger')).display !== 'none',
+                    controls: ['[data-locale-segmented]', '#themeToggleButton', '#topbarFullscreenAction', '#topbarLogoutAction', '.notification-center-trigger', '#topbarProfile']
+                        .map(rect).filter(Boolean)
+                };
+            });
+            expect(layout.menuOpen, `${locale}/${theme}/${width}px inline menu`).toBeTruthy();
+            expect(layout.triggerVisible, `${width}px More trigger must be replaced by direct controls`).toBeFalsy();
+            expect(layout.document, `${locale}/${theme}/${width}px overflow`).toBeLessThanOrEqual(layout.viewport + 1);
+            for (let first = 0; first < layout.controls.length; first += 1) {
+                for (let second = first + 1; second < layout.controls.length; second += 1) {
+                    const a = layout.controls[first];
+                    const b = layout.controls[second];
+                    const separated = a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1;
+                    expect(separated, `${locale}/${theme}/${width}px navbar controls overlap: ${JSON.stringify(layout.controls)}`).toBeTruthy();
+                }
+            }
+            if (width === 1440 && locale === 'ar' && theme === 'light') {
+                await page.screenshot({ path: path.join(screenshotDirectory, 'navbar-settings-desktop-1440-ar-light.png'), fullPage: false });
+            }
+        }
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => window.TopGymI18n.set('ar'));
     await trigger.click();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await expect(details).toHaveAttribute('open', '');
+    await page.evaluate(() => window.TopGymI18n.set('ar'));
     await panel.locator('[data-locale-choice="en"]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(panel).toBeVisible();
@@ -906,8 +962,13 @@ test('navbar settings dropdown is anchored to More and stays open while settings
     await page.locator('#topbarLogoutAction').click();
     await expect.poll(() => page.evaluate(() => window.__settingsLogoutDelegated)).toBe(true);
     await expect(panel).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(panel).toBeHidden();
+    await trigger.click();
+    await expect(panel).toBeVisible();
     await page.locator('.notification-center-trigger').click();
     await expect(panel).toBeHidden();
+    await page.keyboard.press('Escape');
     await trigger.click();
     await expect(panel).toBeVisible();
     await trigger.click();

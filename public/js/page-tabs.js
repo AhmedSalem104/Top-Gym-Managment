@@ -517,8 +517,10 @@
         const fullscreenLabel = fullscreenButton?.querySelector('[data-fullscreen-label]');
         const fullscreenDescription = fullscreenButton?.querySelector('[data-fullscreen-description]');
         const panel = menu.querySelector('.topbar-more-items');
+        const desktopNavigation = window.matchMedia('(min-width: 1024px)');
+        const isDesktop = () => desktopNavigation.matches;
         const positionMenu = () => {
-            if (!menu.open || !panel) return;
+            if (isDesktop() || !menu.open || !panel) return;
             const triggerRect = trigger.getBoundingClientRect();
             const panelWidth = panel.getBoundingClientRect().width;
             if (!panelWidth) return;
@@ -560,21 +562,21 @@
             if (fullscreenDescription) fullscreenDescription.textContent = description;
         };
         const close = (restoreFocus = false) => {
-            if (!menu.open) return;
+            if (isDesktop() || !menu.open) return;
             menu.open = false;
             if (restoreFocus) trigger.focus({ preventScroll: true });
         };
         menu.addEventListener('toggle', () => {
-            if (menu.open) window.requestAnimationFrame(positionMenu);
+            if (menu.open && !isDesktop()) window.requestAnimationFrame(positionMenu);
             else clearMenuPosition();
         });
-        window.addEventListener('resize', () => { if (menu.open) positionMenu(); });
+        window.addEventListener('resize', () => { if (menu.open && !isDesktop()) positionMenu(); });
         document.addEventListener('scroll', () => { if (menu.open) positionMenu(); }, true);
         document.addEventListener('pointerdown', (event) => {
-            if (menu.open && !menu.contains(event.target)) close(false);
+            if (!isDesktop() && menu.open && !menu.contains(event.target)) close(false);
         });
         document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape' || !menu.open) return;
+            if (isDesktop() || event.key !== 'Escape' || !menu.open) return;
             event.preventDefault();
             close(true);
         });
@@ -593,7 +595,15 @@
         document.getElementById('topbarLogoutAction')?.addEventListener('click', () => {
             document.getElementById('authLogoutButton')?.click();
         });
-        menu.open = false;
+        const syncResponsiveMenu = () => {
+            menu.open = isDesktop();
+            clearMenuPosition();
+            if (menu.open) menu.setAttribute('data-display-mode', 'inline');
+            else menu.removeAttribute('data-display-mode');
+        };
+        if (typeof desktopNavigation.addEventListener === 'function') desktopNavigation.addEventListener('change', syncResponsiveMenu);
+        else desktopNavigation.addListener?.(syncResponsiveMenu);
+        syncResponsiveMenu();
         syncFullscreenAction();
     }
 

@@ -96,6 +96,23 @@ body [data-variant="secondary"]:hover:not(:disabled) {
   color: var(--brand-primary-hover);
 }
 
+body .btn-outline-primary,
+body button.btn-outline-primary,
+body a.btn-outline-primary {
+  border-color: var(--primary-border);
+  background: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+body .btn-outline-primary:hover:not(:disabled),
+body button.btn-outline-primary:hover:not(:disabled),
+body a.btn-outline-primary:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
 html[data-theme="dark"] body .platform-btn.ghost,
 html[data-theme="dark"] body .platform-btn-secondary {
   border-color: var(--border-hover);
