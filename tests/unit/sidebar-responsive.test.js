@@ -19,6 +19,8 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
     assert.match(index, /id="mobileNavCurrent"/);
+    assert.match(index, /id="sidebarPinToggle"[^>]*aria-label=/u);
+    assert.match(index, /id="sidebarPinToggle"[^>]*>[\s\S]*?<svg[^>]*><rect x="3" y="4" width="18" height="16" rx="2"\/><path d="M9 4v16"\/><\/svg>\s*<\/button>/u);
     assert.match(index, /branch-context-kicker/);
     assert.match(index, /\/js\/page-tabs\.js\?v=[a-f0-9]{16}/);
     assert.match(source, /function initMobileNavigation\(\)/);
@@ -34,7 +36,9 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(styles, /\.app-shell > \.page-tabs::-webkit-scrollbar\s*\{[\s\S]*?width: 0[\s\S]*?height: 0/u);
     assert.match(styles, /@media \(min-width: 1024px\)[\s\S]*?\.app-shell > \.page-tabs\s*\{[\s\S]*?grid-row: 2/u);
     assert.match(topbarStyles, /#mobileNavToggle\s*\{\s*display: inline-flex;/u,
-        'the side-navigation control remains visible on desktop as the reference requests');
+        'the side-navigation control remains available in the compact navigation layout');
+    assert.match(topbarStyles, /@media \(max-width: 1023px\)[\s\S]*?\.application-launcher\s*\{\s*display: none;/u,
+        'the compact navigation shows the drawer control instead of a duplicate app-grid control');
 });
 
 test('Mobile navigation drawer keeps focus contained and supports reduced motion', () => {

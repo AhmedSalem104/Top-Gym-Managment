@@ -153,9 +153,18 @@
 .application-launcher-item:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .application-launcher-item[aria-current="page"] { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); font-weight: var(--weight-semibold); }
 
-.topbar-more-items { min-width: 228px; gap: var(--space-2); }
+.topbar-more-items {
+  width: min(280px, calc(100vw - var(--app-content-gutter-mobile) - var(--app-content-gutter-mobile) - var(--ui-touch-target) - var(--ui-touch-target) - var(--space-1) - var(--space-1)));
+  min-width: min(240px, calc(100vw - var(--app-content-gutter-mobile) - var(--app-content-gutter-mobile) - var(--ui-touch-target) - var(--ui-touch-target) - var(--space-1) - var(--space-1)));
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: var(--space-2);
+}
 .topbar-language-toggle {
   display: inline-flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: var(--ui-touch-target);
   align-items: center;
   gap: 2px;
@@ -166,6 +175,7 @@
 }
 
 .topbar-language-toggle > button {
+  flex: 1 1 0;
   min-width: var(--ui-touch-target);
   min-height: var(--ui-touch-target);
   padding-inline: var(--space-2);
@@ -179,6 +189,7 @@
 
 .topbar-language-toggle > button[aria-pressed="true"] { background: var(--primary); color: var(--text-on-primary); }
 .topbar-more-actions { display: grid; min-width: 0; gap: var(--space-2); }
+.topbar-more-actions:empty { display: none; }
 .topbar-more-actions > .btn { min-height: var(--ui-touch-target); justify-content: flex-start; }
 .topbar-more-items > .topbar-theme-icon-button,
 .topbar-more-items > .kiosk-toggle-button { width: 100%; justify-content: flex-start; gap: var(--space-3); padding-inline: var(--space-3); }
@@ -227,6 +238,7 @@
 @media (min-width: 1024px) {
   .topbar-mobile-row { flex: 1 1 auto; }
   .topbar-mobile-actions { flex: 0 0 auto; }
+  .app-shell > .topbar #mobileNavToggle { display: none; }
   .app-shell > .topbar #branchContextShell { width: min(560px, 52vw); max-width: 560px; flex: 0 1 560px; }
   .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger { display: none; }
   .app-shell > .topbar #branchContextShell .branch-context-fields { position: static; display: flex; width: auto; min-width: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
@@ -235,7 +247,7 @@
   .app-shell > .topbar #branchContextShell .branch-context-status,
   .app-shell > .topbar #branchContextShell .branch-context-field-icon { display: none; }
   .application-launcher-menu { min-width: 300px; }
-  .topbar-more-items { min-width: 250px; }
+  .topbar-more-items { width: 250px; min-width: 250px; }
 }
 
 @media (max-width: 1023px) {
@@ -246,18 +258,18 @@
 
   body .app-shell > .topbar .topbar-controls {
     display: grid;
-    grid-template-columns: var(--ui-touch-target) var(--ui-touch-target) minmax(48px, 1fr) var(--ui-touch-target) var(--ui-touch-target) var(--ui-touch-target);
+    grid-template-columns: var(--ui-touch-target) minmax(48px, 1fr) var(--ui-touch-target) var(--ui-touch-target) var(--ui-touch-target);
     gap: var(--space-1);
   }
 
   body .topbar-mobile-row,
   body .topbar-mobile-actions { display: contents; }
   .app-shell > .topbar #mobileNavToggle { grid-column: 1; grid-row: 1; }
-  .application-launcher { grid-column: 2; grid-row: 1; }
-  .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: var(--ui-touch-target); grid-column: 3; grid-row: 1; }
-  .topbar-more-menu { grid-column: 4; grid-row: 1; }
-  .topbar-quick-actions { grid-column: 5; grid-row: 1; justify-content: center; }
-  .topbar-profile { grid-column: 6; grid-row: 1; justify-content: center; }
+  .application-launcher { display: none; }
+  .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: var(--ui-touch-target); grid-column: 2; grid-row: 1; }
+  .topbar-more-menu { grid-column: 3; grid-row: 1; }
+  .topbar-quick-actions { grid-column: 4; grid-row: 1; justify-content: center; }
+  .topbar-profile { grid-column: 5; grid-row: 1; justify-content: center; }
   .topbar-profile-copy { display: none; }
 
   .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger {
@@ -292,7 +304,34 @@
   .app-shell > .topbar #branchContextShell .branch-context-field-copy { display: grid; min-width: 0; gap: var(--space-1); }
 
   .topbar-more-items { inset-inline-end: 0; }
-  .application-launcher-menu { inset-inline-start: 0; inset-inline-end: auto; }
+  .topbar-more-items > .topbar-theme-icon-button,
+  .topbar-more-items > .kiosk-toggle-button { display: flex; }
+
+  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .topbar-theme-icon-button,
+  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .kiosk-toggle-button {
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    min-height: var(--ui-touch-target);
+    height: auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-inline: var(--space-3);
+  }
+
+  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .visually-hidden,
+  .app-shell > .topbar .topbar-more-items > .kiosk-toggle-button .visually-hidden {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 767px) {

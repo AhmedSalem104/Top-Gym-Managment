@@ -124,29 +124,53 @@ test('responsive navigation stays organized and accessible at each viewport', as
 
     if (width <= 1023) {
         await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        await expect(page.locator('#applicationLauncherTrigger')).toBeHidden();
         for (const responsiveWidth of [320, 375, 390, 430, 768, 1024]) {
             await page.setViewportSize({ width: responsiveWidth, height: 900 });
             const navbarLayout = await page.evaluate(() => {
                 const selectors = ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile'];
+                const visible = (element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0;
                 return {
-                    rows: selectors.map((selector) => document.querySelector(selector)?.getBoundingClientRect().top).filter(Number.isFinite),
+                    rows: selectors.map((selector) => document.querySelector(selector)).filter(visible).map((element) => element.getBoundingClientRect().top),
+                    navigationControls: selectors.slice(0, 2).filter((selector) => visible(document.querySelector(selector))),
                     viewport: document.documentElement.clientWidth,
                     documentWidth: document.documentElement.scrollWidth,
                     bodyWidth: document.body.scrollWidth
                 };
             });
+            expect(navbarLayout.navigationControls, `${responsiveWidth}px should show one navigation icon`).toHaveLength(1);
+            expect(navbarLayout.navigationControls[0]).toBe(responsiveWidth <= 1023 ? '#mobileNavToggle' : '#applicationLauncherTrigger');
             expect(Math.max(...navbarLayout.rows) - Math.min(...navbarLayout.rows), `${responsiveWidth}px header rows`).toBeLessThanOrEqual(4);
             expect(navbarLayout.documentWidth, `${responsiveWidth}px document overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
             expect(navbarLayout.bodyWidth, `${responsiveWidth}px body overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
         }
         await page.setViewportSize({ width, height: 900 });
-        await page.locator('#applicationLauncherTrigger').click();
-        await expect(page.locator('#applicationLauncherMenu')).toBeVisible();
-        expect(await page.locator('#applicationLauncherMenu [data-launcher-tab]').count()).toBeGreaterThan(0);
+        await page.locator('.topbar-more-trigger').click();
+        const moreGeometry = await page.evaluate(() => {
+            const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
+            return {
+                viewport: innerWidth,
+                menu: rect('.topbar-more-items'),
+                language: rect('.topbar-language-toggle'),
+                theme: rect('#themeToggleButton'),
+                fullscreen: rect('#globalKioskToggle')
+            };
+        });
+        expect(moreGeometry.menu.x).toBeGreaterThanOrEqual(0);
+        expect(moreGeometry.menu.right).toBeLessThanOrEqual(moreGeometry.viewport);
+        expect(moreGeometry.theme.width).toBeGreaterThanOrEqual(160);
+        expect(moreGeometry.fullscreen.width).toBeGreaterThanOrEqual(160);
+        expect(moreGeometry.theme.y).toBeGreaterThan(moreGeometry.language.y);
+        expect(moreGeometry.fullscreen.y).toBeGreaterThan(moreGeometry.theme.y);
         const screenshotDir = path.join(process.cwd(), 'qa', 'artifacts', 'screenshots');
         fs.mkdirSync(screenshotDir, { recursive: true });
-        await page.screenshot({ path: path.join(screenshotDir, `navbar-launcher-${width}-v2.png`), fullPage: false });
-        await page.locator('#applicationLauncherMenu [data-launcher-tab="members"]').click();
+        await page.screenshot({ path: path.join(screenshotDir, `navbar-more-mobile-${width}-v2.png`), fullPage: false });
+        await page.keyboard.press('Escape');
+        await expect(page.locator('.topbar-more-trigger')).toBeFocused();
+        await page.locator('#mobileNavToggle').click();
+        await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
+        await expect(page.locator('[data-page-tab="members"]')).toBeVisible();
+        await page.locator('[data-page-tab="members"]').click();
         await expect(page.locator('[data-page-tab="members"]')).toHaveClass(/active/);
         await expect(page.locator('#membersSection')).toBeVisible();
         await expect(page.locator('#pageTabs')).toBeHidden();
@@ -162,12 +186,19 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(page.locator('#pageTabs')).toBeHidden();
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
     } else {
-        await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        await expect(page.locator('#mobileNavToggle')).toBeHidden();
+        await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
+        const sidebarPin = page.locator('#sidebarPinToggle');
+        await expect(sidebarPin).toBeVisible();
+        await expect(sidebarPin.locator('span')).toHaveCount(0);
+        await expect(sidebarPin).toHaveAttribute('aria-label', /Pin sidebar|تثبيت القائمة/u);
+        await expect(sidebarPin).toHaveAttribute('title', /Pin sidebar|تثبيت القائمة/u);
         await expect(page.locator('#pageTabs')).toBeVisible();
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
         const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
-            .map((selector) => document.querySelector(selector)?.getBoundingClientRect().top)
-            .filter(Number.isFinite));
+            .map((selector) => document.querySelector(selector))
+            .filter((element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0)
+            .map((element) => element.getBoundingClientRect().top));
         expect(Math.max(...navbarRows) - Math.min(...navbarRows)).toBeLessThanOrEqual(4);
         await page.screenshot({ path: testInfo.outputPath('navigation-desktop.png'), fullPage: true });
     }
@@ -645,7 +676,12 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
                     viewport: innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
                     controls: ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
-                        .map((selector) => document.querySelector(selector)?.getBoundingClientRect().top).filter(Number.isFinite),
+                        .map((selector) => document.querySelector(selector))
+                        .filter((element) => {
+                            const rect = element?.getBoundingClientRect();
+                            return Boolean(element && getComputedStyle(element).display !== 'none' && getComputedStyle(element).visibility !== 'hidden' && rect.width && rect.height);
+                        })
+                        .map((element) => ({ selector: element.id ? `#${element.id}` : `.${element.classList[0]}`, top: element.getBoundingClientRect().top, height: element.getBoundingClientRect().height })),
                     theme: rect('#themeToggleButton'),
                     notification: rect('.notification-center-trigger'),
                     themePressed: toggle.getAttribute('aria-pressed'),
@@ -686,7 +722,8 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
             });
 
             expect(state.scrollWidth, `${theme} at ${width}px`).toBeLessThanOrEqual(width + 1);
-            expect(Math.max(...state.controls) - Math.min(...state.controls), `${theme} ${width}px one-row controls`).toBeLessThanOrEqual(4);
+            const controlTops = state.controls.map((control) => control.top);
+            expect(Math.max(...controlTops) - Math.min(...controlTops), `${theme} ${width}px one-row controls ${JSON.stringify(state.controls)}`).toBeLessThanOrEqual(4);
             expect(state.theme.width).toBeGreaterThanOrEqual(44);
             expect(state.theme.height).toBeGreaterThanOrEqual(44);
             expect(state.themePressed).toBe(String(theme === 'dark'));
@@ -758,7 +795,7 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
         expect(appRect.height).toBe(44);
         expect(loginRect.width).toBe(48);
         expect(loginRect.height).toBeCloseTo(48, 2);
-        await expect(page.locator('#mobileNavToggle')).toBeVisible();
+        await expect(page.locator('#mobileNavToggle')).toBeHidden();
         await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
         await page.screenshot({ path: testInfo.outputPath(`topbar-desktop-1366-${theme}.png`), fullPage: false });
     }

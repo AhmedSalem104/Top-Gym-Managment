@@ -328,14 +328,16 @@ test('superseded branch-context positioning layer is removed while desktop and m
         'branch context selectors stay in document flow so they cannot cover adjacent shell actions');
     assert.doesNotMatch(navigation, /body \.topbar-controls > \.branch-context-shell\s*\{[^}]*position:\s*absolute/u,
         'desktop and tablet context must not overlay the action row');
-    assert.match(mobile, /\.topbar-controls\s*\{[^}]*grid-template-columns:\s*var\(--ui-touch-target\) var\(--ui-touch-target\) minmax\(48px,\s*1fr\) var\(--ui-touch-target\) var\(--ui-touch-target\) var\(--ui-touch-target\)/u,
-        'mobile controls allocate one compact row to navigation, applications, context and utilities');
-    assert.match(mobile, /\.topbar-more-menu\s*\{\s*grid-column:\s*4;\s*grid-row:\s*1;/u,
+    assert.match(mobile, /\.topbar-controls\s*\{[^}]*grid-template-columns:\s*var\(--ui-touch-target\) minmax\(48px,\s*1fr\) var\(--ui-touch-target\) var\(--ui-touch-target\) var\(--ui-touch-target\)/u,
+        'compact controls reserve a single navigation slot instead of displaying duplicate navigation icons');
+    assert.match(mobile, /\.topbar-more-menu\s*\{\s*grid-column:\s*3;\s*grid-row:\s*1;/u,
         'the More menu remains in the sole mobile navbar row');
     assert.match(mobile, /#mobileNavToggle\s*\{\s*grid-column:\s*1;\s*grid-row:\s*1;/u,
         'the navigation control remains pinned to the first row');
     assert.match(mobile, /#branchContextShell\s*\{[^}]*position:\s*relative[^}]*display:\s*block[^}]*width:\s*100%/u,
         'the mobile context selector is a single full-width grid item within the middle track');
+    assert.match(mobile, /\.application-launcher\s*\{\s*display:\s*none;/u,
+        'the application launcher is replaced by the drawer control in the compact navbar');
     assert.match(html, /id="branchContextMobileTrigger"/u,
         'the mobile context item exposes one trigger for branch and section selection');
     assert.match(navigation, /\.app-shell > \.topbar \.topbar-inner/u,

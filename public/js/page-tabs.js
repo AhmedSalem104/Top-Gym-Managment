@@ -246,8 +246,9 @@
             rail.classList.toggle('is-hovered', isPinned);
             shell?.classList.toggle('sidebar-expanded', isPinned);
             pinToggle?.setAttribute('aria-pressed', String(isPinned));
-            pinToggle?.setAttribute('aria-label', isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
-            pinToggle?.setAttribute('title', isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            const pinLabel = window.TopGymI18n?.t(isPinned ? 'shell.sidebar.unpin' : 'shell.sidebar.pin') || (isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            pinToggle?.setAttribute('aria-label', pinLabel);
+            pinToggle?.setAttribute('title', pinLabel);
             try {
                 window.localStorage.setItem(pinStorageKey, String(isPinned));
             } catch {
@@ -547,6 +548,13 @@
         window.TopGymI18n?.applyShell();
         const rail = document.getElementById('pageTabs');
         syncSidebarTooltips(rail);
+        const pinToggle = rail?.querySelector('#sidebarPinToggle');
+        const pinLabelKey = pinToggle?.getAttribute('aria-pressed') === 'true' ? 'shell.sidebar.unpin' : 'shell.sidebar.pin';
+        const pinLabel = window.TopGymI18n?.t(pinLabelKey);
+        if (pinLabel) {
+            pinToggle.setAttribute('aria-label', pinLabel);
+            pinToggle.setAttribute('title', pinLabel);
+        }
         const active = rail?.querySelector('[data-page-tab][aria-selected="true"]');
         if (active?.dataset.pageTab) syncMobileNavigationContext(active.dataset.pageTab);
     });

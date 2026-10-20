@@ -28,9 +28,9 @@ test('notification center is loaded only by account shells and uses safe same-or
         'the canonical wrapping choice variant does not scroll horizontally');
     assert.match(read('public/index.html'), /<details class="topbar-more-menu">[\s\S]*?<div class="top-actions topbar-quick-actions">/u,
         'More and notification actions remain distinct controls in the shared topbar');
-    assert.match(read('public/css/components/mobile-topbar.css'), /\.topbar-more-menu\s*\{\s*grid-column:\s*4;\s*grid-row:\s*1;/u,
+    assert.match(read('public/css/components/mobile-topbar.css'), /\.topbar-more-menu\s*\{\s*grid-column:\s*3;\s*grid-row:\s*1;/u,
         'the responsive Navbar keeps More in its designated single-row slot');
-    assert.match(read('public/css/components/mobile-topbar.css'), /\.topbar-quick-actions\s*\{\s*grid-column:\s*5;\s*grid-row:\s*1;/u,
+    assert.match(read('public/css/components/mobile-topbar.css'), /\.topbar-quick-actions\s*\{\s*grid-column:\s*4;\s*grid-row:\s*1;/u,
         'notification actions keep a separate single-row slot');
     assert.doesNotMatch(read('public/index.html'), /id="topPricingButton"/u,
         'pricing quick action is not rendered in the topbar');

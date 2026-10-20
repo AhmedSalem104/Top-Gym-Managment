@@ -1703,8 +1703,7 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
 
   .app-shell > .page-tabs > .page-tab > span,
   .app-shell > .page-tabs > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy,
-  .app-shell > .page-tabs > .sidebar-pin-toggle > span {
+  .app-shell > .page-tabs > .sidebar-brand > .sidebar-brand-copy {
     max-width: 0;
     max-inline-size: 0;
     opacity: 0;
@@ -1733,15 +1732,12 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
   .app-shell > .page-tabs.is-hovered > .page-tab > span,
   .app-shell > .page-tabs.is-hovered > .smart-assistant-launcher-label,
   .app-shell > .page-tabs.is-hovered > .sidebar-brand > .sidebar-brand-copy,
-  .app-shell > .page-tabs.is-hovered > .sidebar-pin-toggle > span,
   .app-shell > .page-tabs.sidebar-pinned > .page-tab > span,
   .app-shell > .page-tabs.sidebar-pinned > .smart-assistant-launcher-label,
   .app-shell > .page-tabs.sidebar-pinned > .sidebar-brand > .sidebar-brand-copy,
-  .app-shell > .page-tabs.sidebar-pinned > .sidebar-pin-toggle > span,
   .app-shell > .page-tabs:focus-within > .page-tab > span,
   .app-shell > .page-tabs:focus-within > .smart-assistant-launcher-label,
-  .app-shell > .page-tabs:focus-within > .sidebar-brand > .sidebar-brand-copy,
-  .app-shell > .page-tabs:focus-within > .sidebar-pin-toggle > span {
+  .app-shell > .page-tabs:focus-within > .sidebar-brand > .sidebar-brand-copy {
     max-width: 220px;
     max-inline-size: 220px;
     opacity: 1;
