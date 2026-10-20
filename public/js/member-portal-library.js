@@ -109,6 +109,9 @@
     const title = tr(isFoods ? 'nutritionGuide' : 'exerciseGuide');
     const description = tr(isFoods ? 'foodHint' : 'exerciseHint');
     mount.innerHTML = `<div class="portal-library-head" data-library-type="${state.activeType}"><div><span class="portal-library-kicker">${escapeHtml(englishBrandName())} ${escapeHtml(tr('memberHub'))}</span><h3 id="portalLibraryTitle">${escapeHtml(title)}</h3><p>${escapeHtml(description)}</p></div><button type="button" class="btn btn-light" data-library-close>${escapeHtml(tr('close'))}</button></div><div id="portalLibraryContent"></div><div class="portal-library-modal" id="portalLibraryModal" role="dialog" aria-modal="true" aria-labelledby="portalLibraryModalTitle" hidden><div class="portal-library-modal-card"><header><div><span class="portal-library-kicker">${escapeHtml(brandName())} ${escapeHtml(tr('guideLabel'))}</span><h3 id="portalLibraryModalTitle">${escapeHtml(tr('details'))}</h3></div><button type="button" class="portal-library-modal-close" data-library-modal-close aria-label="${escapeHtml(tr('closeDialog'))}">×</button></header><div id="portalLibraryModalContent"></div></div></div>`;
+    const detailsDialog = mount.querySelector('.portal-library-modal-card');
+    detailsDialog?.classList.add('lf-modal--v3', 'lf-modal-v3--details');
+    if (detailsDialog) detailsDialog.dataset.modalContract = 'logic-fit-v3';
   }
 
   function renderFilters() {

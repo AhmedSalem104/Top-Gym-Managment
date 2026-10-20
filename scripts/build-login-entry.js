@@ -27,7 +27,8 @@ const cssLayers = [
     'responsive.css',
     'theme.css',
     'components/navigation-shell.css',
-    'components/theme-toggle.css'
+    'components/theme-toggle.css',
+    'components/modal-foundation.css'
 ];
 
 const cssImportPattern = /@import\s+(?:url\()?['"]([^'"]+)['"]\)?\s*;/g;

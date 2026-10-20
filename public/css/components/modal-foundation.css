@@ -1209,6 +1209,273 @@ body .swal2-popup.lf-modal--workspace {
   }
 }
 
+/* Modal V3 is an explicit, inventory-bound visual variant. It shares this
+   canonical foundation and does not target SweetAlert or other overlay types. */
+dialog.lf-modal-shell.lf-modal--v3 {
+  --lf-modal-radius: var(--dialog-form-radius);
+  border-color: var(--border-primary);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popup);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 > form.dialog-body {
+  padding-block-start: 0;
+  padding-block-end: 0;
+}
+
+dialog.lf-modal-shell.lf-modal--v3 > .dialog-body,
+dialog.lf-modal-shell.lf-modal--v3 > .modal-body {
+  padding-block-start: 0;
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .modal-header,
+  .lf-modal-v3-header
+) {
+  margin-block-start: 0;
+}
+
+dialog.lf-modal-shell.lf-modal--v3::backdrop {
+  backdrop-filter: none;
+}
+
+dialog.lf-modal-shell.lf-modal--v3 > .dialog-close-button {
+  border-color: var(--dialog-v3-header-border);
+  background: transparent;
+  color: var(--text-on-primary);
+  box-shadow: none;
+}
+
+dialog.lf-modal-shell.lf-modal--v3 > .dialog-close-button:hover,
+dialog.lf-modal-shell.lf-modal--v3 > .dialog-close-button:focus-visible {
+  border-color: var(--dialog-v3-header-border);
+  background: rgb(255 255 255 / 0.12);
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .modal-header,
+  .lf-modal-v3-header
+),
+dialog.lf-modal-shell.lf-modal--v3 > form > header,
+dialog.lf-modal-shell.lf-modal--v3 > header {
+  border-block-end-color: var(--dialog-v3-header-border);
+  background: linear-gradient(115deg, var(--dialog-v3-header-start), var(--dialog-v3-header-end));
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .modal-header,
+  .lf-modal-v3-header
+),
+dialog.lf-modal-shell.lf-modal--v3 > form > header,
+dialog.lf-modal-shell.lf-modal--v3 > header {
+  margin-block-end: var(--space-3);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .modal-header,
+  .lf-modal-v3-header
+) :is(h1, h2, h3, h4, p, .eyebrow, .modal-heading-content) {
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 > form > header :is(h1, h2, h3, h4, p, .eyebrow),
+dialog.lf-modal-shell.lf-modal--v3 > header :is(h1, h2, h3, h4, p, .eyebrow) {
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header p,
+  .details-dialog-head p,
+  .member-dialog-header p,
+  .trainer-dialog-header p,
+  .modal-header p,
+  .lf-modal-v3-header p,
+  .eyebrow
+) {
+  color: var(--dialog-v3-header-muted);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(
+  .dialog-header,
+  .details-dialog-head,
+  .member-dialog-header,
+  .trainer-dialog-header,
+  .modal-header,
+  .lf-modal-v3-header
+) > :is(.dialog-close, .auth-choice-close),
+dialog.lf-modal-shell.lf-modal--v3 > form > header > :is(.dialog-close, .auth-choice-close),
+dialog.lf-modal-shell.lf-modal--v3 > header > :is(.dialog-close, .auth-choice-close),
+dialog.lf-modal-shell.lf-modal--v3 .lf-modal-v3-header > form > .auth-choice-close {
+  position: static;
+  inset: auto;
+  display: inline-flex;
+  width: var(--ui-touch-target);
+  min-width: var(--ui-touch-target);
+  height: var(--ui-touch-target);
+  min-height: var(--ui-touch-target);
+  flex: 0 0 var(--ui-touch-target);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--dialog-v3-header-border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-on-primary);
+  box-shadow: none;
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(.dialog-actions, .form-actions, .trainer-dialog-actions),
+dialog.lf-modal-shell.lf-modal--v3 > form > footer,
+dialog.lf-modal-shell.lf-modal--v3 > footer {
+  border-block-start-color: var(--dialog-form-border);
+  background: var(--dialog-v3-footer-surface);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(.dialog-actions, .form-actions, .trainer-dialog-actions) > .lf-modal-v3__cancel,
+dialog.lf-modal-shell.lf-modal--v3 > form > footer > .lf-modal-v3__cancel,
+dialog.lf-modal-shell.lf-modal--v3 > footer > .lf-modal-v3__cancel {
+  border: 1px solid var(--danger-border);
+  background: var(--color-surface);
+  color: var(--danger-text);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(.dialog-actions, .form-actions, .trainer-dialog-actions) > .lf-modal-v3__cancel:hover,
+dialog.lf-modal-shell.lf-modal--v3 > form > footer > .lf-modal-v3__cancel:hover,
+dialog.lf-modal-shell.lf-modal--v3 > footer > .lf-modal-v3__cancel:hover {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 .lf-modal-v3__primary {
+  min-height: 44px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 .lf-modal-v3__primary:hover:not(:disabled) {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(.dialog-header, .details-dialog-head, .member-dialog-header, .trainer-dialog-header, .modal-header, .lf-modal-v3-header) > form {
+  display: flex;
+  flex: 0 0 auto;
+}
+
+dialog.auth-choice-dialog.lf-modal--v3 > .lf-modal-v3-header {
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+}
+
+dialog.auth-choice-dialog.lf-modal--v3 > p {
+  margin: 0;
+  padding: var(--space-4) var(--space-5) 0;
+  color: var(--text-secondary);
+}
+
+dialog.auth-choice-dialog.lf-modal--v3 > .auth-choice-options {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+dialog.auth-choice-dialog.lf-modal--v3 > .dialog-actions {
+  margin: 0;
+  padding: var(--space-3) var(--space-5);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), select, textarea) {
+  border-color: var(--border-primary);
+  background-color: var(--bg-input);
+}
+
+dialog.lf-modal-shell.lf-modal--v3 :is(input, select, textarea):focus-visible {
+  border-color: var(--primary);
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+.portal-library-modal-card.lf-modal--v3 {
+  align-self: center;
+  justify-self: center;
+  height: fit-content;
+  --lf-modal-radius: var(--dialog-form-radius);
+  border-radius: var(--lf-modal-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-popup);
+}
+
+.portal-library-modal-card.lf-modal--v3 > header {
+  border-block-end-color: var(--dialog-v3-header-border);
+  background: linear-gradient(115deg, var(--dialog-v3-header-start), var(--dialog-v3-header-end));
+  color: var(--text-on-primary);
+}
+
+.portal-library-modal-card.lf-modal--v3 > header :is(h1, h2, h3, h4, p, .portal-library-kicker) {
+  color: var(--text-on-primary);
+}
+
+.portal-library-modal-card.lf-modal--v3 > header .portal-library-kicker {
+  opacity: 0.78;
+}
+
+.portal-library-modal-card.lf-modal--v3 .portal-library-modal-close {
+  border-color: var(--dialog-v3-header-border);
+  background: transparent;
+  color: var(--text-on-primary);
+}
+
+.portal-library-modal-card.lf-modal--v3 .portal-library-modal-close:hover,
+.portal-library-modal-card.lf-modal--v3 .portal-library-modal-close:focus-visible {
+  border-color: var(--dialog-v3-header-border);
+  background: rgb(255 255 255 / 0.12);
+  color: var(--text-on-primary);
+}
+
+dialog.lf-modal-shell.lf-modal--v3.lf-modal-v3--form .modal-form-grid,
+dialog.lf-modal-shell.lf-modal--v3.lf-modal-v3--edit .modal-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 639px) {
+  dialog.lf-modal-shell.lf-modal--v3 :is(.dialog-actions, .form-actions, .trainer-dialog-actions),
+  dialog.lf-modal-shell.lf-modal--v3 > form > footer,
+  dialog.lf-modal-shell.lf-modal--v3 > footer {
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  dialog.auth-choice-dialog.lf-modal--v3 > .lf-modal-v3-header,
+  dialog.auth-choice-dialog.lf-modal--v3 > p,
+  dialog.auth-choice-dialog.lf-modal--v3 > .auth-choice-options {
+    padding-inline: var(--space-4);
+  }
+
+  dialog.lf-modal-shell.lf-modal--v3.lf-modal-v3--form .modal-form-grid,
+  dialog.lf-modal-shell.lf-modal--v3.lf-modal-v3--edit .modal-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :where(.lf-modal-shell, .lf-modal-shell *, .swal2-popup) {
     scroll-behavior: auto !important;

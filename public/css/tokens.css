@@ -90,6 +90,11 @@
   --dialog-form-chrome: var(--azure-50);
   --dialog-form-border: var(--azure-100);
   --dialog-form-radius: 16px;
+  --dialog-v3-header-start: var(--azure-800);
+  --dialog-v3-header-end: var(--azure-600);
+  --dialog-v3-footer-surface: var(--azure-50);
+  --dialog-v3-header-muted: rgb(255 255 255 / 0.78);
+  --dialog-v3-header-border: rgb(255 255 255 / 0.22);
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.24);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.3);
 
@@ -423,6 +428,7 @@ body[data-theme="dark"] {
   --shadow-primary-strong: 0 8px 20px rgb(0 112 243 / 0.22);
   --dialog-form-chrome: var(--primary-soft);
   --dialog-form-border: var(--primary-border);
+  --dialog-v3-footer-surface: color-mix(in srgb, var(--primary) 14%, var(--bg-surface));
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.4);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.5);
 

@@ -43,9 +43,60 @@
         'platformRegistrationCredentialsDialog',
     ]);
 
+    // Modal V3 is deliberately opt-in by inventory ID. Other native dialogs
+    // (including feature prompts and any future dialog) keep their current
+    // visual contract until they are separately approved and migrated.
+    const v3VariantById = Object.freeze({
+        authRegistrationDialog: 'selection',
+        authRecoveryDialog: 'confirmation',
+        dashboardScopeDialog: 'selection',
+        memberPaymentMethodDialog: 'form',
+        dayPassDialog: 'form',
+        expenseDialog: 'form',
+        memberDialog: 'form',
+        actionDialog: 'specialized',
+        membershipPlanDialog: 'form',
+        membershipTypeDialog: 'form',
+        detailsDialog: 'details',
+        qrReaderDialog: 'specialized',
+        memberQrDialog: 'specialized',
+        branchCreateDialog: 'form',
+        backupRestoreDialog: 'destructive',
+        authUserDialog: 'form',
+        libraryFormDialog: 'form',
+        libraryDetailsDialog: 'details',
+        externalTraineeDialog: 'form',
+        coachingBuilderDialog: 'wizard',
+        coachingProfileDialog: 'details',
+        measurementDialog: 'form',
+        checkinDialog: 'form',
+        coachingSubscriptionDialog: 'form',
+        coachingClientEditDialog: 'edit',
+        coachingSessionDialog: 'specialized',
+        coachingMealLogDialog: 'form',
+        trainerClientDialog: 'form',
+        trainerClientDetailsDialog: 'details',
+        trainerTimelineDialog: 'details',
+        trainerMeasurementDialog: 'form',
+        trainerCheckinDialog: 'form',
+        trainerPackageDialog: 'form',
+        trainerSessionDialog: 'specialized',
+        trainerPurchaseDialog: 'specialized',
+        trainerPaymentDialog: 'specialized',
+        platformActionDialog: 'specialized',
+        platformRegistrationCredentialsDialog: 'specialized',
+        saasRequestDialog: 'form'
+    });
+
     function hydrateDialog(dialog) {
         if (!dialog) return;
         dialog.classList.add('lf-modal-shell');
+        const v3Variant = v3VariantById[dialog.id];
+        if (v3Variant) {
+            dialog.classList.add('lf-modal--v3', `lf-modal-v3--${v3Variant}`);
+            dialog.dataset.modalContract = 'logic-fit-v3';
+            applyV3ActionSemantics(dialog);
+        }
         const size = sizeById[dialog.id] || (dialog.classList.contains('trainer-client-dialog') ? 'md' : 'md');
         dialog.classList.add(`lf-modal--${size}`);
         const usesNestedLayout = structuredLayoutById.has(dialog.id);
@@ -55,7 +106,7 @@
                 dialog.querySelector(':scope > form, :scope > .dialog-body')?.classList.add('lf-modal-layout');
             }
         }
-        dialog.dataset.modalContract = 'logic-fit-v1';
+        if (!v3Variant) dialog.dataset.modalContract = 'logic-fit-v1';
         dialog.setAttribute('role', 'dialog');
         dialog.setAttribute('aria-modal', 'true');
         const title = dialog.querySelector('h1[id], h2[id], h3[id], h4[id], [role="heading"][id]');
@@ -75,7 +126,25 @@
     }
 
     function isFeatureOwnedCloseButton(button) {
-        return button.matches('.dialog-close, .trainer-dialog-close, [data-dialog-cancel]');
+        return button.matches('.dialog-close, .trainer-dialog-close, .auth-choice-close, [data-dialog-cancel]');
+    }
+
+    function applyV3ActionSemantics(dialog) {
+        const actionContainers = dialog.querySelectorAll('.dialog-actions, .form-actions, .trainer-dialog-actions, :scope > form > footer, :scope > footer');
+        actionContainers.forEach((container) => {
+            container.querySelectorAll('button').forEach((button) => {
+                const identity = `${button.id} ${[...button.attributes].map((attribute) => attribute.name).join(' ')}`;
+                if (/(?:cancel|close|dismiss)/i.test(identity)) {
+                    button.classList.add('lf-modal-v3__cancel');
+                    return;
+                }
+
+                const preservesDestructiveStyle = button.matches('.btn-danger, .btn-destructive, .danger, .destructive, [data-variant="destructive"]');
+                if (!preservesDestructiveStyle && (button.type === 'submit' || button.matches('.btn-primary, .platform-btn.primary'))) {
+                    button.classList.add('lf-modal-v3__primary');
+                }
+            });
+        });
     }
 
     function hideLegacyCloseButtons(dialog) {
