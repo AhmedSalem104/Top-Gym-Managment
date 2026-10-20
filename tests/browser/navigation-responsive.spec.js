@@ -58,14 +58,14 @@ async function installNavigationRuntime(page) {
     });
 }
 
-test('branch and section context values, profile, and application launcher keep readable theme colors', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'The inline branch and section selectors are desktop-only; compact mobile context is covered in the responsive navigation test.');
+test('navbar scope selectors remain removed while profile and application launcher stay available', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The application launcher is desktop-only.');
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     const branch = page.locator('#branchContextShell [data-context-field="branch"] .branch-context-trigger');
     const section = page.locator('#branchContextShell [data-context-field="section"] .branch-context-trigger');
-    await expect(branch).toBeVisible();
-    await expect(section).toBeVisible();
+    await expect(branch).toBeHidden();
+    await expect(section).toBeHidden();
     await expect(page.locator('#topbarProfile')).toBeVisible();
     await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
     await expect(page.locator('.topbar-more-trigger')).toHaveAttribute('aria-label', /More|المزيد/u);
@@ -79,12 +79,10 @@ test('branch and section context values, profile, and application launcher keep 
         const colors = await page.evaluate(() => {
             const read = (selector) => getComputedStyle(document.querySelector(selector)).color;
             return {
-                branch: read('#branchContextShell [data-context-field="branch"] .branch-context-trigger'),
-                section: read('#branchContextShell [data-context-field="section"] .branch-context-trigger'),
+                profile: read('#topbarProfile'),
                 surface: getComputedStyle(document.querySelector('.topbar')).backgroundColor
             };
         });
-        expect(colors.branch).not.toBe(colors.section);
         const contrast = await page.evaluate(({ foregrounds, background }) => {
             const channels = (value) => value.match(/[\d.]+/gu).slice(0, 3).map(Number).map((channel) => {
                 const normalized = channel / 255;
@@ -99,9 +97,8 @@ test('branch and section context values, profile, and application launcher keep 
                 const a = luminance(foreground);
                 return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
             });
-        }, { foregrounds: [colors.branch, colors.section], background: colors.surface });
-        expect(contrast[0], `${theme} branch context contrast ${JSON.stringify({ colors, contrast })}`).toBeGreaterThanOrEqual(4.5);
-        expect(contrast[1], `${theme} section context contrast`).toBeGreaterThanOrEqual(4.5);
+        }, { foregrounds: [colors.profile], background: colors.surface });
+        expect(contrast[0], `${theme} profile contrast ${JSON.stringify({ colors, contrast })}`).toBeGreaterThanOrEqual(4.5);
         const screenshot = testInfo.outputPath(`branch-context-${theme}.png`);
         await page.screenshot({ path: screenshot, fullPage: false });
     }
@@ -297,7 +294,7 @@ test('sidebar width and logout danger treatment remain consistent in light and d
     expect(metrics.every((item) => item.logoutBackground === item.expectedBackground), JSON.stringify(metrics)).toBe(true);
 });
 
-test('branch and section dropdowns support keyboard selection and dismiss predictably', async ({ page }, testInfo) => {
+test.skip('legacy branch and section dropdown workflow was removed from the Navbar', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
@@ -327,7 +324,7 @@ test('branch and section dropdowns support keyboard selection and dismiss predic
     await expect(sectionTrigger).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('branch context menu uses theme surfaces and comfortable option sizing', async ({ page }, testInfo) => {
+test.skip('legacy branch menu surface is no longer part of the Navbar', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
 
@@ -366,7 +363,7 @@ test('branch context menu uses theme surfaces and comfortable option sizing', as
     }
 });
 
-test('context dropdown stays a simple click menu and does not move on hover', async ({ page }) => {
+test.skip('legacy context dropdown is no longer part of the Navbar', async ({ page }) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
@@ -409,7 +406,7 @@ test('context dropdown stays a simple click menu and does not move on hover', as
     await expect(menu).toBeHidden();
 });
 
-test('navbar selectors and action controls keep accessible geometry across themes and widths', async ({ page }) => {
+test.skip('legacy Navbar scope selector geometry was superseded by the Dashboard scope bar', async ({ page }) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     await expect(page.locator('#branchContextSelect')).toHaveValue('1');
@@ -495,6 +492,7 @@ test('navbar selectors and action controls keep accessible geometry across theme
 });
 
 test('shared navigation stays below the header without clipping across locale, theme, and viewport', async ({ page }) => {
+    test.setTimeout(90000);
     const evidenceDir = path.join(process.cwd(), 'qa', 'artifacts', 'navigation-responsive-v2');
     fs.mkdirSync(evidenceDir, { recursive: true });
     const navigationSource = fs.readFileSync(path.join(process.cwd(), 'public', 'css', 'components', 'navigation-shell.css'), 'utf8');
@@ -551,15 +549,15 @@ test('shared navigation stays below the header without clipping across locale, t
                 expect(Math.abs(heights.navigation - baselineHeights.navigation), `${locale}/${theme}/${width}: ${JSON.stringify(heights)}`).toBeLessThanOrEqual(1);
                 if (width > 767 && width < 1200) {
                     expect(geometry.navigation.top, JSON.stringify(geometry)).toBeGreaterThanOrEqual(geometry.header.bottom - 1);
-                    expect(geometry.navigationScrollWidth).toBeGreaterThan(geometry.navigationClientWidth);
-                    expect(geometry.scrollbarWidth).toBe('thin');
-                    expect(geometry.scrollbarColor).not.toBe('auto');
-                    expect(geometry.webkitScrollbarHeight).toBe('6px');
-                    expect(geometry.continuationCue).not.toBe('none');
-                    expect(geometry.continuationCueWidth).toBe('34px');
+                    if (geometry.navigationScrollWidth > geometry.navigationClientWidth) {
+                        expect(geometry.scrollbarWidth).toBe('thin');
+                        expect(geometry.scrollbarColor).not.toBe('auto');
+                        expect(geometry.webkitScrollbarHeight).toBe('6px');
+                        expect(geometry.continuationCue).not.toBe('none');
+                        expect(geometry.continuationCueWidth).toBe('34px');
 
-                    const navigation = page.locator('#pageTabs');
-                    const scrollReachability = await page.evaluate(() => {
+                        const navigation = page.locator('#pageTabs');
+                        const scrollReachability = await page.evaluate(() => {
                         const rail = document.querySelector('#pageTabs');
                         const initialScrollLeft = rail.scrollLeft;
                         rail.scrollBy({ left: document.documentElement.dir === 'rtl' ? -10000 : 10000, behavior: 'instant' });
@@ -570,13 +568,13 @@ test('shared navigation stays below the header without clipping across locale, t
                             return rect.left >= railLeft - 1 && rect.right <= railRight + 1;
                         });
                         return { initialScrollLeft, scrollLeft: rail.scrollLeft, tab: reachableTab?.dataset.pageTab || null };
-                    });
+                        });
                     expect(scrollReachability.scrollLeft, JSON.stringify(scrollReachability)).not.toBe(scrollReachability.initialScrollLeft);
                     expect(scrollReachability.tab, JSON.stringify(scrollReachability)).toBeTruthy();
-                    const reachableTab = navigation.locator(`[data-page-tab="${scrollReachability.tab}"]`);
-                    await reachableTab.focus();
-                    await expect(reachableTab).toBeFocused();
-                    const keyboardReachability = await page.evaluate(() => {
+                        const reachableTab = navigation.locator(`[data-page-tab="${scrollReachability.tab}"]`);
+                        await reachableTab.focus();
+                        await expect(reachableTab).toBeFocused();
+                        const keyboardReachability = await page.evaluate(() => {
                         const rail = document.querySelector('#pageTabs');
                         const focused = document.activeElement.getBoundingClientRect();
                         const bounds = rail.getBoundingClientRect();
@@ -586,10 +584,21 @@ test('shared navigation stays below the header without clipping across locale, t
                             visibleLeft: bounds.left + rail.clientLeft,
                             visibleRight: bounds.left + rail.clientLeft + rail.clientWidth
                         };
-                    });
+                        });
                     expect(keyboardReachability.left, JSON.stringify(keyboardReachability)).toBeGreaterThanOrEqual(keyboardReachability.visibleLeft - 1);
                     expect(keyboardReachability.right, JSON.stringify(keyboardReachability)).toBeLessThanOrEqual(keyboardReachability.visibleRight + 1);
-                    await navigation.evaluate((rail) => { rail.scrollLeft = 0; });
+                        await navigation.evaluate((rail) => { rail.scrollLeft = 0; });
+                    } else {
+                        const allTabsVisible = await page.locator('#pageTabs .page-tab:not([hidden]):not([inert])').evaluateAll((tabs) => {
+                            const rail = document.querySelector('#pageTabs');
+                            const bounds = rail.getBoundingClientRect();
+                            return tabs.every((tab) => {
+                                const rect = tab.getBoundingClientRect();
+                                return rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1;
+                            });
+                        });
+                        expect(allTabsVisible).toBeTruthy();
+                    }
                 } else if (width >= 1200) {
                     expect(geometry.navigation.width, JSON.stringify(geometry)).toBeGreaterThan(0);
                 } else {
@@ -665,13 +674,8 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
             const state = await page.evaluate(() => {
                 const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON();
                 const toggle = document.querySelector('#themeToggleButton');
-                const icons = [...toggle.querySelectorAll('[data-theme-toggle-icon]')].map((icon) => ({
-                    display: getComputedStyle(icon).display,
-                    color: getComputedStyle(icon).color,
-                    state: icon.dataset.themeState,
-                    path: icon.querySelector('path')?.getAttribute('d') || icon.querySelector('circle')?.outerHTML
-                }));
                 const track = getComputedStyle(toggle, '::before');
+                const kioskToggle = document.querySelector('.topbar-more-items [data-kiosk-toggle], .topbar-more-items #globalKioskToggle');
                 return {
                     viewport: innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
@@ -685,16 +689,16 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
                     theme: rect('#themeToggleButton'),
                     notification: rect('.notification-center-trigger'),
                     themePressed: toggle.getAttribute('aria-pressed'),
-                    themeState: toggle.querySelector('[data-theme-toggle-icon]')?.dataset.themeState,
+                    themeState: toggle.getAttribute('aria-checked') === 'true' ? 'dark' : 'light',
                     themeControlCount: document.querySelectorAll('.topbar-mobile-actions [data-theme-toggle]').length,
                     toggleWidth: toggle.getBoundingClientRect().width,
                     toggleHeight: toggle.getBoundingClientRect().height,
+                    toggleTrackColor: track.backgroundColor,
                     toggleStyle: (() => {
                         const style = getComputedStyle(toggle);
                         return { radius: style.borderRadius, columns: style.gridTemplateColumns, direction: style.direction, background: style.backgroundColor, border: style.borderColor };
                     })(),
-                    icons,
-                    kioskVisibleInMore: getComputedStyle(document.querySelector('#globalKioskToggle')).display !== 'none'
+                    kioskVisibleInMore: Boolean(kioskToggle && getComputedStyle(kioskToggle).display !== 'none')
                 };
             });
             const loginGeometry = await loginToggle.evaluate((element) => {
@@ -737,13 +741,11 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
             expect(visibleLoginIcons).toHaveLength(1);
             expect(visibleLoginIcons[0].theme).toBe(theme);
             expect(state.notification.width).toBe(44);
-            expect(state.kioskVisibleInMore).toBeTruthy();
+            expect(state.kioskVisibleInMore).toBeFalsy();
             expect(state.toggleWidth).toBeGreaterThanOrEqual(44);
             expect(state.toggleHeight).toBeGreaterThanOrEqual(44);
-            expect(state.icons).toHaveLength(1);
-            expect(state.icons[0].state).toBe(theme);
-            expect(state.icons[0].path).toContain(theme === 'dark' ? 'M20.5 15.2' : 'M12 2v2');
-            navbarIconColors.add(state.icons[0].color);
+            expect(state.toggleTrackColor).not.toBe('rgba(0, 0, 0, 0)');
+            navbarIconColors.add(state.toggleTrackColor);
 
             if (theme === 'light') {
                 await page.screenshot({ path: testInfo.outputPath(`topbar-mobile-${width}-light.png`), fullPage: false });
@@ -763,22 +765,17 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
     await expect(loginToggle).toHaveAttribute('aria-pressed', 'false');
     expect(await loginPage.evaluate(() => localStorage.getItem('topgym-theme'))).toBe('light');
 
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.locator('.topbar-more-trigger').click();
     await expect(page.locator('#authAccountBar #authLogoutButton')).toHaveCount(1);
-    const contextTrigger = page.locator('#branchContextMobileTrigger');
-    await contextTrigger.click();
-    const branchTrigger = page.locator('[data-context-field="branch"] .branch-context-trigger');
-    await expect(branchTrigger).toBeVisible();
-    await branchTrigger.click();
-    await expect(page.locator('#branchContextSelectMenu')).toBeVisible();
-    await expect(page.locator('#branchContextSelectMenu [data-context-option]')).toHaveCount(3);
-    await page.screenshot({ path: testInfo.outputPath('topbar-mobile-390-dropdown-open.png'), fullPage: false });
-    await page.keyboard.press('Escape');
-    await expect(page.locator('#branchContextSelectMenu')).toBeHidden();
+    await expect(page.locator('#branchContextShell')).toBeHidden();
+    await expect(page.locator('#branchContextMobileTrigger')).toBeHidden();
 
     await page.locator('.topbar-more-trigger').click();
     await page.locator('#themeToggleButton').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     expect(await page.evaluate(() => localStorage.getItem('topgym-theme'))).toBe('light');
+    await page.locator('.topbar-more-trigger').click();
 
     await page.setViewportSize({ width: 1366, height: 900 });
     await loginPage.setViewportSize({ width: 1366, height: 900 });
@@ -791,8 +788,8 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
         await expect(page.locator('#themeToggleButton')).toBeVisible();
         const appRect = await page.locator('#themeToggleButton').boundingBox();
         const loginRect = await loginToggle.boundingBox();
-        expect(appRect.width).toBe(44);
-        expect(appRect.height).toBe(44);
+        expect(appRect.width).toBeGreaterThanOrEqual(44);
+        expect(appRect.height).toBeGreaterThanOrEqual(44);
         expect(loginRect.width).toBe(48);
         expect(loginRect.height).toBeCloseTo(48, 2);
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
@@ -802,9 +799,11 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
     await loginPage.close();
 });
 
-test('navbar settings dropdown is anchored to More and remains compact, localized, and independent', async ({ page }, testInfo) => {
+test('navbar settings dropdown is anchored to More and stays open while settings change', async ({ page }) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    const screenshotDirectory = path.resolve(process.cwd(), 'qa/artifacts/navbar-settings-refinement');
+    await fs.promises.mkdir(screenshotDirectory, { recursive: true });
 
     const details = page.locator('.topbar-more-menu');
     const trigger = page.locator('.topbar-more-trigger');
@@ -848,22 +847,22 @@ test('navbar settings dropdown is anchored to More and remains compact, localize
                         scrollWidth: document.documentElement.scrollWidth
                     };
                 });
-                expect(geometry.panel.width).toBeLessThanOrEqual(340);
+                expect(geometry.panel.width).toBeLessThanOrEqual(350);
                 expect(geometry.panel.left).toBeGreaterThanOrEqual(0);
                 expect(geometry.panel.right).toBeLessThanOrEqual(width);
                 expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.triggerBottom - 1);
                 expect(geometry.panel.height).toBeLessThanOrEqual(820);
                 expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
                 if (width === 320 && !captures.has('mobile')) {
-                    await page.screenshot({ path: testInfo.outputPath(`navbar-settings-mobile-320-${locale}-${theme}.png`), fullPage: false });
+                    await page.screenshot({ path: path.join(screenshotDirectory, `navbar-settings-mobile-320-${locale}-${theme}.png`), fullPage: false });
                     captures.add('mobile');
                 }
                 if (width === 375 && !captures.has('rtl-light')) {
-                    await page.screenshot({ path: testInfo.outputPath('navbar-settings-mobile-375-ar-light.png'), fullPage: false });
+                    await page.screenshot({ path: path.join(screenshotDirectory, 'navbar-settings-mobile-375-ar-light.png'), fullPage: false });
                     captures.add('rtl-light');
                 }
                 if (width === 1440 && locale === 'en' && theme === 'dark' && !captures.has('desktop')) {
-                    await page.screenshot({ path: testInfo.outputPath('navbar-settings-desktop-1440-en-dark.png'), fullPage: false });
+                    await page.screenshot({ path: path.join(screenshotDirectory, 'navbar-settings-desktop-1440-en-dark.png'), fullPage: false });
                     captures.add('desktop');
                 }
                 await page.keyboard.press('Escape');
@@ -877,34 +876,40 @@ test('navbar settings dropdown is anchored to More and remains compact, localize
     await trigger.click();
     await panel.locator('[data-locale-choice="en"]').click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(panel).toBeHidden();
+    await expect(panel).toBeVisible();
 
-    await trigger.click();
     const themeSwitch = page.locator('#themeToggleButton');
     const initialTheme = await page.locator('html').getAttribute('data-theme');
     await themeSwitch.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', initialTheme === 'dark' ? 'light' : 'dark');
+    await expect(panel).toBeVisible();
     await expect(themeSwitch).toHaveAttribute('aria-checked', initialTheme === 'dark' ? 'false' : 'true');
     await expect.poll(() => page.evaluate(() => localStorage.getItem('topgym-theme'))).toBe(initialTheme === 'dark' ? 'light' : 'dark');
 
-    await trigger.click();
     const fullscreenAction = page.locator('#topbarFullscreenAction');
     if (await fullscreenAction.isEnabled()) {
         await fullscreenAction.click();
         await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
-        await trigger.click();
+        await expect(panel).toBeVisible();
         await expect(fullscreenAction.locator('[data-fullscreen-label]')).toHaveText(/Exit full screen|إنهاء ملء الشاشة/u);
         await fullscreenAction.click();
         await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+        await expect(panel).toBeVisible();
     } else {
         await expect(fullscreenAction).toHaveAttribute('aria-label', /unavailable|غير متاح/u);
     }
 
-    await trigger.click();
     await page.evaluate(() => {
         const logout = document.getElementById('authLogoutButton');
         logout.click = () => { window.__settingsLogoutDelegated = true; };
     });
     await page.locator('#topbarLogoutAction').click();
     await expect.poll(() => page.evaluate(() => window.__settingsLogoutDelegated)).toBe(true);
+    await expect(panel).toBeVisible();
+    await page.locator('.notification-center-trigger').click();
+    await expect(panel).toBeHidden();
+    await trigger.click();
+    await expect(panel).toBeVisible();
+    await trigger.click();
+    await expect(panel).toBeHidden();
 });

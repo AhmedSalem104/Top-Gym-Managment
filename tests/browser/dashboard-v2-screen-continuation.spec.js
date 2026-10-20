@@ -396,6 +396,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                         statBoxes,
                         actionCount: actionButtons.length,
                         actionBoxes: actionButtons.map(rect),
+                        actionGridColumns: getComputedStyle(dashboard.querySelector('.dashboard-overview-shortcut-actions')).gridTemplateColumns.split(' ').length,
+                        actionWhitespace: actionButtons.map((button) => getComputedStyle(button).whiteSpace),
                         memberCount: dashboard.querySelector('[data-dashboard-member-count]')?.textContent.trim(),
                         memberCountSource: dashboard.querySelector('[data-dashboard-member-count]')?.getAttribute('aria-live')
                     };
@@ -450,6 +452,14 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 ).toBeTruthy();
                 expect(layout.actionCount).toBeGreaterThanOrEqual(2);
                 expect(layout.actionBoxes.every((box) => box.width > 0 && box.height >= 38 && box.left >= -1 && box.right <= width + 1)).toBeTruthy();
+                expect(layout.actionWhitespace.every((value) => value === 'nowrap')).toBeTruthy();
+                if (width < 768 && layout.actionCount === 2) {
+                    expect(layout.actionGridColumns).toBe(1);
+                    expect(layout.actionBoxes[0].bottom).toBeLessThanOrEqual(layout.actionBoxes[1].top + 1);
+                    expect(Math.abs(layout.actionBoxes[0].width - layout.actionBoxes[1].width)).toBeLessThanOrEqual(1);
+                } else if (width >= 768 && width <= 1023) {
+                    expect(layout.actionGridColumns).toBe(2);
+                }
 
                 const visibleControls = await page.locator('#dashboardSection button:visible, #dashboardSection a:visible, #dashboardSection input:visible, #dashboardSection select:visible').evaluateAll((elements) => elements.map((element) => {
                     const box = element.getBoundingClientRect();

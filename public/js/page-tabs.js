@@ -564,9 +564,6 @@
             menu.open = false;
             if (restoreFocus) trigger.focus({ preventScroll: true });
         };
-        menu.addEventListener('click', (event) => {
-            if (event.target.closest('.topbar-more-items button')) close(true);
-        });
         menu.addEventListener('toggle', () => {
             if (menu.open) window.requestAnimationFrame(positionMenu);
             else clearMenuPosition();

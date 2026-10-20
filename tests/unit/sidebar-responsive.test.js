@@ -37,6 +37,8 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(styles, /@media \(min-width: 1024px\)[\s\S]*?\.app-shell > \.page-tabs\s*\{[\s\S]*?grid-row: 2/u);
     assert.match(topbarStyles, /#mobileNavToggle\s*\{\s*display: inline-flex;/u,
         'the side-navigation control remains available in the compact navigation layout');
+    assert.match(topbarStyles, /@media \(min-width: 1024px\)[\s\S]*?#mobileNavToggle\s*\{\s*display: none;/u,
+        'the mobile-only side-navigation control is hidden at the desktop breakpoint');
     assert.match(topbarStyles, /@media \(max-width: 1023px\)[\s\S]*?\.application-launcher\s*\{\s*display: none;/u,
         'the compact navigation shows the drawer control instead of a duplicate app-grid control');
 });

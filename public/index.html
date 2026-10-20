@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=e23debf6655b0ecf">
+    <link rel="stylesheet" href="/css/app-shell.css?v=0055a2352729e2ef">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -362,7 +362,7 @@
                     <div class="dashboard-scope-value"><dt><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg><span data-i18n="dashboard.scope.branch">الفرع الحالي</span></dt><dd id="dashboardScopeBranch" dir="auto">—</dd></div>
                     <div class="dashboard-scope-value"><dt><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg><span data-i18n="dashboard.scope.section">القسم الحالي</span></dt><dd id="dashboardScopeSection" dir="auto">كل الأقسام</dd></div>
                 </dl>
-                <button class="btn btn-light dashboard-scope-change" id="dashboardScopeOpen" type="button" aria-haspopup="dialog" aria-controls="dashboardScopeDialog"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="dashboard.scope.change">تغيير النطاق</span></button>
+                <button class="btn btn-primary dashboard-scope-change" id="dashboardScopeOpen" type="button" aria-haspopup="dialog" aria-controls="dashboardScopeDialog"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="dashboard.scope.change">تغيير النطاق</span></button>
             </section>
             <dialog class="lf-modal-shell lf-modal--md lf-modal--structured lf-modal--bottom-sheet dashboard-scope-dialog" id="dashboardScopeDialog" aria-labelledby="dashboardScopeDialogTitle" aria-describedby="dashboardScopeDialogDescription">
                 <div class="dashboard-scope-dialog-shell">
@@ -406,12 +406,12 @@
                     <strong data-dashboard-member-count aria-live="polite">—</strong>
                 </article>
                 <article class="dashboard-overview-card dashboard-overview-metric" aria-label="الباقة الحالية" data-i18n-aria-label="dashboard.summary.plan">
-                    <svg class="ui-icon dashboard-overview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h5"/></svg>
+                    <svg class="ui-icon dashboard-overview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                     <small data-i18n="dashboard.summary.plan">الباقة الحالية</small>
                     <strong data-dashboard-overview-plan>—</strong>
                 </article>
                 <article class="dashboard-overview-card dashboard-overview-metric" aria-label="تاريخ الاشتراك" data-i18n-aria-label="dashboard.summary.subscriptionDate">
-                    <svg class="ui-icon dashboard-overview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                    <svg class="ui-icon dashboard-overview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>
                     <small data-i18n="dashboard.summary.subscriptionDate">تاريخ الاشتراك</small>
                     <strong data-dashboard-overview-date>—</strong>
                 </article>
@@ -1307,6 +1307,6 @@
     <script defer src="/js/feature-loader.js?v=65d6a6a931103f6e"></script>
     <script defer src="/js/core/i18n.js?v=a6ec443970359dc4"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=62372a1be020e8b9"></script>
-    <script defer src="/js/page-tabs.js?v=614f7f75a04492b3"></script>
+    <script defer src="/js/page-tabs.js?v=ee1f236a11f94b09"></script>
 </body>
 </html>

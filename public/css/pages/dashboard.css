@@ -7,10 +7,21 @@
 
 .dashboard-view-tabs {
   justify-self: center;
-  width: max-content;
+  width: min(100%, 460px);
   max-width: 100%;
+  min-height: 52px;
   margin-block: 0 var(--space-5);
 }
+
+.dashboard-view-tabs .tab-button {
+  flex: 1 1 0;
+  min-height: 48px;
+  justify-content: center;
+  font-size: var(--font-md);
+  font-weight: var(--weight-semibold);
+}
+
+.dashboard-view-tabs .tab-button .ui-icon { width: var(--icon-size-control); height: var(--icon-size-control); }
 
 .dashboard-view-panels,
 .dashboard-view-panel {
@@ -1860,19 +1871,20 @@
 }
 
 .dashboard-scope-value {
-  display: grid;
+  display: flex;
   min-width: 0;
-  align-content: center;
-  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
   background: var(--bg-card);
 }
-.dashboard-scope-value dt { position: relative; display: flex; min-width: 0; min-height: 36px; align-items: center; padding-inline-start: 44px; color: var(--text-muted); font-size: var(--font-xs); }
+.dashboard-scope-value dt { position: relative; display: flex; min-width: 0; min-height: 36px; flex: 0 1 auto; align-items: center; padding-inline-start: 44px; color: var(--text-muted); font-size: var(--font-xs); white-space: nowrap; }
 .dashboard-scope-value dt::before { position: absolute; inset-block-start: 0; inset-inline-start: 0; width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--primary-soft); content: ""; }
 .dashboard-scope-value dt .ui-icon { position: absolute; inset-block-start: 10px; inset-inline-start: 10px; width: var(--icon-size-compact); height: var(--icon-size-compact); color: var(--primary); }
-.dashboard-scope-value dd { min-width: 0; margin: var(--space-1) 0 0; color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); line-height: 1.4; overflow-wrap: anywhere; }
+.dashboard-scope-value dd { min-width: 0; flex: 1 1 auto; margin: 0; color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); line-height: 1.4; text-align: end; overflow-wrap: anywhere; }
 .dashboard-scope-change { min-height: var(--ui-touch-target); white-space: nowrap; }
 .dashboard-scope-change .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); }
 
@@ -1972,7 +1984,7 @@ html[dir="rtl"] .dashboard-overview-metric small,
 html[dir="rtl"] .dashboard-overview-metric strong { direction: rtl; }
 html[dir="ltr"] .dashboard-overview-metric small,
 html[dir="ltr"] .dashboard-overview-metric strong { direction: ltr; }
-.dashboard-overview-icon { width: 24px; height: 24px; color: var(--primary); }
+.dashboard-overview-icon { box-sizing: content-box; width: 24px; height: 24px; padding: var(--space-2); border: 1px solid var(--border-secondary); border-radius: var(--radius-lg); background: var(--bg-surface); color: var(--primary); }
 .dashboard-overview-metric .dashboard-overview-icon { grid-column: 1; grid-row: 1 / span 2; }
 .dashboard-overview-metric small,
 .dashboard-overview-metric strong { grid-column: 2; }
@@ -1992,7 +2004,7 @@ html[dir="ltr"] .dashboard-overview-metric strong { direction: ltr; }
 .dashboard-overview-shortcuts { align-content: space-between; background: var(--bg-card); }
 .dashboard-overview-shortcuts-title { font-size: var(--font-md); font-weight: var(--weight-semibold); }
 .dashboard-overview-shortcut-actions { display: grid; min-width: 0; gap: var(--space-2); }
-.dashboard-overview-shortcut-actions .btn { min-width: 0; min-height: var(--ui-touch-target); justify-content: center; padding-inline: var(--space-2); white-space: normal; }
+.dashboard-overview-shortcut-actions .btn { width: 100%; min-width: 0; min-height: var(--ui-touch-target); justify-content: center; padding-inline: var(--space-2); white-space: nowrap; }
 .dashboard-overview-shortcut-actions #dashboardPrintPricingButton { display: none; }
 .dashboard-overview-shortcut-actions .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); }
 
@@ -2013,6 +2025,7 @@ html[dir="ltr"] .dashboard-overview-metric strong { direction: ltr; }
   .dashboard-scope-change { grid-column: 2; grid-row: 2; }
   .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "members plan" "date shortcuts"; }
   html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date" "plan members"; }
+  .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 1280px) {
@@ -2042,11 +2055,14 @@ html[dir="ltr"] .dashboard-overview-metric strong { direction: ltr; }
   .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); margin-block-end: var(--space-3); }
   .dashboard-scope-values { gap: var(--space-2); }
   .dashboard-scope-value { padding-inline: var(--space-2); }
+  .dashboard-scope-value { display: grid; align-content: center; gap: var(--space-1); }
+  .dashboard-scope-value dt { white-space: normal; }
+  .dashboard-scope-value dd { padding-inline-start: 44px; text-align: start; }
   .dashboard-scope-change { width: 100%; }
   .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "members plan" "date shortcuts"; gap: var(--space-3); }
   html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date" "plan members"; }
   .dashboard-overview-card { min-height: 0; padding: var(--space-4); }
-  .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-overview-shortcut-actions { grid-template-columns: minmax(0, 1fr); }
   .dashboard-scope-fields,
   .dashboard-scope-preview dl { grid-template-columns: minmax(0, 1fr); }
 }
