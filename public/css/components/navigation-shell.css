@@ -3024,6 +3024,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     display: flex;
     width: min(320px, 88vw);
     height: auto;
+    min-height: 0;
     max-height: calc(100dvh - var(--app-topbar-height));
     flex-direction: column;
     align-items: stretch;

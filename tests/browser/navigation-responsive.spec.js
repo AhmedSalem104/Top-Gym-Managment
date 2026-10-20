@@ -66,7 +66,7 @@ test('navbar scope selectors and redundant application launcher remain removed',
     const section = page.locator('#branchContextShell [data-context-field="section"] .branch-context-trigger');
     await expect(branch).toBeHidden();
     await expect(section).toBeHidden();
-    await expect(page.locator('#topbarProfile')).toBeVisible();
+    await expect(page.locator('#topbarProfile')).toHaveCount(0);
     await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
     await expect(page.locator('.topbar-more-trigger')).toHaveAttribute('aria-label', /More|المزيد/u);
 
@@ -77,10 +77,10 @@ test('navbar scope selectors and redundant application launcher remain removed',
         }, theme);
         await page.waitForTimeout(180);
         const colors = await page.evaluate(() => {
-            const read = (selector) => getComputedStyle(document.querySelector(selector)).color;
+            const topbar = document.querySelector('.topbar');
             return {
-                profile: read('#topbarProfile'),
-                surface: getComputedStyle(document.querySelector('.topbar')).backgroundColor
+                foreground: getComputedStyle(topbar).color,
+                surface: getComputedStyle(topbar).backgroundColor
             };
         });
         const contrast = await page.evaluate(({ foregrounds, background }) => {
@@ -97,8 +97,8 @@ test('navbar scope selectors and redundant application launcher remain removed',
                 const a = luminance(foreground);
                 return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
             });
-        }, { foregrounds: [colors.profile], background: colors.surface });
-        expect(contrast[0], `${theme} profile contrast ${JSON.stringify({ colors, contrast })}`).toBeGreaterThanOrEqual(4.5);
+        }, { foregrounds: [colors.foreground], background: colors.surface });
+        expect(contrast[0], `${theme} Navbar text contrast ${JSON.stringify({ colors, contrast })}`).toBeGreaterThanOrEqual(4.5);
         const screenshot = testInfo.outputPath(`branch-context-${theme}.png`);
         await page.screenshot({ path: screenshot, fullPage: false });
     }
@@ -125,7 +125,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
         for (const responsiveWidth of [320, 375, 390, 430, 768, 1024]) {
             await page.setViewportSize({ width: responsiveWidth, height: 900 });
             const navbarLayout = await page.evaluate(() => {
-                const selectors = ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile'];
+                const selectors = ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger'];
                 const visible = (element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0;
                 return {
                     rows: selectors.map((selector) => document.querySelector(selector)).filter(visible).map((element) => element.getBoundingClientRect().top),
@@ -177,6 +177,12 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(page.locator('[data-nav-group-label="workspace"]')).toBeVisible();
         await expect(page.locator('[data-nav-group-label="location"]')).toBeVisible();
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
+        const drawerBounds = await page.locator('#pageTabs').evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return { top: rect.top, bottom: rect.bottom, height: rect.height, viewport: innerHeight };
+        });
+        expect(drawerBounds.bottom).toBeCloseTo(drawerBounds.viewport, 0);
+        expect(drawerBounds.height).toBeCloseTo(drawerBounds.viewport - drawerBounds.top, 0);
         await page.screenshot({ path: testInfo.outputPath(`navigation-drawer-open-${width}.png`), fullPage: false });
         await page.keyboard.press('Escape');
         await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
@@ -192,7 +198,13 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(sidebarPin).toHaveAttribute('title', /Pin sidebar|تثبيت القائمة/u);
         await expect(page.locator('#pageTabs')).toBeVisible();
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
-        const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+        const sidebarBounds = await page.locator('#pageTabs').evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return { top: rect.top, bottom: rect.bottom, height: rect.height, viewport: innerHeight };
+        });
+        expect(sidebarBounds.bottom).toBeCloseTo(sidebarBounds.viewport, 0);
+        expect(sidebarBounds.height).toBeCloseTo(sidebarBounds.viewport - sidebarBounds.top, 0);
+        const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger']
             .map((selector) => document.querySelector(selector))
             .filter((element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0)
             .map((element) => element.getBoundingClientRect().top));
@@ -679,7 +691,7 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
                 return {
                     viewport: innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
-                    controls: ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+                    controls: ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger']
                         .map((selector) => document.querySelector(selector))
                         .filter((element) => {
                             const rect = element?.getBoundingClientRect();
@@ -899,7 +911,7 @@ test('navbar settings are inline on desktop and remain in the anchored More menu
                     expect(languageGeometry.groupDirection).toBe('ltr');
                     expect(languageGeometry.activeText).not.toBe(languageGeometry.inactiveText);
                     expect(languageGeometry.activeBorder).not.toBe('rgba(0, 0, 0, 0)');
-                    await expect(page.locator('.topbar-profile-avatar')).toHaveCount(0);
+                    await expect(page.locator('#topbarProfile')).toHaveCount(0);
                 }
                 expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
                 if (width === 320 && !captures.has('mobile')) {
@@ -941,13 +953,28 @@ test('navbar settings are inline on desktop and remain in the anchored More menu
                     document: document.documentElement.scrollWidth,
                     menuOpen: document.querySelector('.topbar-more-menu').open,
                     triggerVisible: getComputedStyle(document.querySelector('.topbar-more-trigger')).display !== 'none',
-                    controls: ['[data-locale-segmented]', '#themeToggleButton', '#topbarFullscreenAction', '#topbarLogoutAction', '.notification-center-trigger', '#topbarProfile']
+                    controls: ['[data-locale-segmented]', '#themeToggleButton', '#topbarFullscreenAction', '#topbarLogoutAction', '.notification-center-trigger']
                         .map(rect).filter(Boolean)
                 };
             });
             expect(layout.menuOpen, `${locale}/${theme}/${width}px inline menu`).toBeTruthy();
             expect(layout.triggerVisible, `${width}px More trigger must be replaced by direct controls`).toBeFalsy();
             expect(layout.document, `${locale}/${theme}/${width}px overflow`).toBeLessThanOrEqual(layout.viewport + 1);
+            const fullscreenAlignment = await page.locator('#topbarFullscreenAction').evaluate((button) => {
+                const buttonRect = button.getBoundingClientRect();
+                const iconRect = button.querySelector('.topbar-settings-icon').getBoundingClientRect();
+                return {
+                    buttonCenterX: buttonRect.left + buttonRect.width / 2,
+                    buttonCenterY: buttonRect.top + buttonRect.height / 2,
+                    iconCenterX: iconRect.left + iconRect.width / 2,
+                    iconCenterY: iconRect.top + iconRect.height / 2,
+                    glyphRect: button.querySelector('.topbar-settings-icon .ui-icon').getBoundingClientRect().toJSON()
+                };
+            });
+            expect(Math.abs(fullscreenAlignment.buttonCenterX - fullscreenAlignment.iconCenterX), `${locale}/${theme}/${width}px fullscreen icon horizontal alignment`).toBeLessThanOrEqual(1);
+            expect(Math.abs(fullscreenAlignment.buttonCenterY - fullscreenAlignment.iconCenterY), `${locale}/${theme}/${width}px fullscreen icon vertical alignment`).toBeLessThanOrEqual(1);
+            expect(Math.abs(fullscreenAlignment.buttonCenterX - (fullscreenAlignment.glyphRect.x + fullscreenAlignment.glyphRect.width / 2)), `${locale}/${theme}/${width}px fullscreen glyph horizontal alignment`).toBeLessThanOrEqual(1);
+            expect(Math.abs(fullscreenAlignment.buttonCenterY - (fullscreenAlignment.glyphRect.y + fullscreenAlignment.glyphRect.height / 2)), `${locale}/${theme}/${width}px fullscreen glyph vertical alignment`).toBeLessThanOrEqual(1);
             for (let first = 0; first < layout.controls.length; first += 1) {
                 for (let second = first + 1; second < layout.controls.length; second += 1) {
                     const a = layout.controls[first];

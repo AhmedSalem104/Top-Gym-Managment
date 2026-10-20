@@ -17,6 +17,7 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     assert.match(index, /id="mobileNavToggle"[^>]*>[\s\S]*?<svg class="ui-icon"[^>]*aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"\/><\/svg>[\s\S]*?<span class="visually-hidden" data-mobile-nav-label/u);
     assert.match(index, /class="topbar-language-toggle"[^>]*dir="ltr"[\s\S]*?<button[^>]*data-locale-choice="ar"[^>]*data-i18n="language\.arabic\.option">[\s\S]*?<button[^>]*data-locale-choice="en"[^>]*data-i18n="language\.english\.option">/u);
     assert.doesNotMatch(index, /applicationLauncherTrigger|applicationLauncherMenu/u, 'the redundant applications launcher is removed from the Navbar');
+    assert.doesNotMatch(index, /topbarProfile|data-topbar-profile/u, 'authenticated name and role are not rendered in the Navbar');
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
     assert.match(index, /id="mobileNavCurrent"/);

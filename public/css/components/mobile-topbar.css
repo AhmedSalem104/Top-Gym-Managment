@@ -264,20 +264,6 @@
 .topbar-more-actions > .btn { min-height: var(--ui-touch-target); justify-content: flex-start; }
 .topbar-more-actions:has(> :not([hidden])) { padding-block-end: var(--space-2); border-block-end: 1px solid var(--border-secondary); }
 
-.topbar-profile {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.topbar-profile[hidden] { display: none; }
-.topbar-profile-copy { display: grid; min-width: 0; gap: 1px; }
-.topbar-profile-copy strong,
-.topbar-profile-copy small { max-width: 156px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.topbar-profile-copy strong { color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); }
-.topbar-profile-copy small { color: var(--text-muted); font-size: var(--font-xs); }
-
 @keyframes logicfit-topbar-menu-enter {
   from { opacity: 0; transform: translateY(calc(var(--motion-offset-small) * -1)); }
   to { opacity: 1; transform: translateY(0); }
@@ -285,8 +271,6 @@
 
 @media (min-width: 1024px) and (max-width: 1279px) {
   .app-shell > .topbar .topbar-inner { padding-inline: var(--app-content-gutter-compact); }
-  .topbar-profile-copy { display: none; }
-  .topbar-profile { display: none; }
   .app-shell > .topbar #branchContextShell { max-width: min(44vw, 440px); }
 }
 
@@ -327,8 +311,8 @@
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section .topbar-settings-icon { display: none; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section .topbar-settings-copy { display: none; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-copy { display: none; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action { display: inline-grid; width: var(--ui-touch-target); min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); place-items: center; padding: 0; border: 1px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-surface); }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-icon { display: grid; width: var(--ui-touch-target); height: var(--ui-touch-target); flex: 0 0 var(--ui-touch-target); background: transparent; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action { display: inline-grid; box-sizing: border-box; width: var(--ui-touch-target); min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); grid-template-columns: minmax(0, 1fr); place-items: center; padding: 0; border: 1px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-surface); }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-icon { display: grid; box-sizing: border-box; width: var(--ui-touch-target); height: var(--ui-touch-target); flex: 0 0 var(--ui-touch-target); place-items: center; margin: 0; background: transparent; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section { display: block; flex: 0 0 auto; padding: 0; border: 0; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section .topbar-settings-logout { width: var(--ui-touch-target); min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); justify-content: center; padding: 0; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section .topbar-settings-logout > span,
@@ -357,9 +341,6 @@
   .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: var(--ui-touch-target); grid-column: 2; grid-row: 1; }
   .topbar-more-menu { grid-column: 3; grid-row: 1; }
   .topbar-quick-actions { grid-column: 4; grid-row: 1; justify-content: center; }
-  .topbar-profile { display: none; }
-  .topbar-profile-copy { display: none; }
-
   .app-shell > .topbar #branchContextShell .branch-context-mobile-trigger {
     display: flex;
     box-sizing: border-box;
