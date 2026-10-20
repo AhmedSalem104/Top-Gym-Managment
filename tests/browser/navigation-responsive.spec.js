@@ -215,12 +215,14 @@ test('responsive navigation stays organized and accessible at each viewport', as
                 display: style.display,
                 gridRow: style.gridRow,
                 surface: style.backgroundColor,
+                topbarColumn: getComputedStyle(shell.querySelector(':scope > .topbar')).gridColumn,
                 workspaceHeight: shell.getBoundingClientRect().height,
                 documentHeight: document.documentElement.scrollHeight
             };
         });
         expect(sidebarTrack.display).toBe('block');
-        expect(sidebarTrack.gridRow).toBe('2');
+        expect(sidebarTrack.gridRow).toBe('1 / -1');
+        expect(sidebarTrack.topbarColumn).toBe('2');
         expect(sidebarTrack.workspaceHeight).toBeGreaterThanOrEqual(sidebarTrack.documentHeight - 1);
         expect(sidebarTrack.surface).not.toBe('rgba(0, 0, 0, 0)');
         const originalDirection = await page.locator('html').getAttribute('dir') || 'rtl';

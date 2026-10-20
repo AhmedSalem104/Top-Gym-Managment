@@ -2956,7 +2956,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   body .app-shell::before {
     display: block;
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1 / -1;
     align-self: stretch;
     background: var(--bg-sidebar);
     content: "";
