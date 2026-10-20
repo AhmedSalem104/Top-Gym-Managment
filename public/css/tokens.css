@@ -83,6 +83,13 @@
   --shadow-popup: 0 20px 50px rgb(15 23 42 / 0.2);
   --shadow-primary: 0 8px 20px rgb(0 112 243 / 0.18);
   --shadow-primary-strong: 0 8px 20px rgb(0 112 243 / 0.22);
+  /* Dialog chrome defaults remain neutral; semantic variants opt into the
+     restrained Azure form-dialog surface. */
+  --dialog-header-surface: var(--bg-surface);
+  --dialog-footer-surface: var(--bg-surface);
+  --dialog-form-chrome: var(--azure-50);
+  --dialog-form-border: var(--azure-100);
+  --dialog-form-radius: 16px;
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.24);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.3);
 
@@ -414,6 +421,8 @@ body[data-theme="dark"] {
   --shadow-popup: 0 20px 50px rgb(0 0 0 / 0.4);
   --shadow-primary: 0 8px 20px rgb(0 112 243 / 0.18);
   --shadow-primary-strong: 0 8px 20px rgb(0 112 243 / 0.22);
+  --dialog-form-chrome: var(--primary-soft);
+  --dialog-form-border: var(--primary-border);
   --text-shadow-soft: 0 4px 16px rgb(0 0 0 / 0.4);
   --text-shadow-strong: 0 5px 18px rgb(0 0 0 / 0.5);
 

@@ -349,8 +349,8 @@ html[data-theme="dark"] .portal-library-modal{
   background: var(--overlay);
 }
 
-html[data-theme="dark"] .modal-header,
-html[data-theme="dark"] .dialog-header,
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .modal-header,
+html[data-theme="dark"] dialog:not(.lf-modal-shell) .dialog-header,
 html[data-theme="dark"] .modal-footer,
 html[data-theme="dark"] .dialog-footer,
 html[data-theme="dark"] dialog:not(.lf-modal-shell) .details-dialog-head,

@@ -211,7 +211,15 @@ test('Dashboard overview cards are owned by the dashboard page and use live data
     assert.match(html, /class="dashboard-overview-shell"[\s\S]*?id="dashboardOverviewTitle"[\s\S]*?class="dashboard-overview-cards"/u);
     assert.match(html, /id="dashboardScopeBar"[\s\S]*?id="dashboardScopeBranch"[\s\S]*?id="dashboardScopeSection"[\s\S]*?id="dashboardScopeOpen"/u);
     assert.match(html, /id="dashboardScopeDialog"[\s\S]*?id="dashboardScopeCancel"[\s\S]*?id="dashboardScopeApply"/u);
-    assert.match(html, /<dialog class="[^"]*lf-modal--bottom-sheet[^"]*" id="dashboardScopeDialog"/u);
+    assert.match(html, /<dialog class="[^"]*lf-modal--structured[^"]*lf-modal--form[^"]*" id="dashboardScopeDialog"/u);
+    assert.doesNotMatch(html.match(/<dialog class="[^"]*dashboard-scope-dialog[^>]*>[\s\S]*?<\/dialog>/u)?.[0] || '', /lf-modal--bottom-sheet/u);
+    assert.match(html, /<form class="lf-modal-layout" id="dashboardScopeForm"[\s\S]*?<header class="dialog-header">[\s\S]*?<div class="dialog-body dashboard-scope-dialog-body">[\s\S]*?<footer class="dialog-actions dashboard-scope-dialog-actions">/u);
+    assert.match(read('public/css/components/modal-foundation.css'), /\.lf-modal-shell\.lf-modal--form\s*\{[^}]*--lf-dialog-header-surface:\s*var\(--dialog-form-chrome\)[^}]*--lf-dialog-footer-surface:\s*var\(--dialog-form-chrome\)/u);
+    assert.match(read('public/css/components/modal-foundation.css'), /background:\s*var\(--lf-dialog-header-surface\)/u);
+    assert.match(read('public/css/components/modal-foundation.css'), /background:\s*var\(--lf-dialog-footer-surface\)/u);
+    assert.match(read('public/css/tokens.css'), /--dialog-form-chrome:\s*var\(--azure-50\)/u);
+    assert.match(read('public/css/tokens.css'), /--dialog-form-chrome:\s*var\(--primary-soft\)/u);
+    assert.match(dashboard, /\.dashboard-scope-preview\s*\{[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\)[^}]*background:\s*var\(--dialog-form-chrome\)/u);
     assert.match(read('public/css/components/modal-foundation.css'), /dialog\.lf-modal-shell\.lf-modal--bottom-sheet\[open\][\s\S]*?transform:\s*translateY\(0\) scale\(1\)/u);
     assert.match(html, /class="dashboard-overview-cards"[\s\S]*?data-dashboard-member-count[\s\S]*?data-dashboard-overview-plan[\s\S]*?data-dashboard-overview-date[\s\S]*?dashboard-overview-shortcuts/u);
     assert.doesNotMatch(html.match(/class="dashboard-overview-cards"[\s\S]*?<\/section>/u)?.[0] || '', /dashboard-overview-welcome/u);

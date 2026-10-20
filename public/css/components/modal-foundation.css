@@ -10,6 +10,13 @@ dialog.lf-modal-shell,
   --lf-modal-inline: clamp(16px, 2.2vw, 28px);
   --lf-modal-block: clamp(12px, 1.4vw, 18px);
   --lf-modal-radius: var(--radius-xl);
+  --lf-dialog-header-padding: var(--lf-modal-block) var(--lf-modal-inline) var(--space-2);
+  --lf-dialog-footer-padding: var(--space-2) var(--lf-modal-inline) var(--lf-modal-block);
+  --lf-dialog-header-surface: var(--dialog-header-surface);
+  --lf-dialog-footer-surface: var(--dialog-footer-surface);
+  --lf-dialog-chrome-border: var(--border-secondary);
+  --lf-dialog-header-align: flex-start;
+  --lf-dialog-actions-justify: flex-start;
   width: min(680px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   max-height: min(92dvh, 960px);
@@ -233,6 +240,17 @@ dialog.lf-modal-shell[open]::backdrop {
   background: var(--border-strong);
 }
 
+.lf-modal-shell.lf-modal--form {
+  --lf-modal-radius: var(--dialog-form-radius);
+  --lf-dialog-header-padding: var(--space-4) var(--space-6);
+  --lf-dialog-footer-padding: var(--space-3) var(--space-6);
+  --lf-dialog-header-surface: var(--dialog-form-chrome);
+  --lf-dialog-footer-surface: var(--dialog-form-chrome);
+  --lf-dialog-chrome-border: var(--dialog-form-border);
+  --lf-dialog-header-align: center;
+  --lf-dialog-actions-justify: flex-end;
+}
+
 .lf-modal-shell .dialog-header,
 .lf-modal-shell .details-dialog-head,
 .lf-modal-shell .member-dialog-header,
@@ -242,7 +260,7 @@ dialog.lf-modal-shell[open]::backdrop {
 .lf-modal-shell > header {
   display: flex;
   min-width: 0;
-  align-items: flex-start;
+  align-items: var(--lf-dialog-header-align);
   justify-content: space-between;
   gap: var(--space-3);
   flex: 0 0 auto;
@@ -250,9 +268,9 @@ dialog.lf-modal-shell[open]::backdrop {
   top: 0;
   z-index: var(--z-sticky);
   margin: calc(var(--lf-modal-block) * -1) calc(var(--lf-modal-inline) * -1) var(--space-1);
-  border-bottom: 1px solid var(--border-secondary);
-  background: var(--color-surface);
-  padding: var(--lf-modal-block) var(--lf-modal-inline) var(--space-2);
+  border-block-end: 1px solid var(--lf-dialog-chrome-border);
+  background: var(--lf-dialog-header-surface);
+  padding: var(--lf-dialog-header-padding);
 }
 
 .lf-modal-shell .dialog-actions,
@@ -263,7 +281,7 @@ dialog.lf-modal-shell[open]::backdrop {
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: var(--lf-dialog-actions-justify);
   gap: var(--space-2);
   flex-wrap: wrap;
   flex: 0 0 auto;
@@ -271,9 +289,9 @@ dialog.lf-modal-shell[open]::backdrop {
   bottom: 0;
   z-index: var(--z-sticky);
   margin: var(--space-1) calc(var(--lf-modal-inline) * -1) calc(var(--lf-modal-block) * -1);
-  border-top: 1px solid var(--border-secondary);
-  background: var(--color-surface);
-  padding: var(--space-2) var(--lf-modal-inline) var(--lf-modal-block);
+  border-block-start: 1px solid var(--lf-dialog-chrome-border);
+  background: var(--lf-dialog-footer-surface);
+  padding: var(--lf-dialog-footer-padding);
 }
 
 .lf-modal-shell .dialog-actions > button,
@@ -668,6 +686,13 @@ body .swal2-popup.lf-modal--workspace {
     max-height: 100dvh;
     border: 0;
     border-radius: 0;
+  }
+
+  .lf-modal-shell.lf-modal--form {
+    --lf-dialog-header-padding: var(--space-3) var(--space-4);
+    --lf-dialog-footer-padding: var(--space-3) var(--space-4);
+    --lf-modal-radius: var(--dialog-form-radius);
+    border-radius: var(--dialog-form-radius);
   }
 
   .lf-modal-shell > .dialog-close-button {

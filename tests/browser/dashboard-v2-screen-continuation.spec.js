@@ -189,6 +189,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
     test('scope dialog stages authorized branch and section changes until one atomic Apply', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'Scope state verification runs once in the desktop project.');
         const runtime = await installReadOnlyDashboardFixture(page, { multipleScopes: true });
+        await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
         await page.goto('/index.html?dashboardScope=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('#dashboardScopeBar')).toBeVisible({ timeout: 15000 });
         const scopeButtonSize = await page.locator('#dashboardScopeOpen').evaluate((element) => element.getBoundingClientRect().height);
@@ -210,8 +211,34 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         const dialogFrame = await dialog.boundingBox();
         expect(dialogFrame.width).toBeGreaterThan(500);
         expect(dialogFrame.height).toBeLessThanOrEqual(900);
+        await expect(dialog).toHaveClass(/lf-modal--form/u);
         await expect(page.locator('.dashboard-scope-dialog-heading-icon')).toBeVisible();
-        await page.screenshot({ path: testInfo.outputPath('dashboard-scope-dialog-desktop.png'), fullPage: false });
+        const chrome = await dialog.evaluate((element) => {
+            const header = element.querySelector('.dialog-header');
+            const body = element.querySelector('.dashboard-scope-dialog-body');
+            const footer = element.querySelector('.dashboard-scope-dialog-actions');
+            const styles = (node) => getComputedStyle(node);
+            return {
+                headerSurface: styles(header).backgroundColor,
+                footerSurface: styles(footer).backgroundColor,
+                headerHeight: header.getBoundingClientRect().height,
+                footerHeight: footer.getBoundingClientRect().height,
+                headerPadding: styles(header).padding,
+                headerMargin: styles(header).margin,
+                headerMinHeight: styles(header).minHeight,
+                headerAlign: styles(header).alignItems,
+                headerChildren: [...header.children].map((node) => ({ className: node.className, height: node.getBoundingClientRect().height, display: styles(node).display, padding: styles(node).padding, margin: styles(node).margin })),
+                headingHeight: element.querySelector('.dashboard-scope-dialog-heading').getBoundingClientRect().height,
+                bodyScroll: styles(body).overflowY,
+                rowGap: styles(element.querySelector('.dashboard-scope-fields')).gridTemplateColumns
+            };
+        });
+        expect(chrome.headerSurface).toBe(chrome.footerSurface);
+        expect(chrome.headerHeight).toBeGreaterThanOrEqual(64);
+        expect(chrome.headerHeight, JSON.stringify(chrome)).toBeLessThanOrEqual(90);
+        expect(chrome.footerHeight).toBeGreaterThanOrEqual(60);
+        expect(chrome.bodyScroll).toBe('auto');
+        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'scope-dialog-1440-ar-dark.png'), fullPage: false });
         await expect(page.locator('#dashboardScopeBranchSelect option')).toContainText(['QA Main Branch', 'QA Riverside Branch']);
         await page.locator('#dashboardScopeBranchSelect').selectOption('98202');
         await expect(page.locator('#dashboardScopeSectionSelect option')).toContainText(['QA Riverside Section']);
@@ -252,24 +279,46 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.locator('#dashboardScopeOpen').click();
         await expect(dialog).toBeVisible();
-        for (const width of [320, 390, 768]) {
-            await page.setViewportSize({ width, height: width === 320 ? 568 : 844 });
-            const geometry = await page.evaluate(() => {
+        for (const width of [320, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
+            await page.setViewportSize({ width, height: width <= 390 ? 568 : 900 });
+            for (const locale of ['ar', 'en']) {
+                for (const theme of ['light', 'dark']) {
+                    await page.evaluate(({ locale, theme }) => {
+                        document.documentElement.lang = locale;
+                        document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+                        document.documentElement.dataset.theme = theme;
+                        document.body.dataset.theme = theme;
+                    }, { locale, theme });
+                    const geometry = await page.evaluate(() => {
                 const dialogRect = document.querySelector('#dashboardScopeDialog').getBoundingClientRect();
                 const headerRect = document.querySelector('.dashboard-scope-dialog-heading').getBoundingClientRect();
+                const header = document.querySelector('#dashboardScopeDialog .dialog-header');
+                const footer = document.querySelector('#dashboardScopeDialog .dashboard-scope-dialog-actions');
+                const preview = document.querySelector('#dashboardScopePreview');
                 return {
                     viewport: document.documentElement.clientWidth,
                     document: document.documentElement.scrollWidth,
                     dialog: { left: dialogRect.left, right: dialogRect.right, top: dialogRect.top, bottom: dialogRect.bottom },
-                    heading: { left: headerRect.left, right: headerRect.right }
+                    heading: { left: headerRect.left, right: headerRect.right },
+                    headerHeight: header.getBoundingClientRect().height,
+                    chromeSurfaces: [getComputedStyle(header).backgroundColor, getComputedStyle(footer).backgroundColor],
+                    previewVisible: !preview.hidden
                 };
             });
-            expect(geometry.document, `${width}px page overflow`).toBeLessThanOrEqual(geometry.viewport + 1);
-            expect(geometry.dialog.left, `${width}px dialog left`).toBeGreaterThanOrEqual(-1);
-            expect(geometry.dialog.right, `${width}px dialog right`).toBeLessThanOrEqual(geometry.viewport + 1);
-            expect(geometry.heading.left, `${width}px heading left`).toBeGreaterThanOrEqual(geometry.dialog.left);
-            expect(geometry.heading.right, `${width}px heading right`).toBeLessThanOrEqual(geometry.dialog.right);
-            if (width === 320 || width === 390) await page.screenshot({ path: testInfo.outputPath(`dashboard-scope-dialog-${width}.png`), fullPage: false });
+                    const context = `${width}px ${locale}/${theme}`;
+                    expect(geometry.document, `${context}: page overflow`).toBeLessThanOrEqual(geometry.viewport + 1);
+                    expect(geometry.dialog.left, `${context}: dialog left`).toBeGreaterThanOrEqual(-1);
+                    expect(geometry.dialog.right, `${context}: dialog right`).toBeLessThanOrEqual(geometry.viewport + 1);
+                    expect(geometry.heading.left, `${context}: heading left`).toBeGreaterThanOrEqual(geometry.dialog.left);
+                    expect(geometry.heading.right, `${context}: heading right`).toBeLessThanOrEqual(geometry.dialog.right);
+                    expect(geometry.headerHeight, `${context}: compact header`).toBeLessThanOrEqual(width < 600 ? 120 : 90);
+                    expect(geometry.chromeSurfaces[0], `${context}: form chrome mismatch ${geometry.chromeSurfaces}`).toBe(geometry.chromeSurfaces[1]);
+                    expect(geometry.previewVisible, `${context}: selected scope preview missing`).toBeTruthy();
+                    if ((width === 320 || width === 390 || width === 1440) && locale === 'ar' && theme === 'light') {
+                        await page.screenshot({ path: path.join(SCREENSHOT_DIR, `scope-dialog-${width}-ar-light.png`), fullPage: false });
+                    }
+                }
+            }
         }
         await page.locator('#dashboardScopeCancel').click();
 

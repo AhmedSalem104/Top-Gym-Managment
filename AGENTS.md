@@ -174,3 +174,10 @@ The project skills live in `.agents/skills/` and are the reusable workflow guida
 - `design-system`: token and canonical component ownership, variants, and design-system documentation.
 
 For substantial UI work, combine the applicable skills rather than duplicating their guidance: review first when requested, plan responsive behavior, implement with V2 owners, and finish with evidence-backed visual/keyboard/theme checks. If a skill is unavailable, follow this file and the canonical V2 specification directly and state the limitation. Existing project authorization and release rules remain controlling.
+
+### Modal and popup ownership
+
+- Centered dialogs must reuse `public/css/components/modal-foundation.css` and the canonical `lf-modal-shell` semantic variants. The `lf-modal--form` variant is the approved compact Azure Header/Body/Footer treatment for standard forms and selections; use neutral or specialized existing variants for confirmations, details, QR, workspaces, popovers and bottom sheets when their interaction model requires it.
+- Before creating or migrating a dialog, inventory its DOM IDs, consumers, CSS/JS owners, open/close and dismissal policy, focus/scroll lifecycle, form state, APIs, and authorization. Keep domain logic in feature owners and visual/layout/accessibility behavior in the shared dialog foundation.
+- Migrate incrementally. Do not globally rewrite dialogs, delete styling with unknown consumers, or add a parallel modal stylesheet/component/event-listener system. Remove obsolete feature rules only after consumer checks and responsive, keyboard, theme, and workflow regression evidence.
+- The Dashboard Change Scope dialog is the reference `lf-modal--form` implementation. Preserve its current authorized branch/department loading, staged selection, preview, cancel/reset and atomic Apply behavior when extending the shared system.
