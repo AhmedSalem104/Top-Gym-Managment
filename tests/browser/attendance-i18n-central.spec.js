@@ -123,7 +123,9 @@ test('Attendance central i18n switches live across RTL/LTR, themes and responsiv
     await expect(page.locator('#attendancePresentCount')).toHaveText('٢');
     await expect(page.locator('#attendanceTableWrap')).toContainText('أحمد QA Member');
     await expect(page.locator('#attendanceTableWrap')).toContainText('تسجيل انصراف');
-    await expect(page.locator('.topbar-language-toggle [data-locale-choice="en"]')).toBeVisible();
+    const localeSwitch = page.locator('.topbar-language-toggle [data-locale-choice="en"]');
+    if (!(await localeSwitch.isVisible())) await page.locator('.topbar-more-menu summary').click();
+    await expect(localeSwitch).toBeVisible();
     await page.evaluate(() => document.fonts.ready);
 
     // Resolve the member once using only a synthetic GET fixture, then ensure a

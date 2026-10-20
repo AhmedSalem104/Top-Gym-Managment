@@ -12,6 +12,7 @@
     const SOURCE_LABEL_KEYS = { phone: 'attendance.mode.phone', qr: 'attendance.mode.qr', manual: 'attendance.source.manual', auto: 'attendance.source.auto' };
     let scanner = null;
     let scannerRunning = false;
+    let qrScanPending = false;
     let attendanceAbortController = null;
     let memberPreviewAbortController = null;
     let memberPreviewTimer = null;
@@ -20,6 +21,8 @@
     let attendanceSnapshot = null;
     let attendanceRequest = null;
     let attendanceRequestKey = '';
+    let attendanceRenderedRequestKey = '';
+    let attendanceMutationPending = false;
     let initialized = false;
     let memberPreviewMessage = null;
 
@@ -344,7 +347,7 @@
         document.querySelectorAll('[data-attendance-mode]').forEach((button) => {
             const active = button.dataset.attendanceMode === mode;
             button.classList.toggle('active', active);
-            button.setAttribute('aria-selected', active ? 'true' : 'false');
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         const phonePanel = $('attendancePhoneModePanel');
         if (phonePanel) phonePanel.hidden = mode === 'qr';
@@ -361,20 +364,32 @@
                 : allRecords;
     }
 
+    function setAttendanceListMeta(state) {
+        const listMeta = $('attendanceListMeta');
+        if (!listMeta) return;
+        const key = state === 'error' ? 'attendance.log.loadError' : 'attendance.log.loading';
+        listMeta.removeAttribute('data-i18n');
+        listMeta.dataset.state = state;
+        listMeta.textContent = translate(key);
+    }
+
     function renderRecords(data) {
         attendanceSnapshot = data;
         const allRecords = data.records || [];
         const records = filteredAttendanceRecords(data);
         const filter = $('attendanceStatusFilter')?.value || 'all';
         $('attendanceDateLabel').textContent = dateText(data.date);
-        $('attendancePresentCount').textContent = formatNumber(Number(data.summary?.present || 0));
-        $('attendanceCheckedInCount').textContent = formatNumber(Number(data.summary?.checkedIn || 0));
-        $('attendanceCheckedOutCount').textContent = formatNumber(Number(data.summary?.checkedOut || 0));
+        const summary = data.summary || {};
+        $('attendancePresentCount').textContent = summary.present == null ? '—' : formatNumber(summary.present);
+        $('attendanceCheckedInCount').textContent = summary.checkedIn == null ? '—' : formatNumber(summary.checkedIn);
+        $('attendanceCheckedOutCount').textContent = summary.checkedOut == null ? '—' : formatNumber(summary.checkedOut);
+        $('attendanceSummary')?.setAttribute('aria-busy', 'false');
         const listMeta = $('attendanceListMeta');
         // The loading annotation is only valid before the first response.
         // Once runtime data owns this node, prevent a locale-wide static pass
         // from restoring the stale loading copy over the rendered summary.
         listMeta?.removeAttribute('data-i18n');
+        if (listMeta) delete listMeta.dataset.state;
         if (listMeta) listMeta.textContent = filter === 'all'
             ? translate('attendance.log.count', { count: records.length, date: dateText(data.date) })
             : translate('attendance.log.filteredCount', { count: records.length, total: allRecords.length, date: dateText(data.date) });
@@ -413,6 +428,20 @@
         void lookupMemberPreview();
     }
 
+    function setAttendanceRefreshStatus(state = 'idle') {
+        const status = $('attendanceRefreshStatus');
+        if (!status) return;
+        status.dataset.state = state;
+        status.hidden = state === 'idle';
+        if (state === 'loading') {
+            status.innerHTML = `<span class="logicfit-inline-spinner" aria-hidden="true"></span><span>${escapeHtml(translate('attendance.log.refreshing'))}</span>`;
+        } else if (state === 'error') {
+            status.textContent = translate('attendance.log.refreshError');
+        } else {
+            status.textContent = '';
+        }
+    }
+
     function decorateAttendanceActions(records) {
         const table = $('attendanceTableWrap')?.querySelector('table');
         if (!table?.tHead || !table.tBodies[0]) return;
@@ -434,6 +463,7 @@
                 button.dataset.phone = record?.phone || '';
                 button.textContent = translate('attendance.action.checkOut');
                 button.setAttribute('aria-label', translate('attendance.action.checkOut'));
+                button.disabled = attendanceMutationPending || !can('attendance.check_out');
                 cell.append(button);
             }
             const existingCell = row.lastElementChild;
@@ -452,11 +482,37 @@
         attendanceAbortController?.abort();
         attendanceAbortController = new AbortController();
         const controller = attendanceAbortController;
+        const needsFreshSurface = !attendanceSnapshot || attendanceRenderedRequestKey !== requestKey;
+        const tableWrap = $('attendanceTableWrap');
+        const refreshButton = $('attendanceRefreshButton');
+        const refreshStatus = $('attendanceRefreshStatus');
+        setAttendanceRefreshStatus('idle');
+        if (needsFreshSurface && tableWrap) {
+            attendanceSnapshot = null;
+            ['attendancePresentCount', 'attendanceCheckedInCount', 'attendanceCheckedOutCount'].forEach((id) => {
+                const counter = $(id);
+                if (counter) counter.textContent = '—';
+            });
+            setAttendanceListMeta('loading');
+            tableWrap.setAttribute('aria-busy', 'true');
+            $('attendanceSummary')?.setAttribute('aria-busy', 'true');
+            tableWrap.innerHTML = `<div class="attendance-first-load" role="status" aria-live="polite"><span class="logicfit-loader logicfit-loader--section" aria-hidden="true"></span><span>${escapeHtml(translate('attendance.log.refreshing'))}</span></div>`;
+        } else {
+            tableWrap?.setAttribute('aria-busy', 'true');
+            setAttendanceRefreshStatus('loading');
+        }
+        if (refreshButton) {
+            refreshButton.disabled = true;
+            refreshButton.setAttribute('aria-busy', 'true');
+            refreshButton.dataset.loading = 'true';
+        }
         const loadPromise = (async () => {
-        $('attendanceTableWrap').innerHTML = `<div class="loading" role="status" aria-live="polite">${escapeHtml(translate('attendance.log.refreshing'))}</div>`;
         try {
             const data = await request(`/api/attendance?${new URLSearchParams({ search })}`, { signal: controller.signal });
+            if (controller.signal.aborted) return;
             renderRecords(data);
+            attendanceRenderedRequestKey = requestKey;
+            setAttendanceRefreshStatus('idle');
             decorateAttendanceActions((data.records || []).filter((record) => {
                 const filter = $('attendanceStatusFilter')?.value || 'all';
                 return filter === 'inside' ? !record.checkOutAt : filter === 'checked_out' ? Boolean(record.checkOutAt) : true;
@@ -464,7 +520,23 @@
             if (Number(data.autoClosed || 0) > 0) announceAttendanceUpdate();
         } catch (error) {
             if (error.name === 'AbortError') return;
-            $('attendanceTableWrap').innerHTML = `<div class="attendance-empty">${escapeHtml(error.message)}</div>`;
+            if (needsFreshSurface) {
+                tableWrap.innerHTML = `<div class="attendance-empty" role="alert">${escapeHtml(translate('attendance.log.loadError'))}</div>`;
+                setAttendanceListMeta('error');
+                $('attendanceSummary')?.setAttribute('aria-busy', 'false');
+            } else if (refreshStatus) {
+                setAttendanceRefreshStatus('error');
+            }
+        } finally {
+            if (attendanceAbortController === controller) {
+                tableWrap?.setAttribute('aria-busy', 'false');
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.removeAttribute('aria-busy');
+                    delete refreshButton.dataset.loading;
+                }
+                if (refreshStatus?.dataset.state === 'loading') setAttendanceRefreshStatus('idle');
+            }
         }
         })();
         const trackedPromise = loadPromise.finally(() => {
@@ -476,6 +548,39 @@
         attendanceRequestKey = requestKey;
         attendanceRequest = trackedPromise;
         return trackedPromise;
+    }
+
+    function setAttendanceMutationPending(pending, activeButton = null) {
+        attendanceMutationPending = pending;
+        const section = $('attendanceSection');
+        section?.setAttribute('aria-busy', pending ? 'true' : 'false');
+        [
+            $('attendancePhone'),
+            $('attendancePhoneModeButton'),
+            $('attendanceScanButton'),
+            document.querySelector('.attendance-member-search-button'),
+            $('attendanceCheckInButton'),
+            $('attendanceCheckOutButton')
+        ].filter(Boolean).forEach((control) => {
+            if (control === activeButton) return;
+            control.disabled = pending;
+        });
+        $('attendanceTableWrap')?.querySelectorAll('[data-attendance-checkout="true"]').forEach((button) => {
+            button.disabled = pending || !can('attendance.check_out');
+        });
+        if (activeButton) {
+            activeButton.disabled = pending;
+            if (pending) {
+                activeButton.dataset.originalLabel = activeButton.textContent.trim();
+                activeButton.setAttribute('aria-busy', 'true');
+                activeButton.innerHTML = `<span class="logicfit-button-spinner" aria-hidden="true"></span><span>${escapeHtml(activeButton.dataset.originalLabel)}</span>`;
+            } else {
+                activeButton.removeAttribute('aria-busy');
+                activeButton.textContent = activeButton.dataset.originalLabel || translate('attendance.action.checkOut');
+                delete activeButton.dataset.originalLabel;
+            }
+        }
+        if (!pending) updateAttendanceActionButtons(previewMember);
     }
 
     function currentInput() {
@@ -496,15 +601,18 @@
     }
 
     async function checkIn(payload = null) {
+        if (attendanceMutationPending) return;
         if (!can('attendance.check_in')) {
             await showMessage(translate('attendance.permission.checkIn'), 'error');
             return;
         }
         const body = payload || currentInput();
         if (!body) return;
+        const memberName = previewMember?.fullName || translate('attendance.member.generic');
+        const actionButton = payload?.qrToken ? $('attendanceScanButton') : $('attendanceCheckInButton');
+        setAttendanceMutationPending(true, actionButton);
         try {
             const result = await request('/api/attendance/check-in', { method: 'POST', body: JSON.stringify(body) });
-            const memberName = previewMember?.fullName || translate('attendance.member.generic');
             $('attendancePhone').value = '';
             clearMemberPreview();
             if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkIn', { name: memberName }), false, 'success');
@@ -516,19 +624,24 @@
             attendanceFeedback('error');
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
             if (error.attendance) await loadAttendance({ force: true });
+        } finally {
+            setAttendanceMutationPending(false, actionButton);
         }
     }
 
-    async function checkOut(payload = null) {
+    async function checkOut(payload = null, sourceButton = null) {
+        if (attendanceMutationPending) return;
         if (!can('attendance.check_out')) {
             await showMessage(translate('attendance.permission.checkOut'), 'error');
             return;
         }
         const body = payload || currentInput();
         if (!body) return;
+        const memberName = previewMember?.fullName || translate('attendance.member.generic');
+        const actionButton = sourceButton || (payload?.qrToken ? $('attendanceScanButton') : payload ? null : $('attendanceCheckOutButton'));
+        setAttendanceMutationPending(true, actionButton);
         try {
             const result = await request('/api/attendance/check-out', { method: 'POST', body: JSON.stringify(body) });
-            const memberName = previewMember?.fullName || translate('attendance.member.generic');
             $('attendancePhone').value = '';
             clearMemberPreview();
             if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkOut', { name: memberName }), false, 'success');
@@ -539,6 +652,8 @@
         } catch (error) {
             attendanceFeedback('error');
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
+        } finally {
+            setAttendanceMutationPending(false, actionButton);
         }
     }
 
@@ -623,8 +738,14 @@
         scanner = new window.Html5Qrcode('qrReader');
         try {
             await scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 230, height: 230 } }, async (decodedText) => {
-                await closeScanner();
-                await handleQrScan(decodedText);
+                if (qrScanPending || attendanceMutationPending) return;
+                qrScanPending = true;
+                try {
+                    await closeScanner();
+                    await handleQrScan(decodedText);
+                } finally {
+                    qrScanPending = false;
+                }
             }, () => {});
             scannerRunning = true;
         } catch (error) {
@@ -664,8 +785,8 @@
             const button = event.target.closest('button[data-attendance-checkout="true"]');
             if (!button || button.disabled || !button.dataset.phone) return;
             button.disabled = true;
-            checkOut({ phone: button.dataset.phone }).finally(() => {
-                if (button.isConnected) button.disabled = false;
+            checkOut({ phone: button.dataset.phone }, button).finally(() => {
+                if (button.isConnected) button.disabled = !can('attendance.check_out');
             });
         });
         $('attendancePhoneModeButton')?.addEventListener('click', () => setAttendanceMode('phone'));
@@ -706,12 +827,17 @@
             const section = $('attendanceSection');
             if (!section) return;
             applyAttendanceLocalization();
+            if (!$('attendanceRefreshStatus')?.hidden) setAttendanceRefreshStatus($('attendanceRefreshStatus').dataset.state || 'idle');
             if (previewMember) renderMemberPreview(previewMember);
             else if (memberPreviewMessage) renderMemberPreviewMessage(memberPreviewMessage.key, memberPreviewMessage.kind);
             if (attendanceSnapshot) {
                 renderRecords(attendanceSnapshot);
                 decorateAttendanceActions(filteredAttendanceRecords(attendanceSnapshot));
-            } else updateAttendanceActionButtons();
+            } else {
+                const listMetaState = $('attendanceListMeta')?.dataset.state;
+                if (listMetaState) setAttendanceListMeta(listMetaState);
+                updateAttendanceActionButtons();
+            }
         });
         $('attendancePhone')?.addEventListener('input', () => {
             clearTimeout(memberPreviewTimer);
@@ -720,9 +846,7 @@
         $('attendancePhone')?.addEventListener('keydown', (event) => {
             if (event.key !== 'Enter') return;
             event.preventDefault();
-            const state = previewMember ? attendanceMemberState(previewMember) : null;
-            if (state?.inside) checkOut();
-            else checkIn();
+            searchAttendanceMember();
         });
         $('membersList')?.addEventListener('click', (event) => {
             const button = event.target.closest('button[data-action="qr"], button[data-member-qr]');
@@ -740,6 +864,7 @@
         window.addEventListener('topgym:tab-changed', (event) => { if (event.detail?.name === 'attendance') loadAttendance(); });
         window.addEventListener('topgym:branch-context-changed', () => {
             attendanceSnapshot = null;
+            attendanceRenderedRequestKey = '';
             if (isAttendanceActive()) void loadAttendance();
         });
         window.setInterval(() => {

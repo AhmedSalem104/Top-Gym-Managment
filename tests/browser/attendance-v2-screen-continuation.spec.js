@@ -174,7 +174,7 @@ async function selectLocale(page, locale) {
 
 async function selectTheme(page, theme) {
     if (await page.locator('html').getAttribute('data-theme') !== theme) {
-        await page.locator('#themeToggleButton').click();
+        await page.evaluate((nextTheme) => window.TopGymTheme.set(nextTheme), theme);
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     }
 }
@@ -196,6 +196,9 @@ async function collectScreenGeometry(page) {
         const wrapper = section.querySelector('#attendanceTableWrap');
         const table = wrapper.querySelector('.attendance-table');
         const row = table?.querySelector('tbody tr');
+        const branchTrigger = document.querySelector('[data-context-field="branch"] .branch-context-trigger');
+        const sectionTrigger = document.querySelector('[data-context-field="section"] .branch-context-trigger');
+        const branchContextTrigger = document.querySelector('#branchContextMobileTrigger');
         const completionStatus = table?.querySelector('.attendance-action-done.auto');
         const statusBadge = table?.querySelector('.attendance-status.complete');
         return {
@@ -211,8 +214,8 @@ async function collectScreenGeometry(page) {
                 hidden: document.querySelector('#branchContextShell')?.hidden ?? true,
                 branch: document.querySelector('#branchContextSelect')?.selectedOptions[0]?.textContent?.trim() || '',
                 section: document.querySelector('#sectionContextSelect')?.selectedOptions[0]?.textContent?.trim() || '',
-                branchValue: rect(document.querySelector('[data-context-field="branch"] .branch-context-trigger')),
-            sectionValue: rect(document.querySelector('[data-context-field="section"] .branch-context-trigger')),
+                branchValue: rect(branchTrigger?.getClientRects().length ? branchTrigger : branchContextTrigger),
+            sectionValue: rect(sectionTrigger?.getClientRects().length ? sectionTrigger : branchContextTrigger),
             branchLabel: document.querySelector('[data-context-field="branch"] .branch-context-field-copy small')?.textContent.trim() || '',
             sectionLabel: document.querySelector('[data-context-field="section"] .branch-context-field-copy small')?.textContent.trim() || ''
             },
@@ -221,7 +224,7 @@ async function collectScreenGeometry(page) {
             entrySurface: rect(section.querySelector('.attendance-entry-card')),
             phoneMode: rect(section.querySelector('#attendancePhoneModeButton')),
             qrMode: rect(section.querySelector('#attendanceScanButton')),
-            qrSelected: section.querySelector('#attendanceScanButton')?.getAttribute('aria-selected') === 'true',
+            qrSelected: section.querySelector('#attendanceScanButton')?.getAttribute('aria-pressed') === 'true',
             memberSurface: rect(section.querySelector('.attendance-member-context')),
             metrics: [...section.querySelectorAll('.attendance-summary-card')].map((card) => ({ ...rect(card), label: rect(card.querySelector('span:last-child')) })),
             listHeader: rect(section.querySelector('.attendance-list-head')),
@@ -242,7 +245,8 @@ async function collectScreenGeometry(page) {
             phoneHelperCount: section.querySelectorAll('.phone-input-help').length,
             mobileTableMode: table ? getComputedStyle(table).display === 'block' : false,
             focusRing: (() => {
-                const element = section.querySelector('#attendanceStatusFilter');
+                const element = section.querySelector('[data-filter-choices-for="attendanceStatusFilter"] [role="radio"][tabindex="0"]');
+                if (!element) return false;
                 const style = getComputedStyle(element);
                 return element.matches(':focus-visible') && (style.outlineStyle !== 'none' || style.boxShadow !== 'none');
             })(),
@@ -371,7 +375,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
         await fs.mkdir(EVIDENCE_DIR, { recursive: true });
         await page.goto('/index.html?attendance-v2-visual#dashboard', { waitUntil: 'domcontentloaded' });
         await page.waitForFunction(() => Boolean(window.TopGymI18n?.set));
-        await expect(page.locator('#themeToggleButton')).toBeVisible();
+        await page.waitForFunction(() => Boolean(window.TopGymTheme?.set));
         await page.locator('[data-page-tab="attendance"]').click();
         await expect(page.locator('#attendanceSection')).toBeVisible();
         await expect(page.locator('#branchContextShell')).toBeVisible();
@@ -402,6 +406,13 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                     await expect(page.locator('.attendance-mode-actions')).toHaveCSS('display', 'flex');
 
                     const geometry = await collectScreenGeometry(page);
+                    if (width < 1200) {
+                        const flow = await page.evaluate(() => ({
+                            registrationTop: document.querySelector('.attendance-entry-card').getBoundingClientRect().top,
+                            summaryTop: document.querySelector('#attendanceSummary').getBoundingClientRect().top
+                        }));
+                        expect(flow.registrationTop, `${width}/${locale}/${theme}: registration must precede summary on compact screens`).toBeLessThan(flow.summaryTop);
+                    }
                     if (/loading today|جارٍ تحميل سجل الحضور/i.test(geometry.listMeta.text)) {
                         visualGaps.push({
                             width,
@@ -488,7 +499,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                     if (width === 320 && locale === 'en' && theme === 'dark') {
                         await page.locator('#attendanceSearch').focus();
                         await page.keyboard.press('Tab');
-                        await expect(page.locator('#attendanceStatusFilter')).toBeFocused();
+                        await expect(page.locator('[data-filter-choices-for="attendanceStatusFilter"] [role="radio"][tabindex="0"]')).toBeFocused();
                         const focusGeometry = await collectScreenGeometry(page);
                         expect(focusGeometry.focusRing, 'The attendance status filter must show a keyboard focus indicator.').toBeTruthy();
                     }
@@ -526,7 +537,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                 return {
                     left: Math.round(box.left), right: Math.round(box.right), top: Math.round(box.top), bottom: Math.round(box.bottom),
                     width: Math.round(box.width), height: Math.round(box.height), text: dialog.innerText.trim(),
-                    qrSelected: document.querySelector('#attendanceScanButton')?.getAttribute('aria-selected') === 'true',
+                    qrSelected: document.querySelector('#attendanceScanButton')?.getAttribute('aria-pressed') === 'true',
                     closeControl: (() => {
                         const close = dialog.querySelector(':scope > .dialog-close-button[data-dialog-close-generated]');
                         const closeBox = close?.getBoundingClientRect();
@@ -613,7 +624,8 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
         await selectTheme(page, 'dark');
         runtime.setAttendanceMode('loading');
         await refreshAttendance(page);
-        await expect(page.locator('#attendanceTableWrap .loading')).toBeVisible();
+        await expect(page.locator('#attendanceTableWrap .attendance-empty')).toBeVisible();
+        await expect(page.locator('#attendanceRefreshStatus')).toBeVisible();
         await expect.poll(() => runtime.requests.filter((request) => request.pathname === '/api/attendance').length).toBeGreaterThan(2);
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'attendance-390-en-dark-loading.png'), fullPage: true });
@@ -630,13 +642,14 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
         await selectTheme(page, 'light');
         runtime.setAttendanceMode('error');
         await refreshAttendance(page);
-        await expect(page.locator('#attendanceTableWrap .attendance-empty')).toContainText('تعذر تحميل سجل الحضور مؤقتًا.');
+        await expect(page.locator('#attendanceRefreshStatus')).toContainText('تعذّر تحديث السجل؛ ما زالت البيانات السابقة ظاهرة. حاول مرة أخرى.');
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: path.join(EVIDENCE_DIR, 'attendance-768-ar-light-error.png'), fullPage: true });
 
         // Restricted synthetic assistant fixture verifies the visible denial state only;
         // it does not stand in for authenticated permission acceptance.
         runtime.setAuthProfile('assistant-read-only');
+        await page.setViewportSize({ width: 1440, height: 1000 });
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('[data-page-tab="attendance"]').click();
         await expect(page.locator('#attendanceSection')).toBeVisible();

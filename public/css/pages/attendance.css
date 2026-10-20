@@ -28,7 +28,7 @@
 .attendance-segmented-control { display: inline-flex; gap: var(--space-1); border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-1); }
 .attendance-segmented-control button { border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-muted); padding: var(--space-2) var(--space-3); font-size: var(--font-xs); }
 .attendance-segmented-control button.active,
-.attendance-segmented-control button[aria-selected="true"] { background: var(--color-primary); color: var(--text-on-primary); }
+.attendance-segmented-control button[aria-pressed="true"] { background: var(--color-primary); color: var(--text-on-primary); }
 .attendance-input-wrap { position: relative; display: block; min-width: 0; flex: 1 1 280px; }
 .attendance-input-wrap > svg { position: absolute; top: 50%; inset-inline-start: 14px; width: 18px; height: 18px; color: var(--color-text-subtle); pointer-events: none; transform: translateY(-50%); }
 .attendance-input-wrap input {
@@ -63,6 +63,11 @@
 .attendance-list-actions { flex: 0 1 680px; flex-wrap: wrap; }
 .attendance-status-filter { min-width: 150px; }
 .attendance-list-head { margin-top: var(--space-2); border: 1px solid var(--border-color); border-bottom: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; background: var(--color-surface); padding: var(--space-4) var(--space-5); }
+.attendance-refresh-status { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--font-xs); }
+.attendance-refresh-status[data-state="error"] { color: var(--danger-text); }
+.attendance-refresh-button .logicfit-button-spinner { display: none; }
+.attendance-refresh-button[aria-busy="true"] .logicfit-button-spinner { display: inline-block; }
+.attendance-first-load { display: flex; min-height: 160px; align-items: center; justify-content: center; gap: var(--space-3); color: var(--color-text-muted); }
 .attendance-search-wrap { min-width: 240px; }
 .attendance-table-wrap { min-width: 0; overflow-x: auto; }
 .attendance-table { min-width: 900px; table-layout: fixed; }
@@ -1748,10 +1753,6 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
     padding: 0;
   }
 
-  .attendance-summary {
-    order: -1;
-  }
-
   .attendance-entry-head {
     align-items: stretch;
     flex-direction: column;
@@ -2032,17 +2033,6 @@ body .swal2-popup.qr-member-preview-alert .swal2-actions > button.qr-member-prev
 
   .attendance-summary-card strong {
     font-size: 1.4rem !important;
-  }
-}
-
-/* Responsive composition: summary leads the operational card below desktop. */
-@media (max-width: 1199px) {
-  .attendance-summary {
-    order: 1;
-  }
-
-  .attendance-entry-card {
-    order: 2;
   }
 }
 
