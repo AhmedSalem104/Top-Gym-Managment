@@ -4051,6 +4051,8 @@
             'platformAdminScreen.theme.enableDark': 'تفعيل المظهر الداكن',
             'language.name': 'العربية',
             'language.short': 'EN',
+            'language.arabic.option': 'العربية',
+            'language.english.option': 'الإنجليزية',
             'language.switchToEnglish': 'التبديل إلى الإنجليزية',
             'language.switchToArabic': 'التبديل إلى العربية',
             'common.greeting': 'مرحبًا {{name}}',
@@ -6314,6 +6316,8 @@
             'feedback.value.unavailable': '—',
             'language.name': 'English',
             'language.short': 'عربي',
+            'language.arabic.option': 'Arabic',
+            'language.english.option': 'English',
             'language.switchToEnglish': 'Switch to English',
             'language.switchToArabic': 'Switch to Arabic',
             'common.greeting': 'Hello {{name}}',
@@ -8769,14 +8773,15 @@
                 button.setAttribute('aria-pressed', String(locale === currentLocale));
                 button.setAttribute('lang', locale);
                 button.setAttribute('dir', localeMeta[locale]?.dir || 'ltr');
+                const localeLabel = t(locale === 'ar' ? 'language.arabic.option' : 'language.english.option');
+                button.setAttribute('aria-label', localeLabel);
+                button.setAttribute('title', localeLabel);
                 if (locale === target && exposeLoginToggle) {
                     button.id = 'languageToggleButton';
                     button.setAttribute('aria-label', t(switchKey));
                     button.setAttribute('title', t(switchKey));
                 } else {
                     button.removeAttribute('id');
-                    button.removeAttribute('title');
-                    button.setAttribute('aria-label', locale === 'ar' ? 'العربية' : 'English');
                 }
             });
             const host = segmented.closest('.auth-reference-controls');
@@ -8840,7 +8845,7 @@
         document.querySelector('label[for="sectionContextSelect"]')?.replaceChildren(document.createTextNode(t('shell.section.current')));
 
         const shellText = [
-            ['#topAddMemberButton', 'shell.addMember'],
+            ['#topAddMemberButton > span', 'shell.addMember'],
             ['#refreshButton > span', 'shell.refresh'],
             ['#authLogoutButton > span', 'shell.logout']
         ];

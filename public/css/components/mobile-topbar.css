@@ -348,21 +348,32 @@
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action { display: flex; min-height: var(--ui-touch-target); flex: 0 0 auto; gap: var(--space-2); padding: 0; border: 0; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section .topbar-settings-icon { display: none; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section .topbar-settings-copy { display: none; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarThemeTitle"] .topbar-settings-copy { display: block; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarThemeTitle"] .topbar-settings-copy small,
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-copy small { display: none; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarThemeTitle"] .topbar-settings-copy strong { white-space: nowrap; font-size: var(--font-size-secondary); }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle { width: 112px; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action { display: inline-flex; width: auto; min-height: var(--ui-touch-target); padding-inline: var(--space-2); border: 1px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-surface); }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-icon { display: grid; width: 20px; height: 20px; flex: 0 0 20px; background: transparent; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-copy { display: block; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-copy { display: none; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action { display: inline-grid; width: var(--ui-touch-target); min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); place-items: center; padding: 0; border: 1px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-surface); }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-action .topbar-settings-icon { display: grid; width: var(--ui-touch-target); height: var(--ui-touch-target); flex: 0 0 var(--ui-touch-target); background: transparent; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section { display: block; flex: 0 0 auto; padding: 0; border: 0; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section .topbar-settings-logout { width: auto; min-height: var(--ui-touch-target); padding-inline: var(--space-2); white-space: nowrap; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section .topbar-settings-logout { width: var(--ui-touch-target); min-width: var(--ui-touch-target); min-height: var(--ui-touch-target); justify-content: center; padding: 0; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-logout-section .topbar-settings-logout > span,
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions > .btn > span { display: none; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions { display: flex; flex: 0 1 auto; gap: var(--space-1); padding: 0; border: 0; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions > .btn { min-height: var(--ui-touch-target); }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions > .btn { width: var(--ui-touch-target); min-width: var(--ui-touch-target); max-width: var(--ui-touch-target); min-height: var(--ui-touch-target); justify-content: center; padding: 0; font-size: 0; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle { width: 96px; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle > button { padding: 0; }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle .ui-icon { width: var(--icon-size-navigation); height: var(--icon-size-navigation); }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarThemeTitle"] .topbar-settings-switch { width: var(--ui-touch-target); min-width: var(--ui-touch-target); }
 }
 
 @media (max-width: 1023px) {
+  .app-shell > .topbar .topbar-language-toggle > button .visually-hidden {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: nowrap;
+  }
+
   body .app-shell > .topbar .topbar-inner {
     min-height: calc(var(--app-topbar-height) - 1px);
     padding-inline: var(--app-content-gutter-compact);

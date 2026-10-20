@@ -860,7 +860,19 @@ test('navbar settings are inline on desktop and remain in the anchored More menu
                 } else {
                     expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.navbar.top - 1);
                     expect(geometry.panel.top + geometry.panel.height).toBeLessThanOrEqual(geometry.navbar.bottom + 1);
-                    expect(geometry.panel.width).toBeGreaterThan(350);
+                    expect(geometry.panel.width).toBeGreaterThanOrEqual(220);
+                    for (const selector of ['[data-locale-choice="ar"]', '[data-locale-choice="en"]', '#themeToggleButton', '#topbarFullscreenAction', '#topbarLogoutAction']) {
+                        const control = panel.locator(selector);
+                        await expect(control).toHaveAttribute('aria-label', /.+/u);
+                        const bounds = await control.boundingBox();
+                        expect(bounds.width).toBeGreaterThanOrEqual(40);
+                        expect(bounds.height).toBeGreaterThanOrEqual(40);
+                    }
+                    const visibleText = panel.locator('.topbar-settings-copy');
+                    for (let index = 0; index < await visibleText.count(); index += 1) {
+                        await expect(visibleText.nth(index)).toBeHidden();
+                    }
+                    await expect(panel.locator('#themeToggleButton .ui-icon')).toBeVisible();
                     await expect(page.locator('.topbar-profile-avatar')).toHaveCount(0);
                 }
                 expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
