@@ -204,6 +204,20 @@ test('responsive navigation stays organized and accessible at each viewport', as
         });
         expect(sidebarBounds.bottom).toBeCloseTo(sidebarBounds.viewport, 0);
         expect(sidebarBounds.height).toBeCloseTo(sidebarBounds.viewport - sidebarBounds.top, 0);
+        const sidebarTrack = await page.locator('.app-shell').evaluate((shell) => {
+            const style = getComputedStyle(shell, '::before');
+            return {
+                display: style.display,
+                gridRow: style.gridRow,
+                surface: style.backgroundColor,
+                workspaceHeight: shell.getBoundingClientRect().height,
+                documentHeight: document.documentElement.scrollHeight
+            };
+        });
+        expect(sidebarTrack.display).toBe('block');
+        expect(sidebarTrack.gridRow).toBe('2');
+        expect(sidebarTrack.workspaceHeight).toBeGreaterThanOrEqual(sidebarTrack.documentHeight - 1);
+        expect(sidebarTrack.surface).not.toBe('rgba(0, 0, 0, 0)');
         const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger']
             .map((selector) => document.querySelector(selector))
             .filter((element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0)

@@ -1394,7 +1394,7 @@ body .app-shell > .page-tabs > .smart-assistant-launcher::before {
    workspace remains below the topbar in the content column. */
 @media (min-width: 1200px) {
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) {
-    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
+    grid-template-rows: var(--app-topbar-height) minmax(calc(100dvh - var(--app-topbar-height)), auto);
   }
 
   .app-shell:not(:has(> .workspace-contextbar:not([hidden]))) > .page-tabs {
@@ -2935,7 +2935,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     display: grid;
     min-height: 100dvh;
     grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
-    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
+    grid-template-rows: var(--app-topbar-height) minmax(calc(100dvh - var(--app-topbar-height)), auto);
     overflow-x: clip;
   }
 
@@ -2943,7 +2943,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   body .app-shell:has(> .page-tabs.is-hovered),
   body .app-shell:has(> .page-tabs:focus-within),
   body .app-shell:has(> .page-tabs.sidebar-pinned) {
-    grid-template-rows: var(--app-topbar-height) minmax(0, 1fr);
+    grid-template-rows: var(--app-topbar-height) minmax(calc(100dvh - var(--app-topbar-height)), auto);
     grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
   }
 
@@ -2951,6 +2951,16 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     grid-column: 1 / -1;
     grid-row: 1;
     min-width: 0;
+  }
+
+  body .app-shell::before {
+    display: block;
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+    background: var(--bg-sidebar);
+    content: "";
+    pointer-events: none;
   }
 
   body .app-shell > .page-tabs {
