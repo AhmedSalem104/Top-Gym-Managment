@@ -1173,6 +1173,18 @@
             if (!controls || !search || !statusField || !sortField || !statusChoices || !sortChoices || membersRoot.querySelector('.members-filter-tabs-row')) return;
             const filterRow = document.createElement('div');
             filterRow.className = 'members-filter-tabs-row';
+            const statusGroup = document.createElement('div');
+            statusGroup.className = 'members-filter-group members-status-filter-group';
+            const statusHeading = document.createElement('span');
+            statusHeading.className = 'members-filter-group-label members-status-filter-label';
+            statusHeading.textContent = membersText('filter.status');
+            statusGroup.append(statusHeading, statusChoices);
+            const sortGroup = document.createElement('div');
+            sortGroup.className = 'members-filter-group members-sort-filter-group';
+            const sortHeading = document.createElement('span');
+            sortHeading.className = 'members-filter-group-label members-sort-filter-label';
+            sortHeading.textContent = membersText('filter.sort');
+            sortGroup.append(sortHeading, sortChoices);
             const toolbar = controls.closest('.members-toolbar');
             const summary = membersRoot.querySelector('#membersSummary');
             if (summary) summary.after(filterRow);
@@ -1183,7 +1195,7 @@
             sortField.querySelector('span')?.classList.add('visually-hidden');
             statusChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-status-choices');
             sortChoices.classList.add('logicfit-filter-choices--outlined', 'logicfit-filter-choices--equal', 'members-sort-choices');
-            filterRow.append(statusField, statusChoices, sortField, sortChoices);
+            filterRow.append(statusField, sortField, statusGroup, sortGroup);
             const syncFilterPresentation = () => {
                 const mobile = window.matchMedia('(max-width: 767px)').matches;
                 const fields = [
@@ -1203,7 +1215,7 @@
                         select?.removeAttribute('tabindex');
                         choices.hidden = true;
                     } else {
-                        filterRow.append(field, choices);
+                        filterRow.append(field);
                         field.classList.add('visually-hidden');
                         label?.classList.add('visually-hidden');
                         select?.classList.add('logicfit-filter-native-source');
@@ -1246,6 +1258,11 @@
             clearButton.addEventListener('click', clearFilters);
             filterRow.querySelector('[data-filter-choices-for="statusFilter"]')?.setAttribute('aria-label', membersText('filter.statusAria'));
             filterRow.querySelector('[data-filter-choices-for="sortFilter"]')?.setAttribute('aria-label', membersText('filter.sortAria'));
+            const syncFilterGroupLabels = () => {
+                statusHeading.textContent = membersText('filter.status');
+                sortHeading.textContent = membersText('filter.sort');
+            };
+            window.addEventListener('topgym:localechange', syncFilterGroupLabels);
             syncFilterPresentation();
             membersMobileMedia.addEventListener('change', syncFilterPresentation);
             updateCount();

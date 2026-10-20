@@ -103,19 +103,41 @@ body .members-panel > .panel-header .members-page-subtitle { font-size: var(--fo
   padding-block-end: var(--space-1);
 }
 
-.members-filter-tabs-row > .logicfit-filter-choices {
-  width: auto;
-  max-width: none;
-  min-width: calc(5 * var(--ui-touch-target) + 4 * var(--space-1));
-  flex: 5 0 0;
+.members-filter-group {
+  display: grid;
+  min-width: 0;
+  align-content: start;
   gap: var(--space-1);
 }
 
-.members-filter-tabs-row > .members-sort-choices {
-  min-width: calc(3 * var(--ui-touch-target) + 2 * var(--space-1));
+.members-status-filter-group { flex: 5 0 0; }
+.members-sort-filter-group {
   flex: 3 0 0;
   padding-inline-start: var(--space-2);
   border-inline-start: 1px solid var(--border-secondary);
+}
+
+.members-filter-group-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.4;
+}
+
+.members-filter-group .logicfit-filter-choices {
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: var(--space-1);
+}
+
+.members-status-filter-group .logicfit-filter-choices {
+  min-width: calc(5 * var(--ui-touch-target) + 4 * var(--space-1));
+}
+
+.members-sort-filter-group .logicfit-filter-choices {
+  min-width: calc(3 * var(--ui-touch-target) + 2 * var(--space-1));
 }
 
 .members-filter-tabs-row .logicfit-filter-choice { min-height: var(--control-height-large); }
@@ -543,19 +565,6 @@ body #membersSection .members-toolbar-copy { display: none; }
   #membersSection .members-table th:nth-child(4),
   #membersSection .members-table td:nth-child(4) {
     min-width: 190px;
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1599px) {
-  /* The app shell reduces usable width below the viewport width. Keep the
-     actions column in the table's scroll area until the full table fits. */
-  #membersSection .members-table th:last-child,
-  #membersSection .members-table td:last-child:not([colspan]) {
-    position: static;
-    inset-inline-end: auto;
-    z-index: auto;
-    background: inherit;
-    box-shadow: none;
   }
 }
 
@@ -1462,7 +1471,7 @@ body .stat-card.members-summary-item::before { inset-inline: var(--space-3); }
   body .members-panel > .panel-header .header-actions > #addMemberButton:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 3px; }
   .members-toolbar { display: block; border: 0; background: transparent; padding: 0; }
   .members-filter-tabs-row { margin-inline: calc(-1 * var(--space-1)); padding-inline: var(--space-1); }
-  .members-filter-tabs-row > .logicfit-filter-choices { gap: var(--space-1); }
+  .members-filter-tabs-row .logicfit-filter-choices { gap: var(--space-1); }
   .members-filter-tabs-row .logicfit-filter-choice { min-height: var(--control-height-large); padding-inline: var(--space-2); }
   .members-mobile-results-count {
     display: block;

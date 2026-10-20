@@ -7,7 +7,7 @@ const featureCatalog = require('../../src/services/feature-catalog');
 const planCatalog = require('../../src/services/saas-plan-catalog');
 
 const OUTPUT = path.resolve(process.cwd(), process.env.MEMBERS_VISUAL_QA_OUTPUT || 'qa/artifacts/members-v2-screen-continuation');
-const WIDTHS = [320, 375, 390, 768, 1024, 1440, 1920];
+const WIDTHS = [320, 360, 390, 430, 768, 1024, 1440, 1920];
 const LOCALES = ['ar', 'en'];
 const THEMES = ['light', 'dark'];
 const BUSINESS_PLAN = planCatalog.PLAN_CONFIGURATIONS.find((plan) => plan.code === 'business');
@@ -386,11 +386,65 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
             await expect(page.locator('#membersList .members-mobile-card')).toHaveCount(4);
             await expect(page.locator('#membersList .members-table')).toHaveCount(0);
             await expect(page.locator('.members-mobile-results-count')).toBeVisible();
+            await expect(page.locator('.members-summary-grid')).toBeHidden();
             const addAction = await page.locator('#addMemberButton').boundingBox();
             const sectionPaddingBottom = await page.locator('#membersSection').evaluate((node) => Number.parseFloat(getComputedStyle(node).paddingBlockEnd));
             expect(addAction.width, `persistent add action spans mobile dock at ${width}px`).toBeGreaterThanOrEqual(width - 24);
             expect(addAction.height, `persistent add action meets touch height at ${width}px`).toBeGreaterThanOrEqual(44);
             expect(sectionPaddingBottom, `member list reserves space below pagination at ${width}px`).toBeGreaterThanOrEqual(68);
+            await page.locator('#membersList .members-mobile-card:last-child').scrollIntoViewIfNeeded();
+            await page.evaluate(() => {
+                const list = document.querySelector('#membersList');
+                let ancestor = list?.parentElement;
+                while (ancestor && ancestor !== document.body) {
+                    const style = getComputedStyle(ancestor);
+                    if (/(auto|scroll)/.test(`${style.overflowY} ${style.overflow}`) && ancestor.scrollHeight > ancestor.clientHeight + 1) {
+                        ancestor.scrollTop = ancestor.scrollHeight;
+                        return;
+                    }
+                    ancestor = ancestor.parentElement;
+                }
+                const scroller = document.scrollingElement;
+                if (scroller) scroller.scrollTop = scroller.scrollHeight;
+            });
+            await page.waitForTimeout(50);
+            const bottomReachability = await page.evaluate(() => {
+                const lastCard = document.querySelector('#membersList .members-mobile-card:last-child');
+                const dockButton = document.querySelector('#addMemberButton');
+                const action = lastCard?.querySelector('.members-mobile-actions .icon-action:not([hidden]), .members-mobile-actions .action-menu-toggle');
+                if (!lastCard || !dockButton || !action) return null;
+                const cardRect = lastCard.getBoundingClientRect();
+                const buttonRect = dockButton.getBoundingClientRect();
+                const actionRect = action.getBoundingClientRect();
+                const hit = document.elementFromPoint(actionRect.left + actionRect.width / 2, actionRect.top + actionRect.height / 2);
+                return {
+                    cardBottom: cardRect.bottom,
+                    dockTop: buttonRect.top,
+                    actionBottom: actionRect.bottom,
+                    viewportBottom: innerHeight,
+                    actionReceivesPointer: Boolean(hit && (hit === action || action.contains(hit)))
+                };
+            });
+            expect(bottomReachability, `last member actions exist at ${width}px`).not.toBeNull();
+            expect(bottomReachability.cardBottom, `last member card clears the fixed action dock at ${width}px`).toBeLessThanOrEqual(bottomReachability.dockTop);
+            expect(bottomReachability.actionBottom, `last member action is reachable at ${width}px`).toBeLessThanOrEqual(bottomReachability.viewportBottom);
+            expect(bottomReachability.actionReceivesPointer, `last member action is not obscured at ${width}px`).toBe(true);
+            if (width === 320) {
+                await page.screenshot({ path: path.join(OUTPUT, 'members-mobile-list-bottom-320-ar-light.png') });
+            }
+            await page.evaluate(() => {
+                const list = document.querySelector('#membersList');
+                let ancestor = list?.parentElement;
+                while (ancestor && ancestor !== document.body) {
+                    const style = getComputedStyle(ancestor);
+                    if (/(auto|scroll)/.test(`${style.overflowY} ${style.overflow}`) && ancestor.scrollHeight > ancestor.clientHeight + 1) {
+                        ancestor.scrollTop = 0;
+                        return;
+                    }
+                    ancestor = ancestor.parentElement;
+                }
+                window.scrollTo({ top: 0, behavior: 'instant' });
+            });
         } else {
             await expect(page.locator('#membersList .members-table')).toBeVisible();
             await expect(page.locator('#membersList .members-table tbody > tr')).toHaveCount(4);
@@ -452,6 +506,30 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                 expect(['auto', 'scroll']).toContain(bounds.tableScroller.overflowX);
                 expect(bounds.tableScroller.tableDirection, `table direction follows ${locale} at ${width}px`).toBe(direction);
                 expect(bounds.tableScroller.firstColumnVisible, `member identity column is visible at the initial table position at ${width}px ${locale}`).toBe(true);
+                const actionsVisibility = await page.locator('#membersList .members-table').evaluate((table) => {
+                    const scroller = table.closest('.table-scroll');
+                    const header = table.tHead?.rows[0]?.cells[5];
+                    const row = table.tBodies[0]?.rows[0];
+                    const cell = row?.cells[5];
+                    const action = cell?.querySelector('.icon-action:not([hidden]), .action-menu-toggle');
+                    const wrapper = scroller?.getBoundingClientRect();
+                    const headerRect = header?.getBoundingClientRect();
+                    const cellRect = cell?.getBoundingClientRect();
+                    const actionRect = action?.getBoundingClientRect();
+                    const hit = actionRect && document.elementFromPoint(actionRect.left + actionRect.width / 2, actionRect.top + actionRect.height / 2);
+                    return {
+                        sticky: header ? getComputedStyle(header).position : null,
+                        headerVisible: Boolean(wrapper && headerRect && headerRect.left >= wrapper.left - 1 && headerRect.right <= wrapper.right + 1),
+                        cellVisible: Boolean(wrapper && cellRect && cellRect.left >= wrapper.left - 1 && cellRect.right <= wrapper.right + 1),
+                        actionVisible: Boolean(actionRect && actionRect.width > 0 && actionRect.height > 0),
+                        actionReceivesPointer: Boolean(action && hit && (hit === action || action.contains(hit)))
+                    };
+                });
+                expect(actionsVisibility.sticky, `actions column remains owned by the shared sticky table pattern at ${width}px`).toBe('sticky');
+                expect(actionsVisibility.headerVisible, `actions header is visible without horizontal-scroll discovery at ${width}px ${locale}`).toBe(true);
+                expect(actionsVisibility.cellVisible, `member actions column is visible without horizontal-scroll discovery at ${width}px ${locale}`).toBe(true);
+                expect(actionsVisibility.actionVisible, `member action control is visible at ${width}px`).toBe(true);
+                expect(actionsVisibility.actionReceivesPointer, `member action control is not covered at ${width}px`).toBe(true);
                 const accountCellTextOverflow = await page.locator('#membersList .members-table tbody tr').evaluateAll((rows) => rows.flatMap((row) => {
                     const cell = row.cells[3];
                     if (!cell) return [];
@@ -467,7 +545,7 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                                 cellRight: cellRect.right,
                                 textLeft: rect.left,
                                 textRight: rect.right,
-                                overlapsActions: Boolean(actionsRect && cellRect.right > actionsRect.left + 1 && cellRect.left < actionsRect.right - 1)
+                                overlapsActions: Boolean(actionsRect && rect.right > actionsRect.left + 1 && rect.left < actionsRect.right - 1)
                             };
                         })
                         .filter((item) => item.textLeft < item.cellLeft - 2
@@ -496,6 +574,24 @@ test('Members list, search, filters, table and mobile cards render in V2 across 
                             expect(overlapX > 0 && overlapY > 0, `mobile actions must not overlap at ${width}px ${locale} ${theme}`).toBe(false);
                         }
                     }
+                }
+            }
+
+            if (!isMobile) {
+                const statusLegend = page.locator('.members-status-filter-label');
+                const sortLegend = page.locator('.members-sort-filter-label');
+                await expect(statusLegend).toBeVisible();
+                await expect(sortLegend).toBeVisible();
+                await expect(statusLegend).toHaveText(locale === 'ar' ? 'حالة الاشتراك' : 'Membership status');
+                await expect(sortLegend).toHaveText(locale === 'ar' ? 'ترتيب النتائج' : 'Sort results');
+                const filterGroupGeometry = await page.evaluate(() => ['.members-status-filter-group', '.members-sort-filter-group'].map((selector) => {
+                    const group = document.querySelector(selector);
+                    const label = group?.querySelector('.members-filter-group-label')?.getBoundingClientRect();
+                    const choices = group?.querySelector('.logicfit-filter-choices')?.getBoundingClientRect();
+                    return { labelBottom: label?.bottom, choicesTop: choices?.top };
+                }));
+                for (const geometry of filterGroupGeometry) {
+                    expect(geometry.labelBottom, `filter group label has its own row at ${width}px ${locale}`).toBeLessThanOrEqual(geometry.choicesTop);
                 }
             }
 
@@ -869,4 +965,138 @@ test('Members more-action menus stay reachable and within the viewport at respon
 
     expect(requests.filter(({ method }) => !['GET', 'HEAD', 'OPTIONS'].includes(method)), 'action-menu QA must not issue mutations').toEqual([]);
     expect(pageErrors, 'Members action-menu matrix must not produce uncaught browser page errors').toEqual([]);
+});
+
+test('Members filter groups survive repeated viewport transitions without duplication, escape or behavior loss', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'One deterministic browser exercises the resize and locale/theme matrix.');
+    const requests = await installReadOnlyMemberFixtures(page);
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    const membersCssSource = await fs.readFile(path.join(process.cwd(), 'public/css/pages/members.css'), 'utf8');
+    await fs.mkdir(OUTPUT, { recursive: true });
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.goto('/index.html?membersFilterResizeRegression=1#members', { waitUntil: 'networkidle' });
+    await installCurrentMembersStyles(page, membersCssSource);
+    await expect(page.locator('#membersList')).toContainText(MEMBERS[0].fullName);
+
+    const statusSelect = page.locator('#statusFilter');
+    const sortSelect = page.locator('#sortFilter');
+    await statusSelect.selectOption('active');
+    await sortSelect.selectOption('remaining');
+    let expectedStatus = 'active';
+    let expectedSort = 'remaining';
+    const resizeSequence = [320, 768, 1024, 1440, 1024, 768, 320, 1440, 320];
+
+    for (const locale of LOCALES) {
+        await page.evaluate((value) => window.TopGymI18n.set(value), locale);
+        for (const theme of THEMES) {
+            await page.evaluate((mode) => window.TopGymTheme.set(mode), theme);
+            for (const width of resizeSequence) {
+                await page.setViewportSize({ width, height: width <= 390 ? 844 : 1000 });
+                await page.waitForFunction((mobile) => matchMedia('(max-width: 767px)').matches === mobile, width < 768);
+                const mobile = width < 768;
+                const documentGeometry = await page.evaluate(() => ({
+                    viewport: document.documentElement.clientWidth,
+                    document: document.documentElement.scrollWidth,
+                    body: document.body.scrollWidth
+                }));
+                expect(documentGeometry.document, `document has no horizontal overflow at ${width}px`).toBeLessThanOrEqual(documentGeometry.viewport);
+                expect(documentGeometry.body, `body has no horizontal overflow at ${width}px`).toBeLessThanOrEqual(documentGeometry.viewport);
+                const filterRow = page.locator('.members-filter-tabs-row');
+                const statusGroup = page.locator('.members-status-filter-group');
+                const sortGroup = page.locator('.members-sort-filter-group');
+                const statusChoices = statusGroup.locator('[data-filter-choices-for="statusFilter"]');
+                const sortChoices = sortGroup.locator('[data-filter-choices-for="sortFilter"]');
+
+                await expect(statusGroup).toHaveCount(1);
+                await expect(sortGroup).toHaveCount(1);
+                await expect(statusChoices).toHaveCount(1);
+                await expect(sortChoices).toHaveCount(1);
+                await expect(statusGroup.locator('.members-filter-group-label')).toHaveCount(1);
+                await expect(sortGroup.locator('.members-filter-group-label')).toHaveCount(1);
+                expect(await statusChoices.evaluate((node) => node.parentElement === node.closest('.members-status-filter-group'))).toBe(true);
+                expect(await sortChoices.evaluate((node) => node.parentElement === node.closest('.members-sort-filter-group'))).toBe(true);
+                await expect(statusSelect).toHaveValue(expectedStatus);
+                await expect(sortSelect).toHaveValue(expectedSort);
+
+                if (mobile) {
+                    await expect(filterRow).toBeHidden();
+                    await expect(statusSelect).toBeVisible();
+                    await expect(sortSelect).toBeVisible();
+                    await expect(statusChoices).toBeHidden();
+                    await expect(sortChoices).toBeHidden();
+                    const nativeFilterGeometry = await page.evaluate(() => ['#statusFilter', '#sortFilter'].map((selector) => {
+                        const control = document.querySelector(selector);
+                        const field = control?.closest('.members-filter-field');
+                        const label = field?.querySelector('span')?.getBoundingClientRect();
+                        const controlRect = control?.getBoundingClientRect();
+                        const fieldRect = field?.getBoundingClientRect();
+                        return {
+                            labelBottom: label?.bottom,
+                            controlTop: controlRect?.top,
+                            controlLeft: controlRect?.left,
+                            controlRight: controlRect?.right,
+                            fieldLeft: fieldRect?.left,
+                            fieldRight: fieldRect?.right
+                        };
+                    }));
+                    for (const geometry of nativeFilterGeometry) {
+                        expect(geometry.labelBottom, `mobile filter title does not overlap its control at ${width}px`).toBeLessThanOrEqual(geometry.controlTop);
+                        expect(geometry.controlLeft, `mobile filter stays inside its field at ${width}px`).toBeGreaterThanOrEqual(geometry.fieldLeft - 1);
+                        expect(geometry.controlRight, `mobile filter stays inside its field at ${width}px`).toBeLessThanOrEqual(geometry.fieldRight + 1);
+                    }
+                } else {
+                    await expect(filterRow).toBeVisible();
+                    // These native selects are visually clipped and removed from
+                    // keyboard/accessibility navigation at desktop widths. Playwright
+                    // considers the 1px clipped source "visible", so assert its
+                    // explicit source-control contract instead of visibility.
+                    await expect(statusSelect).toHaveClass(/logicfit-filter-native-source/);
+                    await expect(sortSelect).toHaveClass(/logicfit-filter-native-source/);
+                    await expect(statusSelect).toHaveAttribute('aria-hidden', 'true');
+                    await expect(sortSelect).toHaveAttribute('aria-hidden', 'true');
+                    await expect(statusSelect).toHaveAttribute('tabindex', '-1');
+                    await expect(sortSelect).toHaveAttribute('tabindex', '-1');
+                    await expect(statusChoices).toBeVisible();
+                    await expect(sortChoices).toBeVisible();
+                    await expect(statusChoices.locator('[aria-checked="true"]')).toHaveAttribute('data-filter-value', expectedStatus);
+                    await expect(sortChoices.locator('[aria-checked="true"]')).toHaveAttribute('data-filter-value', expectedSort);
+
+                    const groupGeometry = await page.evaluate(() => ['.members-status-filter-group', '.members-sort-filter-group'].map((selector) => {
+                        const group = document.querySelector(selector);
+                        const label = group?.querySelector('.members-filter-group-label')?.getBoundingClientRect();
+                        const choices = group?.querySelector('.logicfit-filter-choices')?.getBoundingClientRect();
+                        const groupRect = group?.getBoundingClientRect();
+                        return {
+                            labelBottom: label?.bottom,
+                            choicesTop: choices?.top,
+                            choicesLeft: choices?.left,
+                            choicesRight: choices?.right,
+                            groupLeft: groupRect?.left,
+                            groupRight: groupRect?.right
+                        };
+                    }));
+                    for (const geometry of groupGeometry) {
+                        expect(geometry.labelBottom).toBeLessThanOrEqual(geometry.choicesTop);
+                        expect(geometry.choicesLeft).toBeGreaterThanOrEqual(geometry.groupLeft - 1);
+                        expect(geometry.choicesRight).toBeLessThanOrEqual(geometry.groupRight + 1);
+                    }
+                }
+
+                if (width === 1024 && locale === 'ar' && theme === 'light') {
+                    await statusChoices.locator('[data-filter-value="expired"]').click();
+                    await sortChoices.locator('[data-filter-value="newest"]').click();
+                    expectedStatus = 'expired';
+                    expectedSort = 'newest';
+                }
+
+                if ((width === 320 || width === 1440) && locale === 'ar' && theme === 'light') {
+                    await page.screenshot({ path: path.join(OUTPUT, `members-filter-resize-${width}-${locale}-${theme}.png`) });
+                }
+            }
+        }
+    }
+
+    expect(requests.filter(({ method }) => !['GET', 'HEAD', 'OPTIONS'].includes(method)), 'filter resize regression must not issue mutations').toEqual([]);
+    expect(pageErrors, 'filter resize regression must not produce uncaught browser page errors').toEqual([]);
 });

@@ -86,7 +86,9 @@ test('member filter groups use the canonical equal-choice variant and visible se
 
     assert.match(tabs, /logicfit-filter-choices--equal \.logicfit-filter-choice\s*\{[^}]*min-width:\s*var\(--ui-touch-target\);[^}]*flex:\s*1 1 0;/u);
     assert.match(tabs, /logicfit-filter-choices--outlined \.logicfit-filter-choice\[aria-checked="true"\][\s\S]*?background:\s*var\(--primary-soft\)[\s\S]*?box-shadow:\s*inset 0 0 0 1px var\(--primary-border\)/u);
-    assert.match(members, /\.members-filter-tabs-row\s*>\s*\.members-sort-choices\s*\{[^}]*flex:\s*3 0 0;/u);
+    assert.match(members, /\.members-status-filter-group\s*\{\s*flex:\s*5 0 0;/u);
+    assert.match(members, /\.members-sort-filter-group\s*\{[^}]*flex:\s*3 0 0;[^}]*border-inline-start:/u);
+    assert.match(members, /\.members-filter-group-label\s*\{[^}]*font-size:\s*var\(--font-xs\)/u);
     assert.match(app, /statusChoices\.classList\.add\('logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--equal'/u);
     assert.match(app, /sortChoices\.classList\.add\('logicfit-filter-choices--outlined',\s*'logicfit-filter-choices--equal'/u);
 });

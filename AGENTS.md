@@ -163,3 +163,14 @@ Logic Fit Design System V2 is the only approved visual design system. All future
 - Component changes require appropriate functional, visual, responsive, keyboard/accessibility and theme verification. Do not claim a screen or print output was verified without an actual browser/print artifact.
 - Before removing historical styling, map its consumers, migrate them, verify them, then remove only obsolete visual declarations. Never delete functional selectors, DOM hooks, generated source, or files with unknown consumers.
 - All Codex agents and delegated specialists must read these V2 rules and the canonical design specification before making UI changes. Parallel agents must have disjoint file ownership; the Lead integrates and reviews all changes.
+
+## Project UI/UX skills
+
+The project skills live in `.agents/skills/` and are the reusable workflow guidance for frontend work. Load the applicable `SKILL.md` through Codex skill discovery before acting; a name written here does not imply a skill is installed in another environment.
+
+- `frontend-design`: visual implementation or translation of an approved reference. Use the existing Logic Fit V2 identity and preserve functionality.
+- `ui-ux-review`: evidence-led usability/accessibility review. A review request does not authorize implementation.
+- `responsive-design`: responsive planning and browser validation across mobile, tablet, desktop, RTL/LTR, and both themes.
+- `design-system`: token and canonical component ownership, variants, and design-system documentation.
+
+For substantial UI work, combine the applicable skills rather than duplicating their guidance: review first when requested, plan responsive behavior, implement with V2 owners, and finish with evidence-backed visual/keyboard/theme checks. If a skill is unavailable, follow this file and the canonical V2 specification directly and state the limitation. Existing project authorization and release rules remain controlling.
