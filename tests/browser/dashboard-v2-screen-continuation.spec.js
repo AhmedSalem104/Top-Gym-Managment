@@ -208,6 +208,14 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.locator('#dashboardScopeOpen').click();
         const dialog = page.locator('#dashboardScopeDialog');
         await expect(dialog).toBeVisible();
+        await dialog.evaluate((element) => Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => undefined))));
+        await expect(dialog.locator(':scope > .dialog-close-button[data-dialog-close-generated]')).toHaveCount(0);
+        await expect(dialog.locator('.dialog-header > #dashboardScopeClose')).toBeVisible();
+        const closeCssWidth = await page.locator('#dashboardScopeClose').evaluate((element) => getComputedStyle(element).width);
+        expect(closeCssWidth).toBe('44px');
+        const closeBox = await page.locator('#dashboardScopeClose').boundingBox();
+        expect(closeBox.width).toBeGreaterThanOrEqual(44);
+        expect(closeBox.height).toBeGreaterThanOrEqual(44);
         const dialogFrame = await dialog.boundingBox();
         expect(dialogFrame.width).toBeGreaterThan(500);
         expect(dialogFrame.height).toBeLessThanOrEqual(900);
@@ -229,6 +237,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 headerAlign: styles(header).alignItems,
                 headerChildren: [...header.children].map((node) => ({ className: node.className, height: node.getBoundingClientRect().height, display: styles(node).display, padding: styles(node).padding, margin: styles(node).margin })),
                 headingHeight: element.querySelector('.dashboard-scope-dialog-heading').getBoundingClientRect().height,
+                headerCenterDelta: Math.max(...[...header.children].map((node) => Math.abs((node.getBoundingClientRect().top + node.getBoundingClientRect().height / 2) - (header.getBoundingClientRect().top + header.getBoundingClientRect().height / 2)))),
                 bodyScroll: styles(body).overflowY,
                 rowGap: styles(element.querySelector('.dashboard-scope-fields')).gridTemplateColumns
             };
@@ -237,6 +246,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         expect(chrome.headerHeight).toBeGreaterThanOrEqual(64);
         expect(chrome.headerHeight, JSON.stringify(chrome)).toBeLessThanOrEqual(90);
         expect(chrome.footerHeight).toBeGreaterThanOrEqual(60);
+        expect(chrome.headerCenterDelta, JSON.stringify(chrome)).toBeLessThanOrEqual(12);
         expect(chrome.bodyScroll).toBe('auto');
         await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'scope-dialog-1440-ar-dark.png'), fullPage: false });
         await expect(page.locator('#dashboardScopeBranchSelect option')).toContainText(['QA Main Branch', 'QA Riverside Branch']);
@@ -279,7 +289,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.locator('#dashboardScopeOpen').click();
         await expect(dialog).toBeVisible();
-        for (const width of [320, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
+        for (const width of [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920]) {
             await page.setViewportSize({ width, height: width <= 390 ? 568 : 900 });
             for (const locale of ['ar', 'en']) {
                 for (const theme of ['light', 'dark']) {

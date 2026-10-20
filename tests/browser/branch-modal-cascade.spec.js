@@ -5,7 +5,7 @@ async function mountBranchDialog(page) {
         document.getElementById('branchCreateDialog')?.remove();
         const dialog = document.createElement('dialog');
         dialog.id = 'branchCreateDialog';
-        dialog.className = 'branch-create-dialog lf-modal-shell lf-modal--md lf-modal--structured';
+        dialog.className = 'branch-create-dialog lf-modal-shell lf-modal--md lf-modal--structured lf-modal--form';
         dialog.innerHTML = `
             <form class="dialog-body branches-form" novalidate>
                 <div class="details-dialog-head">
@@ -29,6 +29,9 @@ async function mountBranchDialog(page) {
         dialog.showModal();
     });
     await page.locator('#branchCreateDialog').waitFor({ state: 'visible' });
+    await page.locator('#branchCreateDialog').evaluate((dialog) => Promise.all(dialog.getAnimations()
+        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+        .map((animation) => animation.finished.catch(() => undefined))));
 }
 
 async function waitForStableTypography(page) {
@@ -140,6 +143,7 @@ test.describe('branchCreateDialog cascade contract', () => {
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal-shell/);
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--md/);
         await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--structured/);
+        await expect(page.locator('#branchCreateDialog')).toHaveClass(/lf-modal--form/);
 
         await page.screenshot({
             path: testInfo.outputPath(`branch-create-${testInfo.project.name}.png`),

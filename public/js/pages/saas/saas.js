@@ -371,7 +371,7 @@
         if (!page || !panel || !plansPanel || !renewalSection || panel.dataset.dialogReady === 'true') return;
         panel.dataset.dialogReady = 'true';
         const dialog = document.createElement('dialog');
-        dialog.className = 'saas-request-dialog lf-modal-shell lf-modal--md lf-modal--structured';
+        dialog.className = 'saas-request-dialog lf-modal-shell lf-modal--md lf-modal--structured lf-modal--form';
         dialog.setAttribute('aria-labelledby', 'saasRequestTitle');
         const close = document.createElement('button');
         close.className = 'btn btn-light dialog-close-button';

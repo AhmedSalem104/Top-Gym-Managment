@@ -551,8 +551,41 @@ test('dynamically-created Coaching dialogs opt into the central structured contr
         'measurementDialog', 'checkinDialog', 'coachingSubscriptionDialog',
         'coachingClientEditDialog', 'coachingSessionDialog', 'coachingMealLogDialog'
     ]) {
-        assert.match(coaching, new RegExp(`dialog\\.id = '${id}'[\\s\\S]*?dialog\\.className = 'coaching-small-dialog`, 'u'), `${id} should use the shared Coaching dialog component class`);
+        assert.match(coaching, new RegExp(`dialog\\.id = '${id}'[\\s\\S]*?dialog\\.className = 'coaching-small-dialog lf-modal--form`, 'u'), `${id} should use the canonical structured form variant`);
     }
+});
+
+test('compatible native and runtime form dialogs use the canonical Azure form variant', () => {
+    const htmlSources = [
+        'public/index.html', 'public/trainer-workspace.html', 'public/dialogs/backup.html',
+        'public/dialogs/coaching.html', 'public/dialogs/library.html', 'public/dialogs/permissions.html'
+    ];
+    const migratedIds = [
+        'dashboardScopeDialog', 'memberPaymentMethodDialog', 'dayPassDialog', 'expenseDialog',
+        'membershipPlanDialog', 'membershipTypeDialog', 'trainerClientDialog', 'trainerMeasurementDialog',
+        'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog',
+        'trainerPaymentDialog', 'backupRestoreDialog', 'externalTraineeDialog', 'libraryFormDialog', 'authUserDialog'
+    ];
+    for (const id of migratedIds) {
+        const source = htmlSources.map(read).find((value) => value.includes(`id="${id}"`)) || '';
+        const tag = source.match(new RegExp(`<dialog\\b[^>]*\\bid="${id}"[^>]*>`, 'u'))?.[0] || '';
+        assert.match(tag, /\blf-modal--structured\b/u, `${id} must use shared structured layout`);
+        assert.match(tag, /\blf-modal--form\b/u, `${id} must use the canonical Azure form variant`);
+    }
+
+    assert.match(read('public/js/branch-context.js'), /id="branchCreateDialog"[^>]*lf-modal--form/u);
+    assert.match(read('public/js/pages/saas/saas.js'), /saas-request-dialog lf-modal-shell lf-modal--md lf-modal--structured lf-modal--form/u);
+
+    const specialized = read('public/index.html');
+    for (const id of ['memberDialog', 'actionDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog']) {
+        const tag = specialized.match(new RegExp(`<dialog\\b[^>]*\\bid="${id}"[^>]*>`, 'u'))?.[0] || '';
+        assert.doesNotMatch(tag, /\blf-modal--form\b/u, `${id} retains its specialized semantic variant`);
+    }
+
+    const modal = read('public/css/components/modal-foundation.css');
+    assert.match(modal, /\.lf-modal-shell\.lf-modal--form\s*\{[^}]*--lf-dialog-header-surface:\s*var\(--dialog-form-chrome\)[^}]*--lf-dialog-footer-surface:\s*var\(--dialog-form-chrome\)/u);
+    assert.match(read('public/css/tokens.css'), /--dialog-form-chrome:\s*var\(--azure-50\)/u);
+    assert.match(read('public/css/tokens.css'), /--dialog-form-chrome:\s*var\(--primary-soft\)/u);
 });
 
 test('SweetAlert destructive actions have one semantic danger owner instead of a shadowed primary rule', () => {

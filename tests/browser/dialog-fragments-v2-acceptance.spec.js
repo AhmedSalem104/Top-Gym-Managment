@@ -5,7 +5,7 @@ const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 
 const OUTPUT = path.resolve(process.cwd(), 'qa/artifacts/dialog-fragments-v2-acceptance');
-const VIEWPORTS = [320, 375, 390, 768, 1024, 1440, 1920];
+const VIEWPORTS = [320, 360, 375, 390, 430, 768, 1024, 1280, 1440, 1920];
 const THEMES = ['light', 'dark'];
 const DIRECTIONS = ['rtl', 'ltr'];
 const STATES = ['empty', 'populated', 'loading', 'error'];
@@ -158,6 +158,9 @@ test('V2 dialogs: read-only actual-fragment visual and interaction acceptance ma
                     await page.locator('#dialog-fragment-acceptance-trigger').focus();
                     await page.locator('#dialog-fragment-acceptance-trigger').click();
                     await expect(dialog).toBeVisible();
+                    await dialog.evaluate((element) => Promise.all(element.getAnimations()
+                        .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+                        .map((animation) => animation.finished.catch(() => undefined))));
                     const closeButton = dialog.locator(dialogSpec.close);
                     await expect(closeButton, `${dialogSpec.id} visible close control`).toBeVisible();
                     await expect(closeButton, `${dialogSpec.id} close control has a name`).toContainText('إغلاق');
