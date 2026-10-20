@@ -25,6 +25,7 @@ test('authenticated entry keeps route features out of the initial shell', () => 
     assert.doesNotMatch(index, /button-loading\.js/u);
     assert.doesNotMatch(index, /pagination\.js/u);
     assert.doesNotMatch(shell, /pages\/(members|reports|library|trainees)\.css/u);
+    assert.doesNotMatch(shell, /components\/branch-context\.css/u);
     assert.match(bootstrap, /topGymAuthReady/u);
     assert.match(bootstrap, /topGymLoadApp/u);
 });

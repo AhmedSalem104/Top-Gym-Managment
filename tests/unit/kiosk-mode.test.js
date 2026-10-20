@@ -21,11 +21,13 @@ test('Gym App exposes one reusable global Kiosk controller', () => {
     assert.match(source, /kiosk-exit-control/);
 });
 
-test('Kiosk is scoped to the Gym App shell and keeps a visible exit path', () => {
+test('Kiosk stays available in attendance but is excluded from the Navbar settings menu', () => {
     const index = read('public/index.html');
     const styles = read('public/css/components/navigation-shell.css');
 
-    assert.match(index, /id="globalKioskToggle"[^>]*data-kiosk-toggle/);
+    assert.doesNotMatch(index, /id="globalKioskToggle"[^>]*data-kiosk-toggle/);
+    assert.match(index, /class="topbar-more-items"[\s\S]*?<\/div>[\s\S]*?<button class="topbar-settings-logout"/);
+    assert.doesNotMatch(index.match(/class="topbar-more-items"[\s\S]*?<\/div>\s*<\/details>/)?.[0] || '', /data-kiosk-toggle/);
     assert.match(index, /id="attendanceKioskButton"[^>]*data-kiosk-toggle/);
     assert.match(index, /\/js\/kiosk\.js\?v=[a-f0-9]{16}/);
     assert.match(styles, /\.app-shell\.is-kiosk-mode\s*>\s*\.topbar/);

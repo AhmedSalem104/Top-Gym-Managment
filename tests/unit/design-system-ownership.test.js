@@ -295,11 +295,13 @@ test('branch/section dropdown styling and Navbar shell composition have canonica
         /body \.topbar-controls > \.branch-context-shell \.branch-context-field:hover,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field:focus-within,\s*body \.topbar-controls > \.branch-context-shell \.branch-context-field\.is-open\s*\{[^}]*min-width: 0;[^}]*transform: none;/u,
         'the compact Navbar branch/section states share one non-important sizing rule');
 
+    const navigationIndex = main.indexOf('@import url("./components/navigation-shell.css");');
+    const contextIndex = main.indexOf('@import url("./components/branch-context.css");');
+    assert.ok(navigationIndex >= 0 && contextIndex > navigationIndex,
+        'the compatibility stylesheet keeps branch context after the shell layout owner');
+    assert.doesNotMatch(appShell, /components\/branch-context\.css/u,
+        'the authenticated shell omits the hidden Navbar context selectors; Dashboard scope UI owns the visible selection');
     for (const source of [main, appShell]) {
-        const navigationIndex = source.indexOf('@import url("./components/navigation-shell.css");');
-        const contextIndex = source.indexOf('@import url("./components/branch-context.css");');
-        assert.ok(navigationIndex >= 0 && contextIndex > navigationIndex,
-            'branch context must load after the shell layout owner');
         assert.doesNotMatch(source, /visual-redesign\.css/u, 'retired global visual CSS must not be imported');
     }
 
