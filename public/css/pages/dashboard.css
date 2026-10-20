@@ -1811,8 +1811,75 @@
   }
 }
 
-/* Dashboard overview replaces the photographic banner with five data-backed
-   surfaces. The semantic card order follows the current document direction. */
+/* Dashboard overview uses four data-backed summary surfaces and the shared scope selector. */
+.dashboard-scope-bar {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(220px, 1.15fr) minmax(0, 1.8fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-xs);
+}
+
+.dashboard-scope-intro {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.dashboard-scope-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.dashboard-scope-icon .ui-icon { width: var(--icon-size-control); height: var(--icon-size-control); }
+.dashboard-scope-intro h2 { margin: 0; color: var(--text-primary); font-size: var(--font-md); font-weight: var(--weight-semibold); line-height: 1.4; }
+.dashboard-scope-intro p { margin: var(--space-1) 0 0; color: var(--text-muted); font-size: var(--font-size-secondary); line-height: 1.5; }
+
+.dashboard-scope-values {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.dashboard-scope-value { min-width: 0; padding-inline: var(--space-3); border-inline-start: 1px solid var(--border-secondary); }
+.dashboard-scope-value dt { display: flex; min-width: 0; align-items: center; gap: var(--space-2); color: var(--text-muted); font-size: var(--font-xs); }
+.dashboard-scope-value dt .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); flex: 0 0 var(--icon-size-compact); color: var(--primary); }
+.dashboard-scope-value dd { min-width: 0; margin: var(--space-1) 0 0; color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); line-height: 1.4; overflow-wrap: anywhere; }
+.dashboard-scope-change { min-height: var(--ui-touch-target); white-space: nowrap; }
+.dashboard-scope-change .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); }
+
+.dashboard-scope-dialog { max-height: min(720px, calc(100dvh - var(--space-8))); }
+.dashboard-scope-dialog-shell { display: grid; min-width: 0; grid-template-rows: auto minmax(0, 1fr); }
+.dashboard-scope-dialog #dashboardScopeForm { display: grid; min-height: 0; grid-template-rows: minmax(0, 1fr) auto; }
+.dashboard-scope-dialog-body { display: grid; min-height: 0; align-content: start; gap: var(--space-4); }
+.dashboard-scope-dialog-status { margin: 0; color: var(--text-muted); }
+.dashboard-scope-fields { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.dashboard-scope-fields[hidden] { display: none; }
+.dashboard-scope-fields .field { display: grid; min-width: 0; align-content: start; gap: var(--space-2); color: var(--text-primary); font-weight: var(--weight-medium); }
+.dashboard-scope-search { min-width: 0; }
+.dashboard-scope-preview { display: grid; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-md); background: var(--bg-card-hover); }
+.dashboard-scope-preview[hidden] { display: none; }
+.dashboard-scope-preview h3 { margin: 0; color: var(--text-muted); font-size: var(--font-xs); font-weight: var(--weight-medium); }
+.dashboard-scope-preview dl { display: grid; min-width: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
+.dashboard-scope-preview dl > div { min-width: 0; }
+.dashboard-scope-preview dt { color: var(--text-muted); font-size: var(--font-xs); }
+.dashboard-scope-preview dd { margin: var(--space-1) 0 0; color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
+.dashboard-scope-dialog-actions { flex-wrap: wrap; }
+
 .dashboard-overview-shell {
   display: grid;
   min-width: 0;
@@ -1833,7 +1900,7 @@
 .dashboard-overview-cards {
   display: grid;
   min-width: 0;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
   gap: var(--space-4);
   direction: inherit;
@@ -1853,14 +1920,13 @@
   box-shadow: var(--shadow-xs);
 }
 
-.dashboard-overview-welcome { background: var(--primary-soft); border-color: var(--primary-border); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) { background: var(--success-soft); border-color: var(--success-border); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) { background: var(--info-soft); border-color: var(--info-border); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(4) { background: var(--warning-soft); border-color: var(--warning-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(1) { background: var(--success-soft); border-color: var(--success-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) { background: var(--info-soft); border-color: var(--info-border); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) { background: var(--warning-soft); border-color: var(--warning-border); }
 .dashboard-overview-shortcuts { background: var(--bg-card-hover); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) .dashboard-overview-icon { color: var(--success); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) .dashboard-overview-icon { color: var(--info); }
-.dashboard-overview-cards > .dashboard-overview-metric:nth-child(4) .dashboard-overview-icon { color: var(--warning); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(1) .dashboard-overview-icon { color: var(--success); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) .dashboard-overview-icon { color: var(--info); }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) .dashboard-overview-icon { color: var(--warning); }
 
 .dashboard-overview-card small,
 .dashboard-overview-card p {
@@ -1868,41 +1934,6 @@
   font-size: var(--font-size-secondary);
   line-height: 1.6;
 }
-
-.dashboard-overview-welcome {
-  align-content: space-between;
-  gap: var(--space-4);
-  border-inline-start: 3px solid var(--primary);
-}
-
-.dashboard-overview-status {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 28px;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--success-border);
-  border-radius: var(--radius-pill);
-  background: var(--success-soft);
-  color: var(--success-text);
-  font-size: var(--font-xs);
-  font-weight: var(--weight-medium);
-}
-
-.dashboard-overview-status i {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 7px;
-  border-radius: 50%;
-  background: var(--success);
-}
-
-.dashboard-overview-card-copy { display: grid; min-width: 0; gap: var(--space-1); }
-.dashboard-overview-card-copy h2 { margin: 0; overflow-wrap: anywhere; font-size: var(--font-xl); font-weight: var(--weight-semibold); line-height: 1.35; }
-.dashboard-overview-card-copy h2 strong { font-weight: var(--weight-semibold); }
-.dashboard-overview-card-copy p { margin: 0; overflow-wrap: anywhere; }
 
 .dashboard-overview-metric {
   grid-template-columns: auto minmax(0, 1fr);
@@ -1946,34 +1977,38 @@
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .dashboard-overview-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr) auto; }
+  .dashboard-scope-intro { grid-column: 1 / -1; }
+  .dashboard-scope-values { grid-column: 1; }
+  .dashboard-scope-change { grid-column: 2; grid-row: 2; }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
-  .dashboard-overview-cards { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--app-layout-gap); }
-  .dashboard-overview-welcome { grid-column: 1 / -1; }
-  .dashboard-overview-cards > :nth-child(2),
-  .dashboard-overview-cards > :nth-child(3),
-  .dashboard-overview-cards > :nth-child(4),
-  .dashboard-overview-shortcuts { grid-column: span 4; }
+  .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr) auto; }
+  .dashboard-scope-intro { grid-column: 1 / -1; }
+  .dashboard-scope-values { grid-column: 1 / -1; }
+  .dashboard-scope-change { grid-column: 2; grid-row: 3; }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--app-layout-gap); }
   .dashboard-overview-card { min-height: 0; }
   .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 767px) {
   .dashboard-overview-shell { gap: var(--app-layout-gap); }
-  .dashboard-overview-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
-  .dashboard-overview-welcome,
-  .dashboard-overview-shortcuts,
-  .dashboard-overview-cards > :nth-child(4) { grid-column: 1 / -1; }
-  .dashboard-overview-cards > :nth-child(2),
-  .dashboard-overview-cards > :nth-child(3) { grid-column: span 2; }
+  .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+  .dashboard-scope-values { gap: var(--space-2); }
+  .dashboard-scope-value { padding-inline: var(--space-2); }
+  .dashboard-scope-change { width: 100%; }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
   .dashboard-overview-card { min-height: 0; padding: var(--space-4); }
   .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-scope-fields,
+  .dashboard-scope-preview dl { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 359px) {
   .dashboard-overview-card { padding: var(--space-3); }
-  .dashboard-overview-card-copy h2 { font-size: var(--font-lg); }
+  .dashboard-overview-cards { grid-template-columns: minmax(0, 1fr); }
   .dashboard-overview-shortcut-actions { grid-template-columns: minmax(0, 1fr); }
 }

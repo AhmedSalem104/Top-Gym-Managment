@@ -78,6 +78,14 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
         page.on('console', (message) => {
             if (message.type() === 'error' && !message.text().includes('ERR_BLOCKED_BY_CLIENT')) consoleErrors.push(message.text());
         });
+        const selectLocale = async (locale) => {
+            const button = page.locator(`.topbar-language-toggle [data-locale-choice="${locale}"]`);
+            if (!(await button.isVisible())) {
+                const menu = page.locator('.topbar-more-menu');
+                if (!(await menu.getAttribute('open'))) await menu.locator('summary').click();
+            }
+            await button.click();
+        };
 
         await page.goto('/index.html?welcome=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
@@ -87,7 +95,7 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
         await expect(page.locator('#dashboardOverviewPanel')).toBeVisible();
         await expect(page.locator('#dashboardSection .dashboard-overview-shell')).toBeVisible();
         await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
-        await expect(page.locator('#dashboardSection .dashboard-overview-card')).toHaveCount(5);
+        await expect(page.locator('#dashboardSection .dashboard-overview-card')).toHaveCount(4);
         await expect.poll(() => runtime.apiRequests.filter((request) => request.includes('/api/notifications')).length).toBe(2);
         await expect.poll(() => runtime.apiRequests.some((request) => request.includes('/api/saas/subscription'))).toBe(true);
         await expect(page.locator('[data-dashboard-overview-date]')).not.toHaveText('—');
@@ -125,18 +133,18 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
                     document.body.dataset.theme = mode;
                 }, theme);
                 if (await page.evaluate(() => window.TopGymI18n.get()) !== 'ar') {
-                    await page.locator('.topbar-language-toggle').click();
+                    await selectLocale('ar');
                     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
                 }
                 await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
                 await expect(page.locator('#dashboardOverviewTab')).toContainText('نظرة عامة');
                 await expect(page.locator('#dashboardAnalyticsTab')).toContainText('التحليلات');
                 const rtlDirection = await page.evaluate(() => ({
-                    hero: getComputedStyle(document.querySelector('#dashboardSection .dashboard-overview-cards')).direction,
+                    scope: getComputedStyle(document.querySelector('#dashboardScopeBar')).direction,
                     overview: getComputedStyle(document.querySelector('#dashboardSection .overview-grid')).direction
                 }));
-                expect(rtlDirection).toEqual({ hero: 'rtl', overview: 'rtl' });
-                await expect(page.locator('#dashboardSection .dashboard-overview-card-copy small')).toHaveText('لوحة التشغيل اليومية');
+                expect(rtlDirection).toEqual({ scope: 'rtl', overview: 'rtl' });
+                await expect(page.locator('#dashboardScopeTitle')).toHaveText('نطاق البيانات المعروضة');
                 await expect(page.locator('[data-dashboard-member-count]')).toHaveText('١٢٥');
                 await expect(page.locator('#alertsSearch')).toHaveAttribute('placeholder', 'ابحث باسم المشترك أو رقم الهاتف');
                 if ([320, 1440].includes(width)) {
@@ -148,7 +156,7 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
 
                 const hashBefore = await page.evaluate(() => location.hash);
                 const requestsBefore = [...runtime.apiRequests].sort();
-                await page.locator('.topbar-language-toggle').click();
+                await selectLocale('en');
                 await expect(page.locator('html')).toHaveAttribute('lang', 'en');
                 await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
                 await expect(page.locator('#dashboardOverviewTab')).toContainText('Overview');
@@ -157,23 +165,23 @@ test.describe('Gym Dashboard centralized Arabic/English localization (read-only)
                     const input = document.querySelector('#alertsSearch');
                     const icon = input?.closest('.alerts-search-field')?.querySelector('svg');
                     return {
-                        hero: getComputedStyle(document.querySelector('#dashboardSection .dashboard-overview-cards')).direction,
+                        scope: getComputedStyle(document.querySelector('#dashboardScopeBar')).direction,
                         overview: getComputedStyle(document.querySelector('#dashboardSection .overview-grid')).direction,
                         search: getComputedStyle(input).direction,
                         paddingInlineStart: Number.parseFloat(getComputedStyle(input).paddingInlineStart),
                         searchIconOffset: Math.abs(icon.getBoundingClientRect().left - input.getBoundingClientRect().left)
                     };
                 });
-                expect(ltrDirection.hero).toBe('ltr');
+                expect(ltrDirection.scope).toBe('ltr');
                 expect(ltrDirection.overview).toBe('ltr');
                 expect(ltrDirection.search).toBe('ltr');
                 expect(ltrDirection.paddingInlineStart).toBeGreaterThanOrEqual(28);
                 expect(ltrDirection.searchIconOffset).toBeLessThan(24);
-                await expect(page.locator('#dashboardSection .dashboard-overview-card-copy small')).toHaveText('Daily operations overview');
+                await expect(page.locator('#dashboardScopeTitle')).toHaveText('Displayed data scope');
                 await expect(page.locator('[data-dashboard-member-count]')).toHaveText('125');
                 await expect(page.locator('#dashboardSection .dashboard-overview-shortcuts-title')).toContainText('Quick shortcuts');
                 await expect(page.locator('#alertsSearch')).toHaveAttribute('placeholder', 'Search by member name or phone');
-                await expect(page.locator('#alertsSection h3')).toHaveText('Daily alerts');
+                await expect(page.locator('#alertsSection h3')).toHaveText('Alerts');
                 await expect(page.locator('#alertsList .alert-card-detail').first()).toContainText('Expired on');
                 await expect(page.locator('#alertsCount')).toContainText('alerts');
                 await expect(page.locator('#dashboardDayPassTableWrap .day-pass-empty')).toHaveText('No passes recorded this month.');

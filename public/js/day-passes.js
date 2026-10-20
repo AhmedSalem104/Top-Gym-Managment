@@ -3,7 +3,7 @@
     window.__topGymDayPassesLoaded = true;
 
     const $ = (id) => document.getElementById(id);
-    const state = { pricing: [], dashboardRecords: [], dashboardSummary: null, dashboardMonthFrom: null, initialized: false, loading: false, editingId: null };
+    const state = { pricing: [], dashboardRecords: [], dashboardSummary: null, dashboardMonthFrom: null, dashboardRequestId: 0, dashboardScopeKey: null, dashboardRequestScopeKey: null, initialized: false, loading: false, editingId: null };
 
     function t(key, params) {
         return window.TopGymI18n?.t?.(key, params) || key;
@@ -290,9 +290,26 @@
         });
     }
 
-    async function loadDashboard() {
+    function currentDashboardScopeKey() {
+        return `${window.topGymBranchContext?.getSelectedBranchId?.() ?? ''}:${window.topGymBranchContext?.getSelectedSectionId?.() ?? ''}`;
+    }
+
+    async function loadDashboard({ clearForScopeChange = false } = {}) {
         const host = $('dashboardDayPassTableWrap');
         if (!host || !isAuthenticated()) return false;
+        const requestId = ++state.dashboardRequestId;
+        const scopeKey = currentDashboardScopeKey();
+        state.dashboardRequestScopeKey = scopeKey;
+        if (clearForScopeChange) {
+            state.dashboardRecords = [];
+            state.dashboardSummary = null;
+            state.dashboardMonthFrom = null;
+            if ($('dashboardDayPassCount')) $('dashboardDayPassCount').textContent = '—';
+            if ($('dashboardDayPassTotal')) $('dashboardDayPassTotal').textContent = '—';
+            if ($('dashboardDayPassMonthMeta')) $('dashboardDayPassMonthMeta').textContent = '';
+            host.setAttribute('aria-busy', 'true');
+            host.innerHTML = `<div class="loading" role="status">${escapeHtml(t('dashboard.dayPasses.loading'))}</div>`;
+        }
         const { from, to } = monthRange();
         try {
             const pageSize = 100;
@@ -301,6 +318,7 @@
                 request(`/api/day-passes?${params}`),
                 request(`/api/day-passes/summary?${new URLSearchParams({ from, to })}`)
             ]);
+            if (requestId !== state.dashboardRequestId) return false;
             let dashboardRecords = Array.isArray(list?.records) ? list.records : [];
             const totalRecords = Number(list?.pagination?.total || dashboardRecords.length);
             const totalPages = Math.ceil(totalRecords / pageSize);
@@ -322,6 +340,7 @@
                                 return request(`/api/day-passes?${pageParams}`);
                             })
                         );
+                        if (requestId !== state.dashboardRequestId) return false;
                         const nextRecords = pages.flatMap((page) => Array.isArray(page?.records) ? page.records : []);
                         if (nextRecords.length) {
                             state.dashboardRecords.push(...nextRecords);
@@ -335,10 +354,13 @@
                     releaseProgress?.();
                 }
             }
+            state.dashboardScopeKey = scopeKey;
             return true;
         } catch (error) {
-            host.innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;
+            if (requestId === state.dashboardRequestId) host.innerHTML = `<div class="day-pass-empty">${escapeHtml(error.message || 'تعذر تحميل سجل الحصص.')}</div>`;
             return false;
+        } finally {
+            if (requestId === state.dashboardRequestId) host.removeAttribute('aria-busy');
         }
     }
 
@@ -489,6 +511,13 @@
         document.addEventListener('topgym:tab-changed', (event) => {
             const user = window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.();
             if (event.detail?.name === 'dashboard' && user && !user.mustChangePassword) void loadDashboard();
+        });
+        window.addEventListener('topgym:branch-context-changed', () => {
+            const user = window.topGymAuth?.getUser?.() || window.topGymAuth?.currentUser?.();
+            if (!user || user.mustChangePassword || $('dashboardSection')?.hidden) return;
+            const nextScope = currentDashboardScopeKey();
+            if (nextScope === state.dashboardRequestScopeKey || nextScope === state.dashboardScopeKey) return;
+            void loadDashboard({ clearForScopeChange: true });
         });
     }
 

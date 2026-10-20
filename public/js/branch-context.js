@@ -23,6 +23,7 @@
     };
     let bootstrap = null;
     let branchesRequest = null;
+    let branchesLoadFailed = false;
 
     function mountContextShell() {
         const shell = $('branchContextShell');
@@ -77,6 +78,208 @@
     function syncContextBar() {
         const shell = $('branchContextShell');
         if (shell) shell.dataset.contextReady = shell.hidden ? 'false' : 'true';
+    }
+
+    function syncDashboardScopeSummary() {
+        const branchSelect = $('branchContextSelect');
+        const sectionSelect = $('sectionContextSelect');
+        const branchSummary = $('dashboardScopeBranch');
+        const sectionSummary = $('dashboardScopeSection');
+        if (!branchSelect || !sectionSelect || !branchSummary || !sectionSummary) return;
+        branchSummary.textContent = branchSelect.selectedOptions[0]?.textContent?.trim()
+            || translate('context.allBranches', 'كل الفروع');
+        sectionSummary.textContent = sectionSelect.disabled || sectionSelect.hidden
+            ? translate('context.allSections', 'كل الأقسام')
+            : sectionSelect.selectedOptions[0]?.textContent?.trim() || translate('context.allSections', 'كل الأقسام');
+    }
+
+    function getScopeOptions(branchId) {
+        const active = Array.isArray(bootstrap?.activeBranches) ? bootstrap.activeBranches : [];
+        const allowed = Array.isArray(bootstrap?.branches) ? bootstrap.branches : active;
+        const branches = [];
+        if (bootstrap?.canUseAllBranches && active.length > 1) {
+            branches.push({ value: '', label: translate('context.allBranches', 'كل الفروع') });
+        }
+        allowed.forEach((branch) => branches.push({ value: String(branch.id), label: String(branch.name || '') }));
+        const selectedBranch = String(branchId ?? $('branchContextSelect')?.value ?? '');
+        const sectionsForBranch = selectedBranch
+            ? (Array.isArray(bootstrap?.sections) ? bootstrap.sections : [])
+                .filter((section) => String(section.branchId) === selectedBranch && section.active !== false)
+                .map((section) => ({ value: String(section.id), label: sectionLabel(section) }))
+            : [];
+        const sections = [{ value: '', label: translate('context.allSections', 'كل الأقسام') }, ...sectionsForBranch];
+        return { branches, sections, loading: Boolean(branchesRequest), error: branchesLoadFailed };
+    }
+
+    function applyDashboardScope(branchId, sectionId) {
+        const branchSelect = $('branchContextSelect');
+        const sectionSelect = $('sectionContextSelect');
+        if (!branchSelect || !sectionSelect || !bootstrap) return { ok: false, changed: false };
+        const nextBranch = String(branchId ?? '');
+        const nextSection = String(sectionId ?? '');
+        const options = getScopeOptions(nextBranch);
+        if (!options.branches.some((option) => option.value === nextBranch)) return { ok: false, changed: false };
+        if (nextSection && !options.sections.some((option) => option.value === nextSection)) return { ok: false, changed: false };
+        if (nextSection && !nextBranch) return { ok: false, changed: false };
+        const previousBranch = branchSelect.value;
+        const previousSection = sectionSelect.value;
+        if (previousBranch === nextBranch && previousSection === nextSection) return { ok: true, changed: false };
+
+        // Commit the authorized pair as one context transition. Do not fire the
+        // native selects' individual change handlers, which would emit two
+        // reload events and clear the newly selected section between them.
+        writeStoredBranch(nextBranch);
+        writeStoredSection(nextSection);
+        branchSelect.value = nextBranch;
+        renderSelector(bootstrap);
+        sectionSelect.value = nextSection;
+        writeStoredSection(sectionSelect.value);
+        updateMobileContextTrigger();
+        syncDashboardScopeSummary();
+        const activeBranch = bootstrap?.activeBranches?.find((branch) => String(branch.id) === nextBranch);
+        $('branchContextStatus').textContent = activeBranch
+            ? translate(activeBranch.status === 'active' ? 'status.active' : 'status.inactive', activeBranch.status === 'active' ? 'نشط' : 'غير نشط')
+            : translate('context.allBranchesView', 'عرض موحد');
+        window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', {
+            detail: { branchId: nextBranch ? Number(nextBranch) : null, sectionId: sectionSelect.value ? Number(sectionSelect.value) : null }
+        }));
+        return { ok: true, changed: true };
+    }
+
+    function initDashboardScopeDialog() {
+        const dialog = $('dashboardScopeDialog');
+        const trigger = $('dashboardScopeOpen');
+        const form = $('dashboardScopeForm');
+        const branchSelect = $('dashboardScopeBranchSelect');
+        const sectionSelect = $('dashboardScopeSectionSelect');
+        const branchSearch = $('dashboardScopeBranchSearch');
+        const sectionSearch = $('dashboardScopeSectionSearch');
+        const fields = $('dashboardScopeFields');
+        const preview = $('dashboardScopePreview');
+        const status = $('dashboardScopeStatus');
+        const applyButton = $('dashboardScopeApply');
+        if (!dialog || !trigger || !form || !branchSelect || !sectionSelect || !fields || !preview || !status || !applyButton) return;
+
+        const staged = { branchId: '', sectionId: '', branchOptions: [], sectionOptions: [], requestId: 0 };
+        const close = () => {
+            if (!dialog.open) return;
+            dialog.close();
+            trigger.focus({ preventScroll: true });
+        };
+        const option = (label, value) => new Option(label, value);
+        const filteredOptions = (items, query, selectedValue) => {
+            const normalized = String(query || '').trim().toLocaleLowerCase();
+            if (!normalized) return items;
+            const filtered = items.filter((item) => item.label.toLocaleLowerCase().includes(normalized));
+            const selected = items.find((item) => item.value === selectedValue);
+            return selected && !filtered.some((item) => item.value === selectedValue) ? [selected, ...filtered] : filtered;
+        };
+        const renderBranchOptions = () => {
+            const visible = filteredOptions(staged.branchOptions, branchSearch?.value, staged.branchId);
+            branchSelect.replaceChildren(option(translate('context.selectBranch', 'اختر الفرع'), '__unavailable__'), ...visible.map((item) => option(item.label, item.value)));
+            branchSelect.value = visible.some((item) => item.value === staged.branchId) ? staged.branchId : '__unavailable__';
+        };
+        const renderSectionOptions = () => {
+            staged.sectionOptions = getScopeOptions(staged.branchId).sections;
+            const visible = filteredOptions(staged.sectionOptions, sectionSearch?.value, staged.sectionId);
+            sectionSelect.replaceChildren(...visible.map((item) => option(item.label, item.value)));
+            sectionSelect.disabled = !staged.branchId || staged.sectionOptions.length <= 1;
+            if (!staged.sectionOptions.some((item) => item.value === staged.sectionId)) staged.sectionId = '';
+            sectionSelect.value = visible.some((item) => item.value === staged.sectionId) ? staged.sectionId : '__unavailable__';
+            if (!staged.branchId) sectionSelect.value = '';
+        };
+        const syncPreview = () => {
+            const branch = staged.branchOptions.find((item) => item.value === staged.branchId);
+            const section = staged.sectionOptions.find((item) => item.value === staged.sectionId);
+            $('dashboardScopePreviewBranch').textContent = branch?.label || '—';
+            $('dashboardScopePreviewSection').textContent = section?.label || translate('context.allSections', 'كل الأقسام');
+        };
+        const setSearchVisibility = () => {
+            if (branchSearch) branchSearch.hidden = staged.branchOptions.length <= 6;
+            if (sectionSearch) sectionSearch.hidden = staged.sectionOptions.length <= 6;
+        };
+        const resetStaged = () => {
+            staged.branchId = String($('branchContextSelect')?.value || '');
+            staged.sectionId = String($('sectionContextSelect')?.value || '');
+            if (branchSearch) branchSearch.value = '';
+            if (sectionSearch) sectionSearch.value = '';
+        };
+
+        trigger.addEventListener('click', async () => {
+            resetStaged();
+            const requestId = ++staged.requestId;
+            fields.hidden = true;
+            preview.hidden = true;
+            status.hidden = false;
+            status.textContent = translateShared('dashboard.scope.loading', 'جارٍ تحميل النطاقات المسموح بها…');
+            applyButton.disabled = true;
+            dialog.showModal();
+            try {
+                const options = await window.topGymBranchContext?.getScopeOptions?.();
+                if (!dialog.open || requestId !== staged.requestId) return;
+                if (!options || options.error || options.branches.length === 0) {
+                    status.textContent = translateShared(options?.error ? 'dashboard.scope.error' : 'dashboard.scope.empty', options?.error ? 'تعذر تحميل النطاقات. أغلق النافذة وحاول مرة أخرى.' : 'لا توجد نطاقات متاحة لحسابك.');
+                    applyButton.disabled = true;
+                    return;
+                }
+                staged.branchOptions = options.branches;
+                if (!staged.branchOptions.some((item) => item.value === staged.branchId)) staged.branchId = staged.branchOptions[0].value;
+                renderBranchOptions();
+                renderSectionOptions();
+                setSearchVisibility();
+                syncPreview();
+                status.hidden = true;
+                fields.hidden = false;
+                preview.hidden = false;
+                applyButton.disabled = false;
+            } catch {
+                if (!dialog.open || requestId !== staged.requestId) return;
+                status.textContent = translateShared('dashboard.scope.error', 'تعذر تحميل النطاقات. أغلق النافذة وحاول مرة أخرى.');
+                applyButton.disabled = true;
+            }
+        });
+
+        branchSelect.addEventListener('change', () => {
+            if (branchSelect.value === '__unavailable__') return;
+            staged.branchId = branchSelect.value;
+            staged.sectionId = '';
+            if (sectionSearch) sectionSearch.value = '';
+            renderSectionOptions();
+            setSearchVisibility();
+            syncPreview();
+        });
+        sectionSelect.addEventListener('change', () => {
+            if (sectionSelect.value === '__unavailable__') return;
+            staged.sectionId = sectionSelect.value;
+            syncPreview();
+        });
+        branchSearch?.addEventListener('input', renderBranchOptions);
+        sectionSearch?.addEventListener('input', renderSectionOptions);
+        [branchSearch, sectionSearch].forEach((search) => search?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') event.preventDefault();
+        }));
+        $('dashboardScopeClose')?.addEventListener('click', close);
+        $('dashboardScopeCancel')?.addEventListener('click', close);
+        dialog.addEventListener('cancel', (event) => { event.preventDefault(); close(); });
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) close(); });
+        dialog.addEventListener('close', () => {
+            staged.requestId += 1;
+            resetStaged();
+            trigger.focus({ preventScroll: true });
+        });
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const result = window.topGymBranchContext?.applyDashboardScope?.(staged.branchId, staged.sectionId);
+            if (!result?.ok) {
+                status.hidden = false;
+                status.textContent = translateShared('dashboard.scope.invalid', 'اختيار النطاق غير متاح لحسابك.');
+                return;
+            }
+            close();
+        });
+        window.addEventListener('topgym:tab-changed', (event) => {
+            if (event.detail?.name !== 'dashboard') close();
+        });
     }
 
     function readStoredBranch() {
@@ -371,6 +574,7 @@
             refreshContextDropdown(sectionSelect);
         }
         syncContextBar();
+        syncDashboardScopeSummary();
     }
 
     function renderManager(data) {
@@ -451,6 +655,7 @@
         const loadPromise = (async () => {
             try {
                 bootstrap = await window.topGymApi.request('/api/branches/bootstrap');
+                branchesLoadFailed = false;
                 const previousBranch = readStoredBranch();
                 renderSelector(bootstrap);
                 const selectedBranch = $('branchContextSelect')?.value || '';
@@ -461,6 +666,7 @@
                 }
                 renderManagerWithCommerce({ ...bootstrap, branchLimit: bootstrap.branchLimit });
             } catch (error) {
+                branchesLoadFailed = true;
                 // Never keep sending a branch selected in an older session
                 // after the authoritative bootstrap failed. The next request
                 // can then resolve the tenant's single/default branch instead
@@ -490,6 +696,11 @@
 
     window.topGymBranchContext = Object.freeze({
         getBootstrap,
+        getScopeOptions: async () => {
+            if (!bootstrap && !branchesLoadFailed) await getBootstrap();
+            return getScopeOptions();
+        },
+        applyDashboardScope,
         getSelectedBranchId: () => {
             const value = $('branchContextSelect')?.value;
             return value ? Number(value) : null;
@@ -598,6 +809,10 @@
                 sectionId: value ? Number(value) : null
             } }));
         });
+        $('branchContextSelect')?.addEventListener('change', syncDashboardScopeSummary);
+        $('sectionContextSelect')?.addEventListener('change', syncDashboardScopeSummary);
+        $('dashboardScopeOpen')?.addEventListener('focus', syncDashboardScopeSummary);
+        initDashboardScopeDialog();
         $('branchesList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-branch-archive]');
             if (button) void archiveBranch(button.dataset.branchArchive);

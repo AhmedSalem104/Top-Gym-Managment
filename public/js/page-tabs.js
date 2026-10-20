@@ -592,6 +592,7 @@
         const portalAnalyticsSection = document.getElementById('portalAnalyticsSection');
         const analyticsSection = document.getElementById('dashboardAnalytics');
         const dashboardViewTabs = document.getElementById('dashboardViewTabs');
+        const dashboardScopeBar = document.getElementById('dashboardScopeBar');
         const dashboardViewPanels = document.getElementById('dashboardViewPanels');
         const dashboardStoreSummary = document.getElementById('dashboardStoreSummary');
         const reportsSection = document.getElementById('reportsSection');
@@ -631,6 +632,7 @@
         setHidden(dashboardOverviewShell, !isDashboard);
         setHidden(overview, !isDashboard);
         setHidden(dashboardViewTabs, !isDashboard);
+        setHidden(dashboardScopeBar, !isDashboard);
         setHidden(dashboardViewPanels, !isDashboard);
         setHidden(monthlyFinanceSnapshot, !isDashboard);
         setHidden(expensesSection, !isExpenses);

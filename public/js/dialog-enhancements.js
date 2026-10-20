@@ -10,6 +10,7 @@
         membershipPlanDialog: 'md',
         membershipTypeDialog: 'md',
         branchCreateDialog: 'md',
+        dashboardScopeDialog: 'md',
         trainerClientDialog: 'md',
         trainerMeasurementDialog: 'md',
         trainerCheckinDialog: 'md',

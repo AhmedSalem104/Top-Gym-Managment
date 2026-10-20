@@ -8,7 +8,7 @@
     // responsible for ordering, deduplication and failure handling.
     const features = {
         dashboard: { dependencies: [], styles: [], scripts: [] },
-        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=c9f24a3872775ad7', '/js/alerts-enhancements.js?v=2e544843569c67e1'] },
+        'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=ce3d418ccf347623', '/js/alerts-enhancements.js?v=2e544843569c67e1'] },
         finance: { dependencies: [], styles: [], scripts: ['/js/pages/finance/monthly-finance.js?v=7babea564de77758'] },
         'member-details': { dependencies: ['phone-inputs'], styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9'], scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/member-details-ui.js?v=d77efb7c54c2101b', '/js/member-portal-admin.js?v=2cfe4527c5945568', '/js/member-coaching-summary.js?v=3a03f0385ae1a7c4'] },
         members: {
@@ -21,7 +21,7 @@
         expenses: { dependencies: ['finance'], styles: ['/css/pages/expenses.css?v=6f85206e946ae9aa'], scripts: [] },
         reports: { dependencies: ['phone-inputs', 'whatsapp-runtime'], styles: ['/css/pages/reports.css?v=939eace50aaa371b'], scripts: ['/js/pages/reports/reports.js?v=8a5bee2144b303da', '/js/day-pass-reports.js?v=e2c0f146d5770ddf'] },
         feedback: { dependencies: ['phone-inputs'], styles: ['/css/pages/member-feedback.css?v=bf3ac5e3818a7d6e'], scripts: ['/js/pages/management/member-feedback.js?v=cf0e7ba838503361'] },
-        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=8067256324d3fc12'], scripts: ['/js/pricing-cards.js?v=2f78224cc53b4807', '/js/day-passes.js?v=c9f24a3872775ad7'] },
+        management: { dependencies: [], styles: ['/css/pages/memberships.css?v=8067256324d3fc12'], scripts: ['/js/pricing-cards.js?v=2f78224cc53b4807', '/js/day-passes.js?v=ce3d418ccf347623'] },
         branding: { dependencies: [], styles: ['/css/pages/branding.css?v=ea39cc8ee328ed3a'], scripts: ['/js/pages/branding/branding.js?v=45d5109ed0894dca'] },
         'member-payment-methods': { dependencies: [], styles: ['/css/pages/member-payment-methods.css?v=2ad87db27d7f7f63'], scripts: ['/js/pages/management/member-payment-methods.js?v=04c55f9eaed5899a'] },
         'saas-billing': { dependencies: [], styles: ['/css/pages/saas.css?v=b0e01e6a1587d047'], scripts: ['/js/pages/saas/saas.js?v=af699af7554a9c8c'] },

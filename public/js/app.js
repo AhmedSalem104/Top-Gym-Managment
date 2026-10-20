@@ -109,6 +109,8 @@
         let membersLastLoadedKey = '';
         let membersLastLoadedAt = 0;
         let dataLoadPromise = null;
+        let dataLoadScopeKey = null;
+        let pendingDashboardScopeReload = false;
         let pricingRequestPromise = null;
          const PRICING_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -418,6 +420,10 @@
             return String(window.topGymAuth?.getUser?.()?.tenantType || '').trim().toLowerCase() === 'independent_trainer';
         }
 
+        function currentScopeKey() {
+            return `${window.topGymBranchContext?.getSelectedBranchId?.() ?? ''}:${window.topGymBranchContext?.getSelectedSectionId?.() ?? ''}`;
+        }
+
         async function loadData() {
             const authenticatedUser = window.topGymAuth?.getUser?.();
             // Owners exist in both Gym and Independent Trainer tenants. The
@@ -437,6 +443,8 @@
                 await window.topGymBranchContext?.getBootstrap?.();
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
                 const activeTab = requestedTab();
+                const requestScopeKey = currentScopeKey();
+                if (activeTab === 'dashboard') dataLoadScopeKey = requestScopeKey;
                 const needsMembersSummary = activeTab === 'members' && !state.dashboard;
                 const dashboardRequest = isOwner && (activeTab === 'dashboard' || needsMembersSummary)
                     ? api('/api/dashboard').catch((error) => {
@@ -460,6 +468,10 @@
                 }
                 try {
                     const [dashboard, , subscription] = await Promise.all([dashboardRequest, pricingRequest, subscriptionRequest]);
+                    if (activeTab === 'dashboard' && requestScopeKey !== currentScopeKey()) {
+                        pendingDashboardScopeReload = true;
+                        return;
+                    }
                     if (isOwner && activeTab === 'dashboard') {
                         state.dashboard = dashboard || null;
                         if (!state.saasSubscriptionLoaded) {
@@ -484,6 +496,12 @@
             }, `جاري تحميل بيانات ${brandName()}…`, { silent: isMembersStart, silentRequests });
             const trackedPromise = loadPromise.finally(() => {
                 if (dataLoadPromise === trackedPromise) dataLoadPromise = null;
+                if (dataLoadScopeKey && dataLoadScopeKey !== currentScopeKey()) pendingDashboardScopeReload = true;
+                dataLoadScopeKey = null;
+                if (pendingDashboardScopeReload) {
+                    pendingDashboardScopeReload = false;
+                    if (isDashboardViewActive()) void loadData();
+                }
             });
             dataLoadPromise = trackedPromise;
             return trackedPromise;
@@ -2194,7 +2212,11 @@
                 state.dashboard = null;
                 state.members = [];
                 state.detailsCache = new Map();
-                if (isDashboardViewActive()) void loadData();
+                if (isDashboardViewActive()) {
+                    if (dataLoadPromise) {
+                        if (dataLoadScopeKey && dataLoadScopeKey !== currentScopeKey()) pendingDashboardScopeReload = true;
+                    } else void loadData();
+                }
                 if (isMembersTabActive()) void loadMembersOnly();
             });
             const loadAfterAuth = async () => {

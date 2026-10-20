@@ -13,11 +13,14 @@ function normalizeLocalizedDigits(value) {
     return value.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
 }
 
-async function installReadOnlyDashboardFixture(page) {
+async function installReadOnlyDashboardFixture(page, { multipleScopes = false } = {}) {
     const writes = [];
     const thirdParty = [];
+    const dashboardRequests = [];
+    const dayPassRequests = [];
     let analyticsMode = 'empty';
     let dashboardMode = 'ready';
+    let dashboardDelayCount = 0;
     const plan = planCatalog.PLAN_CONFIGURATIONS.find((item) => item.code === 'business');
 
     await page.route('**/*', async (route) => {
@@ -65,12 +68,27 @@ async function installReadOnlyDashboardFixture(page) {
             };
         } else if (pathname === '/api/branches/bootstrap') {
             const branch = { id: 98201, name: 'QA Main Branch', status: 'active', isMain: true };
-            payload = { branch, branches: [branch], activeBranches: [branch], defaultBranch: branch, sections: [], branchLimit: 1, hasMultipleActiveBranches: false };
+            const secondBranch = { id: 98202, name: 'QA Riverside Branch', status: 'active', isMain: false };
+            const branches = multipleScopes ? [branch, secondBranch] : [branch];
+            const sections = multipleScopes ? [
+                { id: 98211, branchId: 98201, name: 'QA Main Section', type: 'mixed', active: true },
+                { id: 98221, branchId: 98202, name: 'QA Riverside Section', type: 'women', active: true }
+            ] : [];
+            payload = { branch, branches, activeBranches: branches, defaultBranch: branch, sections, branchLimit: branches.length, hasMultipleActiveBranches: multipleScopes };
         } else if (pathname === '/api/bootstrap') {
             payload = { branches: [{ id: 98201, name: 'QA Main Branch', status: 'active' }], sections: [] };
         } else if (pathname === '/api/dashboard') {
-            if (dashboardMode === 'slow') await new Promise((resolve) => setTimeout(resolve, 900));
-            payload = { stats: { total: 125, active: 98, expiringSoon: 8, expired: 12, frozen: 7 }, alerts: [] };
+            const branchId = request.headers()['x-branch-id'] || '';
+            dashboardRequests.push({ search: new URL(request.url()).search, branchId });
+            if (dashboardMode === 'slow' || dashboardDelayCount > 0) {
+                if (dashboardDelayCount > 0) dashboardDelayCount -= 1;
+                await new Promise((resolve) => setTimeout(resolve, 900));
+            }
+            const total = multipleScopes && branchId === '98202' ? 222 : 125;
+            payload = { stats: { total, active: 98, expiringSoon: 8, expired: 12, frozen: 7 }, alerts: [] };
+        } else if (pathname.startsWith('/api/day-passes')) {
+            dayPassRequests.push(pathname);
+            payload = pathname.endsWith('/summary') ? { count: 0, amount: 0 } : { records: [], pagination: { total: 0 } };
         } else if (pathname === '/api/saas/subscription') {
             payload = { subscription: { status: 'active', plan: { code: 'business', name: plan.name }, startsAt: '2026-01-01' } };
         }
@@ -80,9 +98,12 @@ async function installReadOnlyDashboardFixture(page) {
 
     return {
         writes,
+        dashboardRequests,
+        dayPassRequests,
         thirdParty,
         setAnalyticsMode: (mode) => { analyticsMode = mode; },
-        setDashboardMode: (mode) => { dashboardMode = mode; }
+        setDashboardMode: (mode) => { dashboardMode = mode; },
+        delayNextDashboardRequest: () => { dashboardDelayCount += 1; }
     };
 }
 
@@ -122,7 +143,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.screenshot({ path: testInfo.outputPath('dashboard-no-top-skeleton-slow.png'), fullPage: true });
         await expect(dashboard).not.toHaveClass(/data-loading/u, { timeout: 15_000 });
         await expect(page.locator('.dashboard-overview-cards')).toBeVisible();
-        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(5);
+        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(4);
         await expect(page.locator('[data-dashboard-member-count]')).toHaveText(/125|١٢٥/u);
         await page.screenshot({ path: testInfo.outputPath('dashboard-no-top-skeleton-loaded.png'), fullPage: true });
         expect(Math.abs((await assertNoTopLoadingRow()) - directOpenTop)).toBeLessThanOrEqual(1);
@@ -165,6 +186,73 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         expect(runtime.writes).toEqual([]);
     });
 
+    test('scope dialog stages authorized branch and section changes until one atomic Apply', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'Scope state verification runs once in the desktop project.');
+        const runtime = await installReadOnlyDashboardFixture(page, { multipleScopes: true });
+        await page.goto('/index.html?dashboardScope=1#dashboard', { waitUntil: 'domcontentloaded' });
+        await expect(page.locator('#dashboardScopeBar')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('#dashboardScopeBranch')).toHaveText('QA Main Branch');
+        await page.evaluate(() => window.addEventListener('topgym:branch-context-changed', (event) => {
+            window.__dashboardScopeEvents = [...(window.__dashboardScopeEvents || []), event.detail];
+        }));
+        await expect.poll(() => runtime.dayPassRequests.length).toBeGreaterThanOrEqual(2);
+        const initialBranch = await page.locator('#branchContextSelect').inputValue();
+        const initialSection = await page.locator('#sectionContextSelect').inputValue();
+        const requestCountBeforeCancel = runtime.dashboardRequests.length;
+        const dayPassCountBeforeCancel = runtime.dayPassRequests.length;
+
+        await page.locator('#dashboardScopeOpen').click();
+        const dialog = page.locator('#dashboardScopeDialog');
+        await expect(dialog).toBeVisible();
+        await expect(page.locator('#dashboardScopeBranchSelect option')).toContainText(['QA Main Branch', 'QA Riverside Branch']);
+        await page.locator('#dashboardScopeBranchSelect').selectOption('98202');
+        await expect(page.locator('#dashboardScopeSectionSelect option')).toContainText(['QA Riverside Section']);
+        await page.locator('#dashboardScopeSectionSelect').selectOption('98221');
+        await expect(page.locator('#dashboardScopePreviewBranch')).toHaveText('QA Riverside Branch');
+        await page.locator('#dashboardScopeCancel').click();
+        await expect(dialog).toBeHidden();
+        await expect(page.locator('#branchContextSelect')).toHaveValue(initialBranch);
+        await expect(page.locator('#sectionContextSelect')).toHaveValue(initialSection);
+        expect(runtime.dashboardRequests).toHaveLength(requestCountBeforeCancel);
+        expect(runtime.dayPassRequests).toHaveLength(dayPassCountBeforeCancel);
+        expect(await page.evaluate(() => window.__dashboardScopeEvents || [])).toEqual([]);
+
+        runtime.delayNextDashboardRequest();
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent('topgym:branch-context-changed', {
+            detail: { branchId: Number(sessionStorage.getItem('logicfit.branchId')), sectionId: null }
+        })));
+        await expect.poll(() => runtime.dashboardRequests.length).toBe(requestCountBeforeCancel + 1);
+
+        await page.locator('#dashboardScopeOpen').click();
+        await expect(dialog).toBeVisible();
+        await page.locator('#dashboardScopeBranchSelect').selectOption('98202');
+        await page.locator('#dashboardScopeSectionSelect').selectOption('98221');
+        await page.locator('#dashboardScopeApply').click();
+        await expect(dialog).toBeHidden();
+        await expect(page.locator('#branchContextSelect')).toHaveValue('98202');
+        await expect(page.locator('#sectionContextSelect')).toHaveValue('98221');
+        await expect(page.locator('#dashboardScopeBranch')).toHaveText('QA Riverside Branch');
+        await expect(page.locator('#dashboardScopeSection')).toContainText('QA Riverside Section');
+        await expect.poll(() => page.evaluate(() => window.__dashboardScopeEvents || [])).toHaveLength(2);
+        await expect.poll(async () => normalizeLocalizedDigits(await page.locator('[data-dashboard-member-count]').innerText())).toBe('222');
+        expect(runtime.dashboardRequests.length).toBe(requestCountBeforeCancel + 2);
+        expect(runtime.dashboardRequests.slice(-2).map((request) => request.branchId)).toEqual(['98201', '98202']);
+        await expect.poll(() => runtime.dayPassRequests.length).toBe(dayPassCountBeforeCancel + 2);
+        expect(runtime.writes).toEqual([]);
+        await page.screenshot({ path: testInfo.outputPath('dashboard-scope-desktop.png'), fullPage: true });
+
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.locator('#dashboardScopeOpen').click();
+        await expect(dialog).toBeVisible();
+        const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        expect(mobileOverflow).toBeLessThanOrEqual(1);
+        await page.screenshot({ path: testInfo.outputPath('dashboard-scope-mobile.png'), fullPage: true });
+        await page.locator('#dashboardScopeCancel').click();
+
+        await page.evaluate(() => { window.location.hash = '#members'; });
+        await expect(page.locator('#dashboardScopeBar')).toBeHidden();
+    });
+
     test('preserves dashboard information and fits the locale/theme/viewport matrix', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'The complete 7-width × 2-locale × 2-theme matrix is captured once in the desktop project.');
         test.setTimeout(120_000);
@@ -182,7 +270,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.evaluate(() => window.topGymAppUsable);
         await expect(page.locator('#dashboardSection .dashboard-overview-cards')).toBeVisible({ timeout: 15000 });
         const overviewCardOwners = await page.locator('body .dashboard-overview-cards').evaluateAll((elements) => elements.map((element) => Boolean(element.closest('#dashboardSection'))));
-        expect(overviewCardOwners, 'The five overview cards must be rendered only inside the Dashboard overview section.').toEqual([true]);
+        expect(overviewCardOwners, 'The overview cards must be rendered only inside the Dashboard overview section.').toEqual([true]);
         // Apply the canonical page stylesheet in this disposable source-QA page.
         // The generated shell bundle is outside this task's permitted write set.
         await page.addStyleTag({ path: path.resolve(process.cwd(), 'public/css/pages/dashboard.css') });
@@ -193,7 +281,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
             expect(normalizeLocalizedDigits(displayed)).toBe(expected);
         }
         await expect(page.locator('.dashboard-overview-shortcut-actions [data-page-tab-link="members"]')).toBeVisible();
-        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(5);
+        await expect(page.locator('.dashboard-overview-cards > .dashboard-overview-card')).toHaveCount(4);
         await expect(page.locator('[data-dashboard-member-count]')).toHaveText(/125|١٢٥/);
 
         await fs.mkdir(SCREENSHOT_DIR, { recursive: true });
@@ -307,9 +395,9 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 } else {
                     expect(layout.alerts.top, `${width}px ${locale}/${theme}: alerts should precede daily passes on narrow layouts`).toBeLessThan(layout.dayPasses.top);
                 }
-                expect(layout.cardCount).toBe(5);
+                expect(layout.cardCount).toBe(4);
                 expect(layout.cardBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1), `${width}px ${locale}/${theme}: overview card exceeds viewport`).toBeTruthy();
-                if (width >= 1440) expect(layout.cardColumns).toBe(5);
+                if (width >= 1280) expect(layout.cardColumns).toBe(4);
                 expect(normalizeLocalizedDigits(layout.memberCount)).toBe('125');
                 expect(layout.memberCountSource).toBe('polite');
                 expect(layout.statCount).toBe(5);

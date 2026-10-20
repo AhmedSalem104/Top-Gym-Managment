@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=1bbd9b0ea641e02e">
+    <link rel="stylesheet" href="/css/app-shell.css?v=20adbc6d13ea053c">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -341,19 +341,53 @@
                     <span data-i18n="dashboard.tabs.analytics">التحليلات</span>
                 </button>
             </nav>
+            <section class="dashboard-scope-bar" id="dashboardScopeBar" aria-labelledby="dashboardScopeTitle" hidden>
+                <div class="dashboard-scope-intro">
+                    <span class="dashboard-scope-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg></span>
+                    <div><h2 id="dashboardScopeTitle" data-i18n="dashboard.scope.title">نطاق البيانات المعروضة</h2><p data-i18n="dashboard.scope.description">حدد الفرع والقسم لعرض البيانات المطلوبة في جميع صفحات النظام.</p></div>
+                </div>
+                <dl class="dashboard-scope-values" aria-label="النطاق الحالي" data-i18n-aria-label="dashboard.scope.current">
+                    <div class="dashboard-scope-value"><dt><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M15 9h.01M9 13h.01M15 13h.01M9 17h.01M15 17h.01"/></svg><span data-i18n="dashboard.scope.branch">الفرع الحالي</span></dt><dd id="dashboardScopeBranch" dir="auto">—</dd></div>
+                    <div class="dashboard-scope-value"><dt><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="11" cy="18" r="2"/></svg><span data-i18n="dashboard.scope.section">القسم الحالي</span></dt><dd id="dashboardScopeSection" dir="auto">كل الأقسام</dd></div>
+                </dl>
+                <button class="btn btn-light dashboard-scope-change" id="dashboardScopeOpen" type="button" aria-haspopup="dialog" aria-controls="dashboardScopeDialog"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4"/></svg><span data-i18n="dashboard.scope.change">تغيير النطاق</span></button>
+            </section>
+            <dialog class="lf-modal-shell lf-modal--md lf-modal--structured lf-modal--bottom-sheet dashboard-scope-dialog" id="dashboardScopeDialog" aria-labelledby="dashboardScopeDialogTitle" aria-describedby="dashboardScopeDialogDescription">
+                <div class="dashboard-scope-dialog-shell">
+                    <header class="dialog-header">
+                        <div><h2 id="dashboardScopeDialogTitle" data-i18n="dashboard.scope.dialog.title">تغيير نطاق البيانات</h2><p id="dashboardScopeDialogDescription" data-i18n="dashboard.scope.dialog.description">اختر الفرع والقسم المسموحين، ثم طبّق التغيير لعرض البيانات ضمن النطاق الجديد.</p></div>
+                        <button class="btn btn-light btn-small" type="button" id="dashboardScopeClose" data-i18n="dashboard.scope.close">إغلاق</button>
+                    </header>
+                    <form id="dashboardScopeForm" novalidate>
+                        <div class="dialog-body dashboard-scope-dialog-body">
+                            <p class="dashboard-scope-dialog-status" id="dashboardScopeStatus" role="status" aria-live="polite" data-i18n="dashboard.scope.loading">جارٍ تحميل النطاقات المسموح بها…</p>
+                            <div class="dashboard-scope-fields" id="dashboardScopeFields" hidden>
+                                <div class="field"><label id="dashboardScopeBranchLabel" for="dashboardScopeBranchSelect" data-i18n="dashboard.scope.branch">الفرع الحالي</label>
+                                    <input class="dashboard-scope-search" id="dashboardScopeBranchSearch" type="search" autocomplete="off" aria-label="ابحث عن فرع" data-i18n-aria-label="dashboard.scope.searchBranch" data-i18n-placeholder="dashboard.scope.searchBranch" placeholder="ابحث عن فرع" hidden>
+                                    <select id="dashboardScopeBranchSelect" aria-labelledby="dashboardScopeBranchLabel"></select>
+                                </div>
+                                <div class="field"><label id="dashboardScopeSectionLabel" for="dashboardScopeSectionSelect" data-i18n="dashboard.scope.section">القسم الحالي</label>
+                                    <input class="dashboard-scope-search" id="dashboardScopeSectionSearch" type="search" autocomplete="off" aria-label="ابحث عن قسم" data-i18n-aria-label="dashboard.scope.searchSection" data-i18n-placeholder="dashboard.scope.searchSection" placeholder="ابحث عن قسم" hidden>
+                                    <select id="dashboardScopeSectionSelect" aria-labelledby="dashboardScopeSectionLabel"></select>
+                                </div>
+                            </div>
+                            <section class="dashboard-scope-preview" id="dashboardScopePreview" aria-labelledby="dashboardScopePreviewTitle" hidden>
+                                <h3 id="dashboardScopePreviewTitle" data-i18n="dashboard.scope.preview">النطاق بعد التطبيق</h3>
+                                <dl><div><dt data-i18n="dashboard.scope.branch">الفرع الحالي</dt><dd id="dashboardScopePreviewBranch" dir="auto">—</dd></div><div><dt data-i18n="dashboard.scope.section">القسم الحالي</dt><dd id="dashboardScopePreviewSection" dir="auto">—</dd></div></dl>
+                            </section>
+                        </div>
+                        <footer class="dialog-actions dashboard-scope-dialog-actions">
+                            <button class="btn btn-light" type="button" id="dashboardScopeCancel" data-i18n="dashboard.scope.cancel">إلغاء</button>
+                            <button class="btn btn-primary" type="submit" id="dashboardScopeApply" disabled data-i18n="dashboard.scope.apply">تطبيق النطاق</button>
+                        </footer>
+                    </form>
+                </div>
+            </dialog>
             <div class="dashboard-view-panels" id="dashboardViewPanels" hidden>
             <section class="dashboard-view-panel" id="dashboardOverviewPanel" data-dashboard-view-panel="overview" role="tabpanel" aria-labelledby="dashboardOverviewTab" tabindex="0">
             <section class="dashboard-overview-shell" aria-labelledby="dashboardOverviewTitle" hidden>
             <h1 class="dashboard-overview-title visually-hidden" id="dashboardOverviewTitle" data-i18n="dashboard.overview.title">نظرة عامة</h1>
             <section class="dashboard-overview-cards" aria-label="نظرة عامة" data-i18n-aria-label="dashboard.overview.aria">
-                <article class="dashboard-overview-card dashboard-overview-welcome">
-                    <span class="dashboard-overview-status"><i aria-hidden="true"></i><span data-i18n="dashboard.status.live">النظام يعمل الآن</span></span>
-                    <div class="dashboard-overview-card-copy">
-                        <small data-i18n="dashboard.eyebrow">لوحة التشغيل اليومية</small>
-                        <h2><span data-i18n="dashboard.welcome.prefix">مرحبًا بك في</span> <strong data-brand-text="brandName">Logic Fit</strong></h2>
-                        <p data-brand-text="welcomeSubtitle">إدارة أذكى لجيم أقوى.</p>
-                    </div>
-                </article>
                 <article class="dashboard-overview-card dashboard-overview-metric" aria-label="عدد الأعضاء" data-i18n-aria-label="dashboard.summary.memberCount">
                     <svg class="ui-icon dashboard-overview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <small data-i18n="dashboard.summary.memberCount">عدد الأعضاء</small>
@@ -1254,13 +1288,13 @@
     <script defer src="/js/ui-feedback.js?v=e8714df9c49d8a2c"></script>
     <script defer src="/js/loading-skeleton.js?v=7de5ff80612cbbd0"></script>
     <script defer src="/js/auth-ui.js?v=21d1858cae78472a"></script>
-    <script defer src="/js/branch-context.js?v=a4b17c3ebf6f638c"></script>
+    <script defer src="/js/branch-context.js?v=e12901bf687c0704"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
-    <script defer src="/js/core/feature-manifest.js?v=12ca1d6e6c718ea8"></script>
-    <script defer src="/js/feature-loader.js?v=91bd70e925fbac57"></script>
-    <script defer src="/js/core/i18n.js?v=112589e2f6715342"></script>
-    <script defer src="/js/app-shell-bootstrap.js?v=4db195c1b9e7bbe3"></script>
-    <script defer src="/js/page-tabs.js?v=2559138176c427ca"></script>
+    <script defer src="/js/core/feature-manifest.js?v=46e428b69abb45a8"></script>
+    <script defer src="/js/feature-loader.js?v=65d6a6a931103f6e"></script>
+    <script defer src="/js/core/i18n.js?v=114d8476dabd6973"></script>
+    <script defer src="/js/app-shell-bootstrap.js?v=6049ce3543199d4b"></script>
+    <script defer src="/js/page-tabs.js?v=7cdf8cd8ca434d17"></script>
 </body>
 </html>
