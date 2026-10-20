@@ -6,7 +6,10 @@
 }
 
 .dashboard-view-tabs {
-  margin-block: var(--space-4) var(--space-5);
+  justify-self: center;
+  width: max-content;
+  max-width: 100%;
+  margin-block: 0 var(--space-5);
 }
 
 .dashboard-view-panels,
@@ -1823,6 +1826,7 @@
   border-radius: var(--radius-lg);
   background: var(--bg-card);
   box-shadow: var(--shadow-xs);
+  margin-block-end: var(--space-5);
 }
 
 .dashboard-scope-intro {
@@ -1855,9 +1859,19 @@
   margin: 0;
 }
 
-.dashboard-scope-value { min-width: 0; padding-inline: var(--space-3); border-inline-start: 1px solid var(--border-secondary); }
-.dashboard-scope-value dt { display: flex; min-width: 0; align-items: center; gap: var(--space-2); color: var(--text-muted); font-size: var(--font-xs); }
-.dashboard-scope-value dt .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); flex: 0 0 var(--icon-size-compact); color: var(--primary); }
+.dashboard-scope-value {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+.dashboard-scope-value dt { position: relative; display: flex; min-width: 0; min-height: 36px; align-items: center; padding-inline-start: 44px; color: var(--text-muted); font-size: var(--font-xs); }
+.dashboard-scope-value dt::before { position: absolute; inset-block-start: 0; inset-inline-start: 0; width: 36px; height: 36px; border-radius: var(--radius-md); background: var(--primary-soft); content: ""; }
+.dashboard-scope-value dt .ui-icon { position: absolute; inset-block-start: 10px; inset-inline-start: 10px; width: var(--icon-size-compact); height: var(--icon-size-compact); color: var(--primary); }
 .dashboard-scope-value dd { min-width: 0; margin: var(--space-1) 0 0; color: var(--text-primary); font-size: var(--font-sm); font-weight: var(--weight-semibold); line-height: 1.4; overflow-wrap: anywhere; }
 .dashboard-scope-change { min-height: var(--ui-touch-target); white-space: nowrap; }
 .dashboard-scope-change .ui-icon { width: var(--icon-size-compact); height: var(--icon-size-compact); }
@@ -1901,10 +1915,18 @@
   display: grid;
   min-width: 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas: "members plan date shortcuts";
   align-items: stretch;
   gap: var(--space-4);
   direction: inherit;
 }
+
+html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date plan members"; }
+
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(1) { grid-area: members; }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(2) { grid-area: plan; }
+.dashboard-overview-cards > .dashboard-overview-metric:nth-child(3) { grid-area: date; }
+.dashboard-overview-cards > .dashboard-overview-shortcuts { grid-area: shortcuts; }
 
 .dashboard-overview-card {
   display: grid;
@@ -1942,6 +1964,14 @@
   column-gap: var(--space-3);
   row-gap: var(--space-1);
 }
+html[dir="rtl"] .dashboard-overview-metric { direction: ltr; }
+html[dir="ltr"] .dashboard-overview-metric { direction: rtl; }
+.dashboard-overview-metric small,
+.dashboard-overview-metric strong { justify-self: end; text-align: start; }
+html[dir="rtl"] .dashboard-overview-metric small,
+html[dir="rtl"] .dashboard-overview-metric strong { direction: rtl; }
+html[dir="ltr"] .dashboard-overview-metric small,
+html[dir="ltr"] .dashboard-overview-metric strong { direction: ltr; }
 .dashboard-overview-icon { width: 24px; height: 24px; color: var(--primary); }
 .dashboard-overview-metric .dashboard-overview-icon { grid-column: 1; grid-row: 1 / span 2; }
 .dashboard-overview-metric small,
@@ -1959,7 +1989,7 @@
 [data-dashboard-member-count],
 [data-dashboard-overview-date] { direction: ltr; unicode-bidi: isolate; }
 
-.dashboard-overview-shortcuts { align-content: space-between; }
+.dashboard-overview-shortcuts { align-content: space-between; background: var(--bg-card); }
 .dashboard-overview-shortcuts-title { font-size: var(--font-md); font-weight: var(--weight-semibold); }
 .dashboard-overview-shortcut-actions { display: grid; min-width: 0; gap: var(--space-2); }
 .dashboard-overview-shortcut-actions .btn { min-width: 0; min-height: var(--ui-touch-target); justify-content: center; padding-inline: var(--space-2); white-space: normal; }
@@ -1981,7 +2011,19 @@
   .dashboard-scope-intro { grid-column: 1 / -1; }
   .dashboard-scope-values { grid-column: 1; }
   .dashboard-scope-change { grid-column: 2; grid-row: 2; }
-  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "members plan" "date shortcuts"; }
+  html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date" "plan members"; }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-overview-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas: "members plan date shortcuts";
+  }
+
+  html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date plan members"; }
+  .dashboard-overview-card { min-height: var(--dashboard-summary-card-min-height); }
+  .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -1989,18 +2031,20 @@
   .dashboard-scope-intro { grid-column: 1 / -1; }
   .dashboard-scope-values { grid-column: 1 / -1; }
   .dashboard-scope-change { grid-column: 2; grid-row: 3; }
-  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--app-layout-gap); }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "members plan" "date shortcuts"; gap: var(--app-layout-gap); }
+  html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date" "plan members"; }
   .dashboard-overview-card { min-height: 0; }
   .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 767px) {
   .dashboard-overview-shell { gap: var(--app-layout-gap); }
-  .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+  .dashboard-scope-bar { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); margin-block-end: var(--space-3); }
   .dashboard-scope-values { gap: var(--space-2); }
   .dashboard-scope-value { padding-inline: var(--space-2); }
   .dashboard-scope-change { width: 100%; }
-  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .dashboard-overview-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "members plan" "date shortcuts"; gap: var(--space-3); }
+  html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts date" "plan members"; }
   .dashboard-overview-card { min-height: 0; padding: var(--space-4); }
   .dashboard-overview-shortcut-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-scope-fields,
@@ -2009,6 +2053,7 @@
 
 @media (max-width: 359px) {
   .dashboard-overview-card { padding: var(--space-3); }
-  .dashboard-overview-cards { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-overview-cards { grid-template-columns: minmax(0, 1fr); grid-template-areas: "members" "plan" "date" "shortcuts"; }
+  html[dir="rtl"] .dashboard-overview-cards { grid-template-areas: "shortcuts" "date" "plan" "members"; }
   .dashboard-overview-shortcut-actions { grid-template-columns: minmax(0, 1fr); }
 }

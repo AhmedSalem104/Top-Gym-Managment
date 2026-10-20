@@ -538,7 +538,10 @@
         const active = Array.isArray(data?.activeBranches) ? data.activeBranches : [];
         const allowed = Array.isArray(data?.branches) ? data.branches : active;
         const allSections = Array.isArray(data?.sections) ? data.sections : [];
-        shell.hidden = (!data?.hasMultipleActiveBranches || allowed.length < 2) && allSections.length === 0;
+        // Branch and section selection is exposed through the dashboard scope
+        // dialog, not the global navbar. Keep these authorized selects mounted
+        // as the existing context-state backing store.
+        shell.hidden = true;
         select.innerHTML = '';
         if (data?.canUseAllBranches && active.length > 1) select.append(new Option(translate('context.allBranches', 'كل الفروع'), ''));
         allowed.forEach((branch) => select.append(new Option(branch.name, String(branch.id))));

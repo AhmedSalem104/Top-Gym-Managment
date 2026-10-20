@@ -155,6 +155,7 @@
   --radius-lg: 10px;
   --radius-xl: 14px;
   --radius-overview-card: 12px;
+  --dashboard-summary-card-min-height: 128px;
   --radius-login-card: 16px;
   --radius-pill: 999px;
   --radius-control: 8px;

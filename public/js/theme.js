@@ -36,6 +36,9 @@
             const labelText = i18n?.t(nextTheme === 'dark' ? 'shell.theme.darkName' : 'shell.theme.lightName') || (nextTheme === 'dark' ? 'الوضع الداكن' : 'الوضع الفاتح');
             const titleText = i18n?.t(nextTheme === 'dark' ? 'shell.theme.dark' : 'shell.theme.light') || (nextTheme === 'dark' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح');
             button.setAttribute('aria-pressed', String(theme === 'dark'));
+            if (button.getAttribute('role') === 'switch') {
+                button.setAttribute('aria-checked', String(theme === 'dark'));
+            }
             button.setAttribute('aria-label', titleText);
             button.setAttribute('title', titleText);
             if (label) label.textContent = labelText;

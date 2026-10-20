@@ -4,7 +4,7 @@ const path = require('node:path');
 const featureCatalog = require('../../src/services/feature-catalog');
 const planCatalog = require('../../src/services/saas-plan-catalog');
 
-const WIDTHS = [320, 375, 390, 768, 1024, 1440, 1920];
+const WIDTHS = [320, 375, 390, 768, 1024, 1440, 1846, 1920];
 const THEMES = ['light', 'dark'];
 const LOCALES = ['ar', 'en'];
 const SCREENSHOT_DIR = path.resolve(process.cwd(), 'qa/artifacts/dashboard-v2-screen-continuation');
@@ -191,6 +191,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         const runtime = await installReadOnlyDashboardFixture(page, { multipleScopes: true });
         await page.goto('/index.html?dashboardScope=1#dashboard', { waitUntil: 'domcontentloaded' });
         await expect(page.locator('#dashboardScopeBar')).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('#branchContextShell')).toBeHidden();
         await expect(page.locator('#dashboardScopeBranch')).toHaveText('QA Main Branch');
         await page.evaluate(() => window.addEventListener('topgym:branch-context-changed', (event) => {
             window.__dashboardScopeEvents = [...(window.__dashboardScopeEvents || []), event.detail];
@@ -343,6 +344,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 const layout = await page.evaluate(() => {
                     const dashboard = document.querySelector('#dashboardSection');
                     const cards = dashboard.querySelector('.dashboard-overview-cards');
+                    const tabs = dashboard.querySelector('#dashboardViewTabs');
+                    const scope = dashboard.querySelector('#dashboardScopeBar');
                     const overviewCards = [...dashboard.querySelectorAll('.dashboard-overview-card')];
                     const stats = [...dashboard.querySelectorAll('[data-skeleton-region="dashboard-stats"] .stat-card')];
                     const actionButtons = [...dashboard.querySelectorAll('.dashboard-overview-shortcut-actions .btn')].filter((button) => getComputedStyle(button).display !== 'none');
@@ -363,8 +366,23 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                         dashboard: rect(dashboard),
                         alerts: rect(alerts),
                         dayPasses: rect(dayPasses),
+                        tabs: rect(tabs),
+                        scope: rect(scope),
+                        scopeIntro: rect(scope.querySelector('.dashboard-scope-intro')),
+                        scopeValues: [...scope.querySelectorAll('.dashboard-scope-value')].map(rect),
+                        scopeChange: rect(scope.querySelector('.dashboard-scope-change')),
                         cards: rect(cards),
                         cardBoxes: overviewCards.map(rect),
+                        cardMetricLayout: [...dashboard.querySelectorAll('.dashboard-overview-metric')].map((card) => ({
+                            icon: rect(card.querySelector('.dashboard-overview-icon')),
+                            label: rect(card.querySelector('small')),
+                            value: rect(card.querySelector('strong')),
+                            direction: getComputedStyle(card).direction
+                        })),
+                        scopeValueStyles: [...scope.querySelectorAll('.dashboard-scope-value')].map((element) => {
+                            const style = getComputedStyle(element);
+                            return { borderWidth: style.borderTopWidth, radius: style.borderTopLeftRadius, background: style.backgroundColor };
+                        }),
                         cardCount: overviewCards.length,
                         cardColumns: getComputedStyle(cards).gridTemplateColumns.split(' ').length,
                         cardChildren: [...cards.children].map((element) => ({
@@ -397,7 +415,32 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 }
                 expect(layout.cardCount).toBe(4);
                 expect(layout.cardBoxes.every((box) => box.width > 0 && box.height > 0 && box.left >= -1 && box.right <= width + 1), `${width}px ${locale}/${theme}: overview card exceeds viewport`).toBeTruthy();
-                if (width >= 1280) expect(layout.cardColumns).toBe(4);
+                if (width >= 1280) {
+                    expect(layout.cardColumns).toBe(4);
+                    expect(Math.abs((layout.tabs.left + layout.tabs.right) / 2 - (layout.dashboard.left + layout.dashboard.right) / 2), `${width}px ${locale}/${theme}: dashboard tabs are not centered`).toBeLessThanOrEqual(1);
+                    const scopeCenters = [layout.scopeIntro, ...layout.scopeValues, layout.scopeChange].map((box) => box.top + box.height / 2);
+                    expect(Math.max(...scopeCenters) - Math.min(...scopeCenters), `${width}px ${locale}/${theme}: scope bar groups are not vertically aligned`).toBeLessThanOrEqual(2);
+                    expect(layout.scopeValueStyles.every((style) => style.borderWidth === '1px' && style.radius !== '0px'), `${width}px ${locale}/${theme}: branch/department summaries must have outlined surfaces`).toBeTruthy();
+                    const [membersCard, planCard, dateCard, shortcutsCard] = layout.cardBoxes;
+                    if (locale === 'ar') {
+                        expect(shortcutsCard.left).toBeGreaterThan(dateCard.left);
+                        expect(dateCard.left).toBeGreaterThan(planCard.left);
+                        expect(planCard.left).toBeGreaterThan(membersCard.left);
+                    } else {
+                        expect(membersCard.left).toBeLessThan(planCard.left);
+                        expect(planCard.left).toBeLessThan(dateCard.left);
+                        expect(dateCard.left).toBeLessThan(shortcutsCard.left);
+                    }
+                    if (width === 1846 && locale === 'ar' && theme === 'light') {
+                        expect(layout.scopeValues).toHaveLength(2);
+                        expect(layout.cardBoxes.every((box) => box.height <= 140), 'Reference desktop summary cards should remain compact.').toBeTruthy();
+                        await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-approved-reference-1846-ar-light-viewport.png'), fullPage: false });
+                    }
+                    for (const metric of layout.cardMetricLayout) {
+                        if (locale === 'ar') expect(metric.icon.right).toBeLessThan(metric.label.left, `${width}px ${locale}/${theme}: metric icon should sit to the left of its text in RTL`);
+                        else expect(metric.icon.left).toBeGreaterThan(metric.label.right, `${width}px ${locale}/${theme}: metric icon should sit to the right of its text in LTR`);
+                    }
+                }
                 expect(normalizeLocalizedDigits(layout.memberCount)).toBe('125');
                 expect(layout.memberCountSource).toBe('polite');
                 expect(layout.statCount).toBe(5);

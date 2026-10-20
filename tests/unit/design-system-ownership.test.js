@@ -190,6 +190,7 @@ test('SaaS panel heading presentation is owned by the SaaS page stylesheet', () 
 
 test('Dashboard overview cards are owned by the dashboard page and use live data hooks', () => {
     const dashboard = read('public/css/pages/dashboard.css');
+    const tokens = read('public/css/tokens.css');
     const visual = read('public/css/components/visual-redesign.css');
     const html = read('public/index.html');
     const app = read('public/js/app.js');
@@ -199,6 +200,10 @@ test('Dashboard overview cards are owned by the dashboard page and use live data
     assert.match(dashboard, /\.dashboard-overview-shell\s*\{[^}]*padding:\s*0[^}]*border:\s*0[^}]*background:\s*transparent/u);
     assert.match(dashboard, /\.dashboard-overview-cards\s*\{[^}]*display:\s*grid/u);
     assert.match(dashboard, /\.dashboard-overview-card\s*\{[^}]*var\(--radius-overview-card\)/u);
+    assert.match(tokens, /--dashboard-summary-card-min-height:\s*128px/u);
+    assert.match(dashboard, /\.dashboard-scope-value\s*\{[^}]*border:\s*1px solid var\(--border-secondary\)[^}]*background:\s*var\(--bg-card\)/u);
+    assert.match(dashboard, /html\[dir="rtl"\] \.dashboard-overview-cards \{ grid-template-areas: "shortcuts date plan members"; \}/u);
+    assert.match(dashboard, /html\[dir="ltr"\] \.dashboard-overview-metric \{ direction: rtl; \}/u);
     assert.match(dashboard, /@media\s*\(min-width:\s*1280px\)[\s\S]*?\.dashboard-overview-cards\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u);
     assert.match(dashboard, /@media\s*\(min-width:\s*768px\)\s*and\s*\(max-width:\s*1023px\)[\s\S]*?\.dashboard-overview-cards\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u);
     assert.match(html, /id="dashboardPrintPricingButton"[\s\S]*?id="dashboardPrintPricingPreviewButton"/u);

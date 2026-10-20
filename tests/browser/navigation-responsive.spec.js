@@ -801,3 +801,110 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
     }
     await loginPage.close();
 });
+
+test('navbar settings dropdown is anchored to More and remains compact, localized, and independent', async ({ page }, testInfo) => {
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+
+    const details = page.locator('.topbar-more-menu');
+    const trigger = page.locator('.topbar-more-trigger');
+    const panel = page.locator('.topbar-more-items');
+    await expect(details).not.toHaveAttribute('open', '');
+    await expect(page.locator('#globalKioskToggle')).toHaveCount(0);
+    await expect(page.locator('#attendanceKioskButton')).toHaveCount(1);
+
+    const captures = new Set();
+    for (const width of [320, 375, 430, 768, 1024, 1440, 1920]) {
+        await page.setViewportSize({ width, height: 820 });
+        const localeTheme = width % 2 === 0 ? ['en', 'dark'] : ['ar', 'light'];
+        for (const [locale, theme] of [localeTheme]) {
+                await page.evaluate(({ locale: nextLocale, theme: nextTheme }) => {
+                    window.TopGymI18n.set(nextLocale);
+                    window.TopGymTheme.set(nextTheme);
+                }, { locale, theme });
+                await page.locator('.notification-center-trigger').click();
+                await expect(details).not.toHaveAttribute('open', '');
+                await page.keyboard.press('Escape');
+                if (await page.locator('#topbarProfile').isVisible()) {
+                    await page.locator('#topbarProfile').click();
+                    await expect(details).not.toHaveAttribute('open', '');
+                }
+                await trigger.click();
+                await expect(panel).toBeVisible();
+                await expect(panel.locator('.topbar-settings-section')).toHaveCount(2);
+                await expect(panel.locator('#themeToggleButton')).toHaveAttribute('role', 'switch');
+                await expect(panel.locator('#topbarFullscreenAction')).toBeVisible();
+                await expect(panel.locator('#topbarLogoutAction')).toBeVisible();
+                await expect(panel.locator('[data-kiosk-toggle]')).toHaveCount(0);
+
+                const geometry = await page.evaluate(() => {
+                    const triggerRect = document.querySelector('.topbar-more-trigger').getBoundingClientRect();
+                    const panelRect = document.querySelector('.topbar-more-items').getBoundingClientRect();
+                    return {
+                        direction: document.documentElement.dir,
+                        viewportWidth: innerWidth,
+                        triggerBottom: triggerRect.bottom,
+                        panel: { left: panelRect.left, right: panelRect.right, top: panelRect.top, width: panelRect.width, height: panelRect.height },
+                        scrollWidth: document.documentElement.scrollWidth
+                    };
+                });
+                expect(geometry.panel.width).toBeLessThanOrEqual(340);
+                expect(geometry.panel.left).toBeGreaterThanOrEqual(0);
+                expect(geometry.panel.right).toBeLessThanOrEqual(width);
+                expect(geometry.panel.top).toBeGreaterThanOrEqual(geometry.triggerBottom - 1);
+                expect(geometry.panel.height).toBeLessThanOrEqual(820);
+                expect(geometry.scrollWidth).toBeLessThanOrEqual(width);
+                if (width === 320 && !captures.has('mobile')) {
+                    await page.screenshot({ path: testInfo.outputPath(`navbar-settings-mobile-320-${locale}-${theme}.png`), fullPage: false });
+                    captures.add('mobile');
+                }
+                if (width === 375 && !captures.has('rtl-light')) {
+                    await page.screenshot({ path: testInfo.outputPath('navbar-settings-mobile-375-ar-light.png'), fullPage: false });
+                    captures.add('rtl-light');
+                }
+                if (width === 1440 && locale === 'en' && theme === 'dark' && !captures.has('desktop')) {
+                    await page.screenshot({ path: testInfo.outputPath('navbar-settings-desktop-1440-en-dark.png'), fullPage: false });
+                    captures.add('desktop');
+                }
+                await page.keyboard.press('Escape');
+                await expect(panel).toBeHidden();
+                await expect(trigger).toBeFocused();
+        }
+    }
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => window.TopGymI18n.set('ar'));
+    await trigger.click();
+    await panel.locator('[data-locale-choice="en"]').click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    await expect(panel).toBeHidden();
+
+    await trigger.click();
+    const themeSwitch = page.locator('#themeToggleButton');
+    const initialTheme = await page.locator('html').getAttribute('data-theme');
+    await themeSwitch.click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', initialTheme === 'dark' ? 'light' : 'dark');
+    await expect(themeSwitch).toHaveAttribute('aria-checked', initialTheme === 'dark' ? 'false' : 'true');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('topgym-theme'))).toBe(initialTheme === 'dark' ? 'light' : 'dark');
+
+    await trigger.click();
+    const fullscreenAction = page.locator('#topbarFullscreenAction');
+    if (await fullscreenAction.isEnabled()) {
+        await fullscreenAction.click();
+        await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true);
+        await trigger.click();
+        await expect(fullscreenAction.locator('[data-fullscreen-label]')).toHaveText(/Exit full screen|إنهاء ملء الشاشة/u);
+        await fullscreenAction.click();
+        await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(false);
+    } else {
+        await expect(fullscreenAction).toHaveAttribute('aria-label', /unavailable|غير متاح/u);
+    }
+
+    await trigger.click();
+    await page.evaluate(() => {
+        const logout = document.getElementById('authLogoutButton');
+        logout.click = () => { window.__settingsLogoutDelegated = true; };
+    });
+    await page.locator('#topbarLogoutAction').click();
+    await expect.poll(() => page.evaluate(() => window.__settingsLogoutDelegated)).toBe(true);
+});

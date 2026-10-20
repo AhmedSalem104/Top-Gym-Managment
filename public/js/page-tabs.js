@@ -513,6 +513,52 @@
         const menu = document.querySelector('.topbar-more-menu');
         const trigger = menu?.querySelector('.topbar-more-trigger');
         if (!menu || !trigger) return;
+        const fullscreenButton = document.getElementById('topbarFullscreenAction');
+        const fullscreenLabel = fullscreenButton?.querySelector('[data-fullscreen-label]');
+        const fullscreenDescription = fullscreenButton?.querySelector('[data-fullscreen-description]');
+        const panel = menu.querySelector('.topbar-more-items');
+        const positionMenu = () => {
+            if (!menu.open || !panel) return;
+            const triggerRect = trigger.getBoundingClientRect();
+            const panelWidth = panel.getBoundingClientRect().width;
+            if (!panelWidth) return;
+            const viewportWidth = document.documentElement.clientWidth;
+            const viewportHeight = window.innerHeight;
+            const gutter = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--space-3')) || 12;
+            const left = Math.max(gutter, Math.min(
+                triggerRect.left + triggerRect.width / 2 - panelWidth / 2,
+                viewportWidth - panelWidth - gutter
+            ));
+            const panelHeight = panel.getBoundingClientRect().height;
+            const top = Math.max(gutter, Math.min(
+                triggerRect.bottom + gutter,
+                viewportHeight - panelHeight - gutter
+            ));
+            // These runtime geometry variables keep the popup anchored while
+            // allowing its visual surface to remain owned by the CSS tokens.
+            panel.style.setProperty('--topbar-settings-menu-left', `${left}px`);
+            panel.style.setProperty('--topbar-settings-menu-top', `${top}px`);
+            panel.style.setProperty('--topbar-settings-arrow-left', `${triggerRect.left + triggerRect.width / 2 - left}px`);
+        };
+        const clearMenuPosition = () => {
+            panel?.style.removeProperty('--topbar-settings-menu-left');
+            panel?.style.removeProperty('--topbar-settings-menu-top');
+            panel?.style.removeProperty('--topbar-settings-arrow-left');
+        };
+        const syncFullscreenAction = () => {
+            if (!fullscreenButton) return;
+            const active = Boolean(document.fullscreenElement);
+            const supported = active || (document.fullscreenEnabled !== false && typeof document.documentElement?.requestFullscreen === 'function');
+            const labelKey = active ? 'shell.fullscreen.exit' : 'shell.fullscreen';
+            const descriptionKey = active ? 'shell.fullscreen.exit.description' : 'shell.fullscreen.description';
+            const label = window.TopGymI18n?.t(labelKey) || (active ? 'Exit full screen' : 'Full screen');
+            const description = window.TopGymI18n?.t(descriptionKey) || label;
+            fullscreenButton.disabled = !supported;
+            fullscreenButton.title = supported ? label : (window.TopGymI18n?.t('shell.fullscreen.unavailable') || label);
+            fullscreenButton.setAttribute('aria-label', fullscreenButton.title);
+            if (fullscreenLabel) fullscreenLabel.textContent = label;
+            if (fullscreenDescription) fullscreenDescription.textContent = description;
+        };
         const close = (restoreFocus = false) => {
             if (!menu.open) return;
             menu.open = false;
@@ -521,6 +567,12 @@
         menu.addEventListener('click', (event) => {
             if (event.target.closest('.topbar-more-items button')) close(true);
         });
+        menu.addEventListener('toggle', () => {
+            if (menu.open) window.requestAnimationFrame(positionMenu);
+            else clearMenuPosition();
+        });
+        window.addEventListener('resize', () => { if (menu.open) positionMenu(); });
+        document.addEventListener('scroll', () => { if (menu.open) positionMenu(); }, true);
         document.addEventListener('pointerdown', (event) => {
             if (menu.open && !menu.contains(event.target)) close(false);
         });
@@ -529,7 +581,23 @@
             event.preventDefault();
             close(true);
         });
+        fullscreenButton?.addEventListener('click', async () => {
+            try {
+                if (document.fullscreenElement) await document.exitFullscreen?.();
+                else if (typeof document.documentElement?.requestFullscreen === 'function') await document.documentElement.requestFullscreen();
+            } catch {
+                // Fullscreen can be refused by the browser or embedding policy.
+            } finally {
+                syncFullscreenAction();
+            }
+        });
+        document.addEventListener('fullscreenchange', syncFullscreenAction);
+        window.addEventListener('topgym:localechange', syncFullscreenAction);
+        document.getElementById('topbarLogoutAction')?.addEventListener('click', () => {
+            document.getElementById('authLogoutButton')?.click();
+        });
         menu.open = false;
+        syncFullscreenAction();
     }
 
     function syncMobileNavigationContext(name) {

@@ -1,60 +1,64 @@
-/* The login switch is owned by pages/login.css so authenticated users do not
-   download public-entry presentation rules in the critical application shell. */
-@media (prefers-reduced-motion: reduce) {
-  .app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button {
-    transition: none;
-  }
-}
-
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button {
-  box-sizing: border-box;
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  flex: 0 0 44px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--nav-action-blue);
-  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
-}
-
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button .ui-icon {
+/* Authenticated settings-menu theme switch. The public Login theme control is
+   owned by pages/login.css and is not part of the authenticated shell bundle. */
+.app-shell > .topbar .topbar-settings-switch {
+  position: relative;
   display: block;
-  width: 20px;
-  height: 20px;
+  box-sizing: border-box;
+  width: 48px;
+  min-width: 48px;
+  height: var(--ui-touch-target);
+  min-height: var(--ui-touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
 }
 
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button[data-theme-state="dark"] {
-  color: var(--nav-action-cyan);
+.app-shell > .topbar .topbar-settings-switch::before {
+  position: absolute;
+  inset-block-start: 10px;
+  inset-inline: 3px;
+  height: 24px;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card-hover);
+  content: "";
+  transition: background-color var(--motion-duration-interaction), border-color var(--motion-duration-interaction);
 }
 
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:hover,
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:focus-visible {
-  border-color: var(--primary-border);
-  background: var(--primary-soft);
-  color: var(--sidebar-text);
-  transform: translateY(-1px);
+.app-shell > .topbar .topbar-settings-switch::after {
+  position: absolute;
+  inset-block-start: 13px;
+  inset-inline-start: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--text-muted);
+  box-shadow: var(--shadow-xs);
+  content: "";
+  transition: background-color var(--motion-duration-interaction), inset-inline-start var(--motion-duration-interaction);
 }
 
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:focus-visible {
+.app-shell > .topbar .topbar-settings-switch[aria-checked="true"]::before {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.app-shell > .topbar .topbar-settings-switch[aria-checked="true"]::after {
+  inset-inline-start: 24px;
+  background: var(--text-on-primary);
+}
+
+.app-shell > .topbar .topbar-settings-switch:focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-.app-shell > .topbar .topbar-more-items > .topbar-theme-icon-button:active {
-  transform: translateY(0);
-}
+.app-shell > .topbar .topbar-settings-switch:disabled { cursor: not-allowed; opacity: .6; }
 
-@media (max-width: 1199px) {
-  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .topbar-theme-icon-button,
-  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .kiosk-toggle-button,
-  .app-shell > .topbar .topbar-more-menu[open] .topbar-more-items > .topbar-language-toggle {
-    width: 100%;
-    min-width: 0;
-    flex: 0 0 auto;
-    justify-content: flex-start;
-    padding-inline: var(--space-3);
-  }
+@media (prefers-reduced-motion: reduce) {
+  .app-shell > .topbar .topbar-settings-switch::before,
+  .app-shell > .topbar .topbar-settings-switch::after { transition: none; }
 }
