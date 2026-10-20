@@ -54,6 +54,10 @@
   --danger-text: #b42323;
   --warning-text: #9b6410;
   --info-text: #2454a6;
+  --locale-switcher-surface: #f4f5f7;
+  --locale-switcher-active-surface: #ffffff;
+  --locale-switcher-active-text: #8a5a00;
+  --locale-switcher-active-border: #bd7604;
   --table-header-bg: #f1f5f9;
   --scrollbar-track: #eef3f9;
   --scrollbar-thumb: #cbd7e6;
@@ -383,6 +387,10 @@ body[data-theme="dark"] {
   --danger-text: #fb7185;
   --warning-text: #fbbf24;
   --info-text: #60a5fa;
+  --locale-switcher-surface: #18181b;
+  --locale-switcher-active-surface: #27272a;
+  --locale-switcher-active-text: #fbbf24;
+  --locale-switcher-active-border: #b7791f;
   --table-header-bg: #0c1624;
   --scrollbar-track: #09111d;
   --scrollbar-thumb: #35465e;

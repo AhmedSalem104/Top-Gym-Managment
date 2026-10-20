@@ -455,60 +455,6 @@
         setOpen(false, false);
     }
 
-    function initApplicationLauncher() {
-        const launcher = document.querySelector('.application-launcher');
-        const menu = document.getElementById('applicationLauncherMenu');
-        const trigger = document.getElementById('applicationLauncherTrigger');
-        const rail = document.getElementById('pageTabs');
-        if (!launcher || !menu || !trigger || !rail) return;
-
-        const render = () => {
-            const availableTabs = [...rail.querySelectorAll('.page-tab[data-page-tab]:not([hidden])')]
-                .filter((tab) => getComputedStyle(tab).display !== 'none' && tab.getAttribute('aria-hidden') !== 'true');
-            menu.replaceChildren(...availableTabs.map((tab) => {
-                const item = document.createElement('button');
-                item.type = 'button';
-                item.className = 'application-launcher-item';
-                item.dataset.launcherTab = tab.dataset.pageTab;
-                item.setAttribute('aria-current', tab.getAttribute('aria-selected') === 'true' ? 'page' : 'false');
-                const icon = tab.querySelector('.ui-icon')?.cloneNode(true);
-                if (icon) {
-                    icon.setAttribute('aria-hidden', 'true');
-                    item.append(icon);
-                }
-                const sourceLabel = tab.querySelector('span:not(.visually-hidden)')?.textContent?.trim();
-                const label = document.createElement('span');
-                label.textContent = sourceLabel || tab.dataset.pageTab;
-                item.append(label);
-                return item;
-            }));
-        };
-
-        launcher.addEventListener('toggle', () => {
-            trigger.setAttribute('aria-expanded', String(launcher.open));
-            if (launcher.open) render();
-        });
-        menu.addEventListener('click', (event) => {
-            const item = event.target.closest('[data-launcher-tab]');
-            if (!item || !menu.contains(item)) return;
-            const target = [...rail.querySelectorAll('.page-tab[data-page-tab]')].find((tab) => tab.dataset.pageTab === item.dataset.launcherTab);
-            if (!target || target.hidden || getComputedStyle(target).display === 'none' || target.getAttribute('aria-hidden') === 'true') return;
-            launcher.open = false;
-            target.click();
-        });
-        document.addEventListener('pointerdown', (event) => {
-            if (launcher.open && !launcher.contains(event.target)) launcher.open = false;
-        });
-        document.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape' || !launcher.open) return;
-            event.preventDefault();
-            launcher.open = false;
-            trigger.focus({ preventScroll: true });
-        });
-        window.addEventListener('topgym:tab-changed', () => { if (launcher.open) render(); });
-        window.addEventListener('topgym:localechange', () => { if (launcher.open) render(); });
-    }
-
     function initTopbarMoreMenu() {
         const menu = document.querySelector('.topbar-more-menu');
         const trigger = menu?.querySelector('.topbar-more-trigger');
@@ -932,7 +878,6 @@
         initDashboardViewTabs();
         initSidebarPin();
         initMobileNavigation();
-        initApplicationLauncher();
         initTopbarMoreMenu();
         document.querySelectorAll('[data-page-tab]').forEach((button) => {
             button.setAttribute('role', 'tab');

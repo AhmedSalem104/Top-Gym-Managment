@@ -58,8 +58,8 @@ async function installNavigationRuntime(page) {
     });
 }
 
-test('navbar scope selectors remain removed while profile and application launcher stay available', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'The application launcher is desktop-only.');
+test('navbar scope selectors and redundant application launcher remain removed', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the shell visibility check.');
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     const branch = page.locator('#branchContextShell [data-context-field="branch"] .branch-context-trigger');
@@ -67,7 +67,7 @@ test('navbar scope selectors remain removed while profile and application launch
     await expect(branch).toBeHidden();
     await expect(section).toBeHidden();
     await expect(page.locator('#topbarProfile')).toBeVisible();
-    await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
+    await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
     await expect(page.locator('.topbar-more-trigger')).toHaveAttribute('aria-label', /More|المزيد/u);
 
     for (const theme of ['light', 'dark']) {
@@ -121,22 +121,22 @@ test('responsive navigation stays organized and accessible at each viewport', as
 
     if (width <= 1023) {
         await expect(page.locator('#mobileNavToggle')).toBeVisible();
-        await expect(page.locator('#applicationLauncherTrigger')).toBeHidden();
+        await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
         for (const responsiveWidth of [320, 375, 390, 430, 768, 1024]) {
             await page.setViewportSize({ width: responsiveWidth, height: 900 });
             const navbarLayout = await page.evaluate(() => {
-                const selectors = ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile'];
+                const selectors = ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile'];
                 const visible = (element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0;
                 return {
                     rows: selectors.map((selector) => document.querySelector(selector)).filter(visible).map((element) => element.getBoundingClientRect().top),
-                    navigationControls: selectors.slice(0, 2).filter((selector) => visible(document.querySelector(selector))),
+                    navigationControls: ['#mobileNavToggle'].filter((selector) => visible(document.querySelector(selector))),
                     viewport: document.documentElement.clientWidth,
                     documentWidth: document.documentElement.scrollWidth,
                     bodyWidth: document.body.scrollWidth
                 };
             });
-            expect(navbarLayout.navigationControls, `${responsiveWidth}px should show one navigation icon`).toHaveLength(1);
-            expect(navbarLayout.navigationControls[0]).toBe(responsiveWidth <= 1023 ? '#mobileNavToggle' : '#applicationLauncherTrigger');
+            expect(navbarLayout.navigationControls, `${responsiveWidth}px drawer control visibility`).toHaveLength(responsiveWidth <= 1023 ? 1 : 0);
+            await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
             expect(Math.max(...navbarLayout.rows) - Math.min(...navbarLayout.rows), `${responsiveWidth}px header rows`).toBeLessThanOrEqual(4);
             expect(navbarLayout.documentWidth, `${responsiveWidth}px document overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
             expect(navbarLayout.bodyWidth, `${responsiveWidth}px body overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
@@ -149,8 +149,8 @@ test('responsive navigation stays organized and accessible at each viewport', as
                 viewport: innerWidth,
                 menu: rect('.topbar-more-items'),
                 language: rect('.topbar-language-toggle'),
-                theme: rect('#themeToggleButton'),
-                fullscreen: rect('#globalKioskToggle')
+                theme: rect('.topbar-settings-section[aria-labelledby="topbarThemeTitle"]'),
+                fullscreen: rect('#topbarFullscreenAction')
             };
         });
         expect(moreGeometry.menu.x).toBeGreaterThanOrEqual(0);
@@ -184,7 +184,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await page.screenshot({ path: testInfo.outputPath(`navigation-mobile-${width}.png`), fullPage: true });
     } else {
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
-        await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
+        await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
         const sidebarPin = page.locator('#sidebarPinToggle');
         await expect(sidebarPin).toBeVisible();
         await expect(sidebarPin.locator('span')).toHaveCount(0);
@@ -192,7 +192,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
         await expect(sidebarPin).toHaveAttribute('title', /Pin sidebar|تثبيت القائمة/u);
         await expect(page.locator('#pageTabs')).toBeVisible();
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
-        const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+        const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
             .map((selector) => document.querySelector(selector))
             .filter((element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0)
             .map((element) => element.getBoundingClientRect().top));
@@ -679,7 +679,7 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
                 return {
                     viewport: innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
-                    controls: ['#mobileNavToggle', '#applicationLauncherTrigger', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
+                    controls: ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger', '#topbarProfile']
                         .map((selector) => document.querySelector(selector))
                         .filter((element) => {
                             const rect = element?.getBoundingClientRect();
@@ -793,7 +793,7 @@ test('responsive topbar keeps every primary action on one row; Login keeps its s
         expect(loginRect.width).toBe(48);
         expect(loginRect.height).toBeCloseTo(48, 2);
         await expect(page.locator('#mobileNavToggle')).toBeHidden();
-        await expect(page.locator('#applicationLauncherTrigger')).toBeVisible();
+        await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
         await page.screenshot({ path: testInfo.outputPath(`topbar-desktop-1366-${theme}.png`), fullPage: false });
     }
     await loginPage.close();
@@ -873,6 +873,32 @@ test('navbar settings are inline on desktop and remain in the anchored More menu
                         await expect(visibleText.nth(index)).toBeHidden();
                     }
                     await expect(panel.locator('#themeToggleButton .ui-icon')).toBeVisible();
+                    const languageSwitch = panel.locator('[data-locale-segmented]');
+                    const languageBounds = await languageSwitch.boundingBox();
+                    expect(languageBounds.width).toBe(152);
+                    expect(languageBounds.height).toBe(46);
+                    await expect(languageSwitch.locator('[data-locale-choice="ar"]')).toHaveText(locale === 'ar' ? 'العربية' : 'Arabic');
+                    await expect(languageSwitch.locator('[data-locale-choice="en"]')).toHaveText('English');
+                    const languageGeometry = await languageSwitch.evaluate((element) => {
+                        const arabic = element.querySelector('[data-locale-choice="ar"]');
+                        const english = element.querySelector('[data-locale-choice="en"]');
+                        const active = element.querySelector('[aria-pressed="true"]');
+                        const activeStyle = getComputedStyle(active);
+                        const inactiveStyle = getComputedStyle(element.querySelector('[aria-pressed="false"]'));
+                        return {
+                            arabicLeft: arabic.getBoundingClientRect().left,
+                            englishLeft: english.getBoundingClientRect().left,
+                            activeText: activeStyle.color,
+                            activeBorder: activeStyle.borderTopColor,
+                            activeSurface: activeStyle.backgroundColor,
+                            inactiveText: inactiveStyle.color,
+                            groupDirection: getComputedStyle(element).direction
+                        };
+                    });
+                    expect(languageGeometry.arabicLeft).toBeLessThan(languageGeometry.englishLeft);
+                    expect(languageGeometry.groupDirection).toBe('ltr');
+                    expect(languageGeometry.activeText).not.toBe(languageGeometry.inactiveText);
+                    expect(languageGeometry.activeBorder).not.toBe('rgba(0, 0, 0, 0)');
                     await expect(page.locator('.topbar-profile-avatar')).toHaveCount(0);
                 }
                 expect(geometry.scrollWidth).toBeLessThanOrEqual(width);

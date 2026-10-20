@@ -356,8 +356,8 @@ test('superseded branch-context positioning layer is removed while desktop and m
         'the navigation control remains pinned to the first row');
     assert.match(mobile, /#branchContextShell\s*\{[^}]*position:\s*relative[^}]*display:\s*block[^}]*width:\s*100%/u,
         'the mobile context selector is a single full-width grid item within the middle track');
-    assert.match(mobile, /\.application-launcher\s*\{\s*display:\s*none;/u,
-        'the application launcher is replaced by the drawer control in the compact navbar');
+    assert.doesNotMatch(html, /applicationLauncherTrigger|applicationLauncherMenu/u,
+        'the redundant application launcher is removed without changing sidebar routes');
     assert.match(html, /id="branchContextMobileTrigger"/u,
         'the mobile context item exposes one trigger for branch and section selection');
     assert.match(navigation, /\.app-shell > \.topbar \.topbar-inner/u,

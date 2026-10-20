@@ -40,7 +40,6 @@
 
 .topbar-theme-toggle,
 .mobile-nav-toggle,
-.application-launcher-trigger,
 .topbar-more-trigger,
 .topbar-quick-actions .notification-center-trigger {
   box-sizing: border-box;
@@ -63,12 +62,10 @@
 
 .topbar-theme-toggle:hover,
 .mobile-nav-toggle:hover,
-.application-launcher-trigger:hover,
 .topbar-more-trigger:hover,
 .topbar-quick-actions .notification-center-trigger:hover,
 .topbar-theme-toggle:focus-visible,
 .mobile-nav-toggle:focus-visible,
-.application-launcher-trigger:focus-visible,
 .topbar-more-trigger:focus-visible,
 .topbar-quick-actions .notification-center-trigger:focus-visible {
   border-color: var(--primary-border);
@@ -78,7 +75,6 @@
 
 .topbar-theme-toggle:focus-visible,
 .mobile-nav-toggle:focus-visible,
-.application-launcher-trigger:focus-visible,
 .topbar-more-trigger:focus-visible,
 .topbar-quick-actions .notification-center-trigger:focus-visible {
   outline: 2px solid var(--border-focus);
@@ -87,7 +83,6 @@
 
 .topbar-theme-toggle .ui-icon,
 .mobile-nav-toggle .ui-icon,
-.application-launcher-trigger .ui-icon,
 .topbar-more-trigger .ui-icon,
 .topbar-quick-actions .notification-center-trigger .ui-icon {
   width: var(--icon-size-control);
@@ -99,13 +94,10 @@
 .topbar-quick-actions .notification-center-trigger { position: relative; }
 .topbar-quick-actions .notification-center-badge { inset-block-start: 2px; inset-inline-end: 2px; }
 
-.application-launcher,
 .topbar-more-menu { position: relative; display: block; min-width: 0; }
 
-.application-launcher-trigger::-webkit-details-marker,
 .topbar-more-trigger::-webkit-details-marker { display: none; }
 
-.application-launcher-menu,
 .topbar-more-items {
   position: absolute;
   z-index: var(--z-dropdown);
@@ -123,35 +115,10 @@
   box-shadow: var(--shadow-lg);
 }
 
-.application-launcher[open] > .application-launcher-menu,
 .topbar-more-menu[open] > .topbar-more-items {
   display: grid;
   animation: logicfit-topbar-menu-enter var(--motion-duration-menu) var(--motion-easing-enter) both;
 }
-
-.application-launcher-menu { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1); }
-.application-launcher-item {
-  display: flex;
-  min-width: 0;
-  min-height: var(--ui-touch-target);
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font: inherit;
-  text-align: start;
-}
-
-.application-launcher-item .ui-icon { width: var(--icon-size-navigation); height: var(--icon-size-navigation); flex: 0 0 var(--icon-size-navigation); }
-.application-launcher-item span { min-width: 0; overflow-wrap: anywhere; }
-.application-launcher-item:hover,
-.application-launcher-item:focus-visible { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); }
-.application-launcher-item:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
-.application-launcher-item[aria-current="page"] { border-color: var(--primary-border); background: var(--primary-soft); color: var(--primary); font-weight: var(--weight-semibold); }
 
 .topbar-more-items {
   --topbar-settings-menu-left: var(--space-3);
@@ -255,31 +222,43 @@
 .topbar-language-toggle {
   display: inline-flex;
   box-sizing: border-box;
-  width: 124px;
+  width: 152px;
   min-width: 0;
-  min-height: var(--ui-touch-target);
+  height: 46px;
+  min-height: 46px;
   align-items: center;
   gap: 2px;
-  padding: 3px;
+  padding: 2px;
   border: 1px solid var(--border-secondary);
   border-radius: var(--radius-md);
-  background: var(--bg-card-hover);
+  background: var(--locale-switcher-surface);
+  direction: ltr;
 }
 
 .topbar-language-toggle > button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: var(--ui-touch-target);
+  height: 100%;
   padding-inline: var(--space-2);
-  border: 0;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.topbar-language-toggle > button[aria-pressed="true"] { background: var(--primary); color: var(--text-on-primary); }
+.topbar-language-toggle > button:hover { background: var(--bg-surface); color: var(--text-primary); }
+.topbar-language-toggle > button[aria-pressed="true"] {
+  border-color: var(--locale-switcher-active-border);
+  background: var(--locale-switcher-active-surface);
+  color: var(--locale-switcher-active-text);
+  font-weight: var(--weight-semibold);
+}
+.topbar-language-toggle > button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 .topbar-more-actions { display: none; min-width: 0; gap: var(--space-2); }
 .topbar-more-actions:has(> :not([hidden])) { display: grid; }
 .topbar-more-actions > .btn { min-height: var(--ui-touch-target); justify-content: flex-start; }
@@ -322,7 +301,6 @@
   .app-shell > .topbar #branchContextShell .branch-context-divider,
   .app-shell > .topbar #branchContextShell .branch-context-status,
   .app-shell > .topbar #branchContextShell .branch-context-field-icon { display: none; }
-  .application-launcher-menu { min-width: 300px; }
   .topbar-more-menu { flex: 1 1 auto; }
   .topbar-more-trigger { display: none; }
   .topbar-more-menu[open] > .topbar-more-items {
@@ -357,23 +335,11 @@
   .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions > .btn > span { display: none; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions { display: flex; flex: 0 1 auto; gap: var(--space-1); padding: 0; border: 0; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-more-actions > .btn { width: var(--ui-touch-target); min-width: var(--ui-touch-target); max-width: var(--ui-touch-target); min-height: var(--ui-touch-target); justify-content: center; padding: 0; font-size: 0; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle { width: 96px; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle > button { padding: 0; }
-  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle .ui-icon { width: var(--icon-size-navigation); height: var(--icon-size-navigation); }
+  .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarLanguageTitle"] .topbar-language-toggle { width: 152px; }
   .topbar-more-menu[open] > .topbar-more-items > .topbar-settings-section[aria-labelledby="topbarThemeTitle"] .topbar-settings-switch { width: var(--ui-touch-target); min-width: var(--ui-touch-target); }
 }
 
 @media (max-width: 1023px) {
-  .app-shell > .topbar .topbar-language-toggle > button .visually-hidden {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: nowrap;
-  }
-
   body .app-shell > .topbar .topbar-inner {
     min-height: calc(var(--app-topbar-height) - 1px);
     padding-inline: var(--app-content-gutter-compact);
@@ -388,7 +354,6 @@
   body .topbar-mobile-row,
   body .topbar-mobile-actions { display: contents; }
   .app-shell > .topbar #mobileNavToggle { grid-column: 1; grid-row: 1; }
-  .application-launcher { display: none; }
   .app-shell > .topbar #branchContextShell { position: relative; display: block; width: 100%; min-width: 0; min-height: var(--ui-touch-target); grid-column: 2; grid-row: 1; }
   .topbar-more-menu { grid-column: 3; grid-row: 1; }
   .topbar-quick-actions { grid-column: 4; grid-row: 1; justify-content: center; }
@@ -430,7 +395,7 @@
   .app-shell > .topbar .topbar-more-items { max-height: calc(100dvh - var(--app-topbar-height) - var(--space-4)); }
   .app-shell > .topbar .topbar-settings-section,
   .app-shell > .topbar .topbar-settings-action { min-height: 64px; }
-  .app-shell > .topbar .topbar-language-toggle { width: 112px; }
+  .app-shell > .topbar .topbar-language-toggle { width: 152px; }
 }
 
 @media (max-width: 767px) {
@@ -442,6 +407,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .application-launcher[open] > .application-launcher-menu,
   .topbar-more-menu[open] > .topbar-more-items { animation: none; }
 }

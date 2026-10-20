@@ -15,7 +15,8 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
     const topbarStyles = read('public/css/components/mobile-topbar.css');
     assert.match(index, /id="mobileNavToggle"[^>]*aria-controls="pageTabs"/);
     assert.match(index, /id="mobileNavToggle"[^>]*>[\s\S]*?<svg class="ui-icon"[^>]*aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"\/><\/svg>[\s\S]*?<span class="visually-hidden" data-mobile-nav-label/u);
-    assert.match(index, /class="topbar-language-toggle"[\s\S]*?<button[^>]*data-locale-choice="ar"[^>]*><svg[\s\S]*?<span class="visually-hidden">العربية<\/span><\/button>\s*<button[^>]*data-locale-choice="en"[^>]*><svg[\s\S]*?<span class="visually-hidden">English<\/span><\/button>/u);
+    assert.match(index, /class="topbar-language-toggle"[^>]*dir="ltr"[\s\S]*?<button[^>]*data-locale-choice="ar"[^>]*data-i18n="language\.arabic\.option">[\s\S]*?<button[^>]*data-locale-choice="en"[^>]*data-i18n="language\.english\.option">/u);
+    assert.doesNotMatch(index, /applicationLauncherTrigger|applicationLauncherMenu/u, 'the redundant applications launcher is removed from the Navbar');
     assert.match(index, /id="mobileNavClose"/);
     assert.match(index, /id="mobileNavBackdrop"[^>]*hidden/);
     assert.match(index, /id="mobileNavCurrent"/);
@@ -39,25 +40,25 @@ test('Gym App exposes an accessible grouped mobile navigation drawer', () => {
         'the side-navigation control remains available in the compact navigation layout');
     assert.match(topbarStyles, /@media \(min-width: 1024px\)[\s\S]*?#mobileNavToggle\s*\{\s*display: none;/u,
         'the mobile-only side-navigation control is hidden at the desktop breakpoint');
-    assert.match(topbarStyles, /@media \(max-width: 1023px\)[\s\S]*?\.application-launcher\s*\{\s*display: none;/u,
-        'the compact navigation shows the drawer control instead of a duplicate app-grid control');
+    assert.doesNotMatch(topbarStyles, /application-launcher/u,
+        'the removed applications launcher has no remaining Navbar styling');
 });
 
-test('Desktop navbar settings use icon-only actions with localized accessible names', () => {
+test('Desktop navbar actions retain accessible names and locale uses a text segmented control', () => {
     const index = read('public/index.html');
     const i18n = read('public/js/core/i18n.js');
     const mobileTopbar = read('public/css/components/mobile-topbar.css');
     const themeToggle = read('public/css/components/theme-toggle.css');
 
-    assert.match(index, /data-locale-choice="ar"[^>]*>[\s\S]*?<svg[\s\S]*?class="visually-hidden">العربية<\/span>/u);
-    assert.match(index, /data-locale-choice="en"[^>]*>[\s\S]*?<svg[\s\S]*?class="visually-hidden">English<\/span>/u);
+    assert.match(index, /data-locale-choice="ar"[^>]*data-i18n="language\.arabic\.option">/u);
+    assert.match(index, /data-locale-choice="en"[^>]*data-i18n="language\.english\.option">/u);
     assert.match(index, /id="themeToggleButton"[^>]*data-theme-toggle[\s\S]*?data-theme-toggle-icon/u);
     assert.match(index, /id="topAddMemberButton"[^>]*aria-label=[^>]*>[\s\S]*?<svg[\s\S]*?<span data-i18n="shell.addMember">/u);
     assert.match(i18n, /button\.setAttribute\('aria-label', localeLabel\)[\s\S]*?button\.setAttribute\('title', localeLabel\)/u);
     assert.match(i18n, /\['#topAddMemberButton > span', 'shell\.addMember'\]/u);
     assert.match(mobileTopbar, /@media \(min-width: 1024px\)[\s\S]*?\.topbar-settings-section \.topbar-settings-copy \{ display: none; \}/u);
     assert.match(mobileTopbar, /\.topbar-settings-logout-section \.topbar-settings-logout > span,\s*\.topbar-more-menu\[open\] > \.topbar-more-items > \.topbar-more-actions > \.btn > span \{ display: none; \}/u);
-    assert.match(mobileTopbar, /@media \(max-width: 1023px\)[\s\S]*?\.topbar-language-toggle > button \.visually-hidden\s*\{\s*position: static/u);
+    assert.match(mobileTopbar, /\.topbar-language-toggle\s*\{[\s\S]*?height:\s*46px[\s\S]*?direction:\s*ltr;/u);
     assert.match(themeToggle, /@media \(min-width: 1024px\)[\s\S]*?\.topbar-settings-switch::before,[\s\S]*?\.topbar-settings-switch::after \{ display: none; \}/u);
 });
 
