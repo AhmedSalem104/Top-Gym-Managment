@@ -131,6 +131,7 @@ test('responsive navigation stays organized and accessible at each viewport', as
                     rows: selectors.map((selector) => document.querySelector(selector)).filter(visible).map((element) => element.getBoundingClientRect().top),
                     navigationControls: ['#mobileNavToggle'].filter((selector) => visible(document.querySelector(selector))),
                     viewport: document.documentElement.clientWidth,
+                        topbar: document.querySelector('.app-shell > .topbar').getBoundingClientRect().toJSON(),
                     documentWidth: document.documentElement.scrollWidth,
                     bodyWidth: document.body.scrollWidth
                 };
@@ -138,6 +139,10 @@ test('responsive navigation stays organized and accessible at each viewport', as
             expect(navbarLayout.navigationControls, `${responsiveWidth}px drawer control visibility`).toHaveLength(responsiveWidth <= 1023 ? 1 : 0);
             await expect(page.locator('#applicationLauncherTrigger')).toHaveCount(0);
             expect(Math.max(...navbarLayout.rows) - Math.min(...navbarLayout.rows), `${responsiveWidth}px header rows`).toBeLessThanOrEqual(4);
+            if (responsiveWidth <= 1023) {
+                expect(navbarLayout.topbar.left, `${responsiveWidth}px drawer navbar left`).toBeCloseTo(0, 0);
+                expect(navbarLayout.topbar.right, `${responsiveWidth}px drawer navbar right`).toBeCloseTo(navbarLayout.viewport, 0);
+            }
             expect(navbarLayout.documentWidth, `${responsiveWidth}px document overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
             expect(navbarLayout.bodyWidth, `${responsiveWidth}px body overflow`).toBeLessThanOrEqual(navbarLayout.viewport + 1);
         }
@@ -218,6 +223,41 @@ test('responsive navigation stays organized and accessible at each viewport', as
         expect(sidebarTrack.gridRow).toBe('2');
         expect(sidebarTrack.workspaceHeight).toBeGreaterThanOrEqual(sidebarTrack.documentHeight - 1);
         expect(sidebarTrack.surface).not.toBe('rgba(0, 0, 0, 0)');
+        const originalDirection = await page.locator('html').getAttribute('dir') || 'rtl';
+        for (const responsiveWidth of [1024, 1280, 1440, 1920]) {
+            await page.setViewportSize({ width: responsiveWidth, height: 900 });
+            for (const direction of ['rtl', 'ltr']) {
+                await page.evaluate((value) => {
+                    document.documentElement.dir = value;
+                    document.body.dir = value;
+                }, direction);
+                const shellGeometry = await page.evaluate(() => {
+                    const topbar = document.querySelector('.app-shell > .topbar').getBoundingClientRect();
+                    const sidebar = document.querySelector('#pageTabs').getBoundingClientRect();
+                    return {
+                        direction: getComputedStyle(document.querySelector('.app-shell')).direction,
+                        viewport: document.documentElement.clientWidth,
+                        topbar: { left: topbar.left, right: topbar.right, width: topbar.width },
+                        sidebar: { left: sidebar.left, right: sidebar.right, width: sidebar.width }
+                    };
+                });
+                expect(shellGeometry.topbar.width + shellGeometry.sidebar.width,
+                    `${responsiveWidth}px ${direction} navbar/sidebar widths ${JSON.stringify(shellGeometry)}`)
+                    .toBeCloseTo(shellGeometry.viewport, 0);
+                if (direction === 'rtl') {
+                    expect(shellGeometry.topbar.left, `${responsiveWidth}px RTL navbar left`).toBeCloseTo(0, 0);
+                    expect(shellGeometry.sidebar.left, `${responsiveWidth}px RTL adjacent edge`).toBeCloseTo(shellGeometry.topbar.right, 0);
+                } else {
+                    expect(shellGeometry.sidebar.right, `${responsiveWidth}px LTR adjacent edge`).toBeCloseTo(shellGeometry.topbar.left, 0);
+                    expect(shellGeometry.topbar.right, `${responsiveWidth}px LTR navbar right`).toBeCloseTo(shellGeometry.viewport, 0);
+                }
+            }
+        }
+        await page.evaluate((value) => {
+            document.documentElement.dir = value;
+            document.body.dir = value;
+        }, originalDirection);
+        await page.setViewportSize({ width, height: 900 });
         const navbarRows = await page.evaluate(() => ['#mobileNavToggle', '#branchContextShell', '.topbar-more-trigger', '.notification-center-trigger']
             .map((selector) => document.querySelector(selector))
             .filter((element) => element && getComputedStyle(element).display !== 'none' && element.getBoundingClientRect().width > 0)
