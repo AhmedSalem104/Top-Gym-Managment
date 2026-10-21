@@ -84,7 +84,7 @@ test('All Store views remain readable and usable across the responsive theme mat
       await page.evaluate((value) => window.TopGymI18n?.set(value, { persist: false }), locale);
       await page.waitForFunction((value) => document.documentElement.dataset.locale === value, locale);
       const assistantLauncher = page.locator('#smartAssistantLauncher');
-      await expect(assistantLauncher.locator('.smart-assistant-launcher-label')).toHaveText(locale === 'en' ? 'Ask the assistant' : 'اسأل المساعد');
+      await expect(assistantLauncher.locator('.smart-assistant-launcher-label')).toHaveCount(0);
       await expect(assistantLauncher).toHaveAttribute('title', locale === 'en' ? 'Ask the assistant' : 'اسأل المساعد');
       await expect(assistantLauncher).toHaveAttribute('aria-label', locale === 'en' ? 'Open the smart assistant' : 'فتح المساعد الذكي');
       for (const theme of ['light', 'dark']) {

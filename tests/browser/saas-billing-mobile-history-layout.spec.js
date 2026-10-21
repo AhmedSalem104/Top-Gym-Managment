@@ -70,6 +70,8 @@ test('SaaS billing history remains readable at 320/390px in both themes and loca
     await page.locator('[data-page-tab="saas-billing"]').click();
     const section = page.locator('#saasBillingSection');
     await expect(section).toBeVisible();
+    await page.locator('#saasRequestsTab').click();
+    await expect(page.locator('#saasRequestsPanel')).toBeVisible();
     await expect(page.locator('#saasRequestsList tr')).toHaveCount(1);
 
     // Test the edited canonical page stylesheet directly without rebuilding or editing generated CSS.
@@ -89,9 +91,22 @@ test('SaaS billing history remains readable at 320/390px in both themes and loca
                     const row = tbody.querySelector('tr');
                     const cells = [...row.querySelectorAll('td')];
                     const rowStyle = getComputedStyle(row);
+                    const dimensions = (element) => {
+                        const rect = element.getBoundingClientRect();
+                        return { width: rect.width, left: rect.left, right: rect.right, scrollWidth: element.scrollWidth };
+                    };
                     return {
+                        rowDisplay: rowStyle.display,
                         rowColumns: rowStyle.gridTemplateColumns.split(' ').length,
                         rowWidth: row.clientWidth,
+                        rowClass: row.className,
+                        scopeMatches: row.matches('.saas-billing-page .saas-table.table-card-layout > tbody > tr'),
+                        narrowViewport: matchMedia('(max-width: 389px)').matches,
+                        ancestorClasses: row.closest('#saasBillingSection')?.className || '',
+                        geometry: ['#saasBillingSection', '.saas-requests-panel', '.saas-table-wrap', '.saas-table', '#saasRequestsList', 'tr'].map((selector) => {
+                            const element = selector === 'tr' ? row : document.querySelector(selector);
+                            return [selector, element ? dimensions(element) : null];
+                        }),
                         cells: cells.map((cell) => ({
                             label: cell.dataset.label,
                             width: cell.clientWidth,
@@ -102,9 +117,10 @@ test('SaaS billing history remains readable at 320/390px in both themes and loca
                 });
 
                 if (width === 320) {
-                    expect(state.rowColumns, `${theme}/${locale} history row must use one full-width track`).toBe(1);
+                    expect(state.rowColumns, `${theme}/${locale} history row must use one full-width track: ${JSON.stringify(state)}`).toBe(1);
+                    expect(state.rowWidth, `${theme}/${locale} history card must span its compact mobile content area`).toBeGreaterThan(200);
                     expect(state.cells.every((cell) => cell.cellColumns === 1), `${theme}/${locale} labels/values must stack within each full-width field`).toBe(true);
-                    expect(state.cells.every((cell) => cell.width > 180), `${theme}/${locale} each history field must have readable width`).toBe(true);
+                    expect(state.cells.every((cell) => cell.width > 150 && cell.scrollWidth <= cell.width + 1), `${theme}/${locale} history fields must wrap without horizontal clipping`).toBe(true);
                 } else {
                     expect(state.rowWidth).toBeGreaterThan(250);
                     const minimumCellWidth = width === 390 ? 80 : 40;

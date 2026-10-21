@@ -390,9 +390,9 @@ test('Platform Admin main dashboard shell: all requested widths, Arabic/English,
         };
         return { metrics: inspect(document.querySelector('#platformKpis')), health: inspect(document.querySelector('#platformStatusGrid')) };
     });
-    expect(loadingLayout.metrics.childWidth, 'mobile KPI skeleton fills its grid host').toBeGreaterThan(loadingLayout.metrics.hostWidth * 0.95);
-    expect(loadingLayout.metrics.columns, 'mobile KPI skeleton uses a two-column layout').toBe(2);
-    expect(loadingLayout.health.childWidth, 'status skeleton fills its grid host').toBeGreaterThan(loadingLayout.health.hostWidth * 0.95);
+    expect(loadingLayout.metrics.childWidth, 'KPI loading status is contained by its grid host').toBeLessThanOrEqual(loadingLayout.metrics.hostWidth);
+    expect(loadingLayout.metrics.childWidth, 'KPI loading status remains readable').toBeGreaterThan(0);
+    expect(loadingLayout.health.childWidth, 'status loading indicator is contained by its grid host').toBeLessThanOrEqual(loadingLayout.health.hostWidth);
     await captureAtPageTop(loadingPage, path.join(artifactDir, 'state-loading-320-en-dark.png'));
     releaseDashboard?.();
     await expect(loadingPage.locator('#platformKpis .platform-kpi')).toHaveCount(10);

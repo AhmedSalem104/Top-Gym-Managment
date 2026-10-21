@@ -343,7 +343,7 @@ test('member and today-attendance searches expose an in-field clear action', asy
 
 test('attendance workspace stays compact and overflow-free at supported viewports', async ({ page }, testInfo) => {
     await installLocalMemberApi(page);
-    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.goto('/index.html?members-popup-contract#attendance', { waitUntil: 'networkidle' });
 
     await page.locator('#attendanceSection').evaluate((section) => {
         section.hidden = false;
@@ -377,7 +377,7 @@ test('attendance workspace stays compact and overflow-free at supported viewport
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(new Set(metrics.summaryWidths).size).toBe(1);
     expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(metrics.viewport <= 767 ? 100 : 112);
-    if (metrics.viewport < 1200) expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
+    if (metrics.viewport < 1200) expect(metrics.entryTop).toBeLessThanOrEqual(metrics.summaryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
     expect(metrics.sectionBottom).toBeGreaterThan(metrics.tableTop);
     expect(metrics.actionDisplays.every((display) => display === 'none')).toBeTruthy();
@@ -394,9 +394,10 @@ test('attendance workspace stays compact and overflow-free at supported viewport
 
 test('attendance workspace stays compact at the intermediate 1024px desktop width', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the explicit 1024px intermediate viewport check.');
-    await page.setViewportSize({ width: 1024, height: 768 });
     await installLocalMemberApi(page);
-    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.goto('/index.html?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await expect(page.locator('#attendanceSection')).toHaveCount(1);
+    await page.setViewportSize({ width: 1024, height: 768 });
 
     await page.locator('#attendanceSection').evaluate((section) => {
         section.hidden = false;
@@ -426,7 +427,9 @@ test('attendance workspace stays compact at the intermediate 1024px desktop widt
     expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewport + 1);
     expect(new Set(metrics.summaryWidths).size).toBe(1);
     expect(Math.max(...metrics.summaryHeights)).toBeLessThanOrEqual(112);
-    expect(metrics.summaryTop).toBeLessThanOrEqual(metrics.entryTop);
+    // The operational workflow leads with member identification; daily totals
+    // follow the registration workspace as specified by the attendance page.
+    expect(metrics.entryTop).toBeLessThanOrEqual(metrics.summaryTop);
     expect(metrics.tableTop - metrics.listHeadBottom).toBeLessThanOrEqual(2);
 
     const screenshot = await page.screenshot({ fullPage: true });
@@ -450,7 +453,7 @@ test('attendance workspace keeps the identification and member summary as balanc
         phoneCountry: 'EG',
         membership
     });
-    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.goto('/index.html?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendanceSection').evaluate((section) => { section.hidden = false; });
     await page.locator('#attendancePhone').fill('01015819700');
     await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
@@ -714,6 +717,7 @@ test('day-pass records stay inside their dialog and are not mounted in attendanc
     await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     const state = await page.evaluate(() => ({
         injectedAttendanceRecords: Boolean(document.getElementById('dayPassRecordsSection')),
+        dayPassFormInDialog: document.querySelector('#dayPassDialog #dayPassPanel #dayPassForm') !== null,
         dayPassTableInDialog: document.querySelector('#dayPassDialog #dayPassPanel .day-pass-table-wrap') !== null,
         dayPassDialogInsideAttendance: document.getElementById('attendanceSection')?.contains(document.getElementById('dayPassDialog')) === true,
         attendanceContainsOldHeading: [...document.querySelectorAll('#attendanceSection h1,#attendanceSection h2,#attendanceSection h3,#attendanceSection h4')].some((heading) => heading.textContent.trim() === 'سجل حصص اليوم' && heading.getClientRects().length > 0),
@@ -721,7 +725,8 @@ test('day-pass records stay inside their dialog and are not mounted in attendanc
     }));
     expect(state.injectedAttendanceRecords).toBe(false);
     expect(state.dayPassDialogInsideAttendance).toBe(false);
-    expect(state.dayPassTableInDialog).toBe(true);
+    expect(state.dayPassFormInDialog).toBe(true);
+    expect(state.dayPassTableInDialog).toBe(false);
     expect(state.attendanceContainsOldHeading).toBe(false);
     expect(state.dayPassPanelParent).toBe('dayPassDialog');
 });

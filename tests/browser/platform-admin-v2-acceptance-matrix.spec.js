@@ -235,8 +235,11 @@ test('Platform Admin loading and empty states remain readable with read-only GET
     await installReadOnlyApi(page, () => mode, mutations, apiPaths, { delayDashboard: true });
     await page.goto('/platform-admin.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#platformAdminApp')).toBeVisible();
-    await expect(page.locator('#platformKpis[aria-busy="true"] .skeleton-cards')).toBeVisible();
-    await expect(page.locator('#platformKpis[aria-busy="true"]')).toBeHidden();
+    const loadingState = page.locator('#platformKpis .logicfit-loading-state[role="status"]');
+    await expect(loadingState).toBeVisible();
+    await expect(loadingState).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('#platformKpis .logicfit-loader')).toBeVisible();
+    await expect(page.locator('#platformKpis[aria-busy="true"]')).toBeVisible();
 
     for (const panel of panels) {
         await activate(page, panel);

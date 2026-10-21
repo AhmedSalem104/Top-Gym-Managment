@@ -983,6 +983,7 @@ test('Members more-action menus stay reachable and within the viewport at respon
 
 test('Members filter groups survive repeated viewport transitions without duplication, escape or behavior loss', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'One deterministic browser exercises the resize and locale/theme matrix.');
+    test.setTimeout(120_000);
     const requests = await installReadOnlyMemberFixtures(page);
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));

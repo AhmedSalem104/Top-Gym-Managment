@@ -48,6 +48,12 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await page.waitForFunction(() => Boolean(window.TopGymI18n));
+    const settingsMenu = page.locator('#topbarSettingsItems');
+    const settingsTrigger = page.locator('.topbar-more-trigger');
+    if (page.viewportSize().width < 1024) {
+        await settingsTrigger.click();
+        await expect(settingsMenu).toBeVisible();
+    }
     const arabicChoice = page.locator('.topbar-language-toggle [data-locale-choice="ar"]');
     const englishChoice = page.locator('.topbar-language-toggle [data-locale-choice="en"]');
     await expect(arabicChoice).toBeVisible();
@@ -77,6 +83,7 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     });
     const originalUrl = page.url();
     await englishChoice.click();
+    if (page.viewportSize().width < 1024) await expect(settingsMenu).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('Members');
@@ -107,6 +114,10 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('Members');
     await expect(page.locator('#themeToggleButton')).toHaveAttribute('aria-pressed', 'true');
+    if (page.viewportSize().width < 1024) {
+        await settingsTrigger.click();
+        await expect(settingsMenu).toBeVisible();
+    }
 
     await arabicChoice.click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');

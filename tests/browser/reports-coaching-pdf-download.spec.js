@@ -135,7 +135,10 @@ test('Reports coaching and nutrition actions generate actual PDFs without extern
         expect(pdfLayout.y).toBe(0);
         expect(Number.parseFloat(pdfLayout.computedWidth)).toBeCloseTo(718.11, 1);
         expect(pdfLayout.fontFamily).toContain('Logic Fit Print Arabic');
-        expect(pdfLayout.childPositions[0].top).toBe(0);
+        // The print sheet retains the approved safe top margin; verify content
+        // begins within that margin instead of assuming it touches the edge.
+        expect(pdfLayout.childPositions[0].top).toBeGreaterThanOrEqual(0);
+        expect(pdfLayout.childPositions[0].top).toBeLessThanOrEqual(24);
         const download = await downloadPromise;
         expect(download.suggestedFilename()).toMatch(item.file);
         const stream = await download.createReadStream();

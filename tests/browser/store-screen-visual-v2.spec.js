@@ -132,16 +132,22 @@ test('Store mounted responsive surface visual matrix (read-only synthetic fixtur
                         })).filter(({ rect }) => rect.left < -1 || rect.right > innerWidth + 1);
                         const occluded = interactive.map((node) => {
                             const rect = node.getBoundingClientRect();
-                            const visibleLeft = Math.max(0, rect.left);
-                            const visibleRight = Math.min(innerWidth, rect.right);
-                            const visibleTop = Math.max(0, rect.top);
-                            const visibleBottom = Math.min(innerHeight, rect.bottom);
-                            if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) return null;
-                            // Sample the center of the portion actually inside the
-                            // viewport, not the off-screen center of a partially
-                            // clipped control (fractional CSS pixels are common).
-                            const x = visibleLeft + (visibleRight - visibleLeft) / 2;
-                            const y = visibleTop + (visibleBottom - visibleTop) / 2;
+                            // A partially clipped control is checked after the
+                            // dedicated scroll-into-view hit test below. Testing
+                            // only controls fully in the viewport avoids treating
+                            // a viewport edge as an overlay occluding its target.
+                            if (rect.left < 0 || rect.top < 0 || rect.right > innerWidth || rect.bottom > innerHeight) return null;
+                            const x = rect.left + rect.width / 2;
+                            const y = rect.top + rect.height / 2;
+                            // A horizontally scrollable table intentionally clips
+                            // offscreen columns. Their controls are checked below
+                            // after scrollIntoView; they are not viewport overlays.
+                            for (let ancestor = node.parentElement; ancestor && ancestor !== panelNode.parentElement; ancestor = ancestor.parentElement) {
+                                const style = getComputedStyle(ancestor);
+                                if (!/(auto|scroll|hidden|clip)/u.test(`${style.overflowX} ${style.overflowY}`)) continue;
+                                const clip = ancestor.getBoundingClientRect();
+                                if (x < clip.left || x > clip.right || y < clip.top || y > clip.bottom) return null;
+                            }
                             const hit = document.elementFromPoint(x, y);
                             return hit && (hit === node || node.contains(hit))
                                 ? null
@@ -160,7 +166,7 @@ test('Store mounted responsive surface visual matrix (read-only synthetic fixtur
                         for (let ancestor = panelNode.parentElement; ancestor; ancestor = ancestor.parentElement) scrollableNodes.add(ancestor);
                         const scrollPositions = [...scrollableNodes]
                             .filter((node) => node.scrollHeight > node.clientHeight + 1)
-                            .map((node) => [node, node.scrollTop]);
+                            .map((node) => [node, node.scrollTop, node.scrollLeft]);
                         const windowScroll = { x: window.scrollX, y: window.scrollY };
                         const controlHitTests = [];
                         for (const node of interactive) {
@@ -180,7 +186,10 @@ test('Store mounted responsive surface visual matrix (read-only synthetic fixtur
                                 rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }
                             });
                         }
-                        for (const [node, top] of scrollPositions) node.scrollTop = top;
+                        for (const [node, top, left] of scrollPositions) {
+                            node.scrollTop = top;
+                            node.scrollLeft = left;
+                        }
                         window.scrollTo(windowScroll.x, windowScroll.y);
                         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                         const untargetable = controlHitTests.filter(({ targetable }) => !targetable).map(({ id }) => id);
@@ -206,6 +215,17 @@ test('Store mounted responsive surface visual matrix (read-only synthetic fixtur
                             hiddenRequired
                         };
                     }, view);
+
+                    if (layout.occluded.length) {
+                        await testInfo.attach(`store-${view}-${width}-${locale}-${theme}-occlusion.png`, {
+                            body: await page.screenshot({ fullPage: true }),
+                            contentType: 'image/png'
+                        });
+                        await testInfo.attach(`store-${view}-${width}-${locale}-${theme}-occlusion.json`, {
+                            body: Buffer.from(JSON.stringify(layout, null, 2)),
+                            contentType: 'application/json'
+                        });
+                    }
 
                     expect(layout.viewportWidth).toBe(width);
                     expect(layout.documentWidth, `${view}/${width}/${locale}/${theme}: document overflow`).toBeLessThanOrEqual(width);

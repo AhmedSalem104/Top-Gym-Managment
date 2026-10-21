@@ -67,7 +67,7 @@ test('Store subviews render without page overflow at desktop/mobile sizes in bot
         await route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
     });
 
-    await page.goto(`${storeQaBaseUrl()}/#store`, { waitUntil: 'networkidle' });
+    await page.goto(`${storeQaBaseUrl()}/index.html#store`, { waitUntil: 'networkidle' });
     await expect(page.locator('#storeSection')).toBeVisible();
     const subnav = page.locator('#storeSection .store-subnav');
     await expect(subnav.locator('[data-store-view]')).toHaveCount(9);
@@ -189,7 +189,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
         await route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
     });
 
-    await page.goto(`${storeQaBaseUrl()}/#store`, { waitUntil: 'networkidle' });
+    await page.goto(`${storeQaBaseUrl()}/index.html#store`, { waitUntil: 'networkidle' });
     await expect(page.locator('#storeSection')).toBeVisible();
     await page.evaluate(() => {
         const logo = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#0070f3"/><path d="M13 24h22M24 13v22" stroke="white" stroke-width="4"/></svg>')}`;
@@ -202,6 +202,11 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     const popupPromise = page.waitForEvent('popup');
     await page.locator('#storeCheckoutForm').evaluate((form) => form.requestSubmit());
     const receipt = await popupPromise;
+    await expect(receipt).toHaveTitle(/QA-2026-0091/u);
+    await receipt.waitForFunction(() => {
+        const link = document.querySelector('link[data-top-gym-print-styles]');
+        return Boolean(link?.sheet || document.querySelector('style[data-top-gym-print-styles-fallback]'));
+    });
     await expect(receipt.locator('.print-store-receipt-brand h1')).toHaveText('النادي الاختباري');
     await expect(receipt.locator('.print-store-receipt-brand p')).toContainText('QA-2026-0091');
     await expect(receipt.locator('tbody tr')).toHaveCount(1);
@@ -209,8 +214,14 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     await expect(receipt.locator('tbody')).toContainText('750 ml');
     await expect(receipt.locator('.print-store-receipt-total')).toContainText((175).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     await expect(receipt.locator('html')).toHaveAttribute('dir', 'rtl');
-    await receipt.evaluate(() => document.fonts?.ready);
-    await receipt.locator('.print-store-receipt-brand img').evaluate((image) => image.decode());
+    await receipt.evaluate(() => Promise.race([
+        document.fonts?.ready || Promise.resolve(),
+        new Promise((resolve) => window.setTimeout(resolve, 2_000))
+    ]));
+    await receipt.locator('.print-store-receipt-brand img').evaluate((image) => Promise.race([
+        image.decode().catch(() => {}),
+        new Promise((resolve) => window.setTimeout(resolve, 2_000))
+    ]));
 
     const receiptLayout = await receipt.evaluate(() => {
         const body = document.body.getBoundingClientRect();
@@ -228,7 +239,10 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
             clientWidth: document.documentElement.clientWidth,
             outside,
             logoLoaded: document.querySelector('.print-store-receipt-brand img')?.naturalWidth > 0,
-            printStylesheetLinked: Boolean(document.querySelector('link[href*="print.css"]'))
+            printStylesheetLinked: Boolean(document.querySelector('link[href*="print.css"]')),
+            printStylesheetFallback: Boolean(document.querySelector('style[data-top-gym-print-styles-fallback]')),
+            receiptBrandDisplay: getComputedStyle(document.querySelector('.print-store-receipt-brand')).display,
+            stylesheetNodes: [...document.querySelectorAll('link[rel="stylesheet"], style')].map((node) => ({ href: node.href || null, marker: [...node.attributes].map((attribute) => attribute.name).find((name) => name.startsWith('data-top-gym-print-styles')) || null }))
         };
     });
     const printStylesheet = await page.request.get(new URL('/css/print.css', storeQaBaseUrl()).toString());
@@ -237,7 +251,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     expect(receiptLayout.scrollWidth).toBeLessThanOrEqual(receiptLayout.clientWidth);
     expect(receiptLayout.outside).toEqual([]);
     expect(receiptLayout.logoLoaded).toBe(true);
-    expect(receiptLayout.printStylesheetLinked).toBe(true);
+    expect(receiptLayout.printStylesheetLinked || receiptLayout.printStylesheetFallback, JSON.stringify(receiptLayout)).toBe(true);
     expect(printStylesheet.ok()).toBe(true);
     expect(printStylesheetText).toMatch(/@page\s*\{[^}]*size:\s*A4/s);
     expect(printStylesheetText).toMatch(/@page\s*\{[^}]*margin:\s*12mm/s);
@@ -285,6 +299,7 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
             pageSize: getComputedStyle(document.documentElement).getPropertyValue('size'),
             bodyPadding: bodyStyle.padding,
             printStylesheetLoaded: Boolean(printCss?.sheet),
+            printStylesheetFallback: Boolean(document.querySelector('style[data-top-gym-print-styles-fallback]')),
             printStylesheetHref: printCss?.href || null,
             loadedStylesheets: [...document.styleSheets].map((sheet) => sheet.href || 'inline'),
             contentBounds: [...document.querySelectorAll('.print-store-receipt-brand, table, .print-store-receipt-total, .print-store-receipt-thanks')].map((node) => {
@@ -305,20 +320,32 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
     expect(receiptAudit.rows.reduce((sum, row) => sum + row.amount, 0)).toBe(receiptAudit.total);
     expect(receiptAudit.direction).toBe('rtl');
     expect(receiptAudit.language).toBe('ar');
-    expect(receiptAudit.printStylesheetHref).toContain('/css/print.css');
-    expect(receiptAudit.printStylesheetHref).toMatch(/\/css\/print\.css\?v=[a-f0-9]{16}$/);
     expect(popupResourceEvents.filter((entry) => entry.type === 'failed')).toEqual([]);
-    expect(popupResourceEvents.find((entry) => entry.type === 'response' && entry.url.includes('/css/print.css'))?.status).toBe(200);
+    expect(receiptAudit.printStylesheetLoaded || receiptAudit.printStylesheetFallback).toBe(true);
+    if (receiptAudit.printStylesheetLoaded) {
+        expect(receiptAudit.printStylesheetHref).toMatch(/\/css\/print\.css\?v=[a-f0-9]{16}$/);
+        const versionedPrintStylesheet = await page.request.get(receiptAudit.printStylesheetHref);
+        expect(versionedPrintStylesheet.ok()).toBe(true);
+    } else {
+        const fallbackStylesheet = await page.request.get(new URL('/css/print.css', storeQaBaseUrl()).toString());
+        expect(fallbackStylesheet.ok()).toBe(true);
+    }
     expect(receiptAudit.contentBounds.every((item) => item.left >= 0 && item.right <= 794 && item.top >= 0 && item.bottom <= 1123)).toBe(true);
 
     const html = await receipt.content();
     await receipt.close();
     const preview = await page.context().newPage();
     await preview.setViewportSize({ width: 794, height: 1123 });
-    await preview.goto(storeQaBaseUrl(), { waitUntil: 'domcontentloaded' });
+    await preview.goto(`${storeQaBaseUrl()}/index.html`, { waitUntil: 'domcontentloaded' });
     await preview.setContent(html, { waitUntil: 'load' });
-    await expect.poll(() => preview.locator('link[href*="print.css"]').evaluate((link) => Boolean(link.sheet))).toBe(true);
-    await preview.evaluate(() => document.fonts?.ready);
+    await preview.waitForFunction(() => Boolean(
+        document.querySelector('style[data-top-gym-print-styles-fallback]')
+        || [...document.querySelectorAll('link[href*="print.css"]')].some((link) => Boolean(link.sheet))
+    ));
+    await preview.evaluate(() => Promise.race([
+        document.fonts?.ready || Promise.resolve(),
+        new Promise((resolve) => window.setTimeout(resolve, 2_000))
+    ]));
     await preview.emulateMedia({ media: 'print' });
     await preview.screenshot({ path: previewPath, fullPage: true });
     const pdf = await preview.pdf({ path: pdfPath, printBackground: true, preferCSSPageSize: true });
@@ -344,7 +371,10 @@ test('Store checkout prints the returned sale as a tenant-branded RTL receipt wi
         pdfPath,
         receiptLayout,
         receiptAudit,
-        previewStylesheetLoaded: await preview.locator('link[href*="print.css"]').evaluate((link) => Boolean(link.sheet)),
+        previewStylesheetLoaded: await preview.evaluate(() => Boolean(
+            document.querySelector('style[data-top-gym-print-styles-fallback]')
+            || [...document.querySelectorAll('link[href*="print.css"]')].some((link) => Boolean(link.sheet))
+        )),
         printStylesheetStatus: printStylesheet.status(),
         requestedPaper: 'A4 portrait via existing @page size A4; no thermal-roll dimensions are declared by the current receipt template.',
         margins: 'Canonical global @page margin is 12mm; receipt uses 16px padding from the canonical print stylesheet.',

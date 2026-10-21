@@ -83,6 +83,7 @@ test('V2 app shell follows full-width header, directional drawer, dashboard grid
                         topbarOrder: ['#branchContextShell', '.topbar-language-toggle', '#themeToggleButton', '#authAccountBar', '.notification-center-trigger'].map((selector) => rect(selector)),
                         headerInner: rect('.topbar-inner'),
                         nav: rect('#pageTabs'),
+                        sidebar: rect('.app-shell > .page-tabs'),
                         main: rect('.app-shell > main.page'),
                         menuButton: rect('#mobileNavToggle'),
                         context: rect('.branch-context-mobile-trigger'),
@@ -103,6 +104,7 @@ test('V2 app shell follows full-width header, directional drawer, dashboard grid
                             return output.slice(-12);
                         })(),
                         cardColumns: getComputedStyle(cards).gridTemplateColumns.split(' ').length,
+                        dailyClasses: rect('.overview-grid > .dashboard-day-pass-card'),
                         overviewTitleVisible: (() => {
                             const title = document.querySelector('#dashboardOverviewTitle');
                             const style = getComputedStyle(title);
@@ -112,40 +114,59 @@ test('V2 app shell follows full-width header, directional drawer, dashboard grid
                 });
 
                 expect(metrics.documentWidth, JSON.stringify(metrics)).toBeLessThanOrEqual(width + 1);
-                expect(metrics.header.x).toBe(0);
-                expect(metrics.header.width).toBe(width);
                 expect(metrics.header.y).toBe(0);
                 expect(metrics.header.height, JSON.stringify(metrics)).toBe(width < 768 ? 56 : 64);
+                if (width >= 1024) {
+                    expect(metrics.sidebar.width).toBe(width >= 1280 ? 256 : 224);
+                    expect(metrics.header.width + metrics.sidebar.width).toBe(width);
+                    if (metrics.dir === 'rtl') {
+                        expect(metrics.header.x).toBe(0);
+                        expect(metrics.header.right).toBe(metrics.sidebar.x);
+                    } else {
+                        expect(metrics.sidebar.x).toBe(0);
+                        expect(metrics.header.x).toBe(metrics.sidebar.right);
+                        expect(metrics.header.right).toBe(width);
+                    }
+                } else {
+                    expect(metrics.header.x).toBe(0);
+                    expect(metrics.header.width).toBe(width);
+                }
                 if (theme === 'light') expect(metrics.headerColor).toBe('rgb(255, 255, 255)');
                 if (theme === 'dark') expect(metrics.headerColor).not.toBe('rgb(255, 255, 255)');
                 await expect(page.locator('#alertsSection h3')).toHaveText(locale === 'ar' ? 'التنبيهات' : 'Alerts');
                 expect(metrics.overviewTitleVisible).toBeFalsy();
-                if (width >= 1280) expect(metrics.cardColumns).toBe(5);
-                else if (width >= 1024) expect(metrics.cardColumns).toBe(3);
-                else if (width >= 768) expect(metrics.cardColumns).toBe(8);
-                else expect(metrics.cardColumns).toBe(4);
-                if (width >= 1280 && metrics.financeParent !== 'overview-grid') {
-                    expect(Math.abs(metrics.alerts.width - metrics.overviewGrid.width)).toBeLessThanOrEqual(1);
+                if (width >= 1280) expect(metrics.cardColumns).toBe(4);
+                else if (width >= 1024) expect(metrics.cardColumns).toBe(2);
+                else if (width >= 768) expect(metrics.cardColumns).toBe(2);
+                else if (width <= 359) expect(metrics.cardColumns).toBe(1);
+                else expect(metrics.cardColumns).toBe(2);
+                if (width >= 1280 && metrics.dailyClasses) {
+                    expect(Math.abs(metrics.alerts.y - metrics.dailyClasses.y)).toBeLessThanOrEqual(1);
+                    const panelsLeft = Math.min(metrics.alerts.x, metrics.dailyClasses.x);
+                    const panelsRight = Math.max(metrics.alerts.right, metrics.dailyClasses.right);
+                    expect(Math.abs((panelsRight - panelsLeft) - metrics.overviewGrid.width)).toBeLessThanOrEqual(1);
                 }
 
                 if (width >= 1024) {
                     expect(metrics.menuButton.display).toBe('none');
                     expect(metrics.nav.y).toBeGreaterThanOrEqual(metrics.header.bottom - 1);
-                    expect(metrics.nav.width).toBe(width >= 1280 ? 240 : 208);
-                    expect(metrics.topbarInner.x).toBe(0);
-                    expect(metrics.topbarInner.width).toBe(width);
-                    expect(metrics.topbarControls.width).toBeGreaterThan(width - 40);
+                    expect(metrics.nav.width).toBe(width >= 1280 ? 256 : 224);
+                    expect(metrics.topbarInner.x).toBe(metrics.header.x);
+                    expect(metrics.topbarInner.width).toBe(metrics.header.width);
+                    expect(metrics.topbarControls.width).toBeGreaterThan(0);
+                    expect(metrics.topbarControls.x).toBeGreaterThanOrEqual(metrics.header.x - 1);
+                    expect(metrics.topbarControls.right).toBeLessThanOrEqual(metrics.header.right + 1);
                     await expect(page.locator('.topbar-language-toggle')).toBeVisible();
                     await expect(page.locator('#themeToggleButton')).toBeVisible();
-                    await expect(page.locator('.topbar-more-trigger')).toBeVisible();
-                    const context = metrics.topbarOrder[0];
+                    await expect(page.locator('.topbar-more-trigger')).toBeHidden();
+                    await expect(page.locator('#branchContextShell')).toBeHidden();
                     const utilities = await page.locator('.topbar-mobile-actions').boundingBox();
                     if (metrics.dir === 'rtl') {
-                        expect(context.x).toBeGreaterThanOrEqual(utilities.x + utilities.width - 1);
-                        expect(utilities.x).toBeLessThanOrEqual(40);
+                        expect(utilities.x).toBeGreaterThanOrEqual(metrics.header.x - 1);
+                        expect(utilities.x).toBeLessThanOrEqual(metrics.header.x + 40);
                     } else {
-                        expect(context.right).toBeLessThanOrEqual(utilities.x + 1);
-                        expect(utilities.x + utilities.width).toBeGreaterThan(width - 40);
+                        expect(utilities.x + utilities.width).toBeLessThanOrEqual(metrics.header.right + 1);
+                        expect(utilities.x + utilities.width).toBeGreaterThan(metrics.header.right - 40);
                     }
                 } else {
                     expect(metrics.menuButton.width).toBeGreaterThanOrEqual(44);
@@ -179,13 +200,15 @@ test('V2 app shell follows full-width header, directional drawer, dashboard grid
             await page.keyboard.press('Escape');
             await expect(page.locator('#pageTabs')).toBeHidden();
             if (width === 390) {
-                await page.locator('.branch-context-mobile-trigger').click();
-                const contextFields = page.locator('#branchContextShell .branch-context-fields');
-                await expect(contextFields).toBeVisible();
-                const contextRect = await contextFields.boundingBox();
-                expect(contextRect.x).toBeGreaterThanOrEqual(0);
-                expect(contextRect.x + contextRect.width).toBeLessThanOrEqual(width);
-                await page.locator('.branch-context-mobile-trigger').click();
+                await expect(page.locator('.branch-context-mobile-trigger')).toBeHidden();
+                const scopeDialog = page.locator('#dashboardScopeDialog');
+                await page.locator('#dashboardScopeOpen').click();
+                await expect(scopeDialog).toBeVisible();
+                const scopeRect = await scopeDialog.boundingBox();
+                expect(scopeRect.x).toBeGreaterThanOrEqual(0);
+                expect(scopeRect.x + scopeRect.width).toBeLessThanOrEqual(width);
+                await page.keyboard.press('Escape');
+                await expect(scopeDialog).toBeHidden();
                 await page.locator('.topbar-more-trigger').click();
                 await expect(page.locator('.topbar-language-toggle [data-locale-choice="en"]')).toBeVisible();
                 await expect(page.locator('#themeToggleButton')).toBeVisible();

@@ -78,7 +78,7 @@ test('Store checkout preserves its request contract and renders validation, load
         await route.fulfill({ status: 200, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
     });
 
-    await page.goto(`${baseUrl()}/#store`, { waitUntil: 'networkidle' });
+    await page.goto(`${baseUrl()}/index.html#store`, { waitUntil: 'networkidle' });
     await expect(page.locator('#storeSection')).toBeVisible();
     await expect(page.locator('#storeCartTotal')).toHaveAttribute('data-i18n-value', '0');
     await expect(page.locator('#storeCompleteSale')).toBeDisabled();
@@ -120,12 +120,12 @@ test('Store checkout preserves its request contract and renders validation, load
 
     releaseSuccessfulCheckout();
     const receipt = await popupPromise;
-    await expect(receipt.locator('.receipt-brand p')).toContainText('QA-SALE-07201');
+    await expect(receipt.locator('.print-store-receipt-brand p')).toContainText('QA-SALE-07201');
     await expect(receipt.locator('tbody tr')).toHaveCount(1);
     await expect(receipt.locator('tbody')).toContainText(product.nameAr);
     await expect(receipt.locator('tbody')).toContainText('750 ml');
     await expect(receipt.locator('tbody')).toContainText('2');
-    await expect(receipt.locator('.total')).toContainText((180).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    await expect(receipt.locator('.print-store-receipt-total')).toContainText((180).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     await expect(page.locator('#toast .toast-item.success')).toContainText('تم تسجيل البيع بنجاح.');
     await expect(page.locator('#storeCartLines')).toContainText('أضف منتجًا إلى السلة للبدء.');
     await expect(page.locator('#storeCartTotal')).toHaveAttribute('data-i18n-value', '0');

@@ -2752,7 +2752,7 @@ body .app-shell > .topbar .topbar-controls {
 
 body .app-shell > .topbar .topbar-controls {
   position: static;
-  min-height: 56px;
+  min-height: calc(var(--app-topbar-height) - 1px);
   flex: 1 1 auto;
   justify-content: flex-start;
   gap: var(--space-3);
@@ -2909,6 +2909,10 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     width: 100%;
     min-height: calc(var(--app-topbar-height-mobile) - 1px);
     padding-block: 0;
+  }
+
+  body .app-shell > .topbar .topbar-controls {
+    min-height: calc(var(--app-topbar-height-mobile) - 1px);
   }
 
   body .app-shell > .topbar .topbar-controls {
