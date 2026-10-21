@@ -104,6 +104,37 @@ test('navbar scope selectors and redundant application launcher remain removed',
     }
 });
 
+test('operational assistant launcher docks beside the sidebar bottom outside navigation', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the pinned-sidebar docking geometry check.');
+    await installNavigationRuntime(page);
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    const launcher = page.locator('#smartAssistantLauncher');
+    await expect(launcher).toBeVisible();
+    const geometry = await page.evaluate(() => {
+        const rail = document.getElementById('pageTabs');
+        const button = document.getElementById('smartAssistantLauncher');
+        const dock = button.closest('.assistant-launcher-dock');
+        const railRect = rail.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        return {
+            insideNavigation: rail.contains(button),
+            position: getComputedStyle(dock).position,
+            railRight: railRect.right,
+            railLeft: railRect.left,
+            buttonRight: buttonRect.right,
+            buttonBottom: buttonRect.bottom,
+            viewportBottom: innerHeight,
+            railPaddingTop: getComputedStyle(rail).paddingTop
+        };
+    });
+    expect(geometry.insideNavigation).toBe(false);
+    expect(geometry.position).toBe('fixed');
+    expect(Math.abs(geometry.buttonRight - geometry.railLeft)).toBeLessThanOrEqual(16);
+    expect(geometry.viewportBottom - geometry.buttonBottom).toBeGreaterThanOrEqual(8);
+    expect(geometry.viewportBottom - geometry.buttonBottom).toBeLessThanOrEqual(32);
+    expect(geometry.railPaddingTop).toBe('8px');
+});
+
 test('responsive navigation stays organized and accessible at each viewport', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     // `/` is the auth-aware login entry when no server session cookie exists;
@@ -675,7 +706,7 @@ test('shared navigation stays below the header without clipping across locale, t
                     await expect(page.locator('#pageTabs')).toBeVisible();
                     const drawerBounds = await page.locator('#pageTabs').evaluate((navigation) => {
                         const bounds = navigation.getBoundingClientRect();
-                        const links = [...navigation.querySelectorAll('.page-tab, .smart-assistant-launcher')]
+                        const links = [...navigation.querySelectorAll('.page-tab')]
                             .filter((link) => getComputedStyle(link).display !== 'none')
                             .map((link) => {
                                 const rect = link.getBoundingClientRect();

@@ -127,7 +127,6 @@
 
         const targets = [
             ...rail.querySelectorAll('.page-tab'),
-            rail.querySelector('.smart-assistant-launcher'),
             rail.querySelector('.sidebar-pin-toggle'),
             rail.querySelector('.auth-logout-button')
         ].filter(Boolean);
@@ -200,9 +199,7 @@
             });
         };
 
-        const targets = [
-            ...rail.querySelectorAll('.page-tab, .smart-assistant-launcher'),
-        ].filter(Boolean);
+        const targets = [...rail.querySelectorAll('.page-tab')];
         targets.forEach((element) => {
             element.addEventListener('pointerenter', () => show(element));
             element.addEventListener('pointerleave', hide);

@@ -329,7 +329,7 @@ test('application page navigation states are owned by navigation-shell, not visu
         'body .app-shell > .page-tabs',
         'body .app-shell > .page-tabs::before',
         'body .app-shell > .page-tabs > .page-tab',
-        'body .app-shell > .page-tabs > .smart-assistant-launcher',
+        '.app-shell > .assistant-launcher-dock > .smart-assistant-launcher',
         'body .app-shell > .page-tabs > .page-tab:hover',
         'body .app-shell > .page-tabs > .page-tab.active'
     ]) {

@@ -2977,6 +2977,7 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     overflow-y: auto;
     scrollbar-gutter: stable;
     background: var(--bg-sidebar);
+    padding-block-start: var(--space-2);
   }
 
   .app-shell > main.page {
@@ -3087,6 +3088,91 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   }
 
   body.mobile-nav-open { overflow: hidden; }
+}
+
+/* The operational assistant is a shell-level floating action, not a
+   navigation destination. Keep its one trigger outside the scrollable rail. */
+.app-shell > .assistant-launcher-dock {
+  position: fixed;
+  z-index: var(--z-sticky);
+  inset-block-end: max(var(--space-4), env(safe-area-inset-bottom));
+  inset-inline-start: calc(var(--sidebar-width-collapsed) + var(--space-3));
+  display: block;
+  max-width: calc(100vw - var(--space-6));
+  pointer-events: none;
+}
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-primary);
+  color: var(--primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  pointer-events: auto;
+  transition: background-color var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter), color var(--motion-duration-interaction) var(--motion-easing-enter), transform var(--motion-duration-interaction) var(--motion-easing-enter);
+}
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher[hidden] { display: none; }
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher:hover,
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher:focus-visible,
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher[aria-expanded="true"] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: var(--shadow-primary-strong);
+  color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher .ui-icon {
+  width: var(--icon-size-control);
+  height: var(--icon-size-control);
+  flex: 0 0 var(--icon-size-control);
+}
+
+.app-shell > .assistant-launcher-dock > .smart-assistant-launcher-label {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  body .app-shell:has(> .page-tabs.is-hovered) > .assistant-launcher-dock,
+  body .app-shell:has(> .page-tabs.sidebar-pinned) > .assistant-launcher-dock,
+  body .app-shell:has(> .page-tabs:focus-within) > .assistant-launcher-dock {
+    inset-inline-start: calc(var(--sidebar-width-expanded) + var(--space-3));
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-shell > .assistant-launcher-dock {
+    inset-inline-start: var(--space-3);
+    inset-block-end: max(var(--space-3), env(safe-area-inset-bottom));
+  }
+
+  .app-shell.mobile-nav-open > .assistant-launcher-dock { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell > .assistant-launcher-dock > .smart-assistant-launcher { transition: none; }
 }
 
 @media (max-width: 767px) {

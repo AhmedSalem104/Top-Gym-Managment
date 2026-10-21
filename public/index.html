@@ -313,10 +313,6 @@
             <button class="page-tab" type="button" data-page-tab="feedback" aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span>تقييمات المشتركين</span></button>
             <button class="page-tab" type="button" data-page-tab="member-subscription-requests" data-owner-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5M8 17h8"/><path d="m16 14 2 2 3-3"/></svg><span>طلبات اشتراك الأعضاء</span></button>
             <button class="page-tab" type="button" data-page-tab="portal-analytics" data-owner-only aria-selected="false"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/><circle cx="18" cy="7" r="1"/></svg><span>إحصائيات البوابة</span></button>
-            <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" data-i18n-aria-label="shell.assistant.open" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد" data-i18n-title="shell.assistant.ask">
-                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
-                <span class="smart-assistant-launcher-label" data-i18n="shell.assistant.ask">اسأل المساعد</span>
-            </button>
             <div class="sidebar-brand" aria-label="هوية الجيم">
                 <div class="sidebar-brand-mark" data-brand-logo-shell aria-hidden="true"><img data-brand-logo="compactLogo" alt="" hidden><span data-brand-logo-fallback>L</span></div>
                 <div class="sidebar-brand-copy"><strong data-brand-text="brandName">Logic Fit</strong><small data-brand-text="description">منصة الإدارة الذكية للجيم واللياقة.</small></div>
@@ -332,6 +328,12 @@
             </div>
         </nav>
         <button class="mobile-nav-backdrop" id="mobileNavBackdrop" type="button" aria-label="إغلاق القائمة" aria-hidden="true" hidden></button>
+        <div class="assistant-launcher-dock">
+            <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" data-i18n-aria-label="shell.assistant.open" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد" data-i18n-title="shell.assistant.ask">
+                <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
+                <span class="smart-assistant-launcher-label" data-i18n="shell.assistant.ask">اسأل المساعد</span>
+            </button>
+        </div>
 
         <main class="page max-w-7xl data-loading" id="dashboardSection" aria-busy="true">
             <nav class="tabs tabs--surface dashboard-view-tabs" id="dashboardViewTabs" role="tablist" aria-label="أقسام لوحة التحكم" data-i18n-aria-label="dashboard.tabs.aria" hidden>

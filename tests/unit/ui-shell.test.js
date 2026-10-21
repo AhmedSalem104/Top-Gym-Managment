@@ -69,6 +69,21 @@ test('navigation polish keeps desktop controls usable and coordinated', () => {
     assert.match(buttons, /body button\.btn\.btn-danger[\s\S]*?color:\s*var\(--danger-text\)/u);
 });
 
+test('assistant launcher is docked outside the sidebar while logout stays in the navigation rail', () => {
+    const markup = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
+    const navigation = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
+    const navigationScript = fs.readFileSync(path.join(root, 'public/js/page-tabs.js'), 'utf8');
+    const rail = markup.match(/<nav class="page-tabs topgym-nav"[\s\S]*?<\/nav>/u)?.[0] || '';
+    const dock = markup.match(/<div class="assistant-launcher-dock">([\s\S]*?)<\/div>/u)?.[0] || '';
+
+    assert.doesNotMatch(rail, /id="smartAssistantLauncher"/u);
+    assert.match(dock, /id="smartAssistantLauncher"/u);
+    assert.match(rail, /id="authLogoutButton"/u);
+    assert.match(navigation, /\.app-shell\s*>\s*\.assistant-launcher-dock[\s\S]*?inset-inline-start:[\s\S]*?inset-block-end:/u);
+    assert.match(navigation, /\.app-shell\.mobile-nav-open\s*>\s*\.assistant-launcher-dock\s*\{\s*visibility:\s*hidden/u);
+    assert.doesNotMatch(navigationScript, /rail\.querySelectorAll\('\.page-tab, \.smart-assistant-launcher'\)/u);
+});
+
 test('Gym App shell styles have one canonical source', () => {
     const canonical = fs.readFileSync(path.join(root, 'public/css/components/navigation-shell.css'), 'utf8');
     const secondarySources = [
