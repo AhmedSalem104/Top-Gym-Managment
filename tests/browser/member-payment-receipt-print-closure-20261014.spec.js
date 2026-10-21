@@ -137,6 +137,7 @@ test('member details payment action produces a bounded RTL receipt PDF without w
 
     const details = page.locator('#detailsDialog');
     await expect(details).toBeVisible();
+    await details.locator('#memberDetailsTab-account').click();
     await expect(details.locator('.payment-history-table')).toContainText('LF-QA-RECEIPT-942101');
     const receiptButton = details.locator(`[data-payment-receipt][data-payment-id="${paymentId}"]`);
     await expect(receiptButton).toBeVisible();

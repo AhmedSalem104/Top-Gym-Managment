@@ -376,7 +376,16 @@
   .app-shell > .topbar .topbar-more-items { max-height: calc(100dvh - var(--app-topbar-height) - var(--space-4)); }
   .app-shell > .topbar .topbar-settings-section,
   .app-shell > .topbar .topbar-settings-action { min-height: 64px; }
-  .app-shell > .topbar .topbar-language-toggle { width: 152px; }
+  .app-shell > .topbar .topbar-language-toggle {
+    box-sizing: border-box;
+    width: 152px;
+    height: calc(var(--ui-touch-target) + 8px);
+    min-height: var(--ui-touch-target);
+  }
+  .app-shell > .topbar .topbar-language-toggle > button {
+    box-sizing: border-box;
+    min-height: var(--ui-touch-target);
+  }
 }
 
 @media (max-width: 767px) {

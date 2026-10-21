@@ -204,7 +204,7 @@ test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testI
             }, theme);
             for (const locale of LOCALES) {
                 const currentLocale = await page.evaluate(() => window.TopGymI18n?.get?.() || document.documentElement.lang || 'ar');
-                if (currentLocale !== locale) await page.locator(`.topbar-language-toggle [data-locale-choice="${locale}"]:visible`).click();
+                if (currentLocale !== locale) await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), locale);
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
                 await expect(page.locator('#feedbackSection')).toBeVisible();
@@ -311,7 +311,7 @@ test('Gym Feedback #feedback V2 read-only visual matrix', async ({ page }, testI
         localStorage.setItem('topgym-theme', 'light');
     });
     if ((await page.evaluate(() => window.TopGymI18n?.get?.() || document.documentElement.lang)) !== 'ar') {
-        await page.locator('.topbar-language-toggle [data-locale-choice="ar"]:visible').click();
+        await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), 'ar');
     }
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     runtime.setFeedbackError(true);

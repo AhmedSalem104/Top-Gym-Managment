@@ -198,8 +198,22 @@ test('member identity, dates, account and member-wide freezes remain aligned in 
                     expect(identityGeometry.nameVisible).toBe(true);
                     expect(identityGeometry.nameAlignment).toBe('center');
                     if (width < 1600) {
-                        const actionsPosition = await firstMember.locator('td:last-child').evaluate((cell) => getComputedStyle(cell).position);
-                        expect(actionsPosition).toBe('static');
+                        const actionsGeometry = await firstMember.locator('td:last-child').evaluate((cell) => {
+                            const bounds = cell.getBoundingClientRect();
+                            const table = cell.closest('table');
+                            const scroller = table?.parentElement;
+                            const scrollerBounds = scroller?.getBoundingClientRect();
+                            return {
+                                position: getComputedStyle(cell).position,
+                                left: bounds.left,
+                                right: bounds.right,
+                                scrollerLeft: scrollerBounds?.left ?? 0,
+                                scrollerRight: scrollerBounds?.right ?? innerWidth
+                            };
+                        });
+                        expect(['static', 'sticky']).toContain(actionsGeometry.position);
+                        expect(actionsGeometry.left).toBeGreaterThanOrEqual(actionsGeometry.scrollerLeft - 1);
+                        expect(actionsGeometry.right).toBeLessThanOrEqual(actionsGeometry.scrollerRight + 1);
                     }
                     const compositionAlignment = await firstMember.locator('.member-identity-copy, .table-member-phone, .member-code-preview, .member-last-subscription, .membership-date, .membership-date [dir="ltr"], .member-account-values > span, .member-freeze-cell, .freeze-usage > strong, .freeze-usage > span, .freeze-usage [dir="ltr"], .member-status-detail').evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).textAlign));
                     expect(compositionAlignment.every((alignment) => alignment === 'center')).toBe(true);

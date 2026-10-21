@@ -228,6 +228,7 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
             const styles = (node) => getComputedStyle(node);
             return {
                 headerSurface: styles(header).backgroundColor,
+                headerImage: styles(header).backgroundImage,
                 footerSurface: styles(footer).backgroundColor,
                 headerHeight: header.getBoundingClientRect().height,
                 footerHeight: footer.getBoundingClientRect().height,
@@ -242,7 +243,10 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 rowGap: styles(element.querySelector('.dashboard-scope-fields')).gridTemplateColumns
             };
         });
-        expect(chrome.headerSurface).toBe(chrome.footerSurface);
+        expect(chrome.headerImage, JSON.stringify(chrome)).toContain('linear-gradient');
+        expect(chrome.headerImage, JSON.stringify(chrome)).toContain('rgb(0, 63, 153)');
+        expect(chrome.headerImage, JSON.stringify(chrome)).toContain('rgb(0, 97, 221)');
+        expect(chrome.footerSurface).toBe('rgb(234, 243, 255)');
         expect(chrome.headerHeight).toBeGreaterThanOrEqual(64);
         expect(chrome.headerHeight, JSON.stringify(chrome)).toBeLessThanOrEqual(90);
         expect(chrome.footerHeight).toBeGreaterThanOrEqual(60);
@@ -305,13 +309,20 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                 const header = document.querySelector('#dashboardScopeDialog .dialog-header');
                 const footer = document.querySelector('#dashboardScopeDialog .dashboard-scope-dialog-actions');
                 const preview = document.querySelector('#dashboardScopePreview');
+                const footerTokenProbe = document.createElement('span');
+                footerTokenProbe.style.backgroundColor = 'var(--dialog-v3-footer-surface)';
+                document.body.append(footerTokenProbe);
+                const footerTokenSurface = getComputedStyle(footerTokenProbe).backgroundColor;
+                footerTokenProbe.remove();
                 return {
                     viewport: document.documentElement.clientWidth,
                     document: document.documentElement.scrollWidth,
                     dialog: { left: dialogRect.left, right: dialogRect.right, top: dialogRect.top, bottom: dialogRect.bottom },
                     heading: { left: headerRect.left, right: headerRect.right },
                     headerHeight: header.getBoundingClientRect().height,
-                    chromeSurfaces: [getComputedStyle(header).backgroundColor, getComputedStyle(footer).backgroundColor],
+                    headerImage: getComputedStyle(header).backgroundImage,
+                    footerSurface: getComputedStyle(footer).backgroundColor,
+                    footerTokenSurface,
                     previewVisible: !preview.hidden
                 };
             });
@@ -322,7 +333,8 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
                     expect(geometry.heading.left, `${context}: heading left`).toBeGreaterThanOrEqual(geometry.dialog.left);
                     expect(geometry.heading.right, `${context}: heading right`).toBeLessThanOrEqual(geometry.dialog.right);
                     expect(geometry.headerHeight, `${context}: compact header`).toBeLessThanOrEqual(width < 600 ? 120 : 90);
-                    expect(geometry.chromeSurfaces[0], `${context}: form chrome mismatch ${geometry.chromeSurfaces}`).toBe(geometry.chromeSurfaces[1]);
+                    expect(geometry.headerImage, `${context}: V3 header gradient missing`).toContain('linear-gradient');
+                    expect(geometry.footerSurface, `${context}: V3 footer must follow its theme token`).toBe(geometry.footerTokenSurface);
                     expect(geometry.previewVisible, `${context}: selected scope preview missing`).toBeTruthy();
                     if ((width === 320 || width === 390 || width === 1440) && locale === 'ar' && theme === 'light') {
                         await page.screenshot({ path: path.join(SCREENSHOT_DIR, `scope-dialog-${width}-ar-light.png`), fullPage: false });

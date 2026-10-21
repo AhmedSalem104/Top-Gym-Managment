@@ -124,7 +124,7 @@ const overlayIds = unique([
 const formIds = allIds.filter((id) => /(?:form|filter|search|upload|checkout|login|registration)/i.test(id));
 const stateHooks = allIds.filter((id) => /(?:loading|skeleton|empty|error|message|success|status|toast|pagination|history)/i.test(id));
 
-const browserReportPath = path.join(root, 'qa', 'reports', 'complete-ui-qa.json');
+const browserReportPath = path.join(process.env.QA_REPORTS_DIR || path.join(root, 'qa', 'reports'), 'complete-ui-qa.json');
 let browserReport = null;
 try {
     browserReport = JSON.parse(fs.readFileSync(browserReportPath, 'utf8')).report || null;

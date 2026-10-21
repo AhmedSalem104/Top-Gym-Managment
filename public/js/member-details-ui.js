@@ -277,24 +277,29 @@
   function positionMoreMenu() {
     if (!activeMoreMenu || activeMoreMenu.hidden || !activeMoreTrigger) return;
     const triggerRect = activeMoreTrigger.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
     const viewportPadding = 12;
     const gap = 8;
-    const maxWidth = Math.max(180, window.innerWidth - (viewportPadding * 2));
+    const maxWidth = Math.max(180, Math.min(
+      window.innerWidth - (viewportPadding * 2),
+      dialogRect.width - (viewportPadding * 2)
+    ));
     activeMoreMenu.style.maxWidth = `${maxWidth}px`;
     activeMoreMenu.style.left = `${viewportPadding}px`;
     activeMoreMenu.style.top = `${viewportPadding}px`;
     const menuWidth = Math.min(Math.max(activeMoreMenu.offsetWidth, 180), maxWidth);
     activeMoreMenu.style.width = `${menuWidth}px`;
     const menuHeight = activeMoreMenu.offsetHeight;
-    const availableBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
-    const availableAbove = triggerRect.top - viewportPadding;
-    const openBelow = availableBelow >= menuHeight + gap || availableBelow >= availableAbove;
+    const availableBelow = dialogRect.bottom - triggerRect.bottom - viewportPadding;
+    const availableAbove = triggerRect.top - dialogRect.top - viewportPadding;
+    const openBelow = availableBelow >= menuHeight + gap
+      || (availableAbove < menuHeight + gap && availableBelow >= availableAbove);
     const top = openBelow
-      ? Math.min(window.innerHeight - viewportPadding - menuHeight, triggerRect.bottom + gap)
-      : Math.max(viewportPadding, triggerRect.top - gap - menuHeight);
+      ? Math.min(dialogRect.height - viewportPadding - menuHeight, triggerRect.bottom - dialogRect.top + gap)
+      : Math.max(viewportPadding, triggerRect.top - dialogRect.top - gap - menuHeight);
     const left = Math.min(
-      Math.max(viewportPadding, triggerRect.right - menuWidth),
-      window.innerWidth - viewportPadding - menuWidth
+      Math.max(viewportPadding, triggerRect.right - dialogRect.left - menuWidth),
+      dialogRect.width - viewportPadding - menuWidth
     );
     activeMoreMenu.style.left = `${left}px`;
     activeMoreMenu.style.top = `${top}px`;

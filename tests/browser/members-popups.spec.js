@@ -105,6 +105,7 @@ test('member details menu is visible, semantic and viewport-safe', async ({ page
     const result = await page.evaluate(() => {
         const element = document.getElementById('memberDetailsMoreMenu');
         const rect = element.getBoundingClientRect();
+        const dialogRect = document.getElementById('detailsDialog').getBoundingClientRect();
         return {
             role: element.getAttribute('role'),
             floating: element.classList.contains('is-floating'),
@@ -115,6 +116,8 @@ test('member details menu is visible, semantic and viewport-safe', async ({ page
             withinViewport: rect.left >= 0 && rect.top >= 0
                 && rect.right <= window.innerWidth + 1
                 && rect.bottom <= window.innerHeight + 1,
+            withinDialog: rect.left >= dialogRect.left - 1 && rect.top >= dialogRect.top - 1
+                && rect.right <= dialogRect.right + 1 && rect.bottom <= dialogRect.bottom + 1,
             horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth
         };
     });
@@ -125,6 +128,7 @@ test('member details menu is visible, semantic and viewport-safe', async ({ page
         ? ['payment', 'edit', 'refund', 'qr', 'print', 'freeze']
         : ['payment', 'edit', 'refund', 'qr']);
     expect(result.withinViewport).toBe(true);
+    expect(result.withinDialog).toBe(true);
     expect(result.horizontalOverflow).toBe(false);
     await page.screenshot({ path: `qa/artifacts/members-popup-contract-${testInfo.project.name}.png` });
 
@@ -369,7 +373,7 @@ test('coaching builders use the shared workspace layout at desktop and mobile wi
     });
     await openSyntheticDetails(page);
     await expect(page.locator('#detailsDialog')).toBeVisible();
-    if ((await page.evaluate(() => innerWidth)) < 768) await page.locator('#memberDetailsTab-training').click();
+    await page.locator('#memberDetailsTab-training').click();
     await expect(page.locator('.member-training-panel')).toBeVisible();
     await expect(page.locator('.member-training-head')).toBeVisible();
     const coachingActions = page.locator('[data-member-coaching-action]');

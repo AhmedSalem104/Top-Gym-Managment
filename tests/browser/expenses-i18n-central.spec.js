@@ -90,7 +90,7 @@ test('Gym expenses uses central Arabic/English i18n across viewport and theme ma
         throw error;
     }
     await expect(screen.locator('#monthlyExpensesList .monthly-expense-item')).toHaveCount(2);
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('.topbar-language-toggle [data-locale-choice]')).toHaveCount(2);
     await expect.poll(() => page.evaluate(() => Boolean(window.TopGymI18n))).toBe(true);
 
     const initialContract = await page.evaluate(() => ({
@@ -113,7 +113,7 @@ test('Gym expenses uses central Arabic/English i18n across viewport and theme ma
             await page.evaluate((mode) => window.TopGymTheme.set(mode), theme);
             for (const locale of ['ar', 'en']) {
                 const active = await page.evaluate(() => window.TopGymI18n.get());
-                if (active !== locale) await page.locator('#languageToggleButton').click();
+                if (active !== locale) await page.evaluate((nextLocale) => window.TopGymI18n.set(nextLocale, { persist: false }), locale);
                 await expect(page.locator('html')).toHaveAttribute('lang', locale);
                 await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
                 await expect(screen.locator('.expenses-tab-heading h3')).toHaveText(locale === 'ar' ? 'إدارة المصروفات' : 'Manage expenses');
@@ -172,7 +172,7 @@ test('Gym expenses uses central Arabic/English i18n across viewport and theme ma
     await page.evaluate(() => window.TopGymTheme.set('light'));
     for (const locale of ['ar', 'en']) {
         const active = await page.evaluate(() => window.TopGymI18n.get());
-        if (active !== locale) await page.locator('#languageToggleButton').click();
+        if (active !== locale) await page.evaluate((nextLocale) => window.TopGymI18n.set(nextLocale, { persist: false }), locale);
         await page.locator('#addExpenseFromTabButton').click();
         const dialog = page.locator('#expenseDialog');
         await expect(dialog).toBeVisible();

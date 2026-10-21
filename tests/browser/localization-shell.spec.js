@@ -48,14 +48,16 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await page.goto('/index.html#dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('body')).toHaveAttribute('data-top-gym-authenticated', 'true');
     await page.waitForFunction(() => Boolean(window.TopGymI18n));
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
-    await expect(page.locator('#languageToggleButton')).toHaveText('EN');
-    await expect(page.locator('#languageToggleButton')).toHaveAttribute('aria-label', 'التبديل إلى الإنجليزية');
-    await expect(page.locator('#languageToggleButton')).toHaveAttribute('title', 'التبديل إلى الإنجليزية');
+    const arabicChoice = page.locator('.topbar-language-toggle [data-locale-choice="ar"]');
+    const englishChoice = page.locator('.topbar-language-toggle [data-locale-choice="en"]');
+    await expect(arabicChoice).toBeVisible();
+    await expect(englishChoice).toBeVisible();
+    await expect(arabicChoice).toHaveAttribute('aria-pressed', 'true');
+    await expect(englishChoice).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('المشتركون');
     expect(await page.locator('.topbar-inner').evaluate((element) => getComputedStyle(element).direction)).toBe('rtl');
     expect(await page.locator('[data-page-tab="members"] > span').evaluate((element) => getComputedStyle(element).fontFamily)).toContain('Tajawal');
-    const languageButtonSize = await page.locator('#languageToggleButton').evaluate((element) => {
+    const languageButtonSize = await page.locator('.topbar-language-toggle').evaluate((element) => {
         const rect = element.getBoundingClientRect();
         return { width: rect.width, height: rect.height };
     });
@@ -74,7 +76,7 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
         if (frame === page.mainFrame()) mainFrameNavigations += 1;
     });
     const originalUrl = page.url();
-    await page.locator('#languageToggleButton').click();
+    await englishChoice.click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('Members');
@@ -93,7 +95,8 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await page.locator('#i18nDynamicTabProbe').evaluate((element) => element.remove());
     expect(await page.locator('.topbar-inner').evaluate((element) => getComputedStyle(element).direction)).toBe('ltr');
     expect(await page.locator('[data-page-tab="members"] > span').evaluate((element) => getComputedStyle(element).fontFamily)).toContain('Geist Variable');
-    await expect(page.locator('#languageToggleButton')).toHaveText('عربي');
+    await expect(arabicChoice).toHaveAttribute('aria-pressed', 'false');
+    await expect(englishChoice).toHaveAttribute('aria-pressed', 'true');
     expect(page.url()).toBe(originalUrl);
     expect(mainFrameNavigations).toBe(0);
     expect(await page.evaluate(() => localStorage.getItem('logic-fit-ui-locale'))).toBe('en');
@@ -105,8 +108,9 @@ test('Gym shell language switch is live, persistent, route-safe, theme-safe, and
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('Members');
     await expect(page.locator('#themeToggleButton')).toHaveAttribute('aria-pressed', 'true');
 
-    await page.locator('#languageToggleButton').click();
+    await arabicChoice.click();
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('[data-page-tab="members"] > span')).toHaveText('المشتركون');
+    await expect(arabicChoice).toHaveAttribute('aria-pressed', 'true');
 });

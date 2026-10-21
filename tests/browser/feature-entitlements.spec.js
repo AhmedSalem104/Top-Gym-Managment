@@ -213,12 +213,21 @@ test('branch switching keeps the selected branch membership, including expired h
     });
 
     const memberRecord = (id) => page.locator(`#membersList tr[data-member-id="${id}"], #membersList .members-mobile-card[data-member-id="${id}"]`).first();
-    await page.goto('/?branchScope=qa#members', { waitUntil: 'networkidle' });
-    await expect(page.locator('#branchContextSelect')).toBeVisible();
+    await page.goto('/index.html#members', { waitUntil: 'networkidle' });
     await expect(memberRecord(501)).toBeVisible();
     await expect(page.locator('#membersPagination')).toBeVisible();
 
-    await page.locator('#branchContextSelect').selectOption('2');
+    // Branch/section controls intentionally live in the Dashboard scope dialog,
+    // not in the shared Navbar. Exercise the approved staged Apply workflow.
+    await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
+    await page.locator('#dashboardScopeOpen').click();
+    await expect(page.locator('#dashboardScopeDialog')).toBeVisible();
+    await expect(page.locator('#dashboardScopeBranchSelect option[value="2"]')).toHaveCount(1);
+    await page.locator('#dashboardScopeBranchSelect').selectOption('2');
+    await expect(page.locator('#dashboardScopeApply')).toBeEnabled();
+    await page.locator('#dashboardScopeApply').click();
+    await expect(page.locator('#dashboardScopeDialog')).toBeHidden();
+    await page.goto('/index.html#members', { waitUntil: 'networkidle' });
     await expect(memberRecord(502)).toBeVisible();
     await expect(memberRecord(502).locator('.status-badge-with-icon')).toBeVisible();
     await expect(memberRecord(502)).not.toContainText('بدون اشتراك');

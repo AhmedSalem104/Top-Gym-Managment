@@ -421,6 +421,9 @@ async function collectArabicCopy(root) {
         let node;
         while ((node = walker.nextNode())) {
             if (isHidden(node)) continue;
+            // The tenant's configured welcome subtitle is brand content, not
+            // interface chrome; preserve it verbatim when the UI locale changes.
+            if (node.parentElement?.closest('[data-branding-preview-welcome]')) continue;
             const raw = node.nodeValue.replace(/\s+/g, ' ').trim();
             if (!raw || !/[\u0600-\u06ff]/u.test(raw)) continue;
             const staticCopy = raw.replaceAll(tenantName, '').replace(/\s+/g, ' ').trim();

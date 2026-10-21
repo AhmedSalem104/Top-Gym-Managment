@@ -104,8 +104,7 @@ test('navbar scope selectors and redundant application launcher remain removed',
     }
 });
 
-test('operational assistant launcher docks beside the sidebar bottom outside navigation', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'The desktop project owns the pinned-sidebar docking geometry check.');
+test('operational assistant launcher is an icon-only bottom-left action outside navigation', async ({ page }, testInfo) => {
     await installNavigationRuntime(page);
     await page.goto('/index.html#dashboard', { waitUntil: 'networkidle' });
     const launcher = page.locator('#smartAssistantLauncher');
@@ -114,25 +113,55 @@ test('operational assistant launcher docks beside the sidebar bottom outside nav
         const rail = document.getElementById('pageTabs');
         const button = document.getElementById('smartAssistantLauncher');
         const dock = button.closest('.assistant-launcher-dock');
-        const railRect = rail.getBoundingClientRect();
         const buttonRect = button.getBoundingClientRect();
         return {
             insideNavigation: rail.contains(button),
             position: getComputedStyle(dock).position,
-            railRight: railRect.right,
-            railLeft: railRect.left,
-            buttonRight: buttonRect.right,
+            direction: document.documentElement.dir,
+            railRight: rail.getBoundingClientRect().right,
+            buttonLeft: buttonRect.left,
+            buttonWidth: buttonRect.width,
+            buttonHeight: buttonRect.height,
+            visibleText: button.textContent.trim(),
+            accessibleName: button.getAttribute('aria-label'),
             buttonBottom: buttonRect.bottom,
             viewportBottom: innerHeight,
-            railPaddingTop: getComputedStyle(rail).paddingTop
+            railPaddingTop: getComputedStyle(rail).paddingTop,
+            brandMarginBottom: getComputedStyle(rail.querySelector('.sidebar-brand')).marginBlockEnd,
+            brandPaddingBottom: getComputedStyle(rail.querySelector('.sidebar-brand')).paddingBlockEnd
         };
     });
     expect(geometry.insideNavigation).toBe(false);
     expect(geometry.position).toBe('fixed');
-    expect(Math.abs(geometry.buttonRight - geometry.railLeft)).toBeLessThanOrEqual(16);
+    expect(geometry.direction).toBe('rtl');
+    expect(geometry.buttonLeft).toBeGreaterThanOrEqual(8);
+    expect(geometry.buttonLeft).toBeLessThanOrEqual(24);
+    expect(geometry.buttonWidth).toBeGreaterThanOrEqual(44);
+    expect(geometry.buttonHeight).toBeGreaterThanOrEqual(44);
+    expect(geometry.visibleText).toBe('');
+    expect(geometry.accessibleName).toBeTruthy();
     expect(geometry.viewportBottom - geometry.buttonBottom).toBeGreaterThanOrEqual(8);
     expect(geometry.viewportBottom - geometry.buttonBottom).toBeLessThanOrEqual(32);
-    expect(geometry.railPaddingTop).toBe('8px');
+    if (testInfo.project.name === 'desktop') {
+        expect(geometry.railPaddingTop).toBe('0px');
+        expect(geometry.brandMarginBottom).toBe('0px');
+        expect(geometry.brandPaddingBottom).toBe('8px');
+        const ltr = await page.evaluate(() => {
+            window.TopGymI18n.set('en');
+            const rail = document.getElementById('pageTabs').getBoundingClientRect();
+            const button = document.getElementById('smartAssistantLauncher').getBoundingClientRect();
+            return { railRight: rail.right, buttonLeft: button.left };
+        });
+        expect(ltr.buttonLeft).toBeGreaterThan(ltr.railRight);
+    } else {
+        const ltrLeft = await page.evaluate(() => {
+            window.TopGymI18n.set('en');
+            return document.getElementById('smartAssistantLauncher').getBoundingClientRect().left;
+        });
+        expect(ltrLeft).toBeGreaterThanOrEqual(8);
+        expect(ltrLeft).toBeLessThanOrEqual(24);
+    }
+    await page.screenshot({ path: testInfo.outputPath('navigation-shell-spacing.png'), fullPage: false });
 });
 
 test('responsive navigation stays organized and accessible at each viewport', async ({ page }, testInfo) => {

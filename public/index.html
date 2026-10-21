@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#F5F7FB">
     <meta name="auth-routing-version" content="forced-password-v3">
-    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=f5b611911e4b1197">
+    <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=ff3e1565a03d2e6b">
     <script>
         (function () {
             try {
@@ -20,7 +20,7 @@
     <link rel="preload" href="/assets/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2" sizes="any">
     <link rel="shortcut icon" type="image/svg+xml" href="/assets/logic-fit-app-icon.svg?v=2">
-    <link rel="stylesheet" href="/css/app-shell.css?v=bfc79b075c1693b4">
+    <link rel="stylesheet" href="/css/app-shell.css?v=cc1d0d0657ba6c0a">
     <title>Logic Fit | Gym Management</title>
 </head>
 <body class="auth-pending font-sans bg-slate-100 text-slate-900 gym-page-bg" data-branding-entry="saas">
@@ -331,7 +331,6 @@
         <div class="assistant-launcher-dock">
             <button class="smart-assistant-launcher" id="smartAssistantLauncher" type="button" hidden aria-label="فتح المساعد الذكي" data-i18n-aria-label="shell.assistant.open" aria-controls="smartAssistantPanel" aria-expanded="false" title="اسأل المساعد" data-i18n-title="shell.assistant.ask">
                 <svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 13.7 8.3 19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7Z"/></svg>
-                <span class="smart-assistant-launcher-label" data-i18n="shell.assistant.ask">اسأل المساعد</span>
             </button>
         </div>
 
@@ -436,30 +435,30 @@
                 <div class="monthly-finance-head">
                     <div class="monthly-finance-heading">
                         <span class="monthly-finance-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="m7 15 3-4 3 2 5-6"/></svg></span>
-                        <div><span class="monthly-finance-eyebrow">الحسابات</span><h3 id="monthlyFinanceTitle">ملخص الشهر الحالي</h3><p id="monthlyFinancePeriod">جاري تحميل حسابات الشهر…</p></div>
+                        <div><span class="monthly-finance-eyebrow" data-i18n="dashboard.finance.eyebrow">الحسابات</span><h3 id="monthlyFinanceTitle" data-i18n="dashboard.finance.title">ملخص الشهر الحالي</h3><p id="monthlyFinancePeriod" data-i18n="dashboard.finance.loading">جاري تحميل حسابات الشهر…</p></div>
                     </div>
-                    <div class="monthly-finance-head-actions"><span class="monthly-finance-status" id="monthlyFinanceStatus">تحديث تلقائي</span><div id="monthlyFinanceActions"></div></div>
+                    <div class="monthly-finance-head-actions"><span class="monthly-finance-status" id="monthlyFinanceStatus" data-i18n="dashboard.finance.autoUpdate">تحديث تلقائي</span><div id="monthlyFinanceActions"></div></div>
                 </div>
                 <div class="monthly-finance-metrics">
                     <article class="monthly-finance-metric subscriptions">
-                        <span class="monthly-finance-label">تحصيلات الاشتراكات</span>
+                        <span class="monthly-finance-label" data-i18n="dashboard.finance.subscriptions">تحصيلات الاشتراكات</span>
                         <strong class="monthly-finance-value" id="monthlySubscriptionsTotal">0.00 ج.م</strong>
                         <small id="monthlySubscriptionsMeta">المبلغ المحصل فعليًا من الاشتراكات خلال الفترة</small>
                     </article>
                     <article class="monthly-finance-metric day-passes" data-financial-data="true">
-                        <span class="monthly-finance-label">الحصص اليومية</span>
+                        <span class="monthly-finance-label" data-i18n="dashboard.finance.dayPasses">الحصص اليومية</span>
                         <strong class="monthly-finance-value" id="monthlyDayPassesTotal">0.00 ج.م</strong>
-                        <small id="monthlyDayPassesMeta">لا توجد حصص مسجلة</small>
+                        <small id="monthlyDayPassesMeta" data-i18n="dashboard.finance.noDayPasses">لا توجد حصص مسجلة</small>
                     </article>
                     <article class="monthly-finance-metric expenses" data-financial-data="true">
-                        <div class="monthly-finance-metric-top"><span class="monthly-finance-label">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" type="button"><span aria-hidden="true">+</span> إضافة مصروف</button></div>
+                        <div class="monthly-finance-metric-top"><span class="monthly-finance-label" data-i18n="dashboard.finance.expenses">المصروفات</span><button class="btn btn-light btn-small add-expense-button" id="addExpenseButton" type="button"><span aria-hidden="true">+</span> <span data-i18n="dashboard.finance.addExpense">إضافة مصروف</span></button></div>
                         <strong class="monthly-finance-value" id="monthlyExpensesTotal">0.00 ج.م</strong>
-                        <small id="monthlyExpensesMeta">لا توجد مصروفات مسجلة</small>
+                        <small id="monthlyExpensesMeta" data-i18n="dashboard.finance.noExpenses">لا توجد مصروفات مسجلة</small>
                     </article>
                     <article class="monthly-finance-metric net" data-financial-data="true">
-                        <span class="monthly-finance-label">صافي الشهر</span>
+                        <span class="monthly-finance-label" data-i18n="dashboard.finance.net">صافي الشهر</span>
                         <strong class="monthly-finance-value" id="monthlyNetTotal">0.00 ج.م</strong>
-                        <small id="monthlyNetMeta">التحصيل الفعلي − المصروفات</small>
+                        <small id="monthlyNetMeta" data-i18n="dashboard.finance.netHelp">التحصيل الفعلي − المصروفات</small>
                     </article>
                 </div>
                 <div class="monthly-expenses-list" id="monthlyExpensesList"><span class="monthly-expenses-empty">جاري تحميل المصروفات…</span></div>
@@ -1295,7 +1294,7 @@
     <script defer src="/js/branch-context.js?v=5e613a4e47ad854e"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
-    <script defer src="/js/core/feature-manifest.js?v=0d7b467b01451327"></script>
+    <script defer src="/js/core/feature-manifest.js?v=845650b5cd2063ff"></script>
     <script defer src="/js/feature-loader.js?v=6d324aba99e57b81"></script>
     <script defer src="/js/core/i18n.js?v=1361cad271398ecb"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=62372a1be020e8b9"></script>

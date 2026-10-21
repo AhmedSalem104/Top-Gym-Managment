@@ -2977,7 +2977,12 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
     overflow-y: auto;
     scrollbar-gutter: stable;
     background: var(--bg-sidebar);
-    padding-block-start: var(--space-2);
+    padding-block-start: 0;
+  }
+
+  body .app-shell > .page-tabs > .sidebar-brand {
+    margin-block-end: 0;
+    padding-block-end: var(--space-2);
   }
 
   .app-shell > main.page {
@@ -3096,22 +3101,25 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   position: fixed;
   z-index: var(--z-sticky);
   inset-block-end: max(var(--space-4), env(safe-area-inset-bottom));
-  inset-inline-start: calc(var(--sidebar-width-collapsed) + var(--space-3));
+  inset-inline-start: var(--space-4);
   display: block;
   max-width: calc(100vw - var(--space-6));
   pointer-events: none;
 }
 
+html[dir="rtl"] .app-shell > .assistant-launcher-dock {
+  inset-inline: auto var(--space-4);
+}
+
 .app-shell > .assistant-launcher-dock > .smart-assistant-launcher {
   box-sizing: border-box;
-  display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
-  max-width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
+  place-items: center;
+  padding: 0;
   border: 1px solid var(--primary-border);
   border-radius: var(--radius-pill);
   background: var(--bg-elevated);
@@ -3144,20 +3152,16 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
 .app-shell > .assistant-launcher-dock > .smart-assistant-launcher .ui-icon {
   width: var(--icon-size-control);
   height: var(--icon-size-control);
-  flex: 0 0 var(--icon-size-control);
-}
-
-.app-shell > .assistant-launcher-dock > .smart-assistant-launcher-label {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 @media (min-width: 1024px) {
-  body .app-shell:has(> .page-tabs.is-hovered) > .assistant-launcher-dock,
-  body .app-shell:has(> .page-tabs.sidebar-pinned) > .assistant-launcher-dock,
-  body .app-shell:has(> .page-tabs:focus-within) > .assistant-launcher-dock {
+  html[dir="ltr"] body .app-shell > .assistant-launcher-dock {
+    inset-inline-start: calc(var(--sidebar-width-collapsed) + var(--space-3));
+  }
+
+  html[dir="ltr"] body .app-shell:has(> .page-tabs.is-hovered) > .assistant-launcher-dock,
+  html[dir="ltr"] body .app-shell:has(> .page-tabs.sidebar-pinned) > .assistant-launcher-dock,
+  html[dir="ltr"] body .app-shell:has(> .page-tabs:focus-within) > .assistant-launcher-dock {
     inset-inline-start: calc(var(--sidebar-width-expanded) + var(--space-3));
   }
 }
@@ -3166,6 +3170,10 @@ body .app-shell > .topbar .topbar-quick-actions .notification-center-badge {
   .app-shell > .assistant-launcher-dock {
     inset-inline-start: var(--space-3);
     inset-block-end: max(var(--space-3), env(safe-area-inset-bottom));
+  }
+
+  html[dir="rtl"] .app-shell > .assistant-launcher-dock {
+    inset-inline: auto var(--space-3);
   }
 
   .app-shell.mobile-nav-open > .assistant-launcher-dock { visibility: hidden; }

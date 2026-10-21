@@ -92,18 +92,19 @@ async function openBranches(page) {
     if (await tab.getAttribute('aria-selected') !== 'true') await tab.click();
     await expect(page.locator('#branchesSection')).toBeVisible();
     if (await page.locator('.app-shell').evaluate((node) => node.classList.contains('mobile-nav-open'))) await page.keyboard.press('Escape');
-    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('.topbar-language-toggle [data-locale-choice]')).toHaveCount(2);
 }
 
 test.describe('Branches central i18n presentation (read-only fixtures)', () => {
     test('preserves branch state and layout across locale, theme, and viewport changes', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal locale/theme/viewport matrix.');
         const runtime = await isolateRuntime(page);
-        await page.addInitScript(() => localStorage.setItem('logic-fit-ui-locale', 'ar'));
+        await page.addInitScript(() => {
+            localStorage.setItem('logic-fit-ui-locale', 'ar');
+            sessionStorage.setItem('logicfit.branchId', '58102');
+        });
         await openBranches(page);
 
-        const select = page.locator('#branchContextSelect');
-        await select.selectOption('58102');
         await page.locator('#branchCreateOpen').click();
         await page.locator('#branchNameInput').fill('Draft branch — do not save');
         await page.keyboard.press('Escape');
@@ -122,7 +123,7 @@ test.describe('Branches central i18n presentation (read-only fixtures)', () => {
                 for (const width of WIDTHS) {
                     await page.setViewportSize({ width, height: width <= 390 ? 820 : 960 });
                     const currentLocale = await page.evaluate(() => window.TopGymI18n.get());
-                    if (currentLocale !== locale) await page.locator('#languageToggleButton').click();
+                    if (currentLocale !== locale) await page.evaluate((nextLocale) => window.TopGymI18n.set(nextLocale, { persist: false }), locale);
                     await page.evaluate(({ nextLocale, nextTheme }) => {
                         document.documentElement.dataset.theme = nextTheme;
                         document.body.dataset.theme = nextTheme;

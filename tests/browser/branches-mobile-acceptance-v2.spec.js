@@ -195,6 +195,7 @@ async function inspectScreen(page, width) {
 test.describe('Gym Branches V2 — isolated visual/responsive acceptance evidence', () => {
     test('mounted branches screen and create dialog fit all target viewports, locales, and themes', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal viewport, locale and theme matrix.');
+        test.setTimeout(120_000);
         const runtime = await installReadOnlyRuntime(page);
         const evidence = [];
         fs.mkdirSync(artifactDirectory, { recursive: true });

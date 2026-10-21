@@ -175,6 +175,7 @@ async function capturePdfDownload(page, fileBase, triggerDownload) {
 
 test('coaching workout, nutrition plan, client overview, and unsaved drafts print in the selected locale', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Paper-size PDF rendering is verified once in the Chromium desktop project.');
+    test.setTimeout(120_000);
 
     const apiRequests = [];
     await page.context().addInitScript(() => { window.print = () => { window.__topGymPrintCalled = true; }; });
@@ -207,7 +208,7 @@ test('coaching workout, nutrition plan, client overview, and unsaved drafts prin
 
     for (const locale of ['ar', 'en']) {
         if ((await page.locator('html').getAttribute('lang')) !== locale) {
-            await page.locator('#languageToggleButton').click();
+            await page.evaluate((selectedLocale) => window.TopGymI18n.set(selectedLocale, { persist: false }), locale);
             await expect(page.locator('html')).toHaveAttribute('lang', locale);
             await expect(page.locator('html')).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
         }

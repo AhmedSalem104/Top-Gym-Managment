@@ -10,7 +10,7 @@
         dashboard: { dependencies: [], styles: [], scripts: [] },
         'dashboard-enhancements': { dependencies: ['finance', 'phone-inputs', 'whatsapp-runtime'], styles: [], scripts: ['/js/day-passes.js?v=ce3d418ccf347623', '/js/alerts-enhancements.js?v=2e544843569c67e1'] },
         finance: { dependencies: [], styles: [], scripts: ['/js/pages/finance/monthly-finance.js?v=7babea564de77758'] },
-        'member-details': { dependencies: ['phone-inputs'], styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9'], scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/member-details-ui.js?v=d77efb7c54c2101b', '/js/member-portal-admin.js?v=2cfe4527c5945568', '/js/member-coaching-summary.js?v=3a03f0385ae1a7c4'] },
+        'member-details': { dependencies: ['phone-inputs'], styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9'], scripts: ['/js/member-digital-card.js?v=0d790612fb89c91c', '/js/member-details-ui.js?v=802e97d35d9ca70b', '/js/member-portal-admin.js?v=2cfe4527c5945568', '/js/member-coaching-summary.js?v=3a03f0385ae1a7c4'] },
         members: {
             dependencies: ['phone-inputs'],
             styles: ['/css/components/member-digital-card.css?v=dc8c1f5431afd8a9', '/css/pages/members.css?v=ebf3472b7f1606bd', '/css/pages/memberships.css?v=8067256324d3fc12', '/css/pages/attendance.css?v=5ee306f11961a8bf'],

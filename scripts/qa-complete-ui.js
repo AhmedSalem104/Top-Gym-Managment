@@ -70,7 +70,7 @@ const portalTools = [
     ['foods', 'portalLibrarySection'],
     ['subscription', 'portalSubscriptionSection']
 ];
-const dialogIds = ['actionDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog', 'authRecoveryDialog', 'authRegistrationDialog', 'membersFiltersDialog'];
+const dialogIds = ['actionDialog', 'membershipPlanDialog', 'membershipTypeDialog', 'detailsDialog', 'qrReaderDialog', 'memberQrDialog', 'libraryFormDialog', 'libraryDetailsDialog', 'externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog', 'authUserDialog', 'backupRestoreDialog', 'expenseDialog', 'memberDialog', 'dashboardScopeDialog', 'memberPaymentMethodDialog', 'dayPassDialog', 'trainerClientDialog', 'trainerClientDetailsDialog', 'trainerTimelineDialog', 'trainerMeasurementDialog', 'trainerCheckinDialog', 'trainerPackageDialog', 'trainerSessionDialog', 'trainerPurchaseDialog', 'trainerPaymentDialog', 'platformActionDialog', 'platformRegistrationCredentialsDialog', 'authRecoveryDialog', 'authRegistrationDialog'];
 const lazyDialogFragments = [
     { source: '/dialogs/library.html?v=phase3-6', ids: ['libraryFormDialog', 'libraryDetailsDialog'] },
     { source: '/dialogs/coaching.html?v=phase3-6', ids: ['externalTraineeDialog', 'coachingProfileDialog', 'coachingBuilderDialog'] },
@@ -160,9 +160,13 @@ async function inspect(page, evidence, diagnostics, options = {}) {
             rootExists: !(expected?.rootId || expected?.rootSelector) || Boolean(root),
             rootVisible: !(expected?.rootId || expected?.rootSelector) || visible(root),
             contentReady: !expected?.backupHistory || Boolean(root?.querySelector('.backup-history-block, .backup-history-error')),
-            emptyRowsAvoidStickyActions: !expected?.backupHistory || (() => {
+            emptyStateCellCount: !expected?.backupHistory ? null : (() => {
                 const cells = [...(root?.querySelectorAll('.backup-history-table tbody td[colspan]') || [])];
-                return cells.length >= 2 && cells.every((cell) => getComputedStyle(cell).position !== 'sticky');
+                return cells.length;
+            })(),
+            stickyEmptyStateCellCount: !expected?.backupHistory ? null : (() => {
+                const cells = [...(root?.querySelectorAll('.backup-history-table tbody td[colspan]') || [])];
+                return cells.filter((cell) => getComputedStyle(cell).position === 'sticky').length;
             })(),
             overflow: document.documentElement.scrollWidth > window.innerWidth,
             scrollWidth: document.documentElement.scrollWidth,
@@ -189,7 +193,8 @@ async function inspect(page, evidence, diagnostics, options = {}) {
     assert(result.rootExists, `${prefix}: root is missing`);
     if (options.rootId || options.rootSelector) assert(result.rootVisible, `${prefix}: root is not visible`);
     if (options.backupHistory) assert(result.contentReady, `${prefix}: backup history remains at its initial loading state`);
-    if (options.backupHistory) assert(result.emptyRowsAvoidStickyActions, `${prefix}: empty table cells incorrectly inherit sticky action-column styling`);
+    if (options.backupHistory) assert(result.emptyStateCellCount > 0, `${prefix}: expected the backup empty state to contain a table cell`);
+    if (options.backupHistory) assert(result.stickyEmptyStateCellCount === 0, `${prefix}: ${result.stickyEmptyStateCellCount} empty-state cells incorrectly inherit sticky action-column styling`);
     assert(!result.overflow, `${prefix}: horizontal overflow ${result.scrollWidth}/${result.viewport}`);
     if (options.cssEntry !== 'none') {
         const stylesheetName = options.cssEntry === 'shell' ? 'app-shell.css' : 'main.css';
@@ -393,19 +398,27 @@ async function assertDesktopNavigation(page) {
             gridColumns: shellStyle?.gridTemplateColumns || ''
         };
     });
-    const closed = await readLayout();
-    assert(closed.topbarVisible, 'desktop navbar is hidden');
-    assert(closed.sidebarVisible, 'desktop sidebar is hidden');
-    assert(closed.sidebarWidth >= 64 && closed.sidebarWidth <= 120, `desktop sidebar is not compact before hover (${closed.sidebarWidth}px)`);
-    assert(closed.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar before hover (${closed.sidebarTopbarOverlap}px horizontal overlap)`);
+    const pinned = await readLayout();
+    assert(pinned.topbarVisible, 'desktop navbar is hidden');
+    assert(pinned.sidebarVisible, 'desktop sidebar is hidden');
+    assert(pinned.sidebarWidth >= 220 && pinned.sidebarWidth <= 280, `desktop sidebar does not honor its default pinned width (${pinned.sidebarWidth}px)`);
+    assert(pinned.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar in its pinned state (${pinned.sidebarTopbarOverlap}px horizontal overlap)`);
+
+    await page.locator('#sidebarPinToggle').click();
+    await page.locator('#sidebarPinToggle').evaluate((button) => button.blur());
+    await page.mouse.move(8, 120);
+    await page.waitForTimeout(320);
+    const collapsed = await readLayout();
+    assert(collapsed.sidebarWidth >= 64 && collapsed.sidebarWidth <= 120, `desktop sidebar did not collapse after unpin (${collapsed.sidebarWidth}px)`);
+    assert(collapsed.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar after unpin (${collapsed.sidebarTopbarOverlap}px horizontal overlap)`);
 
     await page.locator('#pageTabs').hover();
     await page.waitForTimeout(320);
     const expanded = await readLayout();
-    assert(expanded.sidebarWidth >= closed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${closed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
+    assert(expanded.sidebarWidth >= collapsed.sidebarWidth + 80, `desktop sidebar did not expand on hover (${collapsed.sidebarWidth}px -> ${expanded.sidebarWidth}px)`);
     assert(expanded.sidebarTopbarOverlap <= 1, `desktop sidebar intersects navbar after hover (${expanded.sidebarTopbarOverlap}px horizontal overlap)`);
     assert(expanded.mainRect && expanded.sidebarMainOverlap <= 1, `desktop sidebar overlaps the page canvas after hover (${expanded.sidebarMainOverlap}px)`);
-    assert(expanded.gridColumns !== closed.gridColumns, 'desktop hover did not allocate a separate expanded layout track');
+    assert(expanded.gridColumns !== collapsed.gridColumns, 'desktop hover did not allocate a separate expanded layout track');
     assert(expanded.sidebarLabel && Number.parseFloat(expanded.sidebarLabel.maxWidth) > 0 && Number.parseFloat(expanded.sidebarLabel.opacity) > 0, 'desktop sidebar labels stay hidden after hover');
 }
 
@@ -622,7 +635,9 @@ async function run() {
                 dialog.close();
                 return { exists: true, within, rect: { left: Math.round(rect.left), top: Math.round(rect.top), right: Math.round(rect.right), bottom: Math.round(rect.bottom) }, viewport: { width: window.innerWidth, height: window.innerHeight } };
             }, id);
-                if (!result.exists || result.error || !result.within) failures.push(`Dialog/${id}/390: ${result.error || 'outside viewport'}`);
+                if (!result.exists) failures.push(`Dialog/${id}/390: dialog root is missing from the loaded route`);
+                else if (result.error) failures.push(`Dialog/${id}/390: showModal failed (${result.error})`);
+                else if (!result.within) failures.push(`Dialog/${id}/390: outside viewport (${JSON.stringify(result.rect)} / ${JSON.stringify(result.viewport)})`);
                 else evidence.push({ surface: dialogCase.surface, target: id, theme: 'light', viewport: '390', dialog: result, diagnostics: { ...diagnostics } });
             }
             await dialogPage.close();

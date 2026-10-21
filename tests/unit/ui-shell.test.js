@@ -7,6 +7,7 @@ const root = path.resolve(__dirname, '..', '..');
 
 test('complete UI QA requires explicit static-server mode and labels its evidence', () => {
     const source = fs.readFileSync(path.join(root, 'scripts/qa-complete-ui.js'), 'utf8');
+    const inventory = fs.readFileSync(path.join(root, 'scripts/discover-screens.js'), 'utf8');
 
     assert.match(source, /QA_ALLOW_STATIC_SERVER === '1'/u);
     assert.match(source, /4174\|4173[\s\S]*?&& !allowStaticQaServer/u);
@@ -14,6 +15,29 @@ test('complete UI QA requires explicit static-server mode and labels its evidenc
     assert.match(source, /Express\/server behavior is not under test/u);
     assert.match(source, /QA_REPORTS_DIR \|\| path\.join\(root, 'qa', 'reports'\)/u);
     assert.match(source, /QA_ARTIFACTS_DIR \|\| path\.join\(root, 'qa', 'artifacts'\)/u);
+    assert.match(inventory, /process\.env\.QA_REPORTS_DIR \|\| path\.join\(root, 'qa', 'reports'\)/u);
+});
+
+test('complete UI QA dialog registry matches every static native dialog exactly once', () => {
+    const qaSource = fs.readFileSync(path.join(root, 'scripts/qa-complete-ui.js'), 'utf8');
+    const registry = qaSource.match(/const dialogIds = \[([^\]]+)\];/u)?.[1] || '';
+    const qaDialogIds = [...registry.matchAll(/'([^']+)'/gu)].map((match) => match[1]);
+    const htmlFiles = [];
+    const visit = (directory) => {
+        for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+            const entryPath = path.join(directory, entry.name);
+            if (entry.isDirectory()) visit(entryPath);
+            else if (entry.isFile() && entry.name.endsWith('.html')) htmlFiles.push(entryPath);
+        }
+    };
+    visit(path.join(root, 'public'));
+    const sourceDialogIds = [...new Set(htmlFiles.flatMap((file) => {
+        const source = fs.readFileSync(file, 'utf8');
+        return [...source.matchAll(/<dialog\b[^>]*\bid=["']([^"']+)["']/giu)].map((match) => match[1]);
+    }))].sort();
+
+    assert.equal(new Set(qaDialogIds).size, qaDialogIds.length, 'QA dialog registry contains duplicate IDs');
+    assert.deepEqual([...qaDialogIds].sort(), sourceDialogIds);
 });
 
 test('navigation pending state keeps the first authenticated shell crisp and interactive', () => {
@@ -78,8 +102,12 @@ test('assistant launcher is docked outside the sidebar while logout stays in the
 
     assert.doesNotMatch(rail, /id="smartAssistantLauncher"/u);
     assert.match(dock, /id="smartAssistantLauncher"/u);
+    assert.match(dock, /aria-label="فتح المساعد الذكي"/u);
+    assert.doesNotMatch(dock, /smart-assistant-launcher-label/u);
     assert.match(rail, /id="authLogoutButton"/u);
-    assert.match(navigation, /\.app-shell\s*>\s*\.assistant-launcher-dock[\s\S]*?inset-inline-start:[\s\S]*?inset-block-end:/u);
+    assert.match(navigation, /\.app-shell\s*>\s*\.assistant-launcher-dock[\s\S]*?inset-inline-start:\s*var\(--space-4\)[\s\S]*?inset-block-end:/u);
+    assert.match(navigation, /html\[dir="rtl"\]\s*\.app-shell\s*>\s*\.assistant-launcher-dock\s*\{\s*inset-inline:\s*auto\s*var\(--space-4\)/u);
+    assert.match(navigation, /\.assistant-launcher-dock\s*>\s*\.smart-assistant-launcher\s*\{[\s\S]*?width:\s*48px[\s\S]*?height:\s*48px/u);
     assert.match(navigation, /\.app-shell\.mobile-nav-open\s*>\s*\.assistant-launcher-dock\s*\{\s*visibility:\s*hidden/u);
     assert.doesNotMatch(navigationScript, /rail\.querySelectorAll\('\.page-tab, \.smart-assistant-launcher'\)/u);
 });
