@@ -60,12 +60,13 @@ always include an explicit tenant id and pass through the server-side
 - Disabled accounts are rejected.
 - Session cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
 - Login and sensitive API rate limits are applied in middleware.
-- The current rate-limit guards are intentionally process-local and keep a
-  bounded number of IP/email/code buckets to prevent unbounded memory growth.
-  This cap is a defensive availability measure, not a substitute for a shared
-  distributed limiter. The policy accepts an atomic backend adapter for a
-  future shared provider, but distributed enforcement is not active until that
-  provider is selected and verified.
+- Rate limits remain process-local by default and keep a bounded number of
+  IP/email/code buckets. Optional distributed enforcement is available only
+  when `RATE_LIMIT_SHARED_ENABLED=true` and the authenticated cache gateway
+  supports its atomic rate-limit operation. In this mode gateway failure is
+  fail-closed (`503 RATE_LIMIT_UNAVAILABLE`); there is no per-process fallback.
+  The option stays disabled until gateway deployment, Redis ACL/eviction
+  policy, and isolated multi-instance verification are approved and completed.
 - Non-safe cross-origin state-changing requests are rejected.
 - The same-origin boundary is applied before public state-changing routes as
   well as authenticated routes; the authorized backup cron is the explicit

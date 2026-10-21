@@ -13,6 +13,7 @@ const { createAuthApiMiddleware } = require('../../src/middleware/auth.middlewar
 const { getTenantContext } = require('../../src/tenancy/tenant-context');
 const { readBearerToken, AUTH_SCHEMA_SQL } = require('../../src/services/auth-service');
 const { classifyMigration } = require('../../scripts/production-migration-gate');
+const sessionRepository = require('../../src/repositories/session.repository');
 const manifest = JSON.parse(read('database/migration-manifest.json'));
 const refreshMigration = read('database/migrations/040-mobile-refresh-sessions.sql');
 const refreshMigrationName = '040-mobile-refresh-sessions.sql';
@@ -135,6 +136,28 @@ test('mobile refresh rotates token pair through service and never cache-stores t
     assert.equal(response.body.accessToken, 'next-access');
     assert.equal(response.body.refreshToken, 'next-refresh');
     assert.equal(response.headers['Cache-Control'], 'no-store, no-cache, must-revalidate, private');
+});
+
+test('mobile refresh consumption is a conditional atomic update bound to the rotation transaction', async () => {
+    const inputs = [];
+    let statement = '';
+    const executor = { request: () => ({
+        input(name, _type, value) { inputs.push([name, value]); return this; },
+        async query(queryText) { statement = queryText; return { recordset: [{ user_id: 17 }] }; }
+    }) };
+    const result = await sessionRepository.consumeMobileRefreshToken('a'.repeat(64), 17, executor);
+    assert.equal(result.recordset[0].user_id, 17);
+    assert.deepEqual(inputs, [['tokenHash', 'a'.repeat(64)], ['userId', 17]]);
+    assert.match(statement, /UPDATE refreshSession[\s\S]*OUTPUT INSERTED\.user_id/i);
+    assert.match(statement, /revoked_at IS NULL[\s\S]*expires_at > SYSUTCDATETIME\(\)[\s\S]*appUser\.status = 'Active'/i);
+    await assert.rejects(sessionRepository.consumeMobileRefreshToken('a'.repeat(64), 17), /transaction executor is required/i);
+
+    const source = read('src/services/auth-service.js');
+    const refresh = source.slice(source.indexOf('async function mobileRefresh('), source.indexOf('async function mobileLogout('));
+    assert.match(refresh, /await withTransaction\(async \(transaction\) =>/);
+    assert.ok(refresh.indexOf('consumeMobileRefreshToken') < refresh.indexOf('sessionRepository.create'));
+    assert.ok(refresh.indexOf('sessionRepository.create') < refresh.indexOf('INSERT INTO dbo.gym_mobile_refresh_sessions'));
+    assert.doesNotMatch(refresh, /UPDATE dbo\.gym_mobile_refresh_sessions SET revoked_at=.*WHERE id=@id/);
 });
 
 test('mobile logout revokes bearer access and refresh sessions through the service', async () => {

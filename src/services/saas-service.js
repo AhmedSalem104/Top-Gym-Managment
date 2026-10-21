@@ -1090,31 +1090,34 @@ async function recordAudit({ tenantId = null, actorUserId = null, action, entity
 async function getPlans({ includeInactive = false, readOnly = false } = {}) {
     await ensureSaasTables({ readOnly });
     const cacheKey = cacheService.platformKey({ resource: 'plans', scope: { visibility: includeInactive ? 'all' : 'active' } });
-    const cached = await cacheService.get(cacheKey);
-    if (Array.isArray(cached)) return cached;
-    const pool = await getPool();
-    const result = await pool.request()
-        .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
-        .query("SELECT id,code,name,description,billing_period,price,currency,max_members,max_clients,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,is_active,lifecycle_status,available_for_new_subscriptions,sort_order,updated_at FROM dbo.saas_plans WHERE @includeInactive=1 OR lifecycle_status='active' AND available_for_new_subscriptions=1 ORDER BY sort_order,id;");
-    const planRows = result.recordset || [];
-    const featureMap = await getPlanFeatures(planRows.map((row) => row.id));
-    const plans = planRows.map((row) => mergePlanFeatures(planFromRow(row), featureMap.get(Number(row.id))));
-    if (!plans.length) {
-        await cacheService.set(cacheKey, plans, 60);
-        return plans;
-    }
-    const compatibility = await pool.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${plans.map((plan) => Number(plan.id)).join(',')}) ORDER BY plan_id,tenant_type;`);
-    const byPlan = new Map();
-    for (const row of compatibility.recordset || []) {
-        const types = byPlan.get(Number(row.plan_id)) || [];
-        const type = resolveTenantType(row.tenant_type);
-        if (!types.includes(type)) types.push(type);
-        byPlan.set(Number(row.plan_id), types);
-    }
-    const terms = await getPlanTerms(plans.map((plan) => plan.id));
-    const resultPlans = plans.map((plan) => attachPlanTerms(planWithTenantTypes(plan, byPlan.get(plan.id) || []), terms.get(plan.id) || []));
-    await cacheService.set(cacheKey, resultPlans, 60);
-    return resultPlans;
+    return cacheService.getOrSet(cacheKey, async () => {
+        const pool = await getPool();
+        const result = await pool.request()
+            .input('includeInactive', sql.Bit, includeInactive ? 1 : 0)
+            .query("SELECT id,code,name,description,billing_period,price,currency,max_members,max_clients,max_users,max_ai_generations,max_storage_mb,max_branches,features_json,is_active,lifecycle_status,available_for_new_subscriptions,sort_order,updated_at FROM dbo.saas_plans WHERE @includeInactive=1 OR lifecycle_status='active' AND available_for_new_subscriptions=1 ORDER BY sort_order,id;");
+        const planRows = result.recordset || [];
+        const basePlans = planRows.map((row) => planFromRow(row));
+        if (!basePlans.length) return [];
+
+        const planIds = basePlans.map((plan) => plan.id);
+        // These catalog projections are independent once the plan IDs are
+        // known. Execute them concurrently on separate pool requests so a
+        // cold catalog read pays one database round-trip wave, not three.
+        const [featureMap, compatibility, terms] = await Promise.all([
+            getPlanFeatures(planIds, { executor: pool }),
+            pool.request().query(`SELECT plan_id,tenant_type FROM dbo.${PLAN_COMPATIBILITY_TABLE} WHERE plan_id IN (${planIds.join(',')}) ORDER BY plan_id,tenant_type;`),
+            getPlanTerms(planIds, { executor: pool })
+        ]);
+        const plans = basePlans.map((plan) => mergePlanFeatures(plan, featureMap.get(plan.id)));
+        const byPlan = new Map();
+        for (const row of compatibility.recordset || []) {
+            const types = byPlan.get(Number(row.plan_id)) || [];
+            const type = resolveTenantType(row.tenant_type);
+            if (!types.includes(type)) types.push(type);
+            byPlan.set(Number(row.plan_id), types);
+        }
+        return plans.map((plan) => attachPlanTerms(planWithTenantTypes(plan, byPlan.get(plan.id) || []), terms.get(plan.id) || []));
+    }, 60);
 }
 
 async function getPlan({ id = null, code = null, includeInactive = false } = {}) {

@@ -36,6 +36,25 @@ test('disabled cache falls back to the producer without network calls', async ()
     assert.equal(cacheService.metrics().enabled, false);
 });
 
+test('disabled cache coalesces concurrent producers for the same key', async () => {
+    let calls = 0;
+    let releaseProducer;
+    const producerGate = new Promise((resolve) => { releaseProducer = resolve; });
+    const producer = async () => {
+        calls += 1;
+        await producerGate;
+        return { shared: true };
+    };
+
+    const first = cacheService.getOrSet('logicfit:v1:development:platform:test:global', producer);
+    const second = cacheService.getOrSet('logicfit:v1:development:platform:test:global', producer);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(calls, 1);
+    releaseProducer();
+    assert.deepEqual(await Promise.all([first, second]), [{ shared: true }, { shared: true }]);
+    assert.equal(cacheService.metrics().enabled, false);
+});
+
 test('gateway failure falls back to the producer instead of failing the request', () => {
     const child = spawnSync(process.execPath, ['-e', `
         global.fetch = async () => { throw new Error('gateway offline'); };

@@ -16,7 +16,7 @@ The route modules are the authoritative endpoint list. Shared middleware applies
 | Authorization | role defaults plus route/body-aware permission resolution; forbidden is `403` | `src/permissions/role-permissions.js`, `src/permissions/route-permissions.js` |
 | Capability | effective plan/tenant-type/override/status resolution; feature denial `SAAS_FEATURE_NOT_INCLUDED`, type denial `CAPABILITY_NOT_ENABLED` | `src/services/capability-service.js`, `src/services/saas-service.js` |
 | Pagination | endpoint-specific query values; services normalize page/pageSize/limit and return current web envelopes | controllers/services under the domain |
-| Errors | JSON error mapper preserves safe code/status/message and hides SQL/stack/credentials | `src/utils/error-response.js` |
+| Errors | JSON error mapper preserves safe code/status/message and hides SQL/stack/credentials; authenticated non-read mutations are limited to 60 per minute per trusted tenant/user (`429 RATE_LIMITED`, `Retry-After`); the existing IP-wide write limit remains 120/minute. Opt-in shared rate-limit backend outage is `503 RATE_LIMIT_UNAVAILABLE` | `src/utils/error-response.js`, `src/middleware/rate-limit.middleware.js`, `server.js` |
 | Uploads | Busboy/raw upload paths validate MIME/signature/size and use private object storage | `src/middleware/security.middleware.js`, `src/services/object-storage-service.js`, domain services |
 
 ## Complete route-module index
@@ -95,7 +95,7 @@ Web consumers are in `public/js/` and are not a mobile contract by themselves. M
 
 - `POST /api/mobile/auth/login` accepts the existing staff email/password contract and returns `{ accessToken, refreshToken, session, expiresAt }`.
 - `GET /api/mobile/auth/session` requires the bearer access token and returns the server-derived mobile session envelope; it never authorizes from cached client state.
-- `POST /api/mobile/auth/refresh` accepts the refresh token, revokes it, and returns a newly rotated access/refresh pair.
+- `POST /api/mobile/auth/refresh` accepts the refresh token and returns a newly rotated access/refresh pair. Consumption is a conditional, single-winner SQL update; consuming the prior token and creating both replacement sessions share one transaction. A replay or losing concurrent request receives `401 INVALID_REFRESH_TOKEN`; a failed replacement-session insert rolls back consumption.
 - `POST /api/mobile/auth/logout` revokes the bearer access session and supplied refresh session.
 - Access tokens are short-lived; refresh tokens are stored only in the native secure store. Web cookie login behavior is unchanged.
 

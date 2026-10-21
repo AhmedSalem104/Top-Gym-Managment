@@ -121,6 +121,11 @@ const config = Object.freeze({
         && (getEnv('NODE_ENV', 'development').trim().toLowerCase() !== 'production'
             || getBooleanEnv('PERFORMANCE_METRICS_PRODUCTION', false)),
     cacheEnabled: getBooleanEnv('CACHE_ENABLED', false),
+    // Shared rate limiting is opt-in and requires the cache gateway's atomic
+    // counter operation plus matching Redis ACL permissions. When enabled,
+    // policy middleware fails closed instead of falling back to per-process
+    // counters.
+    rateLimitSharedEnabled: getBooleanEnv('RATE_LIMIT_SHARED_ENABLED', false),
     cacheGatewayUrl: getEnv('CACHE_GATEWAY_URL'),
     cacheGatewayToken: getEnv('CACHE_GATEWAY_TOKEN'),
     cacheGatewayTimeoutMs: getBoundedNumberEnv('CACHE_GATEWAY_TIMEOUT_MS', 500, 50, 2_000),

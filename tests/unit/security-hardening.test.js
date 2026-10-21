@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const {
     createLoginAttemptGuard,
+    createAuthenticatedMutationRateLimit,
     createBackupActionRateLimit,
     createMemoryRateLimitStore,
     createSensitiveRateLimit,
@@ -73,6 +74,33 @@ test('sensitive rate limiter bounds unique key memory', async () => {
     assert.equal(nextCalls, 4);
 });
 
+test('authenticated mutation limiter budgets writes per trusted tenant and user, and skips reads', async () => {
+    const limiter = createAuthenticatedMutationRateLimit({ windowMs: 60_000, max: 1, cleanupMs: Number.POSITIVE_INFINITY, maxEntries: 10 });
+    let nextCalls = 0;
+    const request = (tenantId, userId, method = 'POST') => ({
+        ...requestFor('ip-shared'),
+        method,
+        tenant: { id: tenantId },
+        auth: { id: userId }
+    });
+
+    await limiter(request(7, 42, 'GET'), responseDouble(), () => { nextCalls += 1; });
+    await limiter(request(7, 42), responseDouble(), () => { nextCalls += 1; });
+    const blocked = responseDouble();
+    await limiter(request(7, 42, 'PATCH'), blocked, () => { nextCalls += 1; });
+    const otherTenant = responseDouble();
+    await limiter(request(8, 42), otherTenant, () => { nextCalls += 1; });
+    const otherUser = responseDouble();
+    await limiter(request(7, 43), otherUser, () => { nextCalls += 1; });
+
+    assert.equal(blocked.statusCode, 429);
+    assert.equal(blocked.body.code, 'RATE_LIMITED');
+    assert.ok(Number(blocked.headers['Retry-After']) > 0);
+    assert.equal(otherTenant.statusCode, 200);
+    assert.equal(otherUser.statusCode, 200);
+    assert.equal(nextCalls, 4);
+});
+
 test('backup action rate limiter scopes expensive actions to the trusted tenant/user context', async () => {
     const limiter = createBackupActionRateLimit({ windowMs: 60_000, max: 1, cleanupMs: Number.POSITIVE_INFINITY, maxEntries: 10 });
     const request = (tenantId) => ({ ...requestFor('ip-backup'), tenant: { id: tenantId }, auth: { id: 42 } });
@@ -95,6 +123,15 @@ test('login attempt guard bounds unique key memory', async () => {
     assert.equal(await attempt('ip-b'), true);
     assert.equal(await attempt('ip-c'), true);
     assert.equal(await attempt('ip-a'), true);
+});
+
+test('login attempt guard reports shared-store outage as 503 rather than a false quota 429', async () => {
+    const unavailable = { increment: async () => { throw new Error('shared backend unavailable'); } };
+    const guard = createLoginAttemptGuard({ store: unavailable, requireSharedStore: true });
+    await assert.rejects(guard(requestFor('login-shared-failure'), 'owner@example.com'), {
+        statusCode: 503,
+        code: 'RATE_LIMIT_UNAVAILABLE'
+    });
 });
 
 test('rate-limit policy accepts an async atomic store without changing local semantics', async () => {
@@ -120,6 +157,37 @@ test('rate-limit policy fails closed when configured and fallback stores fail', 
     await limiter(requestFor('ip-failure'), response, () => { throw new Error('must not bypass'); });
     assert.equal(response.statusCode, 503);
     assert.equal(response.body.code, 'RATE_LIMIT_UNAVAILABLE');
+});
+
+test('required shared rate-limit store fails closed without falling back to process memory', async () => {
+    let fallbackCalls = 0;
+    const unavailable = { increment: async () => { throw new Error('shared backend unavailable'); } };
+    const localFallback = { increment: async () => { fallbackCalls += 1; return { count: 1, resetAt: Date.now() + 60_000 }; } };
+    const response = responseDouble();
+    const limiter = createSensitiveRateLimit({ store: unavailable, fallbackStore: localFallback, requireSharedStore: true });
+    await limiter(requestFor('shared-failure'), response, () => { throw new Error('must not bypass'); });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.body.code, 'RATE_LIMIT_UNAVAILABLE');
+    assert.equal(fallbackCalls, 0);
+});
+
+test('required shared rate-limit store missing at startup fails closed', async () => {
+    const response = responseDouble();
+    const limiter = createSensitiveRateLimit({ requireSharedStore: true });
+    await limiter(requestFor('shared-unconfigured'), response, () => { throw new Error('must not bypass'); });
+    assert.equal(response.statusCode, 503);
+});
+
+test('rate-limit Retry-After honors the remaining shared counter TTL', async () => {
+    const resetAt = Date.now() + 4_000;
+    let count = 0;
+    const store = { increment: async () => ({ count: ++count, resetAt }) };
+    const limiter = createSensitiveRateLimit({ windowMs: 60_000, max: 1, store, requireSharedStore: true });
+    await limiter(requestFor('shared-ttl'), responseDouble(), () => {});
+    const blocked = responseDouble();
+    await limiter(requestFor('shared-ttl'), blocked, () => {});
+    assert.equal(blocked.statusCode, 429);
+    assert.ok(Number(blocked.headers['Retry-After']) <= 4);
 });
 
 test('malformed session cookies fail closed without throwing', () => {

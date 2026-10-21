@@ -547,9 +547,32 @@ async function mobileRefresh(refreshToken, request) {
         WHERE r.token_hash=@tokenHash AND r.revoked_at IS NULL AND r.expires_at > SYSUTCDATETIME();`);
     const row = found.recordset[0];
     if (!row || row.status !== 'Active') throw authError('انتهت جلسة التطبيق.', 401, 'INVALID_REFRESH_TOKEN');
-    await pool.request().input('id', sql.UniqueIdentifier, row.id).query(`UPDATE dbo.gym_mobile_refresh_sessions SET revoked_at=SYSUTCDATETIME() WHERE id=@id AND revoked_at IS NULL;`);
-    const access = await createMobileAccessSession(Number(row.user_id), request);
-    const refresh = await createMobileRefreshSession(Number(row.user_id));
+    const userId = Number(row.user_id);
+    const accessToken = crypto.randomBytes(32).toString('hex');
+    const accessExpiresAt = new Date(Date.now() + MOBILE_ACCESS_MINUTES * 60 * 1000);
+    const refreshTokenValue = crypto.randomBytes(48).toString('hex');
+    const refreshExpiresAt = new Date(Date.now() + MOBILE_REFRESH_DAYS * 24 * 60 * 60 * 1000);
+    await withTransaction(async (transaction) => {
+        const consumed = await sessionRepository.consumeMobileRefreshToken(tokenHash(token), userId, transaction);
+        if (!consumed.recordset?.length) {
+            throw authError('انتهت جلسة التطبيق.', 401, 'INVALID_REFRESH_TOKEN');
+        }
+        await sessionRepository.create({
+            userId,
+            tokenHash: tokenHash(accessToken),
+            expiresAt: accessExpiresAt,
+            ipAddress: String(request?.ip || request?.socket?.remoteAddress || '').slice(0, 64),
+            userAgent: String(request?.get?.('user-agent') || '').slice(0, 512)
+        }, transaction);
+        await transaction.request()
+            .input('userId', sql.Int, userId)
+            .input('tokenHash', sql.Char(64), tokenHash(refreshTokenValue))
+            .input('expiresAt', sql.DateTime2, refreshExpiresAt)
+            .query(`INSERT INTO dbo.gym_mobile_refresh_sessions (user_id, token_hash, expires_at)
+                    VALUES (@userId, @tokenHash, @expiresAt);`);
+    });
+    const access = { token: accessToken, expiresAt: accessExpiresAt };
+    const refresh = { token: refreshTokenValue, expiresAt: refreshExpiresAt };
     return { accessToken: access.token, refreshToken: refresh.token, expiresAt: access.expiresAt, user: await safeUserWithPermissions(row) };
 }
 

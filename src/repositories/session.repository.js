@@ -2,15 +2,32 @@
 
 const { getPool, sql } = require('../database/pool');
 
-async function create({ userId, tokenHash, expiresAt, ipAddress, userAgent }) {
-    const pool = await getPool();
-    return pool.request()
+async function create({ userId, tokenHash, expiresAt, ipAddress, userAgent }, executor = null) {
+    const database = executor || await getPool();
+    return database.request()
         .input('userId', sql.Int, userId)
         .input('tokenHash', sql.Char(64), tokenHash)
         .input('expiresAt', sql.DateTime2(0), expiresAt)
         .input('ipAddress', sql.NVarChar(64), ipAddress)
         .input('userAgent', sql.NVarChar(512), userAgent)
         .query('INSERT INTO dbo.gym_auth_sessions (user_id, token_hash, expires_at, ip_address, user_agent) VALUES (@userId, @tokenHash, @expiresAt, @ipAddress, @userAgent); UPDATE dbo.gym_users SET last_login_at = SYSUTCDATETIME(), updated_at = SYSUTCDATETIME() WHERE id = @userId;');
+}
+
+async function consumeMobileRefreshToken(tokenHash, userId, executor) {
+    if (!executor) throw new TypeError('A transaction executor is required to consume a mobile refresh token.');
+    return executor.request()
+        .input('tokenHash', sql.Char(64), tokenHash)
+        .input('userId', sql.Int, userId)
+        .query(`UPDATE refreshSession
+                SET revoked_at = SYSUTCDATETIME()
+                OUTPUT INSERTED.user_id AS user_id
+                FROM dbo.gym_mobile_refresh_sessions AS refreshSession
+                INNER JOIN dbo.gym_users AS appUser ON appUser.id = refreshSession.user_id
+                WHERE refreshSession.token_hash = @tokenHash
+                  AND refreshSession.user_id = @userId
+                  AND refreshSession.revoked_at IS NULL
+                  AND refreshSession.expires_at > SYSUTCDATETIME()
+                  AND appUser.status = 'Active';`);
 }
 
 async function findActiveWithUser(tokenHash, executor = null) {
@@ -79,4 +96,4 @@ async function revokeForUser(id, executor = null) {
         .query('UPDATE dbo.gym_auth_sessions SET revoked_at=SYSUTCDATETIME() WHERE user_id=@id AND revoked_at IS NULL;');
 }
 
-module.exports = { create, findActiveWithUser, revokeByTokenHash, revokeForUser, touch };
+module.exports = { consumeMobileRefreshToken, create, findActiveWithUser, revokeByTokenHash, revokeForUser, touch };

@@ -23,7 +23,7 @@ No session → login or portal code entry. Expired/revoked session → clear sec
 5. Resolve tenant type: Gym shell or Trainer Studio; PlatformAdmin goes to platform shell.
 6. Resolve branch/section context only from server-provided accessible values.
 
-Native mobile restore calls `GET /api/mobile/auth/session` with the bearer access token. A `401` triggers one refresh attempt; invalid refresh state clears secure storage and returns to login. Logout revokes both server-side mobile sessions before local secure cleanup.
+Native mobile restore calls `GET /api/mobile/auth/session` with the bearer access token. A `401` triggers one refresh attempt; invalid refresh state clears secure storage and returns to login. Refresh consumption is an atomic single-winner operation, and creation of the replacement access/refresh sessions commits in the same transaction. If two clients reuse one refresh token concurrently, only one rotation can commit; the losing/replayed request receives `401 INVALID_REFRESH_TOKEN`. Logout revokes both server-side mobile sessions before local secure cleanup.
 
 ## Gym critical flows
 

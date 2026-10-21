@@ -1,5 +1,11 @@
 # Logic Fit Codex Operating Instructions
 
+## Permanent engineering standards
+
+- Apply [`docs/engineering/ENGINEERING_STANDARDS.md`](docs/engineering/ENGINEERING_STANDARDS.md) to every code, UI, API, database, infrastructure, test, and documentation change. Before work, perform its risk-proportionate change-impact analysis; before completion, report each applicable quality gate as `PASS`, `FAIL`, `NOT VERIFIED`, or `N/A` with evidence.
+- These standards supplement, and do not replace, the existing tenant/RLS, financial-ledger, Mobile Blueprint, V2 design-system, and production-release rules in this file. If requirements conflict, preserve the stricter security/data-integrity control and stop for review when safe resolution is unclear.
+- Existing audit documents are evidence snapshots, not live system state. Check their review date and scope, re-verify material findings before describing them as current, and never convert an unverified risk into a confirmed vulnerability.
+
 ## Leadership model
 
 - The primary Codex session is the **Lead Agent** and owns the final technical decision.

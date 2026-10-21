@@ -196,9 +196,6 @@ async function collectScreenGeometry(page) {
         const wrapper = section.querySelector('#attendanceTableWrap');
         const table = wrapper.querySelector('.attendance-table');
         const row = table?.querySelector('tbody tr');
-        const branchTrigger = document.querySelector('[data-context-field="branch"] .branch-context-trigger');
-        const sectionTrigger = document.querySelector('[data-context-field="section"] .branch-context-trigger');
-        const branchContextTrigger = document.querySelector('#branchContextMobileTrigger');
         const completionStatus = table?.querySelector('.attendance-action-done.auto');
         const statusBadge = table?.querySelector('.attendance-status.complete');
         return {
@@ -214,10 +211,8 @@ async function collectScreenGeometry(page) {
                 hidden: document.querySelector('#branchContextShell')?.hidden ?? true,
                 branch: document.querySelector('#branchContextSelect')?.selectedOptions[0]?.textContent?.trim() || '',
                 section: document.querySelector('#sectionContextSelect')?.selectedOptions[0]?.textContent?.trim() || '',
-                branchValue: rect(branchTrigger?.getClientRects().length ? branchTrigger : branchContextTrigger),
-            sectionValue: rect(sectionTrigger?.getClientRects().length ? sectionTrigger : branchContextTrigger),
-            branchLabel: document.querySelector('[data-context-field="branch"] .branch-context-field-copy small')?.textContent.trim() || '',
-            sectionLabel: document.querySelector('[data-context-field="section"] .branch-context-field-copy small')?.textContent.trim() || ''
+                branchLabel: document.querySelector('[data-context-field="branch"] .branch-context-field-copy small')?.textContent.trim() || '',
+                sectionLabel: document.querySelector('[data-context-field="section"] .branch-context-field-copy small')?.textContent.trim() || ''
             },
             header: rect(section.querySelector('.attendance-header')),
             entryWorkspace: rect(section.querySelector('.attendance-entry-workspace')),
@@ -378,7 +373,11 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
         await page.waitForFunction(() => Boolean(window.TopGymTheme?.set));
         await page.locator('[data-page-tab="attendance"]').click();
         await expect(page.locator('#attendanceSection')).toBeVisible();
-        await expect(page.locator('#branchContextShell')).toBeVisible();
+        // Branch/section selection moved out of the Navbar. The shell stays
+        // hidden as an authorized state backing store; verify its loaded value
+        // rather than requiring the obsolete Navbar presentation to reappear.
+        await expect(page.locator('#branchContextShell')).toBeHidden();
+        await expect(page.locator('#branchContextSelect')).toHaveValue('99140');
         await page.waitForFunction(() => [...document.styleSheets].some((sheet) => sheet.href?.includes('/css/pages/attendance.css')));
         await expect(page.locator('#attendanceTitle')).toBeVisible();
         await expect(page.locator('#attendanceTableWrap .attendance-empty')).toBeVisible({ timeout: 15000 });
@@ -432,16 +431,12 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
                     expect(geometry.theme).toBe(theme);
                     expect(geometry.phoneHelperCount, `${width}/${locale}/${theme}: the shared phone field must not render a helper row`).toBe(0);
                     expect(geometry.section.width).toBeGreaterThan(0);
-                    expect(geometry.branchContext.hidden, `${width}/${locale}/${theme}: branch context should be represented for the authorized synthetic tenant`).toBe(false);
+                    expect(geometry.branchContext.hidden, `${width}/${locale}/${theme}: branch context remains a hidden state store outside the dashboard scope UI`).toBe(true);
                     expect(geometry.branchContext.branch).toBe('QA Main Branch');
                     expect(geometry.branchContext.section).toBe(locale === 'ar' ? 'كل الأقسام' : 'All sections');
                     if (locale === 'en' && /\p{Script=Arabic}/u.test(`${geometry.branchContext.branchLabel} ${geometry.branchContext.sectionLabel}`)) {
                         visualGaps.push({ width, locale, theme, issue: 'branch-context-labels-remain-arabic-in-english-locale', observedText: `${geometry.branchContext.branchLabel} / ${geometry.branchContext.sectionLabel}` });
                     }
-                    expect(geometry.branchContext.branchValue.width).toBeGreaterThan(0);
-                    expect(geometry.branchContext.sectionValue.width).toBeGreaterThan(0);
-                    expect(geometry.branchContext.shell.left).toBeGreaterThanOrEqual(-1);
-                    expect(geometry.branchContext.shell.right).toBeLessThanOrEqual(width + 1);
                     expect(geometry.header.width).toBeGreaterThan(0);
                     expect(geometry.entrySurface.width).toBeGreaterThan(0);
                     expect(geometry.phoneMode.width).toBeGreaterThan(0);
@@ -635,6 +630,7 @@ test.describe('Attendance V2 whole-screen visual gate (synthetic read-only fixtu
         // before changing the fixture and issuing the next read; otherwise the
         // refresh may intentionally deduplicate against the just-settled request.
         await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+        await expect(page.locator('#attendanceRefreshButton')).toBeEnabled();
 
         // The current error contract is presented by the real catch/render path.
         await page.setViewportSize({ width: 768, height: 1000 });

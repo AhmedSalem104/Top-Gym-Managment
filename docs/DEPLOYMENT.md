@@ -121,10 +121,15 @@ remain in `docs/PRODUCTION-VERIFICATION-DEBT.md`.
 The supported runtime is Node 24 (`package.json`, `.nvmrc`, and the CI workflow
 must use the same major version). The login, sensitive-write and member-portal
 rate-limit guards also cap their in-memory key stores as a local memory-safety
-fallback. They do not provide a global quota across Vercel instances; a shared
-rate-limit backend still requires a separate production decision and
-verification. The middleware already separates policy from the atomic storage
-contract so that provider can be added without changing endpoint policy.
+fallback and do not provide a global quota across instances. An opt-in atomic
+Redis gateway path is implemented but intentionally inactive unless
+`RATE_LIMIT_SHARED_ENABLED=true`. Enabling it requires a gateway release and an
+ACL review permitting `EVAL`, `INCR`, `PEXPIRE`, and `PTTL` restricted to the
+rate-limit key namespace, confirmation that live counter keys cannot be evicted
+by cache memory policy, followed by isolated multi-instance verification.
+When enabled, missing or unavailable shared storage fails closed with `503`;
+it never silently downgrades to local counters. Do not enable the flag before
+the operational gate passes.
 
 ### Standalone process shutdown
 

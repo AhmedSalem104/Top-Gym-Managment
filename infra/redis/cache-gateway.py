@@ -29,6 +29,16 @@ ALLOWED_PREFIX = env('CACHE_KEY_PREFIX', 'logicfit:')
 MAX_KEY_BYTES = 512
 MAX_VALUE_BYTES = 768 * 1024
 MAX_BODY_BYTES = MAX_VALUE_BYTES + 4096
+MAX_RATE_LIMIT_WINDOW_MS = 86_400_000
+
+RATE_LIMIT_INCREMENT_SCRIPT = """
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+local ttl = redis.call('PTTL', KEYS[1])
+return {count, ttl}
+"""
 
 
 class RedisProtocolError(Exception):
@@ -58,6 +68,13 @@ def read_response(stream):
         raise RedisProtocolError('Redis command failed.')
     if prefix == b':':
         return int(read_line(stream))
+    if prefix == b'*':
+        count = int(read_line(stream))
+        if count == -1:
+            return None
+        if count < 0 or count > 16:
+            raise RedisProtocolError('Redis array response exceeded its limit.')
+        return [read_response(stream) for _ in range(count)]
     if prefix == b'$':
         length = int(read_line(stream))
         if length == -1:
@@ -84,6 +101,27 @@ def redis_command(parts):
 
 def valid_key(value):
     return isinstance(value, str) and 0 < len(value.encode('utf-8')) <= MAX_KEY_BYTES and value.startswith(ALLOWED_PREFIX)
+
+
+def increment_rate_limit(key, window_ms):
+    if (not valid_key(key) or ':ratelimit:' not in key
+            or not isinstance(window_ms, int) or isinstance(window_ms, bool)
+            or window_ms < 1000 or window_ms > MAX_RATE_LIMIT_WINDOW_MS):
+        raise ValueError('Invalid rate-limit counter.')
+    result = redis_command(['EVAL', RATE_LIMIT_INCREMENT_SCRIPT, '1', key, window_ms])
+    if not isinstance(result, list) or len(result) != 2:
+        raise RedisProtocolError('Invalid rate-limit counter response.')
+    count, ttl = result
+    if not isinstance(count, int) or not isinstance(ttl, int) or count < 1 or ttl < 1:
+        raise RedisProtocolError('Invalid rate-limit counter result.')
+    return {'count': count, 'resetInMs': ttl}
+
+
+def gateway_operation(path):
+    normalized = urlsplit(path).path.strip('/')
+    if normalized.endswith('/rate-limit/increment') or normalized == 'rate-limit/increment':
+        return 'rate-limit/increment'
+    return normalized.split('/')[-1] if normalized else ''
 
 
 def json_response(handler, status, payload):
@@ -121,7 +159,7 @@ class CacheHandler(BaseHTTPRequestHandler):
         if not self.authorized():
             json_response(self, 401, {'error': 'unauthorized'})
             return
-        operation = urlsplit(self.path).path.strip('/').split('/')[-1]
+        operation = gateway_operation(self.path)
         try:
             payload = self.body() if operation != 'ping' else {}
             if operation == 'ping':
@@ -153,6 +191,10 @@ class CacheHandler(BaseHTTPRequestHandler):
                     raise ValueError('Invalid cache keys.')
                 redis_command(['DEL', *keys])
                 json_response(self, 200, {'ok': True})
+                return
+            if operation == 'rate-limit/increment':
+                result = increment_rate_limit(payload.get('key'), payload.get('windowMs'))
+                json_response(self, 200, result)
                 return
             json_response(self, 404, {'error': 'not_found'})
         except (ValueError, json.JSONDecodeError) as error:

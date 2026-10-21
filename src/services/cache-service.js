@@ -113,15 +113,41 @@ async function deleteMany(keys = []) {
     return result?.ok === true;
 }
 
+/**
+ * Atomic fixed-window counter used only by opt-in security rate limits.
+ * The raw policy key (which can contain an IP or identity) never leaves this
+ * process: an HMAC makes the Redis key opaque and isolates namespaces by env.
+ */
+async function incrementRateLimit(policyKey, windowMs) {
+    if (!enabled() || !config.cacheGatewayToken) throw new Error('Shared rate-limit cache is unavailable.');
+    const normalizedWindow = Math.trunc(Number(windowMs));
+    if (!Number.isFinite(normalizedWindow) || normalizedWindow < 1_000 || normalizedWindow > 86_400_000) {
+        throw new Error('Invalid shared rate-limit window.');
+    }
+    const opaqueKey = require('node:crypto')
+        .createHmac('sha256', config.cacheGatewayToken)
+        .update(String(policyKey || 'unknown'))
+        .digest('hex');
+    const key = `logicfit:${cleanSegment(config.cacheNamespaceVersion, 'v1')}:${cleanSegment(config.cacheEnvironment, 'development')}:ratelimit:${opaqueKey}`;
+    const result = await callGateway('rate-limit/increment', { key, windowMs: normalizedWindow });
+    const count = Number(result?.count);
+    const resetInMs = Number(result?.resetInMs);
+    if (!Number.isSafeInteger(count) || count < 1 || !Number.isSafeInteger(resetInMs) || resetInMs < 1 || resetInMs > normalizedWindow) {
+        throw new Error('Shared rate-limit cache returned an invalid result.');
+    }
+    return { count, resetAt: Date.now() + resetInMs };
+}
+
 async function getOrSet(key, producer, ttlSeconds = 60) {
-    if (!enabled()) return producer();
     const existing = inFlight.get(key);
     if (existing) return existing;
     const pending = (async () => {
-        const cached = await get(key);
-        if (cached !== undefined) return cached;
+        if (enabled()) {
+            const cached = await get(key);
+            if (cached !== undefined) return cached;
+        }
         const value = await producer();
-        await set(key, value, ttlSeconds);
+        if (enabled()) await set(key, value, ttlSeconds);
         return value;
     })();
     inFlight.set(key, pending);
@@ -159,6 +185,7 @@ module.exports = {
     set,
     delete: deleteKey,
     deleteMany,
+    incrementRateLimit,
     getOrSet,
     health,
     metrics

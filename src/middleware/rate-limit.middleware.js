@@ -52,23 +52,23 @@ function createMemoryRateLimitStore({ cleanupMs = 300_000, maxEntries = 10_000 }
     };
 }
 
-function normalizeStoreResult(result, windowMs) {
+function normalizeStoreResult(result) {
     const count = Number(result?.count);
     const resetAt = Number(result?.resetAt);
     if (!Number.isFinite(count) || count < 0 || !Number.isFinite(resetAt)) {
         throw new Error('Rate-limit store returned an invalid counter result.');
     }
-    return { count, resetAt: Math.max(Date.now() + windowMs, resetAt) };
+    return { count, resetAt: Math.max(Date.now(), resetAt) };
 }
 
 async function incrementWithFallback(store, fallbackStore, key, options = {}) {
     const windowMs = Number(options.windowMs) > 0 ? Number(options.windowMs) : 60_000;
     try {
-        return normalizeStoreResult(await store.increment(key, { ...options, windowMs }), windowMs);
+        return normalizeStoreResult(await store.increment(key, { ...options, windowMs }));
     } catch (_) {
-        if (fallbackStore && fallbackStore !== store) {
+        if (!options.requirePrimaryStore && fallbackStore && fallbackStore !== store) {
             try {
-                return normalizeStoreResult(await fallbackStore.increment(key, { ...options, windowMs }), windowMs);
+                return normalizeStoreResult(await fallbackStore.increment(key, { ...options, windowMs }));
             } catch (_) {
                 // Fail closed if both the configured backend and its local
                 // fallback are unavailable. Never bypass a security policy.
@@ -95,13 +95,22 @@ function isMembershipPortalOccupancyRequest(request) {
         || originalPath.endsWith('/api/member-portal/occupancy');
 }
 
-function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000, store = null, fallbackStore = null } = {}) {
-    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
-    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+function unavailableRateLimitStore() {
+    return { increment: async () => { throw new Error('Required shared rate-limit store is unavailable.'); } };
+}
+
+function resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries }) {
+    const primaryStore = requireSharedStore ? (store || unavailableRateLimitStore()) : (store || createMemoryRateLimitStore({ cleanupMs, maxEntries }));
+    const safeFallbackStore = requireSharedStore ? null : (fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries }));
+    return { primaryStore, safeFallbackStore };
+}
+
+function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 300_000, maxEntries = 10_000, store = null, fallbackStore = null, requireSharedStore = false } = {}) {
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
     return (request, response, next) => {
         if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
         const key = `sensitive:ip:${requestIp(request)}`;
-        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs })
+        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs, requirePrimaryStore: requireSharedStore })
             .then((result) => {
                 if (result.unavailable) return rateLimitUnavailable(response);
                 if (result.count > max) {
@@ -113,13 +122,48 @@ function createSensitiveRateLimit({ windowMs = 60_000, max = 120, cleanupMs = 30
     };
 }
 
-function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000, maxEntries = 20_000, store = null, fallbackStore = null } = {}) {
-    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
-    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+/**
+ * Adds an authenticated-identity write budget alongside the IP-wide guard.
+ * Tenant and actor IDs come only from the authenticated request context; no
+ * body/query scope can select another user's bucket. Public/member-portal
+ * writes remain covered by their existing purpose-specific limits.
+ */
+function createAuthenticatedMutationRateLimit({ windowMs = 60_000, max = 60, cleanupMs = 300_000, maxEntries = 20_000, store = null, fallbackStore = null, requireSharedStore = false } = {}) {
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
+    return (request, response, next) => {
+        if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
+        const userId = Number(request.auth?.id);
+        if (!Number.isInteger(userId) || userId <= 0) return next();
+        const tenantId = Number(request.tenant?.id);
+        const scope = Number.isInteger(tenantId) && tenantId > 0 ? `tenant:${tenantId}` : 'platform';
+        const key = `authenticated-mutation:${scope}:user:${userId}`;
+        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs, requirePrimaryStore: requireSharedStore })
+            .then((result) => {
+                if (result.unavailable) return rateLimitUnavailable(response);
+                if (result.count > max) {
+                    response.set('Retry-After', String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))));
+                    return response.status(429).json({
+                        error: 'Too many write operations. Please try again later.',
+                        code: 'RATE_LIMITED'
+                    });
+                }
+                return next();
+            });
+    };
+}
+
+function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300_000, maxEntries = 20_000, store = null, fallbackStore = null, requireSharedStore = false } = {}) {
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
     return async (request, email) => {
         const normalizedEmail = String(email || '').trim().toLowerCase().slice(0, 254);
         const key = `login:${requestIp(request)}:${normalizedEmail}`;
-        const result = await incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs });
+        const result = await incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs, requirePrimaryStore: requireSharedStore });
+        if (result.unavailable) {
+            const error = new Error('Rate-limit service is temporarily unavailable.');
+            error.statusCode = 503;
+            error.code = 'RATE_LIMIT_UNAVAILABLE';
+            throw error;
+        }
         return !result.unavailable && result.count <= max;
     };
 }
@@ -141,10 +185,10 @@ function createMembershipPortalRateLimit({
     cleanupMs = 300_000,
     maxEntries = 20_000,
     store = null,
-    fallbackStore = null
+    fallbackStore = null,
+    requireSharedStore = false
 } = {}) {
-    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
-    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
     return (request, response, next) => {
         if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') return next();
         const ip = requestIp(request);
@@ -159,8 +203,8 @@ function createMembershipPortalRateLimit({
         const ipKey = `portal:${bucket}:ip:${ip}`;
         const codeKey = `portal:${bucket}:code:${ip}:${codeDigest}`;
         return Promise.all([
-            incrementWithFallback(primaryStore, safeFallbackStore, ipKey, { windowMs: activeIpWindowMs }),
-            incrementWithFallback(primaryStore, safeFallbackStore, codeKey, { windowMs: activeCodeWindowMs })
+            incrementWithFallback(primaryStore, safeFallbackStore, ipKey, { windowMs: activeIpWindowMs, requirePrimaryStore: requireSharedStore }),
+            incrementWithFallback(primaryStore, safeFallbackStore, codeKey, { windowMs: activeCodeWindowMs, requirePrimaryStore: requireSharedStore })
         ]).then(([ipResult, codeResult]) => {
             if (ipResult.unavailable || codeResult.unavailable) return rateLimitUnavailable(response);
             const ipBlocked = ipResult.count > activeIpMax;
@@ -188,10 +232,10 @@ function createBackupActionRateLimit({
     cleanupMs = 300_000,
     maxEntries = 20_000,
     store = null,
-    fallbackStore = null
+    fallbackStore = null,
+    requireSharedStore = false
 } = {}) {
-    const primaryStore = store || createMemoryRateLimitStore({ cleanupMs, maxEntries });
-    const safeFallbackStore = fallbackStore || createMemoryRateLimitStore({ cleanupMs, maxEntries });
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
     return (request, response, next) => {
         const tenantId = Number(request.tenant?.id);
         const userId = Number(request.auth?.id);
@@ -199,7 +243,7 @@ function createBackupActionRateLimit({
             ? `tenant:${tenantId}`
             : Number.isInteger(userId) && userId > 0 ? `user:${userId}` : 'anonymous';
         const key = `backup-action:${scope}:ip:${requestIp(request)}`;
-        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs })
+        return incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs, requirePrimaryStore: requireSharedStore })
             .then((result) => {
                 if (result.unavailable) return rateLimitUnavailable(response);
                 if (result.count > max) {
@@ -213,6 +257,7 @@ function createBackupActionRateLimit({
 
 module.exports = {
     createBackupActionRateLimit,
+    createAuthenticatedMutationRateLimit,
     createLoginAttemptGuard,
     createMemoryRateLimitStore,
     createSensitiveRateLimit,

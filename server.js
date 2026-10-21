@@ -8,7 +8,7 @@ const { asyncRoute } = require('./src/utils/async-route');
 const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
-const { createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
+const { createAuthenticatedMutationRateLimit, createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
@@ -137,10 +137,14 @@ const app = createApp({ publicDirectory, expressFactory: express });
 app.use(readOnlyBaselineGuard);
 app.use(createPerformanceMetrics({ enabled: config.performanceMetricsEnabled }));
 
-const sensitiveRateLimit = createSensitiveRateLimit();
-const membershipPortalRateLimit = createMembershipPortalRateLimit();
-const backupActionRateLimit = createBackupActionRateLimit();
-const allowLoginAttempt = createLoginAttemptGuard();
+const sharedRateLimitOptions = config.rateLimitSharedEnabled
+    ? { store: { increment: (key, options) => cacheService.incrementRateLimit(key, options.windowMs) }, requireSharedStore: true }
+    : {};
+const sensitiveRateLimit = createSensitiveRateLimit(sharedRateLimitOptions);
+const authenticatedMutationRateLimit = createAuthenticatedMutationRateLimit(sharedRateLimitOptions);
+const membershipPortalRateLimit = createMembershipPortalRateLimit(sharedRateLimitOptions);
+const backupActionRateLimit = createBackupActionRateLimit(sharedRateLimitOptions);
+const allowLoginAttempt = createLoginAttemptGuard(sharedRateLimitOptions);
 app.use('/api', sensitiveRateLimit);
 app.use('/api/member-portal', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
@@ -150,6 +154,7 @@ app.use('/api', createAuthApiMiddleware({
     saasService,
     isAuthorizedCronRequest: (request) => isAuthorizedCronRequest(request, { config })
 }));
+app.use('/api', authenticatedMutationRateLimit);
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));

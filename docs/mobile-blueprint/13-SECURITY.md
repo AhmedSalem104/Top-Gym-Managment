@@ -22,6 +22,13 @@ Threats include stolen device, rooted/jailbroken device, token theft, replay, te
 - Deep links must carry non-sensitive references and reauthenticate/re-resolve context.
 - Uploads use server MIME/signature/size validation and private storage; no bucket credentials in the app.
 - Redact PII, tokens, codes, request bodies, and auth headers from telemetry.
+- Authenticated non-read API mutations have a second fixed-window budget of 60/minute per trusted tenant/user (`429 RATE_LIMITED` with `Retry-After`), in addition to the existing 120/minute per-IP mutation limit. The identity bucket is derived only after authentication/tenant resolution. Reads are not charged to this mutation budget; public Member Portal writes retain their dedicated limits. Clients must not automatically retry a rejected payment or other write. This volume limit complements, but does not replace, durable idempotency keys, database uniqueness/locking, or financial transaction rules.
+- Rate-limited API flows retain their endpoint policies. Distributed atomic
+  enforcement is an opt-in server deployment mode (`RATE_LIMIT_SHARED_ENABLED`);
+  when enabled, shared-store failure returns the safe `503 RATE_LIMIT_UNAVAILABLE`
+  response rather than bypassing or silently using per-instance limits. Clients
+  should treat this as a temporary service failure and must not retry writes
+  automatically.
 - Consider screenshot blocking only for explicitly sensitive surfaces; do not claim it as a server security boundary.
 - Certificate pinning/root detection are risk decisions, not substitutes for TLS/backend auth; record them in an ADR if adopted.
 
