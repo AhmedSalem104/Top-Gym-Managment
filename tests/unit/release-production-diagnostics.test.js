@@ -1,8 +1,16 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const test = require('node:test');
 const { renderRemoteScript, sanitizeRemoteDiagnostic } = require('../../scripts/release-production');
+
+test('production workflow restores the generated index after build before release preflight', () => {
+    const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/production-deploy.yml'), 'utf8');
+
+    assert.match(workflow, /Restore generated build artifacts before release preflight[\s\S]*?git restore --[^\n]*public\/index\.html/);
+});
 
 test('production release diagnostics preserve useful errors while redacting credentials and tokens', () => {
     const safe = sanitizeRemoteDiagnostic([
