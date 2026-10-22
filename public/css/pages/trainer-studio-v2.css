@@ -106,7 +106,19 @@
 .trainer-studio-sidebar-brand strong { color: var(--sidebar-text); font-size: 14px; letter-spacing: -.02em; }
 .trainer-studio-sidebar-brand small { margin-block-start: 2px; color: var(--sidebar-text-muted); font-size: 11px; }
 .trainer-studio-sidebar-close { display: none; margin-inline-start: auto; border: 0; color: var(--sidebar-text); background: transparent; font-size: 25px; cursor: pointer; }
-.trainer-studio-sidebar-scroll { flex: 1; min-block-size: 0; overflow: auto; padding: 17px 7px; scrollbar-gutter: stable; }
+.trainer-studio-sidebar-scroll {
+    flex: 1;
+    min-block-size: 0;
+    overflow: auto;
+    padding: 17px 7px;
+    scrollbar-color: var(--sidebar-divider) transparent;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+}
+.trainer-studio-sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.trainer-studio-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.trainer-studio-sidebar-scroll::-webkit-scrollbar-thumb { border-radius: var(--radius-pill); background: var(--sidebar-divider); }
+.trainer-studio-sidebar-scroll::-webkit-scrollbar-thumb:hover { background: var(--sidebar-text-muted); }
 .trainer-studio-nav-group + .trainer-studio-nav-group { margin-block-start: 20px; }
 .trainer-studio-nav-label { display: block; max-block-size: 0; overflow: hidden; padding: 0 10px; color: var(--sidebar-text-muted); font-size: 10px; font-weight: 850; letter-spacing: .11em; opacity: 0; visibility: hidden; transition: max-block-size var(--transition-normal), padding var(--transition-normal), opacity var(--motion-duration-menu), visibility 0s linear var(--motion-duration-menu); }
 .trainer-studio-nav-group nav { display: grid; gap: 3px; }
