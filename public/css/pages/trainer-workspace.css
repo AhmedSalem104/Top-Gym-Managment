@@ -22,6 +22,13 @@
   box-shadow: var(--shadow-xs);
 }
 
+.trainer-workspace-summary .trainer-workspace-card,
+#trainerToday .trainer-workspace-panel {
+  transition: transform var(--motion-duration-interaction) var(--motion-easing-enter),
+    border-color var(--motion-duration-interaction) var(--motion-easing-enter),
+    box-shadow var(--motion-duration-interaction) var(--motion-easing-enter);
+}
+
 .trainer-workspace-header {
   position: relative;
   display: flex;
@@ -101,7 +108,7 @@
 .trainer-quick-actions { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: var(--space-4); margin-block-start: var(--space-5); padding: var(--space-4); border: 1px solid var(--border-secondary); border-radius: var(--radius-card); background: var(--bg-surface); }
 .trainer-quick-actions h2 { margin: var(--space-1) 0 0; color: var(--color-text); font-size: var(--font-xl); }
 .trainer-quick-actions-list { display: grid; min-width: 0; flex: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); max-width: 720px; }
-.trainer-quick-action { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-md); color: var(--color-text); background: var(--color-surface-muted); cursor: pointer; font: inherit; text-align: start; transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast); }
+.trainer-quick-action { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-secondary); border-radius: var(--radius-md); color: var(--color-text); background: var(--color-surface-muted); cursor: pointer; font: inherit; text-align: start; transition: transform var(--motion-duration-interaction) var(--motion-easing-enter), border-color var(--motion-duration-interaction) var(--motion-easing-enter), background-color var(--motion-duration-interaction) var(--motion-easing-enter), box-shadow var(--motion-duration-interaction) var(--motion-easing-enter); }
 .trainer-quick-action:hover { border-color: var(--primary-border); background: var(--color-primary-soft); }
 .trainer-quick-action:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; box-shadow: var(--focus-ring); }
 .trainer-quick-action--primary { border-color: var(--color-primary); color: var(--text-on-primary); background: var(--color-primary); }
@@ -115,6 +122,15 @@
 .trainer-quick-action--primary small { color: var(--azure-100); }
 .trainer-quick-arrow { color: var(--color-text-muted); font-size: var(--font-lg); }
 .trainer-quick-action--primary .trainer-quick-arrow { color: var(--azure-100); }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .trainer-workspace-summary .trainer-workspace-card:hover,
+  #trainerToday .trainer-workspace-panel:hover,
+  .trainer-quick-actions .trainer-quick-action:hover {
+    transform: translateY(calc(var(--motion-offset-small) * -1));
+    box-shadow: var(--ui-elevation-hover);
+  }
+}
 
 .trainer-workspace-main-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(270px, .75fr); align-items: start; gap: var(--space-3); margin-block-start: var(--space-3); }
 .trainer-workspace-panel { min-width: 0; padding: var(--space-5); }

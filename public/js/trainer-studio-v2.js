@@ -238,7 +238,7 @@
         if (!$('.trainer-studio-topbar-status')) {
             $('.trainer-studio-topbar-status-slot')?.replaceChildren(document.createTextNode(studioT('shell.workspaceStatus', 'مساحة خاصة')));
         }
-        $('.trainer-studio-topbar-logout-slot span:last-child')?.replaceChildren(document.createTextNode(studioT('shell.logout', 'تسجيل الخروج')));
+        $('.trainer-studio-topbar-logout-slot [data-trainer-logout-label]')?.replaceChildren(document.createTextNode(studioT('shell.logout', 'تسجيل الخروج')));
         $('.trainer-studio-sidebar-footer span:last-child')?.replaceChildren(document.createTextNode(studioT('shell.privateWorkspace', 'مساحة خاصة وآمنة')));
         $('.trainer-studio-route-meta span:last-child')?.replaceChildren(document.createTextNode(studioT('shell.dashboardData', 'بيانات مساحتك التدريبية')));
         $$('.trainer-studio-nav-group').forEach((group, index) => {
@@ -254,11 +254,19 @@
         });
         const themeButton = $('.trainer-studio-topbar [data-theme-toggle]');
         if (themeButton) {
+            const themeTextLabel = themeButton.querySelector('[data-theme-toggle-label]');
+            if (themeTextLabel) themeTextLabel.hidden = true;
             const nextTheme = themeButton.getAttribute('aria-pressed') === 'true' ? 'light' : 'dark';
             const key = nextTheme === 'dark' ? 'shell.enableDark' : 'shell.enableLight';
             const label = studioT(key, nextTheme === 'dark' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح');
             themeButton.setAttribute('aria-label', label);
             themeButton.setAttribute('title', label);
+        }
+        const logoutButton = $('#trainerWorkspaceLogout');
+        if (logoutButton) {
+            const logoutLabel = studioT('shell.logout', 'تسجيل الخروج');
+            logoutButton.setAttribute('aria-label', logoutLabel);
+            logoutButton.setAttribute('title', logoutLabel);
         }
         setRouteChrome(currentRoute);
         localizeDashboard();
@@ -393,9 +401,9 @@
             if (preserved.status) { preserved.status.className = 'trainer-studio-topbar-status'; slot('.trainer-studio-topbar-status-slot')?.append(preserved.status); }
             else if (slot('.trainer-studio-topbar-status-slot')) slot('.trainer-studio-topbar-status-slot').textContent = 'مساحة خاصة';
             if (preserved.plan) { preserved.plan.className = 'trainer-studio-topbar-plan'; slot('.trainer-studio-topbar-plan-slot')?.append(preserved.plan); }
-            if (preserved.language) { preserved.language.className = 'theme-toggle-button trainer-studio-topbar-button'; slot('.trainer-studio-topbar-language-slot')?.append(preserved.language); }
-            if (preserved.theme) { preserved.theme.className = 'theme-toggle-button trainer-studio-topbar-button'; slot('.trainer-studio-topbar-theme-slot')?.append(preserved.theme); }
-            if (preserved.logout) { preserved.logout.className = 'trainer-studio-logout-button'; preserved.logout.innerHTML = `<span class="trainer-studio-logout-icon">${icon('logout')}</span><span>تسجيل الخروج</span>`; slot('.trainer-studio-topbar-logout-slot')?.append(preserved.logout); }
+            if (preserved.language) { preserved.language.className = 'theme-toggle-button trainer-studio-language-button'; slot('.trainer-studio-topbar-language-slot')?.append(preserved.language); }
+            if (preserved.theme) { preserved.theme.className = 'theme-toggle-button trainer-studio-theme-button'; slot('.trainer-studio-topbar-theme-slot')?.append(preserved.theme); }
+            if (preserved.logout) { preserved.logout.className = 'trainer-studio-logout-button'; preserved.logout.innerHTML = `<span class="trainer-studio-logout-icon">${icon('logout')}</span><span data-trainer-logout-label hidden>تسجيل الخروج</span>`; slot('.trainer-studio-topbar-logout-slot')?.append(preserved.logout); }
         }
         const existingContent = [...shell.children];
         const content = document.createElement('div');

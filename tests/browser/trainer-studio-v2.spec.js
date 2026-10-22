@@ -72,6 +72,65 @@ async function clickStudioRoute(page, route) {
     await page.locator(`[data-studio-route="${route}"]`).click();
 }
 
+test('Trainer Studio sidebar stays pinned while scrolling and navbar actions are icon-only except language', async ({ page }, testInfo) => {
+    const runtime = installTrainerRuntime(page);
+    await runtime.install();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
+
+    const sidebar = page.locator('#trainerStudioSidebar');
+    await expect(sidebar).toHaveCSS('position', 'sticky');
+    await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-icon]')).toBeVisible();
+    await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-label]')).toBeHidden();
+    await expect(page.locator('#trainerWorkspaceLogout .trainer-studio-logout-icon svg')).toBeVisible();
+    await expect(page.locator('#trainerWorkspaceLogout [data-trainer-logout-label]')).toBeHidden();
+    await expect(page.getByRole('button', { name: /تسجيل الخروج|sign out/i })).toBeVisible();
+    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await expect(page.locator('#languageToggleButton')).toHaveClass(/trainer-studio-language-button/);
+    await page.screenshot({ path: testInfo.outputPath('trainer-shell-desktop.png') });
+
+    const initialTop = await sidebar.evaluate((element) => element.getBoundingClientRect().top);
+    const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+    expect(maxScroll).toBeGreaterThan(100);
+    await page.evaluate((scrollLimit) => window.scrollTo(0, Math.min(150, scrollLimit)), maxScroll);
+    await expect.poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().top)).toBeCloseTo(initialTop, 0);
+
+    await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    await assertNoOverflow(page);
+    await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+    const themeBefore = await page.locator('html').getAttribute('data-theme');
+    await page.locator('.trainer-studio-theme-button').click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', themeBefore);
+    await page.locator('.trainer-studio-theme-button').click();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#trainerStudioMenuButton')).toBeVisible();
+    await page.locator('#trainerStudioMenuButton').click();
+    await expect(sidebar).toHaveCSS('position', 'fixed');
+    await expect(sidebar).toBeVisible();
+    await expect(page.locator('#languageToggleButton')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('trainer-shell-mobile-drawer.png') });
+});
+
+test('trainer dashboard cards animate on hover and respect reduced motion', async ({ page }) => {
+    const runtime = installTrainerRuntime(page);
+    await runtime.install();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
+
+    const card = page.locator('.trainer-workspace-summary .trainer-workspace-card').first();
+    await card.hover();
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
+    await page.mouse.move(0, 0);
+    await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).toBe('none');
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await card.hover();
+    await expect(card).toHaveCSS('transform', 'none');
+});
+
 test('Trainer Studio V2 renders a separate shell and navigates supported routes', async ({ page }, testInfo) => {
     const runtime = installTrainerRuntime(page);
     await runtime.install();
