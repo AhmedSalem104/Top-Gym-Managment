@@ -27,7 +27,7 @@
 
 .phone-input-control.phone-egypt-local-only .phone-country-control,
 .phone-input-control.phone-egypt-local-only .phone-country-native-select {
-  display: none !important;
+  display: none;
 }
 
 .phone-country-control {

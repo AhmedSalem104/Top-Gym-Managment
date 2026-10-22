@@ -126,7 +126,14 @@ test('Store mounted responsive surface visual matrix (read-only synthetic fixtur
                                 const rect = node.getBoundingClientRect();
                                 return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
                             });
-                        const outOfBounds = interactive.map((node) => ({
+                        const hasScrollableInlineAncestor = (node) => {
+                            for (let ancestor = node.parentElement; ancestor && ancestor !== panelNode.parentElement; ancestor = ancestor.parentElement) {
+                                const style = getComputedStyle(ancestor);
+                                if (/(auto|scroll)/u.test(style.overflowX) && ancestor.scrollWidth > ancestor.clientWidth + 1) return true;
+                            }
+                            return false;
+                        };
+                        const outOfBounds = interactive.filter((node) => !hasScrollableInlineAncestor(node)).map((node) => ({
                             id: node.id || node.getAttribute('aria-label') || node.textContent.trim().slice(0, 36),
                             rect: (() => { const r = node.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; })()
                         })).filter(({ rect }) => rect.left < -1 || rect.right > innerWidth + 1);

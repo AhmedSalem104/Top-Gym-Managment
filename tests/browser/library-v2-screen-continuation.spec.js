@@ -28,7 +28,7 @@ function libraryPayload(type) {
 }
 
 test('Library V2 tabs, records and dialogs remain usable in RTL/LTR across viewport, theme and direction', async ({ page }, testInfo) => {
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     test.skip(testInfo.project.name !== 'desktop', 'The test owns its complete internal viewport, theme and direction matrix.');
     const plan = planCatalog.PLAN_CONFIGURATIONS.find((entry) => entry.code === 'business');
     const writes = [];

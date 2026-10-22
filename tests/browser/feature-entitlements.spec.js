@@ -8,8 +8,7 @@ function json(route, payload, status = 200) {
     return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(payload) });
 }
 
-async function openMobileNavigation(page, testInfo) {
-    if (testInfo.project.use.viewport.width > 767) return;
+async function openResponsiveNavigation(page) {
     const toggle = page.locator('#mobileNavToggle');
     if (await toggle.isVisible()) {
         await toggle.click();
@@ -17,8 +16,8 @@ async function openMobileNavigation(page, testInfo) {
     }
 }
 
-async function closeMobileNavigation(page, testInfo) {
-    if (testInfo.project.use.viewport.width <= 767 && await page.locator('.app-shell').evaluate((element) => element.classList.contains('mobile-nav-open'))) {
+async function closeResponsiveNavigation(page) {
+    if (await page.locator('.app-shell').evaluate((element) => element.classList.contains('mobile-nav-open'))) {
         await page.keyboard.press('Escape');
         await expect(page.locator('#pageTabs')).toBeHidden();
     }
@@ -69,9 +68,9 @@ test('Starter Gym hides excluded feature, blocks direct route, and refreshes aft
 
     runtime.setPlan('pro');
     await page.evaluate(() => window.topGymAuth.refreshEntitlements());
-    await openMobileNavigation(page, testInfo);
+    await openResponsiveNavigation(page);
     await expect(page.locator('[data-page-tab="store"]')).toBeVisible();
-    await closeMobileNavigation(page, testInfo);
+    await closeResponsiveNavigation(page);
     await expect(page.locator('#storeSection')).toBeVisible();
 
     runtime.setPlan('starter');
@@ -141,9 +140,9 @@ test('Starter Gym resolves branch context before members and ignores a stale sto
 
     await page.goto('/#members', { waitUntil: 'networkidle' });
 
-    await openMobileNavigation(page, testInfo);
+    await openResponsiveNavigation(page);
     await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
-    await closeMobileNavigation(page, testInfo);
+    await closeResponsiveNavigation(page);
     await expect(page.locator('#membersList')).not.toContainText('Branch was not found');
     const branchBootstrapIndex = calls.findIndex((call) => call.pathname === '/api/branches/bootstrap');
     const membersIndex = calls.findIndex((call) => call.pathname === '/api/members');
@@ -263,9 +262,9 @@ test('Gym branch core entitlement exposes the configured limit and blocks creati
         // Use a distinct document URL for each plan so the browser test cannot
         // reuse a previous page's in-memory entitlement/bootstrap state.
         await page.goto(`/?branchPlan=${encodeURIComponent(code)}#branches`, { waitUntil: 'networkidle' });
-        await openMobileNavigation(page, testInfo);
+        await openResponsiveNavigation(page);
         await expect(page.locator('[data-page-tab="branches"]')).toBeVisible();
-        await closeMobileNavigation(page, testInfo);
+        await closeResponsiveNavigation(page);
         await expect(page.locator('#branchesLimitValue')).toHaveText(expectedLimit == null ? '—' : new Intl.NumberFormat('ar-EG').format(expectedLimit));
         if (code === 'starter') {
             await expect(page.locator('#branchesList .branch-list-item').first()).toBeVisible();
