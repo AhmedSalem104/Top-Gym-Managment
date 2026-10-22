@@ -147,6 +147,7 @@
   --nav-action-cyan-surface: var(--nav-context-cyan-soft);
   --sidebar-width-collapsed: 72px;
   --sidebar-width-expanded: 256px;
+  --trainer-studio-sidebar-width-expanded: 272px;
 
   /* Shared member-card and authentication aliases. */
   --color-page: var(--bg-app);

@@ -21,7 +21,7 @@
 }
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell.trainer-sidebar-expanded {
-    grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
+    grid-template-columns: var(--trainer-studio-sidebar-width-expanded) minmax(0, 1fr);
 }
 
 .trainer-studio-sidebar {
@@ -493,7 +493,7 @@
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-group + .trainer-studio-nav-group { margin-block-start: 8px; }
 .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell.trainer-sidebar-expanded .trainer-studio-nav-group + .trainer-studio-nav-group { margin-block-start: 23px; }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-label { color: var(--sidebar-text-muted); }
-.trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-link { min-height: 45px; border-radius: var(--radius-control); color: var(--sidebar-text-muted); }
+.trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-link { min-height: 45px; border-radius: var(--radius-control); color: var(--sidebar-text-muted); font-size: var(--font-size-body); }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-link:hover { color: var(--sidebar-text); background: var(--sidebar-hover-bg); }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-link:focus-visible { outline-color: var(--primary-border); }
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-nav-link.is-active { position: relative; border-color: var(--primary-border); background: var(--primary-soft); box-shadow: none; }

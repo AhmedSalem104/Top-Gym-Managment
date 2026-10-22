@@ -111,8 +111,9 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     const railBox = await sidebar.boundingBox();
     await page.mouse.move(railBox.x + railBox.width / 2, railBox.y + 120);
     await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
-    await expect(sidebar).toHaveCSS('width', '256px');
+    await expect(sidebar).toHaveCSS('width', '272px');
     await expect(page.locator('.trainer-studio-sidebar-brand strong')).toBeVisible();
+    await expect(page.locator('.trainer-studio-nav-link').first()).toHaveCSS('font-size', '14px');
     await page.screenshot({ path: testInfo.outputPath('trainer-shell-desktop-hover-expanded.png') });
 
     await page.mouse.move(500, 100);
@@ -146,7 +147,7 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     const ltrRailBox = await sidebar.boundingBox();
     await page.mouse.move(ltrRailBox.x + ltrRailBox.width / 2, ltrRailBox.y + 120);
     await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
-    await expect(sidebar).toHaveCSS('width', '256px');
+    await expect(sidebar).toHaveCSS('width', '272px');
     await assertNoOverflow(page);
     await page.mouse.move(500, 100);
     await expect(page.locator('.trainer-workspace-shell')).not.toHaveClass(/trainer-sidebar-expanded/);

@@ -77,7 +77,7 @@
         book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg>',
         activity: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>',
         settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="m19 13 2-1-2-1-.4-2 1.3-1.7-1.8-1.8-1.7 1.3-2-.4-1-2-1 2-2 .4-1.7-1.3-1.8 1.8L6.2 8l-.4 2-2 1 2 1 .4 2-1.3 1.7 1.8 1.8 1.7-1.3 2 .4 1 2 1-2 2-.4 1.7 1.3 1.8-1.8L18.6 15Z"/></svg>',
-        pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-4 1-4 4-1 5-2-2-2 2 1-5 4-4 1-4Z"/><path d="m9 15-6 6"/></svg>',
+        pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3H9l1 2v4l-5 5v2h6v5l1 1 1-1v-5h6v-2l-5-5V5l1-2Z"/></svg>',
         plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
         arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
         logout: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>'
