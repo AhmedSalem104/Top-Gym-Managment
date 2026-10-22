@@ -69,7 +69,16 @@ async function assertNoOverflow(page) {
 
 async function clickStudioRoute(page, route) {
     if (page.viewportSize().width <= 860) await page.locator('#trainerStudioMenuButton').click();
-    await page.locator(`[data-studio-route="${route}"]`).click();
+    const link = page.locator(`[data-studio-route="${route}"]`);
+    await page.locator('.trainer-studio-sidebar-scroll').evaluate((container, targetRoute) => {
+        const target = container.querySelector(`[data-studio-route="${targetRoute}"]`);
+        if (!target) return;
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        if (targetRect.bottom > containerRect.bottom) container.scrollTop += targetRect.bottom - containerRect.bottom;
+        else if (targetRect.top < containerRect.top) container.scrollTop -= containerRect.top - targetRect.top;
+    }, route);
+    await link.click();
 }
 
 test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar actions stay compact', async ({ page }, testInfo) => {
@@ -78,8 +87,15 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
 
+    const workspaceBox = await page.locator('.trainer-workspace-shell').boundingBox();
+    expect(workspaceBox.x).toBeCloseTo(16, 0);
+    expect(workspaceBox.width).toBeCloseTo(1408, 0);
     const sidebar = page.locator('#trainerStudioSidebar');
     await expect(sidebar).toHaveCSS('position', 'sticky');
+    await expect(sidebar).toHaveCSS('width', '72px');
+    const pinButton = page.locator('#trainerStudioSidebarPin');
+    await expect(pinButton).toBeVisible();
+    await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
     const sidebarHeight = await sidebar.evaluate((element) => element.getBoundingClientRect().height);
     expect(sidebarHeight).toBeCloseTo(852, 0);
     await expect(page.locator('.trainer-studio-sidebar-scroll')).toHaveCSS('overflow-y', 'auto');
@@ -90,7 +106,33 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     await expect(page.getByRole('button', { name: /تسجيل الخروج|sign out/i })).toBeVisible();
     await expect(page.locator('#languageToggleButton')).toBeVisible();
     await expect(page.locator('#languageToggleButton')).toHaveClass(/trainer-studio-language-button/);
-    await page.screenshot({ path: testInfo.outputPath('trainer-shell-desktop.png') });
+    await page.screenshot({ path: testInfo.outputPath('trainer-shell-desktop-collapsed.png') });
+
+    const railBox = await sidebar.boundingBox();
+    await page.mouse.move(railBox.x + railBox.width / 2, railBox.y + 120);
+    await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
+    await expect(sidebar).toHaveCSS('width', '256px');
+    await expect(page.locator('.trainer-studio-sidebar-brand strong')).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath('trainer-shell-desktop-hover-expanded.png') });
+
+    await page.mouse.move(500, 100);
+    await expect(page.locator('.trainer-workspace-shell')).not.toHaveClass(/trainer-sidebar-expanded/);
+    await page.mouse.move(railBox.x + railBox.width / 2, railBox.y + 120);
+    await pinButton.click();
+    await expect(pinButton).toHaveAttribute('aria-pressed', 'true');
+    await page.mouse.move(500, 100);
+    await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
+    await expect(pinButton).toHaveAttribute('aria-label', 'إلغاء تثبيت القائمة');
+    await pinButton.click();
+    await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
+    await page.mouse.move(500, 100);
+    await expect(page.locator('.trainer-workspace-shell')).not.toHaveClass(/trainer-sidebar-expanded/);
+
+    await page.keyboard.press('Tab');
+    await pinButton.focus();
+    await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
+    await page.locator('#languageToggleButton').focus();
+    await expect(page.locator('.trainer-workspace-shell')).not.toHaveClass(/trainer-sidebar-expanded/);
 
     const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     expect(maxScroll).toBeGreaterThan(100);
@@ -101,21 +143,67 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
 
     await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    const ltrRailBox = await sidebar.boundingBox();
+    await page.mouse.move(ltrRailBox.x + ltrRailBox.width / 2, ltrRailBox.y + 120);
+    await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
+    await expect(sidebar).toHaveCSS('width', '256px');
     await assertNoOverflow(page);
+    await page.mouse.move(500, 100);
+    await expect(page.locator('.trainer-workspace-shell')).not.toHaveClass(/trainer-sidebar-expanded/);
     await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     const themeBefore = await page.locator('html').getAttribute('data-theme');
     await page.locator('.trainer-studio-theme-button').click();
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', themeBefore);
     await page.locator('.trainer-studio-theme-button').click();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(page.locator('.trainer-workspace-shell')).toHaveCSS('transition-duration', '0.001s');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
 
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.locator('#trainerStudioMenuButton')).toBeVisible();
+    await expect(pinButton).toBeHidden();
     await page.locator('#trainerStudioMenuButton').click();
     await expect(sidebar).toHaveCSS('position', 'fixed');
     await expect(sidebar).toBeVisible();
     await expect(page.locator('#languageToggleButton')).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath('trainer-shell-mobile-drawer.png') });
+});
+
+test('Trainer Studio sidebar switches cleanly between the desktop rail and mobile drawer', async ({ page }) => {
+    const runtime = installTrainerRuntime(page);
+    await runtime.install();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
+
+    const sidebar = page.locator('#trainerStudioSidebar');
+    const pinButton = page.locator('#trainerStudioSidebarPin');
+    for (const width of [320, 375, 390, 430, 768, 900, 901, 1024, 1280, 1440, 1920]) {
+        await page.setViewportSize({ width, height: 900 });
+        await assertNoOverflow(page);
+        if (width <= 900) {
+            await expect(pinButton).toBeHidden();
+            await expect(page.locator('#trainerStudioMenuButton')).toBeVisible();
+            await expect(sidebar).toHaveCSS('position', 'fixed');
+        } else {
+            await expect(pinButton).toBeVisible();
+            await expect(sidebar).toHaveCSS('position', 'sticky');
+            await expect(sidebar).toHaveCSS('width', '72px');
+        }
+    }
+
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.locator('#trainerStudioMenuButton').click();
+    await expect(sidebar).toBeVisible();
+    const navScroll = page.locator('.trainer-studio-sidebar-scroll');
+    const scrollGeometry = await navScroll.evaluate((element) => ({ client: element.clientHeight, content: element.scrollHeight }));
+    expect(scrollGeometry.content).toBeGreaterThan(scrollGeometry.client);
+    await navScroll.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await expect.poll(() => navScroll.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    const finalRoute = page.locator('[data-studio-route="settings"]');
+    await expect(finalRoute).toBeInViewport();
+    await finalRoute.click();
+    await expect(page.locator('body')).toHaveAttribute('data-trainer-route', 'settings');
 });
 
 test('trainer dashboard cards animate on hover and respect reduced motion', async ({ page }) => {

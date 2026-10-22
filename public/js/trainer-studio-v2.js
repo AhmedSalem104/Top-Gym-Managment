@@ -77,6 +77,7 @@
         book: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h6"/></svg>',
         activity: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>',
         settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="m19 13 2-1-2-1-.4-2 1.3-1.7-1.8-1.8-1.7 1.3-2-.4-1-2-1 2-2 .4-1.7-1.3-1.8 1.8L6.2 8l-.4 2-2 1 2 1 .4 2-1.3 1.7 1.8 1.8 1.7-1.3 2 .4 1 2 1-2 2-.4 1.7 1.3 1.8-1.8L18.6 15Z"/></svg>',
+        pin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-4 1-4 4-1 5-2-2-2 2 1-5 4-4 1-4Z"/><path d="m9 15-6 6"/></svg>',
         plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
         arrow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
         logout: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>'
@@ -235,6 +236,12 @@
         $('#trainerStudioSidebar')?.setAttribute('aria-label', studioT('shell.sidebar', 'قائمة Trainer Studio'));
         $('#trainerStudioSidebarClose')?.setAttribute('aria-label', studioT('shell.closeNavigation', 'إغلاق القائمة'));
         $('#trainerStudioMenuButton')?.setAttribute('aria-label', studioT('shell.openNavigation', 'فتح قائمة Trainer Studio'));
+        const pinButton = $('#trainerStudioSidebarPin');
+        if (pinButton) {
+            const pinLabel = window.TopGymI18n?.t(pinButton.getAttribute('aria-pressed') === 'true' ? 'shell.sidebar.unpin' : 'shell.sidebar.pin') || (pinButton.getAttribute('aria-pressed') === 'true' ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            pinButton.setAttribute('aria-label', pinLabel);
+            pinButton.setAttribute('title', pinLabel);
+        }
         if (!$('.trainer-studio-topbar-status')) {
             $('.trainer-studio-topbar-status-slot')?.replaceChildren(document.createTextNode(studioT('shell.workspaceStatus', 'مساحة خاصة')));
         }
@@ -413,7 +420,7 @@
         sidebar.className = 'trainer-studio-sidebar';
         sidebar.id = 'trainerStudioSidebar';
         sidebar.setAttribute('aria-label', 'قائمة Trainer Studio');
-        sidebar.innerHTML = `<div class="trainer-studio-sidebar-brand"><span class="trainer-studio-brand-mark"><img src="/assets/logic-fit-app-icon.svg?v=2" alt=""></span><div><strong>Trainer Studio</strong><small>Logic Fit</small></div><button type="button" class="trainer-studio-sidebar-close" id="trainerStudioSidebarClose">×</button></div><div class="trainer-studio-sidebar-scroll">${navGroups.map((group, index) => `<section class="trainer-studio-nav-group" data-studio-group="${groupKeys[index] || 'workspace'}" data-studio-arabic-label="${escapeHtml(group.label)}"><span class="trainer-studio-nav-label">${escapeHtml(group.label)}</span><nav aria-label="${escapeHtml(group.label)}">${group.items.map(([route, , iconName]) => `<a href="/trainer-workspace/${route}" class="trainer-studio-nav-link" data-studio-route="${route}"><span class="trainer-studio-nav-icon">${icon(iconName)}</span><span>${escapeHtml(routeName(route))}</span></a>`).join('')}</nav></section>`).join('')}</div><div class="trainer-studio-sidebar-footer"><span class="trainer-studio-secure-dot"></span><span>مساحة خاصة وآمنة</span></div>`;
+        sidebar.innerHTML = `<div class="trainer-studio-sidebar-brand"><button type="button" class="trainer-studio-sidebar-pin" id="trainerStudioSidebarPin" aria-pressed="false">${icon('pin')}</button><span class="trainer-studio-brand-mark"><img src="/assets/logic-fit-app-icon.svg?v=2" alt=""></span><div><strong>Trainer Studio</strong><small>Logic Fit</small></div><button type="button" class="trainer-studio-sidebar-close" id="trainerStudioSidebarClose">×</button></div><div class="trainer-studio-sidebar-scroll">${navGroups.map((group, index) => `<section class="trainer-studio-nav-group" data-studio-group="${groupKeys[index] || 'workspace'}" data-studio-arabic-label="${escapeHtml(group.label)}"><span class="trainer-studio-nav-label">${escapeHtml(group.label)}</span><nav aria-label="${escapeHtml(group.label)}">${group.items.map(([route, , iconName]) => `<a href="/trainer-workspace/${route}" class="trainer-studio-nav-link" data-studio-route="${route}"><span class="trainer-studio-nav-icon">${icon(iconName)}</span><span>${escapeHtml(routeName(route))}</span></a>`).join('')}</nav></section>`).join('')}</div><div class="trainer-studio-sidebar-footer"><span class="trainer-studio-secure-dot"></span><span>مساحة خاصة وآمنة</span></div>`;
         const routeBar = document.createElement('div');
         routeBar.className = 'trainer-studio-route-bar';
         routeBar.id = 'trainerStudioRouteBar';
@@ -430,6 +437,7 @@
         markStaticSurfaces();
         $('#trainerStudioMenuButton')?.addEventListener('click', () => setSidebarOpen(true));
         $('#trainerStudioSidebarClose')?.addEventListener('click', () => setSidebarOpen(false));
+        initTrainerSidebarHover();
         $$('.trainer-studio-nav-link').forEach((link) => link.addEventListener('click', (event) => {
             event.preventDefault();
             if (trainerFeatureAccess(link.dataset.studioRoute).allowed !== true) return;
@@ -488,6 +496,101 @@
         document.body.classList.toggle('trainer-sidebar-open', Boolean(open));
         const button = $('#trainerStudioMenuButton');
         button?.setAttribute('aria-expanded', String(Boolean(open)));
+    }
+
+    function initTrainerSidebarHover() {
+        const sidebar = $('#trainerStudioSidebar');
+        const pinButton = $('#trainerStudioSidebarPin');
+        if (!sidebar || !pinButton || sidebar.dataset.hoverReady === 'true') return;
+        sidebar.dataset.hoverReady = 'true';
+
+        const desktopQuery = window.matchMedia('(min-width: 901px)');
+        const storageKey = 'logicfit.trainer-studio.sidebar-pinned';
+        let isPinned = false;
+        let isHovered = false;
+        let keyboardFocusWithin = false;
+        let closeTimer = null;
+
+        try {
+            isPinned = window.localStorage.getItem(storageKey) === 'true';
+        } catch {
+            isPinned = false;
+        }
+
+        const update = () => {
+            const desktop = desktopQuery.matches;
+            const expanded = desktop && (isPinned || isHovered || keyboardFocusWithin);
+            sidebar.classList.toggle('sidebar-pinned', desktop && isPinned);
+            sidebar.classList.toggle('is-hovered', desktop && expanded && !isPinned);
+            shell.classList.toggle('trainer-sidebar-expanded', expanded);
+            pinButton.setAttribute('aria-pressed', String(isPinned));
+            const label = window.TopGymI18n?.t(isPinned ? 'shell.sidebar.unpin' : 'shell.sidebar.pin') || (isPinned ? 'إلغاء تثبيت القائمة' : 'تثبيت القائمة');
+            pinButton.setAttribute('aria-label', label);
+            pinButton.setAttribute('title', label);
+        };
+
+        const clearCloseTimer = () => {
+            if (closeTimer !== null) window.clearTimeout(closeTimer);
+            closeTimer = null;
+        };
+        const scheduleClose = () => {
+            clearCloseTimer();
+            closeTimer = window.setTimeout(() => {
+                closeTimer = null;
+                update();
+            }, 180);
+        };
+
+        pinButton.addEventListener('click', () => {
+            isPinned = !isPinned;
+            try {
+                window.localStorage.setItem(storageKey, String(isPinned));
+            } catch {
+                // Sidebar behavior remains available when storage is restricted.
+            }
+            update();
+        });
+        sidebar.addEventListener('pointerenter', (event) => {
+            if (!desktopQuery.matches || event.pointerType === 'touch') return;
+            clearCloseTimer();
+            isHovered = true;
+            update();
+        });
+        sidebar.addEventListener('pointerleave', (event) => {
+            if (event.pointerType === 'touch') return;
+            isHovered = false;
+            scheduleClose();
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Tab') document.documentElement.dataset.trainerKeyboardNavigation = 'true';
+        }, true);
+        document.addEventListener('pointerdown', (event) => {
+            delete document.documentElement.dataset.trainerKeyboardNavigation;
+            keyboardFocusWithin = false;
+            if (!sidebar.contains(event.target)) scheduleClose();
+        }, true);
+        sidebar.addEventListener('focusin', () => {
+            if (document.documentElement.dataset.trainerKeyboardNavigation !== 'true') return;
+            clearCloseTimer();
+            keyboardFocusWithin = true;
+            update();
+        });
+        sidebar.addEventListener('focusout', (event) => {
+            if (sidebar.contains(event.relatedTarget)) return;
+            keyboardFocusWithin = false;
+            scheduleClose();
+        });
+
+        const handleBreakpointChange = () => {
+            clearCloseTimer();
+            isHovered = false;
+            keyboardFocusWithin = false;
+            if (desktopQuery.matches) setSidebarOpen(false);
+            update();
+        };
+        if (typeof desktopQuery.addEventListener === 'function') desktopQuery.addEventListener('change', handleBreakpointChange);
+        else desktopQuery.addListener(handleBreakpointChange);
+        update();
     }
 
     function resolveRoute() {
