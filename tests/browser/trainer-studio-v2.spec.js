@@ -213,8 +213,29 @@ test('Trainer Studio sidebar switches cleanly between the desktop rail and mobil
     }
 
     await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
     await page.locator('#trainerStudioMenuButton').click();
     await expect(sidebar).toBeVisible();
+    await expect.poll(async () => {
+        const box = await sidebar.boundingBox();
+        return box.x + box.width;
+    }).toBeLessThanOrEqual(309);
+    let mobileBox = await sidebar.boundingBox();
+    expect(mobileBox.x).toBeGreaterThanOrEqual(11);
+    expect(mobileBox.x + mobileBox.width).toBeLessThanOrEqual(309);
+    await expect(sidebar).toHaveCSS('display', 'flex');
+    await expect(sidebar).toHaveCSS('transition-property', /transform/);
+    await page.locator('#trainerStudioSidebarClose').click();
+    await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
+    await page.locator('#trainerStudioMenuButton').click();
+    await expect(sidebar).toBeVisible();
+    await expect.poll(async () => (await sidebar.boundingBox()).x).toBeGreaterThanOrEqual(11);
+    mobileBox = await sidebar.boundingBox();
+    expect(mobileBox.x).toBeGreaterThanOrEqual(11);
+    expect(mobileBox.x + mobileBox.width).toBeLessThanOrEqual(309);
+    await page.locator('#trainerStudioSidebarClose').click();
+    await page.evaluate(() => window.TopGymI18n.set('ar', { persist: false }));
+    await page.locator('#trainerStudioMenuButton').click();
     const navScroll = page.locator('.trainer-studio-sidebar-scroll');
     const scrollGeometry = await navScroll.evaluate((element) => ({ client: element.clientHeight, content: element.scrollHeight }));
     expect(scrollGeometry.content).toBeGreaterThan(scrollGeometry.client);
