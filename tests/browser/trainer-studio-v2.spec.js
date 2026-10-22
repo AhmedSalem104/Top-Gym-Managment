@@ -72,17 +72,17 @@ async function clickStudioRoute(page, route) {
     await page.locator(`[data-studio-route="${route}"]`).click();
 }
 
-test('Trainer Studio sidebar spans the page and navbar actions are icon-only except language', async ({ page }, testInfo) => {
+test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar actions stay compact', async ({ page }, testInfo) => {
     const runtime = installTrainerRuntime(page);
     await runtime.install();
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
 
     const sidebar = page.locator('#trainerStudioSidebar');
-    await expect(sidebar).toHaveCSS('position', 'static');
+    await expect(sidebar).toHaveCSS('position', 'sticky');
     const sidebarHeight = await sidebar.evaluate((element) => element.getBoundingClientRect().height);
-    const contentHeight = await page.locator('.trainer-studio-content').evaluate((element) => element.getBoundingClientRect().height);
-    expect(sidebarHeight).toBeGreaterThanOrEqual(contentHeight - 1);
+    expect(sidebarHeight).toBeCloseTo(852, 0);
+    await expect(page.locator('.trainer-studio-sidebar-scroll')).toHaveCSS('overflow-y', 'auto');
     await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-icon]')).toBeVisible();
     await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-label]')).toBeHidden();
     await expect(page.locator('#trainerWorkspaceLogout .trainer-studio-logout-icon svg')).toBeVisible();
@@ -94,10 +94,10 @@ test('Trainer Studio sidebar spans the page and navbar actions are icon-only exc
 
     const maxScroll = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
     expect(maxScroll).toBeGreaterThan(100);
+    const initialSidebarTop = await sidebar.evaluate((element) => element.getBoundingClientRect().top);
     await page.evaluate((scrollLimit) => window.scrollTo(0, Math.min(150, scrollLimit)), maxScroll);
     await expect.poll(async () => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-    const scrolledSidebarTop = await sidebar.evaluate((element) => element.getBoundingClientRect().top);
-    expect(scrolledSidebarTop).toBeLessThan(0);
+    await expect.poll(() => sidebar.evaluate((element) => element.getBoundingClientRect().top)).toBeCloseTo(initialSidebarTop, 0);
 
     await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
