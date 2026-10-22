@@ -125,6 +125,12 @@ test('trainer dashboard cards animate on hover and respect reduced motion', asyn
     await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
 
     const card = page.locator('.trainer-workspace-summary .trainer-workspace-card').first();
+    const motion = await card.evaluate((element) => {
+        const style = getComputedStyle(element);
+        return { duration: style.transitionDuration, easing: style.transitionTimingFunction };
+    });
+    expect(motion.duration).toContain('0.22s');
+    expect(motion.easing).toContain('ease');
     await card.hover();
     await expect.poll(() => card.evaluate((element) => getComputedStyle(element).transform)).not.toBe('none');
     await page.mouse.move(0, 0);
