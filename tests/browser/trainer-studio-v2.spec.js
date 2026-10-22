@@ -96,6 +96,7 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     const pinButton = page.locator('#trainerStudioSidebarPin');
     await expect(pinButton).toBeVisible();
     await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
+    await expect(pinButton.locator('svg path')).toHaveAttribute('d', /^M19\.1835 7\.80516L16\.2188 4\.83755/);
     const sidebarHeight = await sidebar.evaluate((element) => element.getBoundingClientRect().height);
     expect(sidebarHeight).toBeCloseTo(852, 0);
     await expect(page.locator('.trainer-studio-sidebar-scroll')).toHaveCSS('overflow-y', 'auto');

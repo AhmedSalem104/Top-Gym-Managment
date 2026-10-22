@@ -69,7 +69,7 @@
 .trainer-studio-sidebar-pin:hover,
 .trainer-studio-sidebar-pin[aria-pressed="true"] { border-color: var(--primary-border); color: var(--sidebar-active-text); background: var(--primary-soft); }
 .trainer-studio-sidebar-pin:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; box-shadow: var(--focus-ring); }
-.trainer-studio-sidebar-pin svg { width: var(--icon-size-control); height: var(--icon-size-control); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.trainer-studio-sidebar-pin svg { width: var(--icon-size-control); height: var(--icon-size-control); fill: currentColor; stroke: none; }
 
 .trainer-studio-brand-mark {
     display: grid;
