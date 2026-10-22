@@ -20,12 +20,9 @@
 }
 
 .trainer-studio-sidebar {
-    position: sticky;
-    inset-block-start: var(--space-6);
     display: flex;
-    block-size: calc(100dvh - var(--space-12));
     min-block-size: 0;
-    align-self: start;
+    align-self: stretch;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--sidebar-border);
@@ -391,12 +388,10 @@
     gap: 24px;
     width: min(1760px, calc(100% - 48px));
     padding-block: 24px 52px;
+    align-items: stretch;
 }
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar {
-    inset-block-start: var(--space-6);
-    block-size: calc(100dvh - var(--space-12));
-    min-block-size: 0;
     border-color: var(--sidebar-border);
     border-radius: var(--radius-card);
     background: var(--sidebar-bg);
@@ -522,7 +517,7 @@
 
 @media (max-width: 900px) {
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { display: block; width: min(100% - 24px, 760px); padding-block-start: 14px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: var(--z-modal, 90); inset-block: 12px; inset-inline-end: 12px; width: min(320px, calc(100vw - 24px)); block-size: auto; min-height: 0; display: none; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + 24px)); transition: transform 220ms ease, visibility 0s linear 220ms; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: var(--z-modal, 90); inset-block: 12px; inset-inline-end: 12px; width: min(320px, calc(100vw - 24px)); min-height: 0; display: none; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + 24px)); transition: transform var(--motion-duration-menu) var(--motion-easing-enter), visibility 0s linear var(--motion-duration-menu); }
     .trainer-workspace-page.trainer-studio-v2.trainer-sidebar-open .trainer-studio-sidebar { display: flex; visibility: visible; pointer-events: auto; transform: translateX(0); transition-delay: 0s; }
     .trainer-sidebar-open::before { position: fixed; z-index: var(--z-overlay, 80); inset: 0; content: ''; background: var(--overlay); backdrop-filter: blur(3px); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar-close { display: grid; min-width: 44px; min-height: 44px; place-items: center; border: 1px solid var(--sidebar-border); border-radius: var(--radius-control); background: var(--sidebar-hover-bg); }
