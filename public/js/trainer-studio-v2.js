@@ -415,7 +415,13 @@
         const existingContent = [...shell.children];
         const content = document.createElement('div');
         content.className = 'trainer-studio-content';
-        existingContent.forEach((child) => content.append(child));
+        const pageContent = document.createElement('div');
+        pageContent.className = 'trainer-studio-main';
+        const topbar = existingContent.find((child) => child.classList.contains('trainer-studio-topbar'));
+        existingContent.forEach((child) => {
+            if (child === topbar) content.append(child);
+            else pageContent.append(child);
+        });
         const sidebar = document.createElement('aside');
         sidebar.className = 'trainer-studio-sidebar';
         sidebar.id = 'trainerStudioSidebar';
@@ -425,12 +431,13 @@
         routeBar.className = 'trainer-studio-route-bar';
         routeBar.id = 'trainerStudioRouteBar';
         routeBar.innerHTML = '<button type="button" class="trainer-studio-menu-button" id="trainerStudioMenuButton" aria-controls="trainerStudioSidebar" aria-expanded="false"><span></span><span></span><span></span></button><div><span class="trainer-studio-route-eyebrow" id="trainerStudioRouteEyebrow"></span><h2 id="trainerStudioRouteTitle"></h2></div><div class="trainer-studio-route-meta"><span class="trainer-studio-live-indicator"></span><span></span></div>';
-        content.prepend(routeBar);
+        pageContent.prepend(routeBar);
         const dynamic = document.createElement('section');
         dynamic.id = 'trainerStudioDynamicView';
         dynamic.className = 'trainer-studio-dynamic-view';
         dynamic.hidden = true;
-        content.append(dynamic);
+        pageContent.append(dynamic);
+        content.append(pageContent);
         observeTrainerStudioContent(dynamic);
         shell.append(sidebar, content);
         $('.trainer-workspace-nav')?.setAttribute('hidden', '');

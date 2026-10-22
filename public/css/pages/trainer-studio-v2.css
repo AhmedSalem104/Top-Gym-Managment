@@ -11,12 +11,13 @@
 .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell {
     display: grid;
     grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
-    gap: 16px;
-    width: min(1760px, calc(100% - 32px));
+    gap: 0;
+    width: 100%;
+    min-height: 100dvh;
     max-width: none;
-    padding-block: var(--space-4) var(--space-10);
-    margin-inline: auto;
-    align-items: start;
+    padding: 0;
+    margin: 0;
+    align-items: stretch;
     transition: grid-template-columns var(--transition-normal);
 }
 
@@ -25,20 +26,25 @@
 }
 
 .trainer-studio-sidebar {
-    position: sticky;
-    inset-block-start: var(--space-6);
+    position: fixed;
+    z-index: var(--z-sticky, 20);
+    inset-block: 0;
+    inset-inline-start: 0;
+    grid-column: 1;
     display: flex;
-    block-size: calc(100dvh - var(--space-6) - var(--space-6));
+    inline-size: var(--sidebar-width-collapsed);
+    block-size: 100dvh;
     min-block-size: 0;
-    align-self: start;
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--sidebar-border);
-    border-radius: var(--radius-card);
+    border-radius: 0;
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
 }
+
+.trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell.trainer-sidebar-expanded .trainer-studio-sidebar { inline-size: var(--trainer-studio-sidebar-width-expanded); }
 
 .trainer-studio-sidebar-brand {
     display: flex;
@@ -116,7 +122,8 @@
 .trainer-studio-sidebar-footer > span:last-child { max-inline-size: 0; overflow: hidden; opacity: 0; white-space: nowrap; transition: max-inline-size var(--transition-normal), opacity var(--motion-duration-menu); }
 .trainer-studio-secure-dot, .trainer-studio-live-indicator { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
 
-.trainer-studio-content { display: flex; min-width: 0; flex-direction: column; gap: 14px; }
+.trainer-studio-content { display: flex; min-width: 0; grid-column: 2; flex-direction: column; gap: 0; }
+.trainer-studio-main { display: flex; min-width: 0; flex: 1 0 auto; flex-direction: column; gap: 18px; padding: var(--app-content-top-gap) var(--app-content-gutter-wide) var(--space-10); }
 .trainer-studio-route-bar { display: flex; min-height: 58px; align-items: center; justify-content: space-between; gap: 15px; padding-inline: 4px; }
 .trainer-studio-route-bar h2 { margin: 3px 0 0; color: var(--text-primary); font-size: 21px; letter-spacing: -.03em; }
 .trainer-studio-route-eyebrow, .trainer-panel-kicker { color: var(--brand-primary); font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
@@ -437,9 +444,7 @@
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar {
     border-color: var(--sidebar-border);
-    border-radius: var(--radius-card);
     background: var(--sidebar-bg);
-    box-shadow: var(--shadow-md);
 }
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar-brand {
@@ -504,6 +509,9 @@
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-live-indicator { background: var(--success); box-shadow: 0 0 0 4px var(--success-soft); }
 
 .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar {
+    position: sticky;
+    z-index: var(--z-sticky, 20);
+    inset-block-start: 0;
     display: flex;
     min-height: 76px;
     align-items: center;
@@ -588,7 +596,7 @@
 .trainer-workspace-page.trainer-studio-v2 .trainer-detail-stat { border: 1px solid var(--border-primary); background: var(--bg-card-hover); }
 
 @media (max-width: 1180px) {
-    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); gap: var(--space-4); width: min(100% - 32px, 1120px); }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr); gap: 0; width: 100%; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-library-toolbar { align-items: stretch; flex-direction: column; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-library-search-form { min-width: 0; width: 100%; }
@@ -596,8 +604,8 @@
 }
 
 @media (max-width: 900px) {
-    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { display: block; width: min(100% - 24px, 760px); padding-block-start: 14px; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: var(--z-modal, 90); inset-block: var(--space-3); inset-inline-end: var(--space-3); width: min(320px, calc(100vw - var(--space-6))); block-size: calc(100dvh - var(--space-3) - var(--space-3)); min-height: 0; min-block-size: 0; display: none; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + var(--space-6))); transition: transform var(--motion-duration-menu) var(--motion-easing-enter), visibility 0s linear var(--motion-duration-menu); }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { display: block; width: 100%; min-height: 100dvh; padding: 0; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar { position: fixed; z-index: var(--z-modal, 90); inset-block: var(--space-3); inset-inline: auto var(--space-3); inline-size: min(320px, calc(100vw - var(--space-6))); block-size: calc(100dvh - var(--space-3) - var(--space-3)); min-width: 0; min-block-size: 0; display: none; visibility: hidden; pointer-events: none; transform: translateX(calc(100% + var(--space-6))); transition: transform var(--motion-duration-menu) var(--motion-easing-enter), visibility 0s linear var(--motion-duration-menu); }
     .trainer-workspace-page.trainer-studio-v2.trainer-sidebar-open .trainer-studio-sidebar { display: flex; visibility: visible; pointer-events: auto; transform: translateX(0); transition-delay: 0s; }
     .trainer-sidebar-open::before { position: fixed; z-index: var(--z-overlay, 80); inset: 0; content: ''; background: var(--overlay); backdrop-filter: blur(3px); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-sidebar-close { display: grid; min-width: 44px; min-height: 44px; place-items: center; border: 1px solid var(--sidebar-border); border-radius: var(--radius-control); background: var(--sidebar-hover-bg); }
@@ -616,7 +624,8 @@
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-menu-button { display: grid; place-items: center; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { flex-wrap: wrap; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-context { order: 3; width: 100%; margin-inline-start: 0; }
-    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-content { gap: 14px; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-content { display: flex; width: 100%; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-main { gap: 14px; padding: var(--app-content-top-gap) var(--app-content-gutter-compact) var(--space-10); }
     /* The off-canvas direction is a mobile-only behavior. On desktop the
        sidebar is always part of the workspace grid in either writing mode. */
     .trainer-workspace-page.trainer-studio-v2:dir(ltr) .trainer-studio-sidebar { transform: translateX(calc(-100% - 24px)); }
@@ -624,7 +633,8 @@
 }
 
 @media (max-width: 560px) {
-    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { width: calc(100% - 16px); padding-block: 8px 30px; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-workspace-shell { width: 100%; padding: 0; }
+    .trainer-workspace-page.trainer-studio-v2 .trainer-studio-main { gap: 12px; padding: var(--app-content-top-gap) var(--app-content-gutter-mobile) var(--space-8); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar { align-items: center; gap: 12px; padding: 12px; border-radius: var(--radius-card); flex-wrap: wrap; }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-brand { max-width: calc(100% - 8px); }
     .trainer-workspace-page.trainer-studio-v2 .trainer-studio-topbar-brand > div { flex-direction: column; align-items: flex-start; justify-content: center; }

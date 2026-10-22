@@ -88,17 +88,28 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     await page.goto('/trainer-workspace/dashboard', { waitUntil: 'networkidle' });
 
     const workspaceBox = await page.locator('.trainer-workspace-shell').boundingBox();
-    expect(workspaceBox.x).toBeCloseTo(16, 0);
-    expect(workspaceBox.width).toBeCloseTo(1408, 0);
+    expect(workspaceBox.x).toBeCloseTo(0, 0);
+    expect(workspaceBox.width).toBeCloseTo(1440, 0);
     const sidebar = page.locator('#trainerStudioSidebar');
-    await expect(sidebar).toHaveCSS('position', 'sticky');
+    await expect(sidebar).toHaveCSS('position', 'fixed');
     await expect(sidebar).toHaveCSS('width', '72px');
+    const sidebarBox = await sidebar.boundingBox();
+    expect(sidebarBox.x + sidebarBox.width).toBeCloseTo(1440, 0);
+    expect(sidebarBox.y).toBeCloseTo(0, 0);
+    expect(sidebarBox.height).toBeCloseTo(900, 0);
+    const topbarBox = await page.locator('.trainer-studio-topbar').boundingBox();
+    expect(topbarBox.x).toBeCloseTo(0, 0);
+    expect(topbarBox.y).toBeCloseTo(0, 0);
+    expect(topbarBox.x + topbarBox.width).toBeCloseTo(sidebarBox.x, 0);
+    const mainBox = await page.locator('.trainer-studio-main').boundingBox();
+    expect(mainBox.y).toBeGreaterThanOrEqual(topbarBox.y + topbarBox.height);
+    await expect(page.locator('.trainer-studio-main')).toHaveCSS('padding-inline-start', '24px');
     const pinButton = page.locator('#trainerStudioSidebarPin');
     await expect(pinButton).toBeVisible();
     await expect(pinButton).toHaveAttribute('aria-pressed', 'false');
     await expect(pinButton.locator('svg path')).toHaveAttribute('d', /^M19\.1835 7\.80516L16\.2188 4\.83755/);
     const sidebarHeight = await sidebar.evaluate((element) => element.getBoundingClientRect().height);
-    expect(sidebarHeight).toBeCloseTo(852, 0);
+    expect(sidebarHeight).toBeCloseTo(900, 0);
     await expect(page.locator('.trainer-studio-sidebar-scroll')).toHaveCSS('overflow-y', 'auto');
     await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-icon]')).toBeVisible();
     await expect(page.locator('.trainer-studio-theme-button [data-theme-toggle-label]')).toBeHidden();
@@ -146,6 +157,10 @@ test('Trainer Studio sidebar fills the viewport like Gym navigation and navbar a
     await page.evaluate(() => window.TopGymI18n.set('en', { persist: false }));
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     const ltrRailBox = await sidebar.boundingBox();
+    expect(ltrRailBox.x).toBeCloseTo(0, 0);
+    const ltrTopbarBox = await page.locator('.trainer-studio-topbar').boundingBox();
+    expect(ltrTopbarBox.x).toBeCloseTo(ltrRailBox.width, 0);
+    expect(ltrTopbarBox.y).toBeCloseTo(0, 0);
     await page.mouse.move(ltrRailBox.x + ltrRailBox.width / 2, ltrRailBox.y + 120);
     await expect(page.locator('.trainer-workspace-shell')).toHaveClass(/trainer-sidebar-expanded/);
     await expect(sidebar).toHaveCSS('width', '272px');
@@ -189,8 +204,11 @@ test('Trainer Studio sidebar switches cleanly between the desktop rail and mobil
             await expect(sidebar).toHaveCSS('position', 'fixed');
         } else {
             await expect(pinButton).toBeVisible();
-            await expect(sidebar).toHaveCSS('position', 'sticky');
+            await expect(sidebar).toHaveCSS('position', 'fixed');
             await expect(sidebar).toHaveCSS('width', '72px');
+            const sidebarBox = await sidebar.boundingBox();
+            expect(sidebarBox.y).toBeCloseTo(0, 0);
+            expect(sidebarBox.height).toBeCloseTo(900, 0);
         }
     }
 
