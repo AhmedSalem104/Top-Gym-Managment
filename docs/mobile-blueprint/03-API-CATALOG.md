@@ -2,7 +2,7 @@
 
 ## Inventory method and completeness
 
-The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **353 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
+The inventory was extracted from the executable route registrations under `src/routes/` and cross-checked against `src/routes/index.js`, `docs/API.md`, controllers, frontend API calls, and tests. It contains **355 route declarations across 29 route modules**. A declaration is counted once by method and path; compatibility namespaces are retained because they are real current routes.
 
 The route modules are the authoritative endpoint list. Shared middleware applies authentication, same-origin, tenant context, permission, capability, subscription, rate-limit, read-only, and branch/section checks; the specific service/controller is the source for request and response fields.
 
@@ -11,6 +11,7 @@ The route modules are the authoritative endpoint list. Shared middleware applies
 | Concern | Current contract | Source |
 | --- | --- | --- |
 | Staff authentication | Web uses an HttpOnly SameSite cookie backed by a hashed SQL session. Native mobile uses short-lived bearer access tokens plus rotating, hashed refresh sessions; missing/expired is `401` | `src/services/auth-service.js`, `src/middleware/auth.middleware.js`, `src/routes/auth.routes.js` |
+| Password recovery | Public request returns the same `202 { accepted: true }` for unknown and eligible accounts; completion consumes a 30-minute, single-use email token and returns `204`. Password recovery revokes web sessions and mobile refresh sessions. | `src/services/password-recovery-service.js`, `src/routes/auth.routes.js` |
 | Tenant context | trusted session/user resolution plus `AsyncLocalStorage`; SQL request sets `tenant_id` and `tenant_mode` session context | `src/tenancy/tenant-context.js`, `src/database/pool.js` |
 | Platform context | tenantless session; target tenant must be explicit | `src/middleware/platform.middleware.js`, `src/services/platform-admin-service.js` |
 | Authorization | role defaults plus route/body-aware permission resolution; forbidden is `403` | `src/permissions/role-permissions.js`, `src/permissions/route-permissions.js` |
@@ -26,7 +27,7 @@ The following index accounts for every declaration. The count is the source-deri
 | Module/source | Count | Endpoint families |
 | --- | ---: | --- |
 | `attendance.routes.js` | 7 | attendance list/report/member/issue QR/resolve QR/check-in/check-out |
-| `auth.routes.js` | 17 | web session/login/logout/password/users/permissions plus mobile login/refresh/session/logout |
+| `auth.routes.js` | 19 | web session/login/logout/password recovery/change/users/permissions plus mobile login/refresh/session/logout |
 | `backup.routes.js` | 12 | status/history/daily/records/archives/download/inspect/restore |
 | `bar.routes.js` | 10 | menu/modifiers/recipes/sales/shifts/waste |
 | `branch.routes.js` | 7 | branch bootstrap/list/create/update/archive/user access |
@@ -62,7 +63,7 @@ The full method/path declarations are in the listed route modules; the following
 | Domain | Canonical source | Auth/context | Main request/response contract | Mobile readiness |
 | --- | --- | --- | --- | --- |
 | Health | `routes/index.js` | public | liveness; health checks DB/storage/cache | READY_WITH_CLIENT_ADAPTATION |
-| Auth/team | `auth.routes.js`, `auth-service.js` | staff session/Owner for team | web cookie contract plus mobile login/refresh/session/logout bearer contract; assistant users and permissions remain server-authorized | READY |
+| Auth/team | `auth.routes.js`, `auth-service.js`, `password-recovery-service.js` | staff session/Owner for team; recovery endpoints are public and rate-limited | web cookie contract plus mobile login/refresh/session/logout bearer contract; recovery uses a generic request response and a one-time web email link; assistant users and permissions remain server-authorized | READY_WITH_CLIENT_ADAPTATION |
 | Bootstrap | `dashboard.routes.js`, `branch-service.js`, `saas-service.js` | staff tenant | current user, tenant, entitlements, branch context, dashboard seed | READY_WITH_CLIENT_ADAPTATION |
 | Gym members/memberships | `members.routes.js`, `member-service.js`, `member-subscription-service.js` | tenant + branch/section where applicable + permission | list/detail/create/update/freeze/renew/refund/membership/payment/code | READY_WITH_CLIENT_ADAPTATION |
 | Attendance | `attendance.routes.js`, `attendance-service.js`, `attendance-qr-token-service.js` | Gym tenant + branch/section | today/report/member/issue-opaque-QR/resolve-QR/check-in/out | READY_WITH_CLIENT_ADAPTATION |
@@ -84,6 +85,8 @@ The full method/path declarations are in the listed route modules; the following
 The authenticated staff `GET /api/members` and `GET /api/members/:id` responses retain the existing `membership` field as the operational membership projection used by current actions. They also expose nullable `latestRecordedMembership`, selected from persisted membership rows by `created_at DESC, id DESC`, with that same row's plan, term, dates, effective end/status, payment amounts, and the existing member-wide freeze count/limit. The details endpoint's `memberships` array remains the complete history. This is an additive read projection; it adds no request, permission, workflow, or mutation behavior.
 
 ## Current consumers and mobile notes
+
+Password recovery request is `POST /api/auth/password-recovery/request` with `{ email }`. It always returns `202 { accepted: true }` for syntactically valid requests regardless of account existence. Completion is `POST /api/auth/password-recovery/complete` with `{ token, newPassword, confirmPassword }`, returning `204` on success; invalid/expired/replayed links return a safe `400 INVALID_RECOVERY_TOKEN`. A native client can request recovery through the same endpoint and open the received `/reset-password#recovery=…` link in the system browser; after success the user signs in again. Tokens are not part of the API response and are not stored in plaintext.
 
 Web consumers are in `public/js/` and are not a mobile contract by themselves. Mobile must use the same server paths and response semantics, replace cookie/session transport only through an approved server-compatible strategy, and add contract tests before implementation. Browser-only downloads, print, hash routes, and DOM-driven dialogs are `WEB_SPECIFIC` unless a user workflow is explicitly mapped in `09-MOBILE-INFORMATION-ARCHITECTURE.md`.
 
@@ -114,6 +117,8 @@ The following table is the machine-extracted method/path index used for the comp
 | POST | `/api/attendance/check-out` | `src/routes/attendance.routes.js` |
 | GET | `/api/auth/session` | `src/routes/auth.routes.js` |
 | POST | `/api/auth/login` | `src/routes/auth.routes.js` |
+| POST | `/api/auth/password-recovery/request` | `src/routes/auth.routes.js` |
+| POST | `/api/auth/password-recovery/complete` | `src/routes/auth.routes.js` |
 | POST | `/api/auth/logout` | `src/routes/auth.routes.js` |
 | POST | `/api/auth/change-password` | `src/routes/auth.routes.js` |
 | GET | `/api/auth/users` | `src/routes/auth.routes.js` |

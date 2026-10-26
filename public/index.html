@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#F5F7FB">
+    <meta name="description" content="Logic Fit منصة عربية لإدارة الجيم والأعضاء والاشتراكات، أو لإدارة أعمال التدريب الشخصي. ابدأ مساحة عملك من هنا.">
+    <link rel="canonical" href="https://getlogicfit.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Logic Fit">
+    <meta property="og:title" content="Logic Fit | Gym Management">
+    <meta property="og:description" content="منصة لإدارة الجيم والأعضاء والاشتراكات، أو أعمال التدريب الشخصي.">
+    <meta property="og:url" content="https://getlogicfit.com/">
+    <meta property="og:locale" content="ar_EG">
     <meta name="auth-routing-version" content="forced-password-v3">
     <meta name="auth-surface-stylesheet" content="/css/login-entry.css?v=23ba2bb6d74214e1">
     <script>
@@ -158,9 +166,9 @@
                         <div class="auth-form-heading"><h2>مرحبًا بعودتك</h2><p>سجل الدخول إلى حسابك لمتابعة عملك</p></div>
                         <div class="auth-field"><label for="loginEmail">البريد الإلكتروني</label><div class="auth-input-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><input id="loginEmail" dir="ltr" type="email" autocomplete="username" inputmode="email" maxlength="254" required placeholder="أدخل البريد الإلكتروني"></div></div>
                         <div class="auth-field"><label for="loginPassword">كلمة المرور</label><div class="auth-password-wrap"><svg class="auth-input-icon ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input id="loginPassword" dir="ltr" type="password" autocomplete="current-password" maxlength="128" required placeholder="أدخل كلمة المرور"><button class="auth-password-toggle" id="loginPasswordToggle" type="button" aria-label="إظهار كلمة المرور"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg></button></div></div>
-                        <div class="auth-account-row"><label class="auth-remember" for="loginRememberMe"><input id="loginRememberMe" type="checkbox"><span>تذكرني</span></label><button class="auth-forgot-note" id="authForgotHelp" type="button" aria-haspopup="dialog" aria-controls="authRecoveryDialog" hidden>نسيت كلمة المرور؟</button></div>
+                        <div class="auth-account-row"><label class="auth-remember" for="loginRememberMe"><input id="loginRememberMe" type="checkbox"><span>تذكرني</span></label><button class="auth-forgot-note" id="authForgotHelp" type="button" aria-haspopup="dialog" aria-controls="authRecoveryDialog">نسيت كلمة المرور؟</button></div>
                         <p class="auth-message" id="loginMessage" role="alert" hidden></p>
-                        <p class="auth-setup-note" id="loginSetupNote" hidden>لم يتم إعداد حساب المالك بعد. أضف AUTH_OWNER_EMAIL وAUTH_OWNER_PASSWORD في إعدادات الخادم ثم أعد المحاولة.</p>
+                        <p class="auth-setup-note" id="loginSetupNote" hidden>تعذر بدء جلسة الدخول حاليًا. حاول مرة أخرى لاحقًا.</p>
                         <button class="btn btn-primary auth-submit" id="loginSubmit" type="submit" data-feedback-ignore data-loading-text="جاري تسجيل الدخول..."><span class="auth-spinner" aria-hidden="true"></span><span class="auth-submit-label">تسجيل الدخول</span><svg class="auth-submit-arrow ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></svg></button>
                     </form>
                     <div class="auth-registration-entry"><span class="auth-registration-divider" aria-hidden="true"><i>أو</i></span><p>ليس لديك حساب؟ <button class="auth-text-action" id="authRegisterOpen" type="button" aria-haspopup="dialog" aria-controls="authRegistrationDialog">إنشاء حساب جديد</button></p></div>
@@ -174,8 +182,10 @@
                         </div>
                     </dialog>
                     <dialog class="auth-choice-dialog auth-recovery-dialog lf-modal-shell lf-modal--sm lf-modal--v3 lf-modal-v3--confirmation" id="authRecoveryDialog" aria-labelledby="authRecoveryTitle">
-                        <header class="lf-modal-v3-header"><div><span class="auth-choice-kicker">مساعدة تسجيل الدخول</span><h2 id="authRecoveryTitle">استعادة الوصول</h2></div><form method="dialog"><button class="auth-choice-close" type="submit" aria-label="إغلاق">×</button></form></header>
-                        <p>لا تتوفر إعادة تعيين ذاتية لكلمة المرور حاليًا. تواصل مع مسؤول حسابك أو فريق Logic Fit لمساعدتك بأمان.</p><form method="dialog" class="dialog-actions"><button class="auth-dialog-confirm lf-modal-v3__primary" type="submit">حسنًا</button></form>
+                        <header class="lf-modal-v3-header"><div><span class="auth-choice-kicker" data-i18n="login.recovery.kicker">مساعدة تسجيل الدخول</span><h2 id="authRecoveryTitle" data-i18n="login.recovery.title">استعادة الوصول</h2></div><form method="dialog"><button class="auth-choice-close" type="submit" aria-label="إغلاق" data-i18n-aria="login.register.close">×</button></form></header>
+                        <p id="authRecoveryDescription" data-i18n="login.recovery.description">أدخل بريد حسابك، وإذا كان مرتبطًا بحساب نشط فستصلك رسالة برابط آمن صالح لمرة واحدة.</p>
+                        <form id="authRecoveryForm" class="auth-form" novalidate><div class="auth-field"><label for="authRecoveryEmail" data-i18n="login.email.label">البريد الإلكتروني</label><input id="authRecoveryEmail" type="email" dir="ltr" inputmode="email" autocomplete="email" maxlength="254" required></div><p class="auth-message" id="authRecoveryMessage" role="status" aria-live="polite" hidden></p><button id="authRecoverySubmit" class="btn btn-primary auth-submit" type="submit"><span data-i18n="login.recovery.submit">إرسال رابط الاستعادة</span></button></form>
+                        <form method="dialog" class="dialog-actions"><button class="auth-dialog-confirm lf-modal-v3__secondary" type="submit" data-i18n="login.recovery.close">إغلاق</button></form>
                     </dialog>
                 </section>
             </div>
@@ -1290,13 +1300,13 @@
     <script defer src="/js/performance-loader.js?v=104ba552261ffaa4"></script>
     <script defer src="/js/ui-feedback.js?v=e8714df9c49d8a2c"></script>
     <script defer src="/js/loading-skeleton.js?v=7de5ff80612cbbd0"></script>
-    <script defer src="/js/auth-ui.js?v=c8e0bf35f4ae0408"></script>
+    <script defer src="/js/auth-ui.js?v=98044d88d4298728"></script>
     <script defer src="/js/branch-context.js?v=5e613a4e47ad854e"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
     <script defer src="/js/core/feature-manifest.js?v=845650b5cd2063ff"></script>
     <script defer src="/js/feature-loader.js?v=6d324aba99e57b81"></script>
-    <script defer src="/js/core/i18n.js?v=1361cad271398ecb"></script>
+    <script defer src="/js/core/i18n.js?v=9578c6af204e3bde"></script>
     <script defer src="/js/app-shell-bootstrap.js?v=62372a1be020e8b9"></script>
     <script defer src="/js/page-tabs.js?v=87a158912b06b454"></script>
 </body>

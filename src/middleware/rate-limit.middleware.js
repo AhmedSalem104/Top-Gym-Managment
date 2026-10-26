@@ -168,6 +168,43 @@ function createLoginAttemptGuard({ windowMs = 900_000, max = 10, cleanupMs = 300
     };
 }
 
+function createPasswordRecoveryRateLimit({ windowMs = 900_000, requestIpMax = 10, emailMax = 3, completeIpMax = 20, tokenMax = 5, cleanupMs = 300_000, maxEntries = 20_000, store = null, fallbackStore = null, requireSharedStore = false } = {}) {
+    const { primaryStore, safeFallbackStore } = resolveStores({ store, fallbackStore, requireSharedStore, cleanupMs, maxEntries });
+    const applyLimit = async (response, key, max, { conceal = false } = {}) => {
+        const result = await incrementWithFallback(primaryStore, safeFallbackStore, key, { windowMs, requirePrimaryStore: requireSharedStore });
+        response.set('Cache-Control', 'no-store');
+        if (result.unavailable) return rateLimitUnavailable(response);
+        if (result.count > max) {
+            if (conceal) return response.status(202).json({ accepted: true });
+            response.set('Retry-After', String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))));
+            return response.status(429).json({ error: 'تعذر تنفيذ الطلب الآن. حاول مرة أخرى لاحقًا.', code: 'PASSWORD_RECOVERY_RATE_LIMITED' });
+        }
+        return null;
+    };
+    return {
+        request: async (request, response, next) => {
+            const ip = requestIp(request);
+            const email = String(request.body?.email || '').trim().toLowerCase().slice(0, 254);
+            const emailDigest = crypto.createHash('sha256').update(email || 'missing').digest('hex');
+            const limited = await applyLimit(response, `password-recovery:request:ip:${ip}`, requestIpMax);
+            if (limited) return limited;
+            const emailLimited = await applyLimit(response, `password-recovery:request:email:${emailDigest}`, emailMax, { conceal: true });
+            if (emailLimited) return emailLimited;
+            return next();
+        },
+        complete: async (request, response, next) => {
+            const ip = requestIp(request);
+            const token = String(request.body?.token || '').trim();
+            const tokenDigest = crypto.createHash('sha256').update(token || 'missing').digest('hex');
+            const limited = await applyLimit(response, `password-recovery:complete:ip:${ip}`, completeIpMax);
+            if (limited) return limited;
+            const tokenLimited = await applyLimit(response, `password-recovery:complete:token:${tokenDigest}`, tokenMax);
+            if (tokenLimited) return tokenLimited;
+            return next();
+        }
+    };
+}
+
 /**
  * The public portal accepts a bearer-like membership code, so it gets a
  * separate IP + code bucket. Only a one-way digest is kept in memory; the
@@ -262,5 +299,6 @@ module.exports = {
     createMemoryRateLimitStore,
     createSensitiveRateLimit,
     createMembershipPortalRateLimit,
+    createPasswordRecoveryRateLimit,
     trimMap
 };

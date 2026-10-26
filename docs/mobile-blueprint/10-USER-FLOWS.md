@@ -23,6 +23,14 @@ No session → login or portal code entry. Expired/revoked session → clear sec
 5. Resolve tenant type: Gym shell or Trainer Studio; PlatformAdmin goes to platform shell.
 6. Resolve branch/section context only from server-provided accessible values.
 
+### Account recovery
+
+1. From the public sign-in surface, submit the account email to `POST /api/auth/password-recovery/request`. The response is always `202 { accepted: true }` so the client cannot infer whether an account exists.
+2. If an active account and configured delivery are eligible, the server emails a random, single-use link that expires after 30 minutes. The token is kept in the URL fragment, hashed in the database, and never returned by the API or written to logs.
+3. The link opens the no-index `/reset-password` web surface. Submit `token`, `newPassword`, and `confirmPassword` to `POST /api/auth/password-recovery/complete`.
+4. A successful reset returns `204`, consumes outstanding recovery links, revokes web sessions and mobile refresh sessions, clears the current web cookie, and requires a fresh sign-in. Invalid, expired, or replayed tokens return `400 INVALID_RECOVERY_TOKEN`.
+5. Mobile clients may call the same request endpoint and hand the email link to the system browser; return to the app and authenticate again. They do not persist or process the token outside the secure link handoff.
+
 Native mobile restore calls `GET /api/mobile/auth/session` with the bearer access token. A `401` triggers one refresh attempt; invalid refresh state clears secure storage and returns to login. Refresh consumption is an atomic single-winner operation, and creation of the replacement access/refresh sessions commits in the same transaction. If two clients reuse one refresh token concurrently, only one rotation can commit; the losing/replayed request receives `401 INVALID_REFRESH_TOKEN`. Logout revokes both server-side mobile sessions before local secure cleanup.
 
 ## Gym critical flows

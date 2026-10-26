@@ -73,7 +73,8 @@ async function assertLoginSurface(page) {
         currentYear: document.querySelector('[data-current-year]')?.textContent,
         expectedYear: String(new Date().getFullYear()),
         submitHeight: document.querySelector('#loginSubmit').getBoundingClientRect().height,
-        rememberOnly: document.querySelectorAll('.auth-account-row > *:not([hidden])').length === 1,
+        accountControlsVisible: Boolean(document.querySelector('.auth-account-row .auth-remember')?.getClientRects().length)
+            && Boolean(document.querySelector('#authForgotHelp')?.getClientRects().length),
         inputHeight: document.querySelector('.auth-input-wrap').getBoundingClientRect().height,
         submitGap: (() => {
             const registration = document.querySelector('.auth-registration-entry').getBoundingClientRect();
@@ -104,7 +105,7 @@ async function assertLoginSurface(page) {
     expect(metrics.themeInsideCard).toBe(false);
     expect(metrics.themeInsideControls).toBe(true);
     expect(metrics.themeWithinCard, JSON.stringify(metrics)).toBe(false);
-    expect(metrics.rememberOnly).toBe(true);
+    expect(metrics.accountControlsVisible).toBe(true);
     expect(metrics.inputHeight).toBe(48);
     expect(metrics.featuresBackground).toBe('rgba(0, 0, 0, 0)');
     expect(metrics.featureIconBackground).toBe('rgba(0, 0, 0, 0)');
@@ -190,11 +191,12 @@ test('public registration offers only gym and independent trainer paths', async 
     await expect(dialog.getByText(/عضو|مشترك/)).toHaveCount(0);
 });
 
-test('password recovery explains the actual supported path without claiming a self-service flow', async ({ page }) => {
-    await expect(page.locator('#authForgotHelp')).toBeHidden();
-    await page.evaluate(() => document.getElementById('authForgotHelp').click());
+test('password recovery provides an email-based recovery form without exposing account existence', async ({ page }) => {
+    await expect(page.locator('#authForgotHelp')).toBeVisible();
+    await page.locator('#authForgotHelp').click();
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
-    await expect(page.locator('#authRecoveryDialog')).toContainText('لا تتوفر إعادة تعيين ذاتية');
+    await expect(page.locator('#authRecoveryEmail')).toBeVisible();
+    await expect(page.locator('#authRecoverySubmit')).toBeVisible();
 });
 
 test('login submits the existing API contract and keeps its error state in the card', async ({ page }) => {

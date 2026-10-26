@@ -10,6 +10,7 @@
     let rootAuthStylesPromise = null;
     let rootAuthStylesReady = false;
     let pendingRootLoginState = null;
+    let recoveryMessageKey = '';
     const brandName = () => window.topGymBranding?.get?.().identity?.brandName || 'Logic Fit';
 
     document.body.classList.add('auth-pending');
@@ -51,6 +52,44 @@
             window.TopGymI18n.apply(element);
         } else {
             window.TopGymI18n?.annotateText?.(element, 'login.error.');
+        }
+    }
+
+    function setRecoveryMessage(key = '') {
+        const element = $('authRecoveryMessage');
+        if (!element) return;
+        recoveryMessageKey = key;
+        element.textContent = key ? (window.TopGymI18n?.t?.(key) || '') : '';
+        element.hidden = !key;
+        element.className = `auth-message${key === 'login.recovery.accepted' ? ' info' : ''}`;
+    }
+
+    async function submitRecoveryRequest(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const emailInput = $('authRecoveryEmail');
+        const submit = $('authRecoverySubmit');
+        if (!form.reportValidity() || !emailInput || !submit) return;
+        submit.disabled = true;
+        const label = submit.querySelector('[data-i18n]');
+        if (label) label.textContent = window.TopGymI18n?.t?.('login.recovery.submit.loading') || '…';
+        setRecoveryMessage('');
+        try {
+            const response = await nativeFetch('/api/auth/password-recovery/request', {
+                method: 'POST',
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ email: emailInput.value })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (response.status === 202 && payload.accepted === true) setRecoveryMessage('login.recovery.accepted');
+            else setRecoveryMessage('login.recovery.unavailable');
+        } catch (_) {
+            setRecoveryMessage('login.recovery.unavailable');
+        } finally {
+            submit.disabled = false;
+            if (label) label.textContent = window.TopGymI18n?.t?.('login.recovery.submit') || 'إرسال رابط الاستعادة';
         }
     }
 
@@ -754,6 +793,7 @@
         loading.textContent = 'جاري تجهيز بوابة الدخول…';
         form.insertBefore(loading, form.firstChild);
         form.addEventListener('submit', submitLogin);
+        $('authRecoveryForm')?.addEventListener('submit', submitRecoveryRequest);
         $('loginPasswordToggle')?.addEventListener('click', () => {
             const input = $('loginPassword');
             if (!input) return;
@@ -778,7 +818,7 @@
             });
         };
         bindEntryDialog('authRegisterOpen', 'authRegistrationDialog', '.auth-choice-option');
-        bindEntryDialog('authForgotHelp', 'authRecoveryDialog', '.auth-dialog-confirm');
+        bindEntryDialog('authForgotHelp', 'authRecoveryDialog', '#authRecoveryEmail');
         const entryButton = $('saasEntryContinue');
         if (entryButton && !entryButton.dataset.bound) {
             entryButton.dataset.bound = 'true';
@@ -842,6 +882,10 @@
         logout: () => $('authLogoutButton')?.click(),
         refresh: checkSession
     };
+
+    window.addEventListener('topgym:localechange', () => {
+        if (recoveryMessageKey) setRecoveryMessage(recoveryMessageKey);
+    });
 
     const permissionObserver = new MutationObserver(() => {
         if (state.ready) {

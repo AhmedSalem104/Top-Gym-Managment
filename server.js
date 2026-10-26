@@ -8,7 +8,7 @@ const { asyncRoute } = require('./src/utils/async-route');
 const { registerRoutes } = require('./src/routes');
 const { isAuthorizedCronRequest } = require('./src/middleware/cron.middleware');
 const { createAuthApiMiddleware, ownerOnly } = require('./src/middleware/auth.middleware');
-const { createAuthenticatedMutationRateLimit, createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit } = require('./src/middleware/rate-limit.middleware');
+const { createAuthenticatedMutationRateLimit, createBackupActionRateLimit, createLoginAttemptGuard, createSensitiveRateLimit, createMembershipPortalRateLimit, createPasswordRecoveryRateLimit } = require('./src/middleware/rate-limit.middleware');
 const { closePool, getPool, initDatabase } = require('./src/database');
 const backupService = require('./src/services/backup-service');
 const { createConfiguredObjectStorageService } = require('./src/services/object-storage-service');
@@ -42,6 +42,7 @@ const commercialSchema = require('./src/services/commercial-schema');
 const commercialService = require('./src/services/commercial-service');
 const memberSubscriptionService = require('./src/services/member-subscription-service');
 const { createGymRegistrationService } = require('./src/services/gym-registration-service');
+const { createPasswordRecoveryService } = require('./src/services/password-recovery-service');
 const { createEmailNotificationService } = require('./src/services/email-notification-service');
 const { createNotificationService } = require('./src/services/notification-service');
 const { configureNotificationService } = require('./src/services/notification-dispatcher');
@@ -106,6 +107,11 @@ const notificationService = createNotificationService({
     },
     publicAppUrl: config.publicAppUrl
 });
+const passwordRecoveryService = createPasswordRecoveryService({
+    emailService: emailNotificationService,
+    publicAppUrl: config.publicAppUrl,
+    requireHttps: config.nodeEnv === 'production'
+});
 configureNotificationService(notificationService);
 const emailOutboxService = createEmailOutboxService({
     getPool,
@@ -145,6 +151,7 @@ const authenticatedMutationRateLimit = createAuthenticatedMutationRateLimit(shar
 const membershipPortalRateLimit = createMembershipPortalRateLimit(sharedRateLimitOptions);
 const backupActionRateLimit = createBackupActionRateLimit(sharedRateLimitOptions);
 const allowLoginAttempt = createLoginAttemptGuard(sharedRateLimitOptions);
+const passwordRecoveryRateLimit = createPasswordRecoveryRateLimit(sharedRateLimitOptions);
 app.use('/api', sensitiveRateLimit);
 app.use('/api/member-portal', membershipPortalRateLimit);
 app.use('/api', createAuthApiMiddleware({
@@ -256,6 +263,8 @@ registerRoutes(app, {
     permissionService,
     ownerOnly,
     allowLoginAttempt,
+    passwordRecoveryService,
+    passwordRecoveryRateLimit,
     backupService,
     backupRecoveryService,
     objectStorageService,
@@ -371,6 +380,14 @@ app.get(['/change-password', '/change-password/'], asyncRoute(async (request, re
     response.set('X-Auth-Routing-Version', 'forced-password-v3');
     response.sendFile(path.join(publicDirectory, 'change-password.html'));
 }));
+
+app.get(['/reset-password', '/reset-password/'], (_request, response) => {
+    response.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Referrer-Policy': 'no-referrer'
+    });
+    response.sendFile(path.join(publicDirectory, 'change-password.html'));
+});
 
 app.get('*', asyncRoute(async (request, response) => {
     // Deep links are protected HTML entry points too. Do not make an

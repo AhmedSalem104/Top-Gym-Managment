@@ -149,10 +149,11 @@ test('Login V2 remains compact, theme-safe, keyboard-operable, and read-only acr
     await expect(page.locator('#authRegistrationDialog a[href="/register-trainer"]')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.locator('#authRegistrationDialog')).toBeHidden();
-    await expect(page.locator('#authForgotHelp')).toBeHidden();
-    await page.evaluate(() => document.getElementById('authForgotHelp').click());
+    await expect(page.locator('#authForgotHelp')).toBeVisible();
+    await page.locator('#authForgotHelp').click();
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
-    await page.locator('#authRecoveryDialog .auth-dialog-confirm').click();
+    await expect(page.locator('#authRecoveryEmail')).toBeVisible();
+    await page.locator('#authRecoveryDialog .auth-choice-close').click();
     await expect(page.locator('#authRecoveryDialog')).toBeHidden();
     expect(writes, 'Login navigation must not submit credentials or mutate auth.').toEqual([]);
 });
@@ -270,7 +271,9 @@ test('Gym and trainer registration layout adapts across widths and themes', asyn
 
 test('Forced password surface preserves field visibility controls and stays read-only across widths', async ({ page }, testInfo) => {
     const writes = await installReadOnlyAuthFixtures(page, { forcedPassword: true });
-    await page.goto('/change-password', { waitUntil: 'domcontentloaded' });
+    // This read-only acceptance fixture mocks the browser API session, not the
+    // server-side cookie used by the protected extensionless document route.
+    await page.goto('/change-password.html', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-forced-password-surface="true"]')).toBeVisible();
 
     for (const viewport of viewportMatrix) {

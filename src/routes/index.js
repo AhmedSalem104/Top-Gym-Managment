@@ -88,6 +88,8 @@ function registerRoutes(app, {
     permissionService,
     ownerOnly,
     allowLoginAttempt,
+    passwordRecoveryService,
+    passwordRecoveryRateLimit,
     backupService,
     backupRecoveryService,
     objectStorageService,
@@ -133,7 +135,7 @@ function registerRoutes(app, {
 
     registerPhoneRoutes(app, { asyncRoute, countryDetectionService: phoneCountryDetectionService });
 
-    registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt });
+    registerAuthRoutes(app, { authService, permissionService, saasService, passwordRecoveryService, passwordRecoveryRateLimit, asyncRoute, ownerOnly, allowLoginAttempt });
     registerBackupRoutes(app, { backupService, backupRecoveryService, brandingService, asyncRoute, isAuthorizedCronRequest, backupActionRateLimit });
     registerFinanceRoutes(app, { financeService, branchService, asyncRoute });
     registerDashboardRoutes(app, { memberService, analyticsService, storeService, branchService, asyncRoute });

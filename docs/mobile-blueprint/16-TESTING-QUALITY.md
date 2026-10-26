@@ -27,6 +27,15 @@ Current repository tests include Node unit tests, browser Playwright tests, CSS/
 
 Cross-tenant IDs, stale branch/section, expired/suspended plan, feature false, limit reached, revoked session, malformed upload, replay/idempotency, rate limits, RLS, PII logging, and raw code/token persistence are blocking tests.
 
+### Password recovery
+
+- Unknown and active emails both receive `202 { accepted: true }`; verify no account identifier or email is included in rate-limit keys/logs.
+- Recovery tokens are 256-bit random values, only their SHA-256 digest is stored, and the link expires in 30 minutes.
+- Reject malformed, expired, consumed, and replayed tokens; password mismatch/length validation preserves the standard auth policy.
+- Two completions racing on the same token produce one success; the other is rejected.
+- Successful completion revokes all web sessions and mobile refresh sessions and does not create a logged-in session.
+- SMTP not configured/failure never leaks account existence or token material; actual provider delivery requires isolated mail-sink and authorized Production checks.
+
 ## Subscription request and notification contract cases
 
 | Scenario | Required evidence |

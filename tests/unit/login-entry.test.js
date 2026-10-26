@@ -21,8 +21,12 @@ test('login entry is generated from the shared auth card and excludes the app sh
     assert.match(login, /id="loginPassword"/u);
     assert.match(login, /data-theme-toggle/iu);
     assert.match(login, /class="auth-reference-controls"[^>]*data-i18n-switcher[\s\S]*?class="auth-theme-toggle/u);
-    assert.match(login, /id="authForgotHelp"[^>]*hidden/u);
+    assert.match(login, /id="authForgotHelp"[^>]*type="button"/u);
     assert.match(login, /id="authRecoveryDialog"/u);
+    assert.match(login, /id="authRecoveryForm"/u);
+    assert.match(login, /id="authRecoveryEmail"[^>]*type="email"/u);
+    assert.match(login, /id="authRecoverySubmit"/u);
+    assert.doesNotMatch(login, /AUTH_OWNER_(?:EMAIL|PASSWORD)/u);
     assert.match(login, /data-current-year/u);
     assert.doesNotMatch(login, /class="app-shell"/u);
     assert.doesNotMatch(login, /notification-center\.js/u);

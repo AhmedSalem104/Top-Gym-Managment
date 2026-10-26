@@ -121,6 +121,18 @@
       "rlsImpact": false,
       "dataBackfill": false,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "041-password-recovery-tokens.sql": {
+      "version": "041",
+      "checksum": "3c16bbed1f4ee460113577b11cf85c29493c43f3d889c41aa8ec110ce83c296a",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }

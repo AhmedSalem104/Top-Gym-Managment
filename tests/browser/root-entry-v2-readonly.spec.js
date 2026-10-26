@@ -54,7 +54,7 @@ test('root public entry renders the real login surface without writes across vie
                 await expect(page.locator('#loginEmail')).toHaveAttribute('placeholder', locale === 'ar' ? 'أدخل البريد الإلكتروني' : 'Enter your email address');
                 await expect(page.locator('#loginPassword')).toHaveAttribute('placeholder', locale === 'ar' ? 'أدخل كلمة المرور' : 'Enter your password');
                 await expect(page.locator('.auth-remember span')).toHaveText(locale === 'ar' ? 'تذكرني' : 'Remember me');
-                await expect(page.locator('#authForgotHelp')).toBeHidden();
+                await expect(page.locator('#authForgotHelp')).toBeVisible();
                 await expect(page.locator('.auth-submit-label')).toHaveText(locale === 'ar' ? 'تسجيل الدخول' : 'Sign in');
                 const measurements = await page.evaluate(() => ({
                     viewport: document.documentElement.clientWidth,
@@ -101,7 +101,7 @@ test('root public entry renders the real login surface without writes across vie
     await page.screenshot({ path: path.join(evidence, 'root-registration-dialog-390-light-ar.png'), fullPage: true });
     await page.keyboard.press('Escape');
     await expect(page.locator('#authRegistrationDialog')).toBeHidden();
-    await page.evaluate(() => document.getElementById('authForgotHelp').click());
+    await page.locator('#authForgotHelp').click();
     await expect(page.locator('#authRecoveryDialog')).toBeVisible();
     await page.screenshot({ path: path.join(evidence, 'root-recovery-dialog-390-light-ar.png'), fullPage: true });
     await page.keyboard.press('Escape');

@@ -91,7 +91,7 @@ test('login response contract resolves forced password before workspace routing'
 
 test('post-password routing is resolved from the refreshed session for Gym and Trainer', () => {
     const script = read('public/js/change-password.js');
-    assert.match(script, /await request\('\/api\/auth\/change-password'/);
+    assert.match(script, /request\(recoveryMode \? '\/api\/auth\/password-recovery\/complete' : '\/api\/auth\/change-password'/);
     assert.match(script, /const user = await currentSession\(\)/);
     assert.match(script, /if \(!user \|\| isPasswordChangeRequired\(user\)\)/);
     assert.match(script, /const tenantType = normalizeTenantType\(user\)/);

@@ -1,6 +1,6 @@
 'use strict';
 
-function createAuthController({ authService, permissionService, allowLoginAttempt, saasService }) {
+function createAuthController({ authService, permissionService, allowLoginAttempt, saasService, passwordRecoveryService }) {
     const mobileSession = (user) => ({
         user: { id: String(user.id), name: user.name, role: user.role },
         tenant: user._primaryTenant ? { id: String(user._primaryTenant.id), name: user._primaryTenant.name, type: user._primaryTenant.tenantType } : undefined,
@@ -12,14 +12,14 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
     return {
         session: async (request, response) => {
             const readOnly = Boolean(request.readOnlyRequest);
-            const setup = readOnly ? { setupRequired: false } : await authService.ensureAuthReady();
+            if (!readOnly) await authService.ensureAuthReady();
             const user = await authService.getSessionUser(authService.readSessionCookie(request), {
                 ensureReady: !readOnly,
                 touch: !readOnly,
                 readOnly
             });
             response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-            response.json({ authenticated: Boolean(user), user: user || null, setupRequired: Boolean(setup?.setupRequired) });
+            response.json({ authenticated: Boolean(user), user: user || null });
         },
 
         login: async (request, response) => {
@@ -73,6 +73,19 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
             authService.appendCookie(response, authService.sessionCookie(result.token, result.expiresAt, request));
             response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
             response.json({ user: result.user, expiresAt: result.expiresAt.toISOString() });
+        },
+
+        requestPasswordRecovery: async (request, response) => {
+            await passwordRecoveryService.requestRecovery(request.body || {});
+            response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            response.status(202).json({ accepted: true });
+        },
+
+        completePasswordRecovery: async (request, response) => {
+            await passwordRecoveryService.completeRecovery(request.body || {});
+            authService.appendCookie(response, authService.clearSessionCookie(request));
+            response.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+            response.status(204).end();
         },
 
         listUsers: async (request, response) => {

@@ -8,11 +8,24 @@
     const identity = document.getElementById('passwordChangeIdentity');
     const i18n = window.TopGymI18n;
     const tr = (key, params) => i18n?.t?.(`passwordChange.${key}`, params) || key;
+    const recoveryToken = new URLSearchParams(String(window.location.hash || '').slice(1)).get('recovery') || '';
+    const recoveryMode = Boolean(recoveryToken);
     let identityName = '';
     let localMessageKey = '';
 
     function applyPasswordChangeLocale() {
         i18n?.apply?.(document);
+        if (recoveryMode) {
+            document.title = tr('recovery.pageTitle');
+            const eyebrow = document.querySelector('.password-change-eyebrow');
+            const title = document.getElementById('passwordChangeTitle');
+            const description = document.getElementById('passwordChangeDescription');
+            const note = document.querySelector('.password-change-note');
+            if (eyebrow) eyebrow.textContent = tr('recovery.eyebrow');
+            if (title) title.textContent = tr('recovery.title');
+            if (description) description.textContent = tr('recovery.description');
+            if (note) note.hidden = true;
+        }
         if (submitLabel) {
             const loading = submit?.getAttribute('aria-busy') === 'true';
             submitLabel.textContent = tr(loading ? 'submit.loading' : 'submit');
@@ -72,7 +85,7 @@
         if (!submit) return;
         submit.disabled = Boolean(loading);
         submit.setAttribute('aria-busy', String(Boolean(loading)));
-        if (submitLabel) submitLabel.textContent = tr(loading ? 'submit.loading' : 'submit');
+        if (submitLabel) submitLabel.textContent = tr(loading ? 'submit.loading' : recoveryMode ? 'recovery.submit' : 'submit');
     }
 
     async function request(url, options = {}) {
@@ -114,6 +127,16 @@
     }
 
     async function bootstrap() {
+        if (recoveryMode) {
+            if (!TOKEN_PATTERN.test(recoveryToken)) {
+                setLocalizedMessage('error.recoveryInvalid');
+                form.hidden = true;
+                return;
+            }
+            document.body.dataset.passwordChangeReady = 'true';
+            window.setTimeout(() => document.getElementById('forceNewPassword')?.focus(), 0);
+            return;
+        }
         try {
             const user = await currentSession();
             if (!user) return;
@@ -148,11 +171,23 @@
         }
         setLoading(true);
         try {
-            await request('/api/auth/change-password', {
+            await request(recoveryMode ? '/api/auth/password-recovery/complete' : '/api/auth/change-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newPassword, confirmPassword })
+                body: JSON.stringify(recoveryMode
+                    ? { token: recoveryToken, newPassword, confirmPassword }
+                    : { newPassword, confirmPassword })
             });
+            if (recoveryMode) {
+                form.querySelectorAll('.password-change-field').forEach((field) => {
+                    field.querySelectorAll('input, button').forEach((control) => { control.disabled = true; });
+                    field.hidden = true;
+                });
+                if (submit) submit.hidden = true;
+                document.getElementById('passwordRecoveryBackToLogin')?.removeAttribute('hidden');
+                setLocalizedMessage('recovery.success', 'success');
+                return;
+            }
             // The endpoint rotates the session. Re-read it before resolving
             // the product route so the decision comes from the fresh server
             // session, without asking the user to log in again.
@@ -164,6 +199,11 @@
         } catch (error) {
             if (error.localMessageKey) setLocalizedMessage(error.localMessageKey);
             else {
+                if (recoveryMode && error.code === 'INVALID_RECOVERY_TOKEN') {
+                    setLocalizedMessage('error.recoveryInvalid');
+                    setLoading(false);
+                    return;
+                }
                 const apiMessageKey = error.code ? `error.api.${error.code}` : '';
                 if (apiMessageKey && tr(apiMessageKey) !== `passwordChange.${apiMessageKey}`) setLocalizedMessage(apiMessageKey);
                 else setMessage(error.message || tr('error.save'));
@@ -189,6 +229,7 @@
         });
     });
 
+    const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
     applyPasswordChangeLocale();
     window.addEventListener('topgym:localechange', applyPasswordChangeLocale);
     window.addEventListener('topgym:themechange', applyPasswordChangeLocale);

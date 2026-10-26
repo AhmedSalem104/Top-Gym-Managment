@@ -2,14 +2,16 @@
 
 const { createAuthController } = require('../controllers/auth.controller');
 
-function registerAuthRoutes(app, { authService, permissionService, saasService, asyncRoute, ownerOnly, allowLoginAttempt }) {
-    const controller = createAuthController({ authService, permissionService, allowLoginAttempt, saasService });
+function registerAuthRoutes(app, { authService, permissionService, saasService, passwordRecoveryService, passwordRecoveryRateLimit, asyncRoute, ownerOnly, allowLoginAttempt }) {
+    const controller = createAuthController({ authService, permissionService, allowLoginAttempt, saasService, passwordRecoveryService });
     app.post('/api/mobile/auth/login', asyncRoute(controller.mobileLogin));
     app.post('/api/mobile/auth/refresh', asyncRoute(controller.mobileRefresh));
     app.get('/api/mobile/auth/session', asyncRoute(controller.mobileSession));
     app.post('/api/mobile/auth/logout', asyncRoute(controller.mobileLogout));
     app.get('/api/auth/session', asyncRoute(controller.session));
     app.post('/api/auth/login', asyncRoute(controller.login));
+    app.post('/api/auth/password-recovery/request', passwordRecoveryRateLimit.request, asyncRoute(controller.requestPasswordRecovery));
+    app.post('/api/auth/password-recovery/complete', passwordRecoveryRateLimit.complete, asyncRoute(controller.completePasswordRecovery));
     app.post('/api/auth/logout', asyncRoute(controller.logout));
     app.post('/api/auth/change-password', asyncRoute(controller.changePassword));
     app.get('/api/auth/users', ownerOnly, asyncRoute(controller.listUsers));

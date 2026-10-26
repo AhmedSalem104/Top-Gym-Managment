@@ -236,11 +236,13 @@ test('Login uses central Arabic/English i18n across responsive themes without au
         await expect(page.locator('#authRegistrationDialog a[href="/register-gym"] strong')).toHaveText(locale === 'ar' ? 'منصة جيم' : 'Gym platform');
         await expect(page.locator('#authRegistrationDialog .auth-choice-close')).toHaveAttribute('aria-label', locale === 'ar' ? 'إغلاق' : 'Close');
         await page.locator('#authRegistrationDialog .auth-choice-close').click();
-        await expect(page.locator('#authForgotHelp')).toBeHidden();
-        await page.evaluate(() => document.getElementById('authForgotHelp').click());
+        await expect(page.locator('#authForgotHelp')).toBeVisible();
+        await page.locator('#authForgotHelp').click();
         await expect(page.locator('#authRecoveryDialog')).toBeVisible();
         await expect(page.locator('#authRecoveryTitle')).toHaveText(locale === 'ar' ? 'استعادة الوصول' : 'Recover access');
-        await expect(page.locator('#authRecoveryDialog .auth-dialog-confirm')).toHaveText(locale === 'ar' ? 'حسنًا' : 'Got it');
+        await expect(page.locator('#authRecoveryEmail')).toBeVisible();
+        await expect(page.locator('#authRecoverySubmit')).toHaveText(locale === 'ar' ? 'إرسال رابط الاستعادة' : 'Send recovery link');
+        await expect(page.locator('#authRecoveryDialog .auth-dialog-confirm')).toHaveText(locale === 'ar' ? 'إغلاق' : 'Close');
         await page.locator('#authRecoveryDialog .auth-choice-close').click();
     }
 
@@ -257,7 +259,7 @@ test('Login uses central Arabic/English i18n across responsive themes without au
         for (const dialog of ['registration', 'recovery']) {
             const selector = dialog === 'registration' ? '#authRegistrationDialog' : '#authRecoveryDialog';
             if (dialog === 'registration') await page.locator('#authRegisterOpen').click();
-            else await page.evaluate(() => document.getElementById('authForgotHelp').click());
+            else await page.locator('#authForgotHelp').click();
             const surface = page.locator(selector);
             await expect(surface).toBeVisible();
             const bounds = await surface.boundingBox();
