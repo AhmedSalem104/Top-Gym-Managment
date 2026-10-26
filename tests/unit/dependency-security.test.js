@@ -14,5 +14,6 @@ test('dependency security keeps Express 4 compatible and pins patched qs', () =>
     assert.equal(packageJson.overrides?.qs, '6.16.0');
     assert.equal(lockfile.packages['node_modules/express'].version, '4.22.2');
     assert.equal(lockfile.packages['node_modules/qs'].version, '6.16.0');
-    assert.equal(lockfile.packages['node_modules/body-parser'].dependencies.qs, '~6.15.1');
+    assert.equal(lockfile.packages['node_modules/body-parser'].version, '1.20.9');
+    assert.equal(lockfile.packages['node_modules/body-parser'].dependencies.qs, '~6.16.0');
 });

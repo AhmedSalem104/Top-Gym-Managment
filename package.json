@@ -70,7 +70,10 @@
     "nodemailer": "^10.0.13"
   },
   "overrides": {
-    "qs": "6.16.0"
+    "qs": "6.16.0",
+    "@azure/identity": {
+      "@azure/msal-node": "7.1.1"
+    }
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.4.2",
