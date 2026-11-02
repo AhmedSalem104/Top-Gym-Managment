@@ -134,6 +134,7 @@
                 panel.toggleAttribute('inert', !isSelected);
             });
             if (moveFocus) selected.focus({ preventScroll: true });
+            window.dispatchEvent(new CustomEvent('topgym:dashboard-view-changed', { detail: { name } }));
         };
 
         tablist.addEventListener('click', (event) => {

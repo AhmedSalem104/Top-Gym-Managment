@@ -398,9 +398,19 @@
         ensurePanel();
         window.addEventListener('topgym:tab-changed', (event) => {
             if (event.detail?.name === 'dashboard') {
+                if (isDashboardAnalyticsViewActive()) {
+                    ensurePanel();
+                    loadAnalytics(state.period);
+                }
+            } else {
+                hidePanel();
+            }
+        });
+        window.addEventListener('topgym:dashboard-view-changed', (event) => {
+            if (event.detail?.name === 'analytics' && isDashboardActive()) {
                 ensurePanel();
                 loadAnalytics(state.period);
-            } else {
+            } else if (event.detail?.name === 'overview') {
                 hidePanel();
             }
         });
@@ -420,17 +430,22 @@
             if ((window.location.hash.slice(1) || 'dashboard') !== 'dashboard') hidePanel();
         });
         window.addEventListener('topgym:branch-context-changed', () => {
-            if (isDashboardActive()) void loadAnalytics(state.period);
+            if (isDashboardAnalyticsViewActive()) void loadAnalytics(state.period);
         });
-        if (isDashboardActive()) loadAnalytics('month');
+        if (isDashboardAnalyticsViewActive()) loadAnalytics('month');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
     else initialize();
 
     window.topGymRefreshDashboardAnalytics = () => {
-        if (isDashboardActive()) return loadAnalytics(state.period);
+        if (isDashboardAnalyticsViewActive()) return loadAnalytics(state.period);
         hidePanel();
         return Promise.resolve();
     };
+
+    function isDashboardAnalyticsViewActive() {
+        return isDashboardActive()
+            && document.querySelector('[data-dashboard-view-tab="analytics"]')?.getAttribute('aria-selected') === 'true';
+    }
 })();

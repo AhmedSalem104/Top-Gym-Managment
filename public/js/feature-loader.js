@@ -131,9 +131,8 @@
         return window.requestAnimationFrame(() => window.requestAnimationFrame(callback));
     }
 
-    function scheduleDashboardAnalytics(immediate = false) {
-        if (window.__topGymDashboardAnalyticsScheduled) return;
-        if (!dashboardIsRequested()) return;
+    function loadDashboardAnalyticsOnDemand() {
+        if (window.__topGymDashboardAnalyticsScheduled || !dashboardIsRequested()) return;
         window.__topGymDashboardAnalyticsScheduled = true;
         const start = async () => {
             if (window.topGymAuthReady) await window.topGymAuthReady.catch(() => null);
@@ -142,11 +141,13 @@
                 window.__topGymDashboardAnalyticsScheduled = false;
                 return;
             }
-            await ensureTab('phone-inputs');
-            await loadScript('/js/pages/dashboard/analytics.js?v=d6b751fdc62f3f48', 'dashboard-analytics')
-                .catch((error) => console.warn('[TOP GYM] Dashboard analytics failed to load.', error));
+            await loadScript('/js/pages/dashboard/analytics.js?v=771e7db1b56f3781', 'dashboard-analytics')
+                .catch((error) => {
+                    window.__topGymDashboardAnalyticsScheduled = false;
+                    console.warn('[TOP GYM] Dashboard analytics failed to load.', error);
+                });
         };
-        scheduleIdle(() => void start(), immediate ? 700 : 1600);
+        void start();
     }
 
     function scheduleDashboardEnhancements(immediate = false) {
@@ -480,12 +481,10 @@
     window.addEventListener('topgym:tab-changed', (event) => {
         if (event.detail?.name === 'dashboard') {
             scheduleDashboardEnhancements();
-            // Analytics and dashboard enhancements decorate an already usable
-            // route. Loading them immediately competed with the first route's
-            // data/bootstrap requests and pulled phone/formatter assets into
-            // the critical post-login window.
-            scheduleDashboardAnalytics();
         }
+    });
+    window.addEventListener('topgym:dashboard-view-changed', (event) => {
+        if (event.detail?.name === 'analytics') loadDashboardAnalyticsOnDemand();
     });
     bindLazyPrintActions();
     bindLazyCoachingActions();
@@ -500,10 +499,8 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             scheduleDashboardEnhancements();
-            scheduleDashboardAnalytics();
         }, { once: true });
     } else {
         scheduleDashboardEnhancements();
-        scheduleDashboardAnalytics();
     }
 })();

@@ -17,6 +17,7 @@ async function installReadOnlyDashboardFixture(page, { multipleScopes = false } 
     const writes = [];
     const thirdParty = [];
     const dashboardRequests = [];
+    const analyticsRequests = [];
     const dayPassRequests = [];
     let analyticsMode = 'empty';
     let dashboardMode = 'ready';
@@ -36,6 +37,7 @@ async function installReadOnlyDashboardFixture(page, { multipleScopes = false } 
         const request = route.request();
         const pathname = new URL(request.url()).pathname;
         if (pathname === '/api/dashboard-analytics') {
+            analyticsRequests.push(new URL(request.url()).search);
             if (analyticsMode === 'loading') await new Promise((resolve) => setTimeout(resolve, 900));
             if (analyticsMode === 'error') {
                 return route.fulfill({ status: 503, contentType: 'application/json; charset=utf-8', body: JSON.stringify({ error: 'Analytics unavailable in the read-only visual fixture.' }) });
@@ -99,6 +101,7 @@ async function installReadOnlyDashboardFixture(page, { multipleScopes = false } 
     return {
         writes,
         dashboardRequests,
+        analyticsRequests,
         dayPassRequests,
         thirdParty,
         setAnalyticsMode: (mode) => { analyticsMode = mode; },
@@ -609,8 +612,10 @@ test.describe('Dashboard V2 visual continuation (read-only)', () => {
         await page.screenshot({ path: path.join(SCREENSHOT_DIR, 'dashboard-day-pass-form-390-ar-light.png'), fullPage: false });
         await page.locator('#dayPassDialog').evaluate((dialog) => dialog.close());
         await page.setViewportSize({ width: 1440, height: 900 });
+        expect(runtime.analyticsRequests, 'Overview must not request finance analytics before the Analytics view is opened.').toEqual([]);
         await page.locator('#dashboardAnalyticsTab').click();
         await expect(page.locator('#dashboardAnalyticsPanel')).toBeVisible();
+        await expect.poll(() => runtime.analyticsRequests.length).toBe(1);
         runtime.setAnalyticsMode('loading');
         await page.evaluate(() => { void window.topGymRefreshDashboardAnalytics?.(); });
         await expect(page.locator('#dashboardAnalyticsLoading')).toBeVisible();
