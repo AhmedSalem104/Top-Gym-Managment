@@ -418,6 +418,38 @@
         });
     }
 
+    function applyConfirmedAttendanceRecord(record) {
+        if (!attendanceSnapshot || !record?.id || !record.memberId) return false;
+        const records = [...(attendanceSnapshot.records || [])];
+        const existingIndex = records.findIndex((item) => Number(item.id) === Number(record.id));
+        const search = $('attendanceSearch')?.value.trim().toLocaleLowerCase() || '';
+        const normalizedSearch = search.replace(/\D/g, '');
+        const recordPhone = String(record.phone || '').replace(/\D/g, '');
+        const matchesSearch = !search
+            || String(record.memberName || '').toLocaleLowerCase().includes(search)
+            || String(record.phone || '').toLocaleLowerCase().includes(search)
+            || (normalizedSearch.length >= 5 && recordPhone.includes(normalizedSearch));
+
+        if (existingIndex >= 0) records[existingIndex] = record;
+        else if (matchesSearch) records.push(record);
+        else return true;
+
+        records.sort((first, second) => {
+            const timeDifference = new Date(second.checkInAt).getTime() - new Date(first.checkInAt).getTime();
+            return timeDifference || Number(second.id) - Number(first.id);
+        });
+        const checkedOut = records.filter((item) => Boolean(item.checkOutAt)).length;
+        const checkedIn = records.length - checkedOut;
+        attendanceSnapshot = {
+            ...attendanceSnapshot,
+            records,
+            summary: { present: records.length, checkedIn, checkedOut }
+        };
+        renderRecords(attendanceSnapshot);
+        decorateAttendanceActions(filteredAttendanceRecords(attendanceSnapshot));
+        return true;
+    }
+
     function searchAttendanceMember() {
         window.clearTimeout(memberPreviewTimer);
         if (normalizePhone($('attendancePhone')?.value || '').length < 5) {
@@ -613,13 +645,14 @@
         setAttendanceMutationPending(true, actionButton);
         try {
             const result = await request('/api/attendance/check-in', { method: 'POST', body: JSON.stringify(body) });
+            const updatedInPlace = applyConfirmedAttendanceRecord(result.attendance);
             $('attendancePhone').value = '';
             clearMemberPreview();
             if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkIn', { name: memberName }), false, 'success');
             else void showMessage(translate('attendance.success.checkedIn'), 'success', result.message);
             attendanceFeedback('success');
             announceAttendanceUpdate();
-            void loadAttendance({ force: true });
+            if (!updatedInPlace) void loadAttendance({ force: true });
         } catch (error) {
             attendanceFeedback('error');
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');
@@ -642,13 +675,14 @@
         setAttendanceMutationPending(true, actionButton);
         try {
             const result = await request('/api/attendance/check-out', { method: 'POST', body: JSON.stringify(body) });
+            const updatedInPlace = applyConfirmedAttendanceRecord(result.attendance);
             $('attendancePhone').value = '';
             clearMemberPreview();
             if (typeof window.showToast === 'function') window.showToast(translate('attendance.success.checkOut', { name: memberName }), false, 'success');
             else void showMessage(translate('attendance.success.checkedOut'), 'success', result.message);
             attendanceFeedback('success');
             announceAttendanceUpdate();
-            void loadAttendance({ force: true });
+            if (!updatedInPlace) void loadAttendance({ force: true });
         } catch (error) {
             attendanceFeedback('error');
             await showMessage(error.message, error.code?.startsWith('ATTENDANCE_') ? 'warning' : 'error');

@@ -67,7 +67,7 @@ function jsonResponse(route, payload, status = 200) {
 }
 
 async function installLocalMemberApi(page) {
-    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [], attendanceRequests: [] };
+    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [], attendanceRequests: [], attendanceReads: 0 };
 
     await page.route('**/api/**', async (route) => {
         const request = route.request();
@@ -93,14 +93,25 @@ async function installLocalMemberApi(page) {
         });
         if (pathname === '/api/bootstrap') return jsonResponse(route, { branches: [], sections: [], defaultBranch: null });
         if (pathname === '/api/dashboard') return jsonResponse(route, { stats: { total: database.members.length, active: database.members.length, expired: 0, expiringSoon: 0, frozen: 0 }, alerts: [] });
-        if (pathname === '/api/attendance' && request.method() === 'GET') return jsonResponse(route, { date: '2026-10-03', summary: { present: 0, checkedIn: 0, checkedOut: 0 }, records: [] });
+        if (pathname === '/api/attendance' && request.method() === 'GET') {
+            database.attendanceReads += 1;
+            return jsonResponse(route, { date: '2026-10-03', summary: { present: 0, checkedIn: 0, checkedOut: 0 }, records: [] });
+        }
         if (pathname === '/api/attendance/check-in' && request.method() === 'POST') {
             database.attendanceRequests.push({ action: 'check-in', body });
-            return jsonResponse(route, { message: 'تم تسجيل الحضور بنجاح' });
+            const member = database.members.find((item) => item.phone === body.phone);
+            return jsonResponse(route, {
+                message: 'تم تسجيل الحضور بنجاح',
+                attendance: { id: 8101, memberId: member.id, memberName: member.fullName, phone: member.phone, membershipId: membership.id, attendanceDate: '2026-10-03', checkInAt: '2026-10-03T09:15:00.000Z', checkOutAt: null, checkInSource: 'phone', checkOutSource: null, durationMinutes: null }
+            });
         }
         if (pathname === '/api/attendance/check-out' && request.method() === 'POST') {
             database.attendanceRequests.push({ action: 'check-out', body });
-            return jsonResponse(route, { message: 'تم تسجيل الانصراف بنجاح' });
+            const member = database.members.find((item) => item.phone === body.phone);
+            return jsonResponse(route, {
+                message: 'تم تسجيل الانصراف بنجاح',
+                attendance: { id: 8102, memberId: member.id, memberName: member.fullName, phone: member.phone, membershipId: membership.id, attendanceDate: '2026-10-03', checkInAt: member.attendance?.checkInAt || '2026-10-03T09:15:00.000Z', checkOutAt: '2026-10-03T10:15:00.000Z', checkInSource: 'phone', checkOutSource: 'phone', durationMinutes: 60 }
+            });
         }
         if (pathname === '/api/saas/subscription') return jsonResponse(route, {});
 
@@ -555,7 +566,7 @@ test('attendance check-in keeps the existing API flow and gives immediate succes
         phoneCountry: 'EG',
         membership
     });
-    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.goto('/index.html?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendancePhone').fill('01015819700');
     await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
     await expect(page.locator('.attendance-member-context .attendance-member-empty')).toBeHidden();
@@ -568,6 +579,8 @@ test('attendance check-in keeps the existing API flow and gives immediate succes
     await expect(page.locator('#toast')).toContainText('تم تسجيل حضور عضو اختبار الحضور بنجاح');
     expect(database.attendanceRequests).toHaveLength(1);
     expect(database.attendanceRequests[0]).toMatchObject({ action: 'check-in', body: { phone: '+201015819700' } });
+    await expect(page.locator('#attendanceTableWrap tbody tr')).toHaveCount(1);
+    expect(database.attendanceReads, 'A confirmed check-in should update the current snapshot without another full attendance-list request.').toBe(1);
     await expect(page.locator('.swal2-container')).toHaveCount(0);
 });
 
@@ -582,7 +595,7 @@ test('attendance check-out is the single primary action for a member already ins
         attendance: { checkInAt: '2026-10-03T09:15:00.000Z', checkOutAt: null },
         membership
     });
-    await page.goto('/?members-popup-contract#attendance', { waitUntil: 'networkidle' });
+    await page.goto('/index.html?members-popup-contract#attendance', { waitUntil: 'networkidle' });
     await page.locator('#attendancePhone').fill('01015819701');
     await expect(page.locator('#attendanceMemberPreview')).toBeVisible();
     await expect(page.locator('.attendance-member-context .attendance-member-empty')).toBeHidden();
@@ -594,6 +607,8 @@ test('attendance check-out is the single primary action for a member already ins
     expect((await response).status()).toBe(200);
     expect(database.attendanceRequests).toHaveLength(1);
     expect(database.attendanceRequests[0]).toMatchObject({ action: 'check-out', body: { phone: '+201015819701' } });
+    await expect(page.locator('#attendanceTableWrap tbody tr')).toHaveCount(1);
+    expect(database.attendanceReads, 'A confirmed check-out should update the current snapshot without another full attendance-list request.').toBe(1);
     await expect(page.locator('#toast')).toContainText('عضو حضور داخل الجيم');
     await expect(page.locator('.swal2-container')).toHaveCount(0);
 });

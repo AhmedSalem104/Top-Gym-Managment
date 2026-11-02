@@ -315,6 +315,7 @@ async function getTodayAttendance(options = {}) {
         fieldName: 'Phone number'
     }) || '';
     const request = pool.request()
+        .input('tenantId', sql.Int, currentTenantId({ required: true }))
         .input('attendanceDate', sql.Date, toUtcDate(date))
         .input('search', sql.NVarChar(120), search ? `%${search}%` : null)
         .input('phoneSearch', sql.NVarChar(30), phoneSearch);
@@ -340,12 +341,16 @@ async function getTodayAttendance(options = {}) {
         ? await request.query(selectQuery)
         : await request
             .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
-            .batch(`UPDATE dbo.gym_attendance
+            .batch(`UPDATE attendance
                 SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
                     check_out_source = 'auto',
                     updated_at = SYSUTCDATETIME()
-                WHERE check_out_at IS NULL
-                  AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
+                FROM dbo.gym_attendance AS attendance
+                INNER JOIN dbo.members AS member
+                    ON member.id = attendance.member_id
+                   AND member.tenant_id = @tenantId
+                WHERE attendance.check_out_at IS NULL
+                  AND DATEADD(minute, @autoMinutes, attendance.check_in_at) <= SYSUTCDATETIME();
                 SELECT @@ROWCOUNT AS autoClosed;
 
                 ${selectQuery}`);
@@ -449,6 +454,7 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
     await ensureAttendanceTable({ readOnly: Boolean(options.readOnly) });
     const pool = await getPool();
     const request = pool.request()
+        .input('tenantId', sql.Int, currentTenantId({ required: true }))
         .input('attendanceDate', sql.Date, toUtcDate(parseDateOnly(date, 'تاريخ الحضور')));
     const placeholders = ids.map((id, index) => {
         const name = `memberId${index}`;
@@ -476,12 +482,16 @@ async function getMemberAttendanceStatuses(memberIds = [], date = todayInTimeZon
         ? await request.query(selectQuery)
         : await request
             .input('autoMinutes', sql.Int, getAutoCheckoutMinutes())
-            .batch(`UPDATE dbo.gym_attendance
-                       SET check_out_at = DATEADD(minute, @autoMinutes, check_in_at),
+            .batch(`UPDATE attendance
+                       SET check_out_at = DATEADD(minute, @autoMinutes, attendance.check_in_at),
                            check_out_source = 'auto',
                            updated_at = SYSUTCDATETIME()
-                       WHERE check_out_at IS NULL
-                         AND DATEADD(minute, @autoMinutes, check_in_at) <= SYSUTCDATETIME();
+                       FROM dbo.gym_attendance AS attendance
+                       INNER JOIN dbo.members AS member
+                           ON member.id = attendance.member_id
+                          AND member.tenant_id = @tenantId
+                       WHERE attendance.check_out_at IS NULL
+                         AND DATEADD(minute, @autoMinutes, attendance.check_in_at) <= SYSUTCDATETIME();
 
                        ${selectQuery}`);
     const rows = options.readOnly ? result.recordset : result.recordsets?.[0] || [];
@@ -521,8 +531,11 @@ async function getMemberQrToken(memberId) {
 async function checkIn(body = {}, { branchId = null, sectionId = null } = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
-    await reconcileAutoCheckout(pool);
     const resolved = await findMember(pool, body, { requireActive: true, branchId, sectionId });
+    // A foreground check-in only needs to reconcile this member. The tenant-wide
+    // sweep is owned by the scheduled maintenance job and must not delay the
+    // receptionist's write path.
+    await reconcileAutoCheckout(pool, resolved.member.id);
     const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId, sectionId);
     if (existing) {
         throw appError('تم تسجيل حضور هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_IN', { attendance: existing });
@@ -552,8 +565,10 @@ async function checkIn(body = {}, { branchId = null, sectionId = null } = {}) {
 async function checkOut(body = {}, { branchId = null, sectionId = null } = {}) {
     await ensureAttendanceTable();
     const pool = await getPool();
-    await reconcileAutoCheckout(pool);
     const resolved = await findMember(pool, body, { requireActive: false, branchId, sectionId });
+    // Keep the existing auto-checkout semantics for the target member without
+    // updating unrelated attendance rows as part of an interactive request.
+    await reconcileAutoCheckout(pool, resolved.member.id);
     const existing = await getAttendanceRecordForDate(pool, resolved.member.id, resolved.today, branchId, sectionId);
     if (!existing) throw appError('لا يوجد تسجيل حضور لهذا المشترك اليوم.', 409, 'ATTENDANCE_NOT_CHECKED_IN');
     if (existing.checkOutAt) throw appError('تم تسجيل انصراف هذا المشترك اليوم بالفعل.', 409, 'ATTENDANCE_ALREADY_CHECKED_OUT', { attendance: existing });
