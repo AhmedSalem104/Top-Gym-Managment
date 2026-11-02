@@ -8573,15 +8573,40 @@
         ));
     }
 
+    const intlFormatterCache = new Map();
+    const INTL_FORMATTER_CACHE_LIMIT = 32;
+
+    function getIntlFormatter(kind, Formatter, locale, options) {
+        let cacheKey;
+        try {
+            cacheKey = `${kind}:${locale}:${JSON.stringify(Object.keys(options).sort().map((key) => [key, options[key]]))}`;
+        } catch {
+            return new Formatter(locale, options);
+        }
+        if (intlFormatterCache.has(cacheKey)) {
+            const cached = intlFormatterCache.get(cacheKey);
+            intlFormatterCache.delete(cacheKey);
+            intlFormatterCache.set(cacheKey, cached);
+            return cached;
+        }
+        const formatter = new Formatter(locale, options);
+        if (intlFormatterCache.size >= INTL_FORMATTER_CACHE_LIMIT) {
+            intlFormatterCache.delete(intlFormatterCache.keys().next().value);
+        }
+        intlFormatterCache.set(cacheKey, formatter);
+        return formatter;
+    }
+
     function format(kind, value, options = {}) {
         const locale = currentLocale === 'en' ? 'en-EG' : 'ar-EG';
         if (kind === 'number') {
             const number = Number(value);
-            return Number.isFinite(number) ? new Intl.NumberFormat(locale, options).format(number) : '';
+            return Number.isFinite(number) ? getIntlFormatter(kind, Intl.NumberFormat, locale, options).format(number) : '';
         }
         if (kind === 'currency') {
             const number = Number(value);
-            return Number.isFinite(number) ? new Intl.NumberFormat(locale, { style: 'currency', currency: options.currency || 'EGP', ...options }).format(number) : '';
+            const formatterOptions = { style: 'currency', currency: options.currency || 'EGP', ...options };
+            return Number.isFinite(number) ? getIntlFormatter(kind, Intl.NumberFormat, locale, formatterOptions).format(number) : '';
         }
         if (kind === 'date') {
             if (!value) return '';
@@ -8594,7 +8619,7 @@
             const formatterOptions = hasStyle || hasDateComponents
                 ? options
                 : { year: 'numeric', month: '2-digit', day: '2-digit' };
-            return new Intl.DateTimeFormat(locale, formatterOptions).format(date);
+            return getIntlFormatter(kind, Intl.DateTimeFormat, locale, formatterOptions).format(date);
         }
         if (kind === 'time') {
             if (!value) return '';
@@ -8605,7 +8630,7 @@
             const formatterOptions = hasStyle
                 ? options
                 : { hour: 'numeric', minute: '2-digit', ...options };
-            return new Intl.DateTimeFormat(locale, formatterOptions).format(date);
+            return getIntlFormatter(kind, Intl.DateTimeFormat, locale, formatterOptions).format(date);
         }
         return String(value ?? '');
     }
@@ -8620,50 +8645,89 @@
         return element;
     }
 
+    const annotationCatalogs = new Map();
+    const translationSelector = '[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-format]';
+    const translationAttributes = [
+        ['i18nPlaceholder', 'placeholder'],
+        ['i18nTitle', 'title'],
+        ['i18nAriaLabel', 'aria-label'],
+        ['i18nDataLoadingText', 'data-loading-text']
+    ];
+    const annotationAttributes = [
+        ['placeholder', 'i18nPlaceholder'],
+        ['title', 'i18nTitle'],
+        ['aria-label', 'i18nAriaLabel'],
+        ['data-loading-text', 'i18nDataLoadingText']
+    ];
+
     function applyTranslations(root = document) {
-        const elements = [];
-        if (typeof Element === 'function' && root instanceof Element && root.matches('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-format]')) elements.push(root);
-        root.querySelectorAll?.('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-format]').forEach((element) => elements.push(element));
-        elements.forEach((element) => {
+        const applyElement = (element) => {
             if (element.closest?.('[data-i18n-preserve]')) return;
-            const params = {};
-            Object.keys(element.dataset).forEach((name) => {
-                if (name.startsWith('i18nParam')) {
-                    const parameter = name.slice(9, 10).toLowerCase() + name.slice(10);
-                    const value = element.dataset[name];
-                    params[parameter] = parameter === 'count' && /^\d+(?:\.\d+)?$/u.test(value) ? Number(value) : value;
-                }
-            });
+            let params;
+            for (const name in element.dataset) {
+                if (!name.startsWith('i18nParam')) continue;
+                const parameter = name.slice(9, 10).toLowerCase() + name.slice(10);
+                const value = element.dataset[name];
+                params ||= {};
+                params[parameter] = parameter === 'count' && /^\d+(?:\.\d+)?$/u.test(value) ? Number(value) : value;
+            }
+            const translationParams = params || {};
             const textKey = element.dataset.i18n;
             if (textKey) {
-                const translated = t(textKey, params);
-                const textNode = [...element.childNodes].find((node) => node.nodeType === Node.TEXT_NODE && node.nodeValue.trim());
+                const translated = t(textKey, translationParams);
+                let textNode = null;
+                for (const node of element.childNodes) {
+                    if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim()) {
+                        textNode = node;
+                        break;
+                    }
+                }
                 if (textNode) {
                     const leading = textNode.nodeValue.match(/^\s*/u)?.[0] || '';
                     const trailing = textNode.nodeValue.match(/\s*$/u)?.[0] || '';
-                    textNode.nodeValue = `${leading}${translated}${trailing}`;
-                } else if (!element.children.length) element.textContent = translated;
+                    const value = `${leading}${translated}${trailing}`;
+                    if (textNode.nodeValue !== value) textNode.nodeValue = value;
+                } else if (!element.children.length && element.textContent !== translated) element.textContent = translated;
             }
-            [['i18nPlaceholder', 'placeholder'], ['i18nTitle', 'title'], ['i18nAriaLabel', 'aria-label'], ['i18nDataLoadingText', 'data-loading-text']].forEach(([dataKey, attribute]) => {
+            for (const [dataKey, attribute] of translationAttributes) {
                 const key = element.dataset[dataKey];
-                if (key) element.setAttribute(attribute, t(key, params));
-            });
+                if (!key) continue;
+                const value = t(key, translationParams);
+                if (element.getAttribute(attribute) !== value) element.setAttribute(attribute, value);
+            }
             if (element.dataset.i18nFormat) {
                 const formatted = format(element.dataset.i18nFormat, element.dataset.i18nValue, { currency: element.dataset.i18nCurrency || undefined });
                 if (element.textContent !== formatted) element.textContent = formatted;
             }
-        });
+        };
+
+        if (typeof Element === 'function' && root instanceof Element && root.matches(translationSelector)) applyElement(root);
+        root.querySelectorAll?.(translationSelector).forEach(applyElement);
     }
 
     function annotateText(root, prefix, skipSelector = '') {
         if (!root?.ownerDocument && root !== document) return;
-        const catalog = new Map(Object.entries(messages.ar).filter(([key]) => key.startsWith(prefix)).map(([key, value]) => [value, key]));
-        const elements = [];
-        if (root instanceof Element) elements.push(root);
-        root.querySelectorAll?.('*').forEach((element) => elements.push(element));
-        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        let catalog = annotationCatalogs.get(prefix);
+        if (!catalog) {
+            catalog = new Map(Object.entries(messages.ar).filter(([key]) => key.startsWith(prefix)).map(([key, value]) => [value, key]));
+            annotationCatalogs.set(prefix, catalog);
+        }
+        const annotateElement = (element) => {
+            if (element.closest('[data-i18n-preserve]') || (skipSelector && element.closest(skipSelector))) return;
+            for (const [attribute, dataKey] of annotationAttributes) {
+                const value = element.getAttribute(attribute);
+                const key = value && catalog.get(value.trim());
+                if (key) element.dataset[dataKey] = key;
+            }
+        };
+        if (typeof Element === 'function' && root instanceof Element) annotateElement(root);
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
         while (walker.nextNode()) {
             const node = walker.currentNode;
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                annotateElement(node);
+                continue;
+            }
             const parent = node.parentElement;
             if (!parent || parent.closest('[data-i18n-preserve]') || (skipSelector && parent.closest(skipSelector))) continue;
             const source = node.nodeValue.trim();
@@ -8671,15 +8735,6 @@
             const key = catalog.get(source);
             if (key) parent.dataset.i18n = key;
         }
-        const attributes = ['placeholder', 'title', 'aria-label', 'data-loading-text'];
-        elements.forEach((element) => {
-            if (element.closest('[data-i18n-preserve]') || (skipSelector && element.closest(skipSelector))) return;
-            attributes.forEach((attribute) => {
-                const value = element.getAttribute(attribute);
-                const key = value && catalog.get(value.trim());
-                if (key) element.dataset[`i18n${attribute.split('-').map((part) => part[0].toUpperCase() + part.slice(1)).join('')}`] = key;
-            });
-        });
         applyTranslations(root);
     }
 

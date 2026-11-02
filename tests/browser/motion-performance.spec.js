@@ -116,19 +116,27 @@ test('shared motion and cold/warm shell performance remain responsive', async ({
     const routeMotionSnapshots = [];
     for (const name of ['members', 'dashboard', 'members', 'dashboard']) {
         const started = await page.evaluate(() => performance.now());
+        const motionCallStart = await page.evaluate(() => window.__logicFitMotionCalls.length);
         const tab = page.locator(`[data-page-tab="${name}"]`);
-        if (!(await tab.isVisible()) && page.viewportSize().width < 768) {
+        if (!(await tab.isVisible())) {
             await page.locator('#mobileNavToggle').click();
             await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
             await expect(tab).toBeVisible();
         }
         await tab.click();
         await expect.poll(() => page.evaluate(() => document.documentElement.dataset.topGymActiveTab)).toBe(name);
-        const motionSnapshot = await page.evaluate((activeName) => {
+        const motionSnapshot = await page.evaluate(({ activeName, callsSince }) => {
             const ids = { dashboard: 'dashboardSection', members: 'membersSection' };
             const surface = document.getElementById(ids[activeName] || `${activeName}Section`) || document.getElementById('dashboardSection');
+            const pageTransitionObserved = window.__logicFitMotionCalls.slice(callsSince).some((call) => (
+                call.target === surface?.id
+                && call.frames?.[0]?.opacity === 0
+                && call.frames?.[1]?.opacity === 1
+                && String(call.frames?.[0]?.transform || '').includes('translateY(')
+            ));
             return {
                 surface: surface?.id || null,
+                pageTransitionObserved,
                 hidden: surface?.hidden ?? null,
                 display: surface ? getComputedStyle(surface).display : null,
                 supported: typeof surface?.animate === 'function',
@@ -137,14 +145,14 @@ test('shared motion and cold/warm shell performance remain responsive', async ({
                 observedCallCount: window.__logicFitMotionCalls.length,
                 lastMotionCall: window.__logicFitMotionCalls.at(-1) || null
             };
-        }, name);
+        }, { activeName: name, callsSince: motionCallStart });
         routeMotionSnapshots.push(motionSnapshot);
-        routeMotionObserved ||= motionSnapshot.animations.some((animation) => animation.id === 'logicfit-page-transition');
+        routeMotionObserved ||= motionSnapshot.pageTransitionObserved;
         if (page.viewportSize().width < 768) await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
         routeTimings.push(Math.round((await page.evaluate(() => performance.now())) - started));
     }
     if (page.viewportSize().width >= 768) expect(routeMotionObserved, JSON.stringify(routeMotionSnapshots)).toBeTruthy();
-    const opener = page.viewportSize().width < 768
+    const opener = page.viewportSize().width < 1024
         ? page.locator('#mobileNavToggle')
         : page.locator('[data-page-tab="members"]');
     await opener.focus();
@@ -180,20 +188,56 @@ test('shared motion and cold/warm shell performance remain responsive', async ({
     expect(reducedMotionDurationMs).toBeLessThanOrEqual(1);
     const callsBeforeReducedRoute = await page.evaluate(() => window.__logicFitMotionCalls.length);
     const reducedMotionTab = page.locator('[data-page-tab="members"]');
-    if (!(await reducedMotionTab.isVisible()) && page.viewportSize().width < 768) {
+    if (!(await reducedMotionTab.isVisible())) {
         await page.locator('#mobileNavToggle').click();
         await expect(page.locator('.app-shell')).toHaveClass(/mobile-nav-open/);
         await expect(reducedMotionTab).toBeVisible();
     }
     await reducedMotionTab.click();
     await expect.poll(() => page.evaluate(() => document.documentElement.dataset.topGymActiveTab)).toBe('members');
-    if (page.viewportSize().width < 768) await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
+    if (page.viewportSize().width < 1024) await expect(page.locator('.app-shell')).not.toHaveClass(/mobile-nav-open/);
     expect(await page.evaluate(() => window.__logicFitMotionCalls.length)).toBe(callsBeforeReducedRoute);
     const warm = await page.evaluate(() => ({
         resources: performance.getEntriesByType('resource').length,
         longTasksMs: window.__logicFitLongTasks,
         routeAnimationActive: document.getElementById('dashboardSection')?.getAnimations().some((animation) => animation.id === 'logicfit-page-transition') || false
     }));
+    await page.evaluate(async () => {
+        await window.topGymEnsureTab('member-details');
+        window.TopGymI18n.set('en');
+        window.__memberI18nTreeWalks = [];
+        const createTreeWalker = document.createTreeWalker.bind(document);
+        document.createTreeWalker = (root, ...args) => {
+            const memberDialog = document.getElementById('memberDialog');
+            const detailsDialog = document.getElementById('detailsDialog');
+            const memberRoot = root === memberDialog || memberDialog?.contains(root);
+            const detailsRoot = root === detailsDialog || detailsDialog?.contains(root);
+            if (memberRoot || detailsRoot) window.__memberI18nTreeWalks.push({
+                dialog: memberRoot ? 'memberDialog' : 'detailsDialog',
+                rootId: root.id || null,
+                fullDialogScan: root === memberDialog || root === detailsDialog
+            });
+            return createTreeWalker(root, ...args);
+        };
+        document.getElementById('memberDialog').showModal();
+        document.getElementById('formTitle').textContent = 'إضافة عضو جديد';
+        document.getElementById('detailsTitle').textContent = 'بيانات العضو التجريبية';
+        document.getElementById('detailsContent').innerHTML = '<section id="qaMemberTranslation"><h4>سجل الاشتراكات والتجديدات</h4></section>';
+    });
+    await expect(page.locator('#formTitle')).toHaveText('Add new member');
+    await expect(page.locator('#qaMemberTranslation h4')).toHaveText('Membership and renewal history');
+    await expect(page.locator('#detailsTitle')).toHaveText('بيانات العضو التجريبية');
+    const memberLocalization = await page.evaluate(() => ({
+        treeWalks: window.__memberI18nTreeWalks,
+        noFullDialogRescan: !window.__memberI18nTreeWalks.some((entry) => entry.fullDialogScan),
+        mappedNewContent: Boolean(document.querySelector('#qaMemberTranslation h4[data-i18n]'))
+    }));
+    expect(memberLocalization.noFullDialogRescan).toBe(true);
+    expect(memberLocalization.mappedNewContent).toBe(true);
+    await page.evaluate(() => {
+        document.getElementById('memberDialog').close();
+        window.TopGymI18n.set('ar');
+    });
     expect(writes).toEqual([]);
     expect(requests.some(({ path }) => path === '/api/auth/session')).toBeTruthy();
     expect(routeTimings).toHaveLength(4);
@@ -201,7 +245,7 @@ test('shared motion and cold/warm shell performance remain responsive', async ({
     expect(consoleErrors).toEqual([]);
     expect(assetFailures).toEqual([]);
 
-    const report = { fixture: 'synthetic authenticated Owner; API writes rejected and none observed', viewport: page.viewportSize(), cold, routeTimingsMs: routeTimings, routeMotionObserved, routeMotionSnapshots, dialogOpen: openMotion, reducedMotionDurationMs, warm, cpuProfileTopFrames: cpuProfile, requestCount: requests.length, writes, consoleErrors, pageErrors, assetFailures };
+    const report = { fixture: 'synthetic authenticated Owner; API writes rejected and none observed', viewport: page.viewportSize(), cold, routeTimingsMs: routeTimings, routeMotionObserved, routeMotionSnapshots, dialogOpen: openMotion, reducedMotionDurationMs, warm, memberLocalization, cpuProfileTopFrames: cpuProfile, requestCount: requests.length, writes, consoleErrors, pageErrors, assetFailures };
     console.log(`MOTION_LAB_METRICS ${JSON.stringify(report)}`);
     await testInfo.attach(`motion-performance-${testInfo.project.name}.json`, { body: Buffer.from(JSON.stringify(report, null, 2)), contentType: 'application/json' });
     await page.screenshot({ path: testInfo.outputPath(`motion-final-${testInfo.project.name}.png`), fullPage: true });

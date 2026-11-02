@@ -6,6 +6,13 @@
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     let activationToken = 0;
     let activeTabName = null;
+    const tabPanelIds = {
+        'saas-billing': 'saasBillingSection',
+        'backup-history': 'backupHistorySection',
+        'member-payment-methods': 'memberPaymentMethodsSection',
+        'member-subscription-requests': 'memberSubscriptionRequestsSection',
+        'portal-analytics': 'portalAnalyticsSection'
+    };
 
     const navigationGroups = [
         { key: 'workspace', labelKey: 'nav.group.workspace', tabs: ['dashboard', 'members', 'attendance', 'reports'] },
@@ -64,12 +71,43 @@
     document.querySelector('[data-page-tab="platform"]')?.remove();
     document.getElementById('platformSection')?.remove();
 
+    function configurePageTab(button) {
+        if (!button || button.dataset.pageTabSemanticsReady === 'true') return;
+        button.dataset.pageTabSemanticsReady = 'true';
+        button.setAttribute('role', 'tab');
+        button.setAttribute('aria-controls', tabPanelIds[button.dataset.pageTab] || `${button.dataset.pageTab}Section`);
+    }
+
+    function initializePageTabs() {
+        const rail = document.getElementById('pageTabs');
+        if (!rail) return;
+        rail.querySelectorAll('[data-page-tab]').forEach(configurePageTab);
+
+        // Branch navigation can be inserted after its authorized bootstrap
+        // request. Configure only newly-added controls rather than rescanning
+        // the full tab rail during every route render.
+        if (typeof MutationObserver === 'function') {
+            const observer = new MutationObserver((records) => {
+                records.forEach(({ addedNodes }) => addedNodes.forEach((node) => {
+                    if (node.nodeType !== Node.ELEMENT_NODE) return;
+                    if (node.matches('[data-page-tab]')) configurePageTab(node);
+                    node.querySelectorAll?.('[data-page-tab]').forEach(configurePageTab);
+                }));
+            });
+            observer.observe(rail, { childList: true, subtree: true });
+        }
+    }
+
+    initializePageTabs();
+
     function setHidden(element, hidden) {
         if (!element) return;
-        element.hidden = hidden;
+        const nextHidden = Boolean(hidden);
+        if (element.hidden !== nextHidden) element.hidden = nextHidden;
         if (element.hasAttribute('data-page-tab-panel')) {
-            element.setAttribute('aria-hidden', String(hidden));
-            element.toggleAttribute('inert', hidden);
+            const ariaHidden = String(nextHidden);
+            if (element.getAttribute('aria-hidden') !== ariaHidden) element.setAttribute('aria-hidden', ariaHidden);
+            if (element.hasAttribute('inert') !== nextHidden) element.toggleAttribute('inert', nextHidden);
         }
     }
 
@@ -563,7 +601,6 @@
     }
 
     window.addEventListener('topgym:localechange', () => {
-        window.TopGymI18n?.applyShell();
         const rail = document.getElementById('pageTabs');
         syncSidebarTooltips(rail);
         const pinToggle = rail?.querySelector('#sidebarPinToggle');
@@ -683,22 +720,25 @@
         setHidden(workspace, isDashboard || isExpenses || isReports || isManagement || isBranding || isMemberPaymentMethods || isSaasBilling || isBackupHistory || isMemberSubscriptionRequests || isPortalAnalytics || isPermissions || isAttendance || isLibrary || isTrainees || isIntelligence || isFeedback || isStore || isBranches);
         setHidden(membersSection, !isMembers);
 
-        const tabPanelIds = { 'saas-billing': 'saasBillingSection', 'backup-history': 'backupHistorySection', 'member-payment-methods': 'memberPaymentMethodsSection', 'member-subscription-requests': 'memberSubscriptionRequestsSection', 'portal-analytics': 'portalAnalyticsSection' };
-        document.querySelectorAll('[data-page-tab]').forEach((button) => {
-            const active = button.dataset.pageTab === name;
-            button.classList.toggle('active', active);
-            button.setAttribute('role', 'tab');
-            button.setAttribute('aria-selected', String(active));
-            button.toggleAttribute('aria-current', active);
-            button.setAttribute('aria-controls', tabPanelIds[button.dataset.pageTab] || `${button.dataset.pageTab}Section`);
-        });
+        const tabRail = document.getElementById('pageTabs');
+        const activeTab = tabRail?.querySelector(`[data-page-tab="${name}"]`);
+        const previousTab = tabRail?.querySelector('[data-page-tab].active');
+        if (previousTab && previousTab !== activeTab) {
+            previousTab.classList.remove('active');
+            previousTab.setAttribute('aria-selected', 'false');
+            previousTab.removeAttribute('aria-current');
+        }
+        if (activeTab) {
+            configurePageTab(activeTab);
+            if (!activeTab.classList.contains('active')) activeTab.classList.add('active');
+            if (activeTab.getAttribute('aria-selected') !== 'true') activeTab.setAttribute('aria-selected', 'true');
+            if (!activeTab.hasAttribute('aria-current')) activeTab.setAttribute('aria-current', 'true');
+        }
         syncMobileNavigationContext(name);
 
         // A direct link such as #library can activate a tab that is outside
         // the initial RTL scroll position on tablet widths. Reveal it without
         // changing the page's vertical scroll or the tab data flow.
-        const tabRail = document.getElementById('pageTabs');
-        const activeTab = tabRail?.querySelector(`[data-page-tab="${name}"]`);
         if (tabRail && activeTab && tabRail.scrollWidth > tabRail.clientWidth) {
             activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
@@ -829,15 +869,19 @@
             return;
         }
         document.documentElement.setAttribute('data-top-gym-loading-tab', name);
+        const requestedFeature = window.topGymPermissions?.featureForTab?.(name);
+        const featureReady = Boolean(requestedFeature && window.topGymIsFeatureReady?.(requestedFeature));
         // Hide the previous screen immediately. Optional feature scripts can
         // take a round-trip to load, but dashboard-only content must never
         // remain visible while the next tab is being prepared.
-        renderTab(name);
-        const requestedFeature = window.topGymPermissions?.featureForTab?.(name);
+        // Cold routes need a preliminary pass to hide the old page during load.
+        // Warm routes render once just before the completed feature is shown.
+        if (!featureReady) renderTab(name);
         const featureAccess = requestedFeature
             ? window.topGymPermissions?.getFeatureAccess?.(requestedFeature, window.topGymAuth?.getUser?.())
             : null;
         if (requestedFeature && featureAccess && featureAccess.allowed !== true) {
+            if (featureReady) renderTab(name);
             renderFeatureAccessState(name, featureAccess);
             if (token !== activationToken) return;
             animateActiveRouteSurface(name);
@@ -851,6 +895,7 @@
         }
         const releaseProgress = window.topGymPerformance?.startTask?.('جاري تجهيز الشاشة…');
         try {
+            if (featureReady) renderTab(name);
             await window.topGymEnsureTab?.(name);
         } catch (error) {
             // The section still opens so one unavailable optional feature cannot lock navigation.
@@ -859,7 +904,7 @@
             releaseProgress?.();
         }
         if (token !== activationToken) return;
-        renderTab(name);
+        if (!featureReady) renderTab(name);
         animateActiveRouteSurface(name);
         activeTabName = name;
         document.documentElement.dataset.topGymActiveTab = name;

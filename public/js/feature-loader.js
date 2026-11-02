@@ -4,6 +4,7 @@
 
     const scriptPromises = new Map();
     const featurePromises = new Map();
+    const loadedFeatures = new Set();
 
     const features = window.topGymFeatureManifest || Object.freeze({});
     const externalAssets = window.topGymExternalAssets || Object.freeze({});
@@ -97,6 +98,7 @@
         featurePromises.set(name, promise);
         try {
             await promise;
+            loadedFeatures.add(name);
         } catch (error) {
             featurePromises.delete(name);
             throw error;
@@ -472,6 +474,7 @@
     }
 
     window.topGymEnsureTab = ensureTab;
+    window.topGymIsFeatureReady = (name) => loadedFeatures.has(String(name || ''));
     window.topGymLoadExternalAsset = loadExternalAsset;
     window.topGymLoadFeature = loadScript;
     window.addEventListener('topgym:tab-changed', (event) => {

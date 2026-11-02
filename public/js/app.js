@@ -787,7 +787,7 @@
             if (!roots.length) return;
             const i18n = window.TopGymI18n;
             if (!i18n) return;
-            const localize = (root) => {
+            const prepareMemberLocalization = (root) => {
                 if (root.id === 'memberDialog') {
                     const editing = Boolean($('memberId')?.value);
                     const title = $('formTitle');
@@ -802,14 +802,28 @@
                     const title = $('detailsTitle');
                     if (title) title.dataset.i18nPreserve = 'true';
                 }
+            };
+            const localize = (root) => {
+                prepareMemberLocalization(root);
                 i18n.annotateText(root, 'members.');
-                i18n.apply(root);
+            };
+            const localizeAddedContent = (root, records) => {
+                prepareMemberLocalization(root);
+                const candidates = new Set();
+                records.forEach((record) => record.addedNodes.forEach((node) => {
+                    if (node.nodeType === Node.ELEMENT_NODE) candidates.add(node);
+                    else if (node.nodeType === Node.TEXT_NODE && node.parentElement) candidates.add(node.parentElement);
+                }));
+                const allCandidates = [...candidates];
+                allCandidates.filter((candidate) => candidate !== root && root.contains(candidate)
+                    && !allCandidates.some((other) => other !== candidate && other.contains(candidate)))
+                    .forEach((candidate) => i18n.annotateText(candidate, 'members.'));
             };
             roots.forEach((root) => {
                 if (root.dataset.memberLocaleObserverReady === 'true') return;
                 root.dataset.memberLocaleObserverReady = 'true';
                 localize(root);
-                new MutationObserver(() => localize(root)).observe(root, { childList: true, subtree: true });
+                new MutationObserver((records) => localizeAddedContent(root, records)).observe(root, { childList: true, subtree: true });
             });
             window.addEventListener('topgym:localechange', () => roots.forEach(localize));
         }

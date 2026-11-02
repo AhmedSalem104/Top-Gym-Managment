@@ -26,7 +26,7 @@ function createElement() {
     };
 }
 
-function boot(savedLocale = null, source = runtime) {
+function boot(savedLocale = null, source = runtime, intl = Intl) {
     const storage = new Map(savedLocale ? [['logic-fit-ui-locale', savedLocale], ['topgym-theme', 'dark']] : [['topgym-theme', 'dark']]);
     const host = createElement();
     host.insertBefore = (element) => { element.parentElement = host; host.button = element; };
@@ -55,7 +55,7 @@ function boot(savedLocale = null, source = runtime) {
         dispatchEvent(event) { events.push(event); },
         addEventListener() {}
     };
-    vm.runInNewContext(source, { window, document, CustomEvent }, { filename: 'i18n.js' });
+    vm.runInNewContext(source, { window, document, CustomEvent, Intl: intl }, { filename: 'i18n.js' });
     return { api: window.TopGymI18n, root, body, storage, events, host };
 }
 
@@ -90,6 +90,32 @@ test('saved locale is restored and invalid locale requests do not mutate state',
     assert.equal(root.dir, 'ltr');
     assert.equal(api.set('fr'), 'en');
     assert.equal(storage.get('logic-fit-ui-locale'), 'en');
+});
+
+test('locale formatting reuses bounded Intl formatters and separates locale/options', () => {
+    const counts = { number: 0, date: 0 };
+    const CountedNumberFormat = class extends Intl.NumberFormat {
+        constructor(...args) { counts.number += 1; super(...args); }
+    };
+    const CountedDateTimeFormat = class extends Intl.DateTimeFormat {
+        constructor(...args) { counts.date += 1; super(...args); }
+    };
+    const { api } = boot(null, runtime, { NumberFormat: CountedNumberFormat, DateTimeFormat: CountedDateTimeFormat });
+
+    assert.notEqual(api.format('number', 1200), api.format('number', 2400));
+    assert.equal(counts.number, 1);
+    api.format('currency', 1200, { currency: 'EGP' });
+    api.format('currency', 2400, { currency: 'EGP' });
+    assert.equal(counts.number, 2);
+
+    const date = '2026-01-15T00:00:00Z';
+    assert.equal(api.format('date', date, { dateStyle: 'medium' }), api.format('date', date, { dateStyle: 'medium' }));
+    assert.equal(counts.date, 1);
+    api.set('en', { persist: false });
+    api.format('number', 1200);
+    api.format('date', date, { dateStyle: 'medium' });
+    assert.equal(counts.number, 3);
+    assert.equal(counts.date, 2);
 });
 
 test('localization exposes only centralized text lookup and never injects user interpolation as HTML', () => {
