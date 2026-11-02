@@ -20,7 +20,8 @@ const brandingUiSource = fs.readFileSync(path.join(root, 'public/js/branding.js'
 const portalRoutesSource = fs.readFileSync(path.join(root, 'src/routes/member-portal.routes.js'), 'utf8');
 const authMiddlewareSource = fs.readFileSync(path.join(root, 'src/middleware/auth.middleware.js'), 'utf8');
 const portalSubscriptionUiSource = fs.readFileSync(path.join(root, 'public/js/member-portal-subscription.js'), 'utf8');
-const localizationSource = fs.readFileSync(path.join(root, 'public/js/core/i18n.js'), 'utf8');
+const localizationSource = fs.readFileSync(path.join(root, 'public/js/core/i18n.js'), 'utf8')
+    + fs.readFileSync(path.join(root, 'public/js/core/i18n-catalog.js'), 'utf8');
 
 test('member portal links can be pinned to a tenant without exposing the membership code', () => {
     assert.equal(

@@ -28,7 +28,7 @@ test('server and browser tenant-branding fallbacks preserve the canonical V2 Azu
 test('branding preview search is labeled and follows the active centralized locale', () => {
     const html = read('public/index.html');
     const browser = read('public/js/pages/branding/branding.js');
-    const translations = read('public/js/core/i18n.js');
+    const translations = read('public/js/core/i18n.js') + read('public/js/core/i18n-catalog.js');
 
     assert.match(html, /class="branding-preview-input"[^>]*data-i18n-aria-label="branding\.preview\.sample\.search"/u);
     assert.match(browser, /const searchLabel = brandingText\('preview\.sample\.search'\);[\s\S]*?setAttribute\('aria-label', searchLabel\)/u);

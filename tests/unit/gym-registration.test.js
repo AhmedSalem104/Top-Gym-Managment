@@ -160,7 +160,7 @@ test('Gym and Trainer registration expose configured transfer details, copy acti
     const gym = read('public/register-gym.html');
     const trainer = read('public/register-trainer.html');
     const client = read('public/js/register-gym.js');
-    const i18n = read('public/js/core/i18n.js');
+    const i18n = read('public/js/core/i18n.js') + read('public/js/core/i18n-catalog.js');
     assert.match(gym, /registration-payment-steps/);
     assert.match(trainer, /registration-payment-steps/);
     assert.match(gym, /id="registrationPaymentConfirmation"/);

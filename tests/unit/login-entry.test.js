@@ -32,10 +32,31 @@ test('login entry is generated from the shared auth card and excludes the app sh
     assert.doesNotMatch(login, /notification-center\.js/u);
     assert.doesNotMatch(login, /\/js\/app\.js/u);
     assert.doesNotMatch(login, /core\/phone-inputs\.js/u);
+    assert.doesNotMatch(login, /<script[^>]+i18n-catalog\.js/u,
+        'the unauthenticated entry should not eagerly download the full application locale catalog');
+    assert.ok(login.indexOf('/js/core/i18n.js') < login.indexOf('/js/auth-ui.js'),
+        'the compact localization runtime must be available before session restoration');
     assert.doesNotMatch(login, /\/css\/main\.css/u);
     assert.match(login, /\/css\/login-entry\.css\?v=[a-f0-9]{12}/u);
     assert.match(read('public/css/pages/login.css'), /max-width:\s*420px/u);
     assert.match(read('public/css/pages/login.css'), /background:\s*transparent;[\s\S]*?box-shadow:\s*none;[\s\S]*?direction:\s*rtl;/u);
+});
+
+test('standalone translated pages load the shared full catalog after the compact runtime', () => {
+    for (const file of [
+        'public/change-password.html',
+        'public/member-portal.html',
+        'public/platform-admin.html',
+        'public/platform-admin-forbidden.html',
+        'public/register-gym.html',
+        'public/register-trainer.html',
+        'public/trainer-workspace.html'
+    ]) {
+        const html = read(file);
+        assert.ok(html.indexOf('/js/core/i18n.js') >= 0, `${file} should load the shared runtime`);
+        assert.ok(html.indexOf('/js/core/i18n.js') < html.indexOf('/js/core/i18n-catalog.js'),
+            `${file} must register the runtime before loading its full locale catalog`);
+    }
 });
 
 test('login entry delivery is server-selected only for unauthenticated root requests', () => {

@@ -843,13 +843,16 @@
                     showAuthenticated(user);
                     return;
                 }
+                const catalogPromise = window.TopGymI18n?.loadCatalog?.().catch(() => false) || Promise.resolve(false);
                 if (user.role === 'PlatformAdmin') {
+                    await catalogPromise;
                     window.topGymBranding?.apply?.(window.topGymBranding.fallback?.() || {}, 1);
                 } else {
                     // Session is the security gate. Branding is presentation
-                    // only, so run it alongside the entitlement request.
+                    // only; translations and entitlements can load in parallel
+                    // now that the initial auth screen uses its small catalog.
                     const brandingPromise = refreshTenantBranding(user);
-                    await refreshTenantEntitlements(user);
+                    await Promise.all([refreshTenantEntitlements(user), catalogPromise]);
                     void brandingPromise.catch(() => {});
                 }
                 showAuthenticated(user, { showWelcome: hasTenantWelcomeFlag() });

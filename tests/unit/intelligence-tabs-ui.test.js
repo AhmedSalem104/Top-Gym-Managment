@@ -9,7 +9,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 test('operational intelligence uses equal accessible local tabs without replacing its existing content nodes', () => {
     const script = read('public/js/pages/intelligence/intelligence.js');
     const styles = read('public/css/pages/intelligence.css');
-    const translations = read('public/js/core/i18n.js');
+    const translations = read('public/js/core/i18n.js') + read('public/js/core/i18n-catalog.js');
     const spec = read('docs/LOGIC_FIT_V2_DESIGN_SYSTEM.md');
 
     assert.match(script, /function initContentTabs\(\)/u);

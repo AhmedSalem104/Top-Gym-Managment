@@ -5,6 +5,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const runtime = fs.readFileSync(path.join(__dirname, '../../public/js/core/i18n.js'), 'utf8');
+const catalogSource = fs.readFileSync(path.join(__dirname, '../../public/js/core/i18n-catalog.js'), 'utf8');
 
 function createElement() {
     const attributes = new Map();
@@ -26,7 +27,7 @@ function createElement() {
     };
 }
 
-function boot(savedLocale = null, source = runtime, intl = Intl) {
+function boot(savedLocale = null, source = runtime, intl = Intl, catalog = catalogSource, loadOnDemand = false) {
     const storage = new Map(savedLocale ? [['logic-fit-ui-locale', savedLocale], ['topgym-theme', 'dark']] : [['topgym-theme', 'dark']]);
     const host = createElement();
     host.insertBefore = (element) => { element.parentElement = host; host.button = element; };
@@ -34,10 +35,18 @@ function boot(savedLocale = null, source = runtime, intl = Intl) {
     const root = { lang: 'ar', dir: 'rtl', dataset: {}, setAttribute(name, value) { this[name] = value; } };
     const body = { dataset: {} };
     const events = [];
+    const pendingScripts = [];
     const document = {
         readyState: 'complete',
         documentElement: root,
         body,
+        head: { appendChild(script) {
+            pendingScripts.push(script);
+            if (loadOnDemand) {
+                vm.runInNewContext(catalogSource, context, { filename: 'i18n-catalog.js' });
+                script.onload?.();
+            }
+        } },
         querySelector(selector) { return selector === '.topbar-mobile-actions' ? host : null; },
         querySelectorAll() { return []; },
         getElementById() { return null; },
@@ -55,8 +64,10 @@ function boot(savedLocale = null, source = runtime, intl = Intl) {
         dispatchEvent(event) { events.push(event); },
         addEventListener() {}
     };
-    vm.runInNewContext(source, { window, document, CustomEvent, Intl: intl }, { filename: 'i18n.js' });
-    return { api: window.TopGymI18n, root, body, storage, events, host };
+    const context = { window, document, CustomEvent, Intl: intl };
+    vm.runInNewContext(source, context, { filename: 'i18n.js' });
+    if (catalog) vm.runInNewContext(catalog, context, { filename: 'i18n-catalog.js' });
+    return { api: window.TopGymI18n, root, body, storage, events, host, pendingScripts };
 }
 
 test('central localization runtime switches locale, updates document direction, and persists without touching theme state', () => {
@@ -151,11 +162,11 @@ test('dashboard attendance analytics labels resolve in both centralized locales'
 test('member print catalog has complete Arabic and English coverage with key fallback', () => {
     const { api } = boot();
     const catalogKeys = (catalogName) => {
-        const start = runtime.indexOf(`const ${catalogName} = Object.freeze({`);
+        const start = catalogSource.indexOf(`const ${catalogName} = Object.freeze({`);
         assert.notEqual(start, -1, `Missing catalog ${catalogName}`);
-        const end = runtime.indexOf('\n    });', start);
+        const end = catalogSource.indexOf('\n    });', start);
         assert.notEqual(end, -1, `Unterminated catalog ${catalogName}`);
-        return [...runtime.slice(start, end).matchAll(/'((?:print\.member\.)[\w.]+)'\s*:/gu)].map((match) => match[1]);
+        return [...catalogSource.slice(start, end).matchAll(/'((?:print\.member\.)[\w.]+)'\s*:/gu)].map((match) => match[1]);
     };
     const arabicKeys = catalogKeys('memberPrintArabic');
     const englishKeys = catalogKeys('memberPrintEnglish');
@@ -189,10 +200,32 @@ test('member print catalog has complete Arabic and English coverage with key fal
     assert.equal(api.t('print.member.missing.key'), 'print.member.missing.key');
 
     const fallbackKey = "        'print.member.value.active': 'Active',\n";
-    assert.ok(runtime.includes(fallbackKey), 'English fallback fixture should match a single catalog entry');
-    const fallbackRuntime = runtime.replace(fallbackKey, '');
-    const { api: fallbackApi } = boot('en', fallbackRuntime);
+    assert.ok(catalogSource.includes(fallbackKey), 'English fallback fixture should match a single catalog entry');
+    const fallbackCatalog = catalogSource.replace(fallbackKey, '');
+    const { api: fallbackApi } = boot('en', runtime, Intl, fallbackCatalog);
     assert.equal(fallbackApi.t('print.member.value.active'), 'نشط');
+});
+
+test('login runtime stays small and full translations register without losing the current locale', () => {
+    assert.ok(Buffer.byteLength(runtime) < 50_000, `Login runtime ${Buffer.byteLength(runtime)} should stay under 50KB`);
+    assert.ok(Buffer.byteLength(catalogSource) > 700_000, 'Full application catalog remains independently loadable');
+    const { api } = boot('en');
+    assert.equal(api.isCatalogLoaded(), true);
+    assert.equal(api.t('nav.members'), 'Members');
+});
+
+test('login starts with only its own localized strings and loads the full catalog on demand', async () => {
+    const { api, pendingScripts } = boot('en', runtime, Intl, null, true);
+
+    assert.equal(api.isCatalogLoaded(), false);
+    assert.equal(api.t('login.submit'), 'Sign in');
+    assert.equal(api.t('nav.members'), 'nav.members');
+    assert.equal(pendingScripts.length, 0);
+
+    assert.equal(await api.loadCatalog(), true);
+    assert.equal(api.isCatalogLoaded(), true);
+    assert.equal(pendingScripts.length, 1);
+    assert.equal(api.t('nav.members'), 'Members');
 });
 
 test('member print known operation and duration labels resolve exactly without defining arbitrary enum codes', () => {

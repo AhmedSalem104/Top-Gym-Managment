@@ -108,7 +108,7 @@ test('submit controls are not disabled during click capture before native submit
 
 test('backup and restore actions use contextual loading without changing success semantics', () => {
     const source = read('public/js/pages/management/backup.js');
-    const i18n = read('public/js/core/i18n.js');
+    const i18n = read('public/js/core/i18n.js') + read('public/js/core/i18n-catalog.js');
 
     assert.match(source, /function setActionLoading\(button, loading, loadingText\)/);
     assert.match(source, /setActionLoading\(manualBackupButton, true, translate\('backupHistory\.action\.creating'\)\)/);

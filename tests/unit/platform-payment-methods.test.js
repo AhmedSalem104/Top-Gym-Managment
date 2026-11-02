@@ -76,7 +76,7 @@ test('Platform Admin UI manages platform methods and keeps tenant payment settin
     const client = read('public/js/platform-admin.js');
     const branding = read('public/index.html');
     const registerPage = read('public/js/register-gym.js');
-    const i18n = read('public/js/core/i18n.js');
+    const i18n = read('public/js/core/i18n.js') + read('public/js/core/i18n-catalog.js');
     const portal = read('public/js/member-portal-subscription.js');
     const portalHtml = read('public/member-portal.html');
 
