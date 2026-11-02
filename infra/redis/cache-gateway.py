@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Small authenticated HTTPS-facing Redis cache gateway.
+"""Small authenticated Redis cache gateway for the application host.
 
-The process listens on loopback only. Caddy is the public TLS boundary; it
-routes one path prefix to this service. Redis remains loopback-only and the
-gateway exposes only JSON cache operations under the logicfit:* namespace.
+The process listens on loopback only and the application calls it directly;
+it must not be exposed through a public Caddy route. Redis remains loopback-only
+and the gateway exposes only JSON cache operations under logicfit:*.
 """
 
 import hmac

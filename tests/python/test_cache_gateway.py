@@ -12,6 +12,12 @@ SPEC.loader.exec_module(gateway)
 
 
 class CacheGatewayRateLimitTests(unittest.TestCase):
+    def test_gateway_binds_only_to_loopback_and_scopes_cache_keys(self):
+        source = (ROOT / 'infra/redis/cache-gateway.py').read_text(encoding='utf-8')
+        self.assertIn("ThreadingHTTPServer(('127.0.0.1'", source)
+        self.assertIn("ALLOWED_PREFIX = env('CACHE_KEY_PREFIX', 'logicfit:')", source)
+        self.assertNotIn("ThreadingHTTPServer(('0.0.0.0'", source)
+
     def test_atomic_increment_uses_single_script_and_returns_counter(self):
         key = 'logicfit:v1:test:ratelimit:' + ('a' * 64)
         with patch.object(gateway, 'redis_command', return_value=[3, 42000]) as command:

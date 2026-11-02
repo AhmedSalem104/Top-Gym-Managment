@@ -24,8 +24,15 @@ BACKUP_JOB_WRAPPER_TARGET="${APP_ROOT}/bin/logicfit-scheduled-backup-job.sh"
 BACKUP_JOB_SERVICE_TARGET='/etc/systemd/system/logicfit-backup-daily.service'
 BACKUP_JOB_TIMER_TARGET='/etc/systemd/system/logicfit-backup-daily.timer'
 APP_SITE_TARGET='/etc/logicfit/sites/application.caddy'
+CACHE_GATEWAY_DIR='/opt/logicfit-cache-gateway'
+CACHE_GATEWAY_FILE_TARGET="${CACHE_GATEWAY_DIR}/cache-gateway.py"
+CACHE_GATEWAY_UNIT_TARGET='/etc/systemd/system/logicfit-cache-gateway.service'
+CACHE_GATEWAY_ENV_TARGET='/etc/logicfit-cache-gateway.env'
 HOST_RUNTIME_BACKUP_DIR="/run/logicfit-release-host-${RELEASE_SHA}"
 HOST_RUNTIME_MUTATED=0
+CACHE_GATEWAY_MUTATED=0
+CACHE_GATEWAY_UNIT_ENABLED=''
+CACHE_GATEWAY_DIR_EXISTED=0
 CUTOVER_COMMITTED=0
 HOST_CONFIG_TARGETS=(
     "$JOB_WRAPPER_TARGET"
@@ -38,10 +45,12 @@ HOST_CONFIG_TARGETS=(
     '/etc/logicfit/sites/storage.caddy'
     "$APP_SITE_TARGET"
     '/etc/systemd/system/logicfit-caddy.service'
+    "$CACHE_GATEWAY_FILE_TARGET"
+    "$CACHE_GATEWAY_UNIT_TARGET"
 )
-HOST_TIMER_UNITS=('logicfit-attendance-auto-checkout.timer' 'logicfit-backup-daily.timer' 'logicfit-caddy.service')
-HOST_TIMER_ENABLED=()
-HOST_TIMER_ACTIVE=()
+HOST_UNITS=('logicfit-attendance-auto-checkout.timer' 'logicfit-backup-daily.timer' 'logicfit-caddy.service' 'logicfit-cache-gateway.service')
+HOST_UNIT_ENABLED=()
+HOST_UNIT_ACTIVE=()
 STAGE='start'
 
 fail_release() {
@@ -70,6 +79,17 @@ printf '%s\n' "$RELEASE_SHA" > "$LOCK_DIR/sha"
 cleanup_lock() { rm -f "$LOCK_DIR/pid" "$LOCK_DIR/sha" 2>/dev/null || true; rmdir "$LOCK_DIR" 2>/dev/null || true; }
 cleanup_artifacts() { rm -f "$ARCHIVE_PATH" "$CONTROL_ARCHIVE_PATH" 2>/dev/null || true; rm -rf -- "$CONTROL_DIR" 2>/dev/null || true; }
 snapshot_host_runtime() {
+    for index in "${!HOST_UNITS[@]}"; do
+        unit="${HOST_UNITS[$index]}"
+        HOST_UNIT_ENABLED[$index]="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+        HOST_UNIT_ACTIVE[$index]="$(systemctl is-active "$unit" 2>/dev/null || true)"
+        if [ "$unit" = 'logicfit-cache-gateway.service' ]; then
+            case "${HOST_UNIT_ENABLED[$index]}" in enabled|disabled|not-found) ;; *) abort_release 87 ;; esac
+            case "${HOST_UNIT_ACTIVE[$index]}" in active|inactive) ;; *) abort_release 87 ;; esac
+            CACHE_GATEWAY_UNIT_ENABLED="${HOST_UNIT_ENABLED[$index]}"
+        fi
+    done
+    if [ -d "$CACHE_GATEWAY_DIR" ]; then CACHE_GATEWAY_DIR_EXISTED=1; fi
     install -d -m 0700 "$HOST_RUNTIME_BACKUP_DIR"
     for index in "${!HOST_CONFIG_TARGETS[@]}"; do
         target="${HOST_CONFIG_TARGETS[$index]}"
@@ -80,14 +100,15 @@ snapshot_host_runtime() {
             printf 'absent\n' > "$HOST_RUNTIME_BACKUP_DIR/$index.state"
         fi
     done
-    for index in "${!HOST_TIMER_UNITS[@]}"; do
-        unit="${HOST_TIMER_UNITS[$index]}"
-        HOST_TIMER_ENABLED[$index]="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
-        HOST_TIMER_ACTIVE[$index]="$(systemctl is-active "$unit" 2>/dev/null || true)"
-    done
 }
 restore_host_runtime() {
     HOST_RUNTIME_MUTATED=0
+    if [ "$CACHE_GATEWAY_MUTATED" = '1' ]; then
+        systemctl stop logicfit-cache-gateway.service >/dev/null 2>&1 || true
+        if [ "${CACHE_GATEWAY_UNIT_ENABLED:-}" = 'not-found' ]; then
+            systemctl disable logicfit-cache-gateway.service >/dev/null 2>&1 || true
+        fi
+    fi
     for index in "${!HOST_CONFIG_TARGETS[@]}"; do
         target="${HOST_CONFIG_TARGETS[$index]}"
         if [ "$(cat "$HOST_RUNTIME_BACKUP_DIR/$index.state" 2>/dev/null || true)" = 'present' ]; then
@@ -97,19 +118,20 @@ restore_host_runtime() {
         fi
     done
     systemctl daemon-reload >/dev/null 2>&1 || true
-    for index in "${!HOST_TIMER_UNITS[@]}"; do
-        unit="${HOST_TIMER_UNITS[$index]}"
-        case "${HOST_TIMER_ENABLED[$index]:-}" in
+    for index in "${!HOST_UNITS[@]}"; do
+        unit="${HOST_UNITS[$index]}"
+        case "${HOST_UNIT_ENABLED[$index]:-}" in
             enabled) systemctl enable "$unit" >/dev/null 2>&1 || true ;;
             disabled) systemctl disable "$unit" >/dev/null 2>&1 || true ;;
         esac
-        if [ "${HOST_TIMER_ACTIVE[$index]:-}" = 'active' ]; then
+        if [ "${HOST_UNIT_ACTIVE[$index]:-}" = 'active' ]; then
             systemctl start "$unit" >/dev/null 2>&1 || true
         else
             systemctl stop "$unit" >/dev/null 2>&1 || true
         fi
     done
     systemctl restart logicfit-caddy >/dev/null 2>&1 || true
+    if [ "$CACHE_GATEWAY_DIR_EXISTED" = '0' ]; then rmdir "$CACHE_GATEWAY_DIR" 2>/dev/null || true; fi
     rm -rf -- "$HOST_RUNTIME_BACKUP_DIR"
 }
 cleanup_release() {
@@ -199,6 +221,23 @@ STAGE='runtime-config-validation'
 [ -f "$RELEASE_DIR/infra/caddy/Caddyfile" ]
 [ -f "$RELEASE_DIR/infra/caddy/sites/storage.caddy" ]
 [ -f "$RELEASE_DIR/infra/systemd/logicfit-caddy.service" ]
+[ -f "$RELEASE_DIR/infra/redis/cache-gateway.py" ]
+[ -f "$RELEASE_DIR/infra/redis/logicfit-cache-gateway.service" ]
+command -v /usr/bin/python3 >/dev/null 2>&1
+command -v systemd-analyze >/dev/null 2>&1
+command -v ss >/dev/null 2>&1
+[ -r "$CACHE_GATEWAY_ENV_TARGET" ]
+[ "$(stat -c '%U' "$CACHE_GATEWAY_ENV_TARGET")" = 'root' ]
+gateway_env_mode="$(stat -c '%a' "$CACHE_GATEWAY_ENV_TARGET")"
+gateway_env_mode_num=$((8#$gateway_env_mode))
+if (( (gateway_env_mode_num & 0007) != 0 || (gateway_env_mode_num & 0020) != 0 || (gateway_env_mode_num & 0400) == 0 )); then abort_release 87; fi
+id -u logicfit-cache >/dev/null 2>&1
+getent group logicfit-cache >/dev/null 2>&1
+/usr/bin/python3 -c 'import ast,sys; ast.parse(open(sys.argv[1], encoding="utf-8").read())' "$RELEASE_DIR/infra/redis/cache-gateway.py"
+grep -Fqx 'EnvironmentFile=/etc/logicfit-cache-gateway.env' "$RELEASE_DIR/infra/redis/logicfit-cache-gateway.service"
+grep -Fqx 'ExecStart=/usr/bin/python3 /opt/logicfit-cache-gateway/cache-gateway.py' "$RELEASE_DIR/infra/redis/logicfit-cache-gateway.service"
+grep -Fq "ThreadingHTTPServer(('127.0.0.1'" "$RELEASE_DIR/infra/redis/cache-gateway.py"
+systemd-analyze verify "$RELEASE_DIR/infra/redis/logicfit-cache-gateway.service" >/dev/null 2>&1
 if [ "$BOOTSTRAP_MODE" != '1' ]; then
     [ -f "$RELEASE_DIR/infra/caddy/sites/application.caddy" ]
     resolved_app_addresses="$(getent ahostsv4 getlogicfit.com | awk '{print $1}' | sort -u)"
@@ -227,6 +266,10 @@ run_with_current_env() {
         docker inspect "$source_container" --format '{{range .Config.Env}}{{println .}}{{end}}' | docker run --rm --network host --env-file /dev/stdin "$@"
     fi
 }
+
+STAGE='cache-gateway-config-validation'
+run_with_current_env "$OLD_CONTAINER" -v "$RELEASE_DIR:/app:ro" -w /app "$NODE_IMAGE" node scripts/cache-gateway-release-smoke.js --validate-config
+printf 'CACHE_GATEWAY_CONFIG=PASS\n'
 
 # Persistent containers must not use --rm: Docker rejects --rm together with
 # --restart.  Keep the one-shot helper above for control jobs and use this
@@ -398,6 +441,33 @@ if [ "$BOOTSTRAP_MODE" != '1' ]; then
     install -m 0644 "$RELEASE_DIR/infra/caddy/sites/application.caddy" "$APP_SITE_TARGET"
 fi
 systemctl daemon-reload
+CACHE_GATEWAY_MUTATED=1
+if [ ! -d "$CACHE_GATEWAY_DIR" ]; then
+    install -d -o logicfit-cache -g logicfit-cache -m 0750 "$CACHE_GATEWAY_DIR"
+fi
+install -o logicfit-cache -g logicfit-cache -m 0644 "$RELEASE_DIR/infra/redis/cache-gateway.py" "$CACHE_GATEWAY_FILE_TARGET"
+install -m 0644 "$RELEASE_DIR/infra/redis/logicfit-cache-gateway.service" "$CACHE_GATEWAY_UNIT_TARGET"
+systemd-analyze verify "$CACHE_GATEWAY_UNIT_TARGET" >/dev/null 2>&1 || abort_release 87
+systemctl daemon-reload
+systemctl enable logicfit-cache-gateway.service >/dev/null || abort_release 87
+systemctl restart logicfit-cache-gateway.service || abort_release 87
+gateway_ready=0
+for _ in $(seq 1 30); do
+    if systemctl is-active --quiet logicfit-cache-gateway.service \
+        && [ "$(ss -H -ltn 'sport = :9400' | awk '{print $4}' | sort -u)" = '127.0.0.1:9400' ]; then
+        gateway_ready=1
+        break
+    fi
+    sleep 1
+done
+if [ "$gateway_ready" -ne 1 ]; then abort_release 87; fi
+if [ "$BOOTSTRAP_MODE" = '1' ]; then
+    run_with_current_env "$OLD_CONTAINER" -v "$RELEASE_DIR:/app:ro" -w /app "$NODE_IMAGE" node scripts/cache-gateway-release-smoke.js --skip-application-health || abort_release 87
+else
+    run_with_current_env "$OLD_CONTAINER" -v "$RELEASE_DIR:/app:ro" -w /app "$NODE_IMAGE" node scripts/cache-gateway-release-smoke.js || abort_release 87
+fi
+printf 'CACHE_GATEWAY=PASS\n'
+
 if [ "$BOOTSTRAP_MODE" = '1' ]; then
     printf 'AUTO_CHECKOUT_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'
     printf 'BACKUP_SCHEDULER=DEFERRED_UNTIL_CUTOVER\n'

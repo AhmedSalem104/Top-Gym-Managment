@@ -115,6 +115,7 @@ function runLocalPreflight() {
         ['node', ['--check', 'scripts/production-security-gate.js']],
         ['node', ['--check', 'scripts/verify-production-backup.js']],
         ['node', ['--check', 'scripts/production-smoke.js']],
+        ['node', ['--check', 'scripts/cache-gateway-release-smoke.js']],
         ['node', ['scripts/release-pipeline-self-test.js']]
     ];
     for (const [command, args] of checks) runChecked(command, args, { stdio: 'ignore', failureMessage: 'Release pipeline self-check failed.', code: 'RELEASE_LOCAL_PREFLIGHT_FAILED' });
@@ -226,7 +227,7 @@ function renderRemoteScript(config, sha, archiveName = '', controlArchiveName = 
 
 function runRemoteRelease(config, script) {
     const result = run('ssh', [...sshArgs(config), 'sudo', '-n', 'bash', '-s'], { input: script, encoding: 'utf8', timeout: 900000 });
-    const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_|CADDY_)/.test(line));
+    const safeLines = String(result.stdout || '').split(/\r?\n/).filter((line) => /^(RELEASE_|DEPENDENCIES=|BACKUP_|MIGRATION_|RLS_|CANDIDATE_|DEPLOYED_|SHA_|HEALTH=|ROLLBACK_|CADDY_|CACHE_GATEWAY(?:_|=))/.test(line));
     if (result.error || result.status !== 0) {
         const failure = String(result.stderr || '').match(/RELEASE_REMOTE_FAIL stage=([a-z0-9-]+) code=([0-9]+)/i);
         const safeErrors = String(result.stderr || '').split(/\r?\n/).filter((line) =>

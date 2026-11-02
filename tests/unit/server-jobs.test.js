@@ -128,6 +128,36 @@ test('production release lets the official backup runner apply its bounded heap 
     assert.match(productionStart, /CUTOVER_COMMITTED=1/);
 });
 
+test('cache gateway runtime changes participate in release snapshot, validation and rollback', () => {
+    const release = read('scripts/release-production-remote.sh');
+    const snapshotStart = release.indexOf('snapshot_host_runtime() {');
+    const restoreStart = release.indexOf('restore_host_runtime() {');
+    const cleanupStart = release.indexOf('cleanup_release() {');
+    const activationStart = release.indexOf("STAGE='cutover-runtime-config'");
+    const cutoverStart = release.indexOf("STAGE='cutover'");
+    const snapshot = release.slice(snapshotStart, restoreStart);
+    const restore = release.slice(restoreStart, cleanupStart);
+    const activation = release.slice(activationStart, cutoverStart);
+    assert.match(release, /CACHE_GATEWAY_ENV_TARGET='\/etc\/logicfit-cache-gateway\.env'/);
+    assert.match(release, /stat -c '%U' "\$CACHE_GATEWAY_ENV_TARGET"/);
+    assert.match(release, /gateway_env_mode_num=\$\(\(8#\$gateway_env_mode\)\)/);
+    assert.match(snapshot, /logicfit-cache-gateway\.service/);
+    assert.match(snapshot, /CACHE_GATEWAY_UNIT_ENABLED=/);
+    assert.match(snapshot, /CACHE_GATEWAY_DIR_EXISTED=1/);
+    assert.match(release, /CACHE_GATEWAY_FILE_TARGET/);
+    assert.match(release, /CACHE_GATEWAY_UNIT_TARGET/);
+    assert.ok(restore.indexOf('systemctl stop logicfit-cache-gateway.service') < restore.indexOf('for index in "${!HOST_CONFIG_TARGETS[@]}"'));
+    assert.match(restore, /systemctl daemon-reload/);
+    assert.match(restore, /rmdir "\$CACHE_GATEWAY_DIR"/);
+    assert.match(restore, /systemctl start "\$unit"/);
+    assert.match(activation, /systemd-analyze verify "\$CACHE_GATEWAY_UNIT_TARGET"/);
+    assert.match(activation, /systemctl enable logicfit-cache-gateway\.service/);
+    assert.match(activation, /systemctl restart logicfit-cache-gateway\.service/);
+    assert.match(activation, /127\.0\.0\.1:9400/);
+    assert.match(activation, /cache-gateway-release-smoke\.js/);
+    assert.doesNotMatch(read('infra/caddy/Caddyfile') + read('infra/caddy/sites/storage.caddy') + read('infra/caddy/sites/application.caddy'), /cache-gateway/i);
+});
+
 test('release backup execution combines new-release storage fix with tenant-scoped delete', () => {
     const release = read('scripts/release-production-remote.sh');
     const storage = read('src/services/object-storage-service.js');
