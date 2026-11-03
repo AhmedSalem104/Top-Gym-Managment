@@ -5,8 +5,11 @@ const { config } = require('../config/env');
 
 const MAX_KEY_LENGTH = 512;
 const MAX_VALUE_BYTES = 768 * 1024;
+const GATEWAY_FAILURE_COOLDOWN_MS = 5_000;
 const inFlight = new Map();
-const counters = { hits: 0, misses: 0, errors: 0, sets: 0, deletes: 0, requests: 0, latencyMs: 0 };
+const counters = { hits: 0, misses: 0, errors: 0, sets: 0, deletes: 0, requests: 0, skippedWhileUnavailable: 0, latencyMs: 0 };
+let gatewayUnavailableUntil = 0;
+let gatewayProbeInFlight = false;
 
 function enabled() {
     return config.cacheEnabled && Boolean(config.cacheGatewayUrl && config.cacheGatewayToken);
@@ -41,6 +44,20 @@ function gatewayUrl(operation) {
 
 async function callGateway(operation, body) {
     if (!enabled()) return null;
+    const now = Date.now();
+    let isRecoveryProbe = false;
+    if (gatewayUnavailableUntil > now) {
+        counters.skippedWhileUnavailable += 1;
+        return null;
+    }
+    if (gatewayUnavailableUntil > 0) {
+        if (gatewayProbeInFlight) {
+            counters.skippedWhileUnavailable += 1;
+            return null;
+        }
+        gatewayProbeInFlight = true;
+        isRecoveryProbe = true;
+    }
     counters.requests += 1;
     const started = performance.now();
     const controller = new AbortController();
@@ -58,15 +75,20 @@ async function callGateway(operation, body) {
         });
         if (!response.ok) {
             counters.errors += 1;
+            gatewayUnavailableUntil = Date.now() + GATEWAY_FAILURE_COOLDOWN_MS;
             return null;
         }
-        return await response.json();
+        const result = await response.json();
+        gatewayUnavailableUntil = 0;
+        return result;
     } catch (_) {
         counters.errors += 1;
+        gatewayUnavailableUntil = Date.now() + GATEWAY_FAILURE_COOLDOWN_MS;
         return null;
     } finally {
         clearTimeout(timeout);
         counters.latencyMs += performance.now() - started;
+        if (isRecoveryProbe) gatewayProbeInFlight = false;
     }
 }
 
@@ -173,6 +195,7 @@ function metrics() {
         sets: counters.sets,
         deletes: counters.deletes,
         requests: counters.requests,
+        skippedWhileUnavailable: counters.skippedWhileUnavailable,
         averageLatencyMs: counters.requests ? Math.round((counters.latencyMs / counters.requests) * 100) / 100 : 0
     };
 }

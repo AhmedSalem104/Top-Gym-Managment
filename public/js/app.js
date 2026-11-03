@@ -443,6 +443,17 @@
                 await window.topGymBranchContext?.getBootstrap?.();
                 const isOwner = window.topGymAuth?.isOwner?.() === true;
                 const activeTab = requestedTab();
+                // The authenticated entitlement envelope already contains the
+                // tenant's current subscription. Reuse that authorized snapshot
+                // for the dashboard summary instead of loading the full billing
+                // workspace (plans, request history, and usage) just to show the
+                // current plan/date card.
+                const access = window.topGymAuth?.getEntitlements?.();
+                const currentSubscription = access?.subscription || access?.entitlements?.subscription;
+                if (isOwner && activeTab === 'dashboard' && !state.saasSubscriptionLoaded && currentSubscription) {
+                    state.saasSubscription = { subscription: currentSubscription };
+                    state.saasSubscriptionLoaded = true;
+                }
                 const requestScopeKey = currentScopeKey();
                 if (activeTab === 'dashboard') dataLoadScopeKey = requestScopeKey;
                 const needsMembersSummary = activeTab === 'members' && !state.dashboard;

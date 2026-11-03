@@ -37,6 +37,19 @@ test('reports use a summary-only dashboard query instead of hydrating dashboard 
     assert.doesNotMatch(source, /getDashboard\(/u);
 });
 
+test('dashboard reuses the authorized entitlement subscription instead of loading the full billing workspace', () => {
+    const appSource = read('public/js/app.js');
+    const loadDataStart = appSource.indexOf('async function loadData()');
+    const loadDataEnd = appSource.indexOf('async function loadMembersOnly', loadDataStart);
+    const loadData = appSource.slice(loadDataStart, loadDataEnd);
+
+    assert.match(loadData, /getEntitlements\?\.\(\)/u);
+    assert.match(loadData, /access\?\.subscription \|\| access\?\.entitlements\?\.subscription/u);
+    assert.match(loadData, /state\.saasSubscription = \{ subscription: currentSubscription \}/u);
+    assert.match(loadData, /state\.saasSubscriptionLoaded = true/u);
+    assert.match(loadData, /!state\.saasSubscriptionLoaded[\s\S]*?api\('\/api\/saas\/subscription\?page=1&pageSize=1'\)/u);
+});
+
 test('member lists reuse portal-code previews without a per-member hydration fan-out', () => {
     const appSource = read('public/js/app.js');
     const paginationSource = read('public/js/pagination.js');
