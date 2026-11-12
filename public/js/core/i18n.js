@@ -127,7 +127,7 @@
     let catalogLoaded = false;
     let catalogLoadPromise = null;
     let setupComplete = false;
-    const catalogSource = '/js/core/i18n-catalog.js?v=cf431c8888f46717';
+    const catalogSource = '/js/core/i18n-catalog.js?v=034b2450a0596d57';
 
     function registerCatalog(catalog) {
         if (!catalog || !catalog.ar || !catalog.en) return false;

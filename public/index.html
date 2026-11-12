@@ -1085,14 +1085,25 @@
                                     </div>
                                 </section>
 
+                                <section id="memberEditScopeSection" class="member-form-section member-edit-scope-section" aria-labelledby="memberEditScopeTitle" hidden>
+                                    <div class="member-form-section-heading">
+                                        <span class="member-form-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9v11h13V9M9 20v-6h6v6"/></svg></span>
+                                        <div><h4 id="memberEditScopeTitle" data-i18n="members.form.scopeTitle">نطاق الاشتراك</h4><p data-i18n="members.form.scopeDescription">الفرع والقسم المرتبطان بالاشتراك الحالي.</p></div>
+                                    </div>
+                                    <div class="member-form-grid">
+                                        <div class="field"><label for="memberEditBranchValue" data-i18n="members.form.currentBranch">الفرع الحالي</label><input id="memberEditBranchValue" type="text" readonly aria-readonly="true"></div>
+                                        <div class="field"><label for="memberEditSectionValue" data-i18n="members.form.currentSection">القسم الحالي</label><input id="memberEditSectionValue" type="text" readonly aria-readonly="true"></div>
+                                    </div>
+                                </section>
+
                                 <section id="memberSubscriptionFields" class="member-form-section member-subscription-section" aria-labelledby="memberSubscriptionSectionTitle">
                                     <div class="member-form-section-heading">
                                         <span class="member-form-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="19" cy="18" r="2"/></svg></span>
                                         <div><h4 id="memberSubscriptionSectionTitle">بيانات الاشتراك</h4><p>هذه البيانات اختيارية ويمكن إضافتها لاحقًا</p></div>
                                     </div>
                                     <div class="member-form-grid member-scope-fields">
-                                        <div class="field"><label for="memberBranchId">الفرع</label><select id="memberBranchId"><option value="">الفرع الرئيسي تلقائيًا</option></select><small class="field-hint">اختر الفرع الذي سيظهر فيه الاشتراك. عند تركه فارغًا يُستخدم الفرع الرئيسي.</small></div>
-                                        <div class="field"><label for="memberSectionId">القسم</label><select id="memberSectionId"><option value="">القسم المختلط تلقائيًا</option></select><small class="field-hint">اختياري — رجال أو نساء أو مختلط حسب أقسام الفرع.</small></div>
+                                        <div class="field" id="memberCreateBranchField"><label for="memberBranchId">الفرع</label><select id="memberBranchId"><option value="">الفرع الرئيسي تلقائيًا</option></select><small class="field-hint">اختر الفرع الذي سيظهر فيه الاشتراك. عند تركه فارغًا يُستخدم الفرع الرئيسي.</small></div>
+                                        <div class="field" id="memberCreateSectionField"><label for="memberSectionId">القسم</label><select id="memberSectionId"><option value="">القسم المختلط تلقائيًا</option></select><small class="field-hint">اختياري — رجال أو نساء أو مختلط حسب أقسام الفرع.</small></div>
                                         <div class="field"><label for="membershipType">نوع العضوية</label><select id="membershipType"><option value="monthly">شهرية</option><option value="half_month">نصف شهر</option><option value="quarterly">ربع سنوية</option><option value="semiannual">نصف سنوية</option><option value="annual">سنوية</option></select></div>
                                         <div class="field"><label for="membershipPlan">الباقة</label><select id="membershipPlan"><option value="gym_only">جيم فقط</option><option value="gym_cardio">جيم وكارديو</option></select></div>
                                         <div class="field"><label for="startDate">تاريخ البداية</label><input id="startDate" type="date"></div>
@@ -1300,14 +1311,14 @@
     <script defer src="/js/performance-loader.js?v=104ba552261ffaa4"></script>
     <script defer src="/js/ui-feedback.js?v=e8714df9c49d8a2c"></script>
     <script defer src="/js/loading-skeleton.js?v=7de5ff80612cbbd0"></script>
-    <script defer src="/js/core/i18n.js?v=10b404c7faf0e795"></script>
+    <script defer src="/js/core/i18n.js?v=109ae4fb70ee1fce"></script>
     <script defer src="/js/auth-ui.js?v=d2e8d87f9f115a8d"></script>
     <script defer src="/js/branch-context.js?v=5e613a4e47ad854e"></script>
     <script defer src="/js/kiosk.js?v=f2d0b07ad18a77be"></script>
     <script defer src="/js/core/payment-method-catalog.js?v=30d2353227300ed7"></script>
     <script defer src="/js/core/feature-manifest.js?v=8c509fe0128fce1d"></script>
     <script defer src="/js/feature-loader.js?v=167bd69a277e9e17"></script>
-    <script defer src="/js/app-shell-bootstrap.js?v=7db48cceb53c0367"></script>
+    <script defer src="/js/app-shell-bootstrap.js?v=b5ddaf9258366e68"></script>
     <script defer src="/js/page-tabs.js?v=508672918a871bc9"></script>
 </body>
 </html>

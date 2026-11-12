@@ -67,7 +67,7 @@ function jsonResponse(route, payload, status = 200) {
 }
 
 async function installLocalMemberApi(page) {
-    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [], attendanceRequests: [], attendanceReads: 0 };
+    const database = { members: [], nextId: 6101, createRequests: [], updateRequests: [], searchRequests: [], attendanceRequests: [], attendanceReads: 0, memberDetails: new Map(), bootstrap: { branches: [], sections: [], defaultBranch: null } };
 
     await page.route('**/api/**', async (route) => {
         const request = route.request();
@@ -91,7 +91,7 @@ async function installLocalMemberApi(page) {
             types: { monthly: { label: 'شهرية', mode: 'months', durationValue: 1, priceMultiplier: 1, active: true, sortOrder: 1 } },
             prices: { gym_only: { monthly: 305 } }
         });
-        if (pathname === '/api/bootstrap') return jsonResponse(route, { branches: [], sections: [], defaultBranch: null });
+        if (pathname === '/api/bootstrap') return jsonResponse(route, database.bootstrap);
         if (pathname === '/api/dashboard') return jsonResponse(route, { stats: { total: database.members.length, active: database.members.length, expired: 0, expiringSoon: 0, frozen: 0 }, alerts: [] });
         if (pathname === '/api/attendance' && request.method() === 'GET') {
             database.attendanceReads += 1;
@@ -174,7 +174,8 @@ async function installLocalMemberApi(page) {
         const detailsMatch = pathname.match(/^\/api\/members\/(\d+)\/details$/);
         if (detailsMatch && request.method() === 'GET') {
             const member = database.members.find((item) => item.id === Number(detailsMatch[1]));
-            return jsonResponse(route, {
+            const storedDetails = database.memberDetails.get(Number(detailsMatch[1]));
+            return jsonResponse(route, storedDetails || {
                 member: member ? { ...member, membership } : null,
                 memberships: member ? [membership] : [],
                 freezes: [],
@@ -345,6 +346,57 @@ test('new member can be saved without a phone number; invalid provided numbers r
     await page.locator('#sendWhatsAppAfterSave').uncheck();
     await expect(page.locator('#saveButton')).toBeDisabled();
     expect(database.createRequests).toHaveLength(1);
+});
+
+test('editing a member without a phone keeps Save enabled and shows its current branch and section', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'The member edit contract runs in the desktop browser project.');
+    const database = await installLocalMemberApi(page);
+    const existingMembership = { ...membership, id: 7201, scope: {
+        mode: 'single_branch',
+        branches: [{ id: 12, name: 'فرع المعادي' }],
+        sections: [{ id: 121, branchId: 12, name: 'قسم السيدات', type: 'women' }]
+    } };
+    database.members.push({
+        id: 6201,
+        fullName: 'عضو بدون هاتف',
+        phone: null,
+        phoneNormalized: null,
+        email: null,
+        registrationDate: '2026-09-12',
+        notes: '',
+        membership: existingMembership
+    });
+    database.memberDetails.set(6201, {
+        member: { id: 6201, fullName: 'عضو بدون هاتف', phone: null, email: null, registrationDate: '2026-09-12', notes: '' },
+        currentMembership: existingMembership,
+        memberships: [existingMembership],
+        freezes: [], events: [], payments: [],
+        financialSummary: { totalDue: 305, totalPaid: 0, totalRemaining: 305, paidTransactionCount: 0 }
+    });
+    await page.route('**/?members-popup-contract*', (route) => route.fulfill({ path: 'public/index.html' }));
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    const memberRow = page.locator('#membersList tr[data-member-id="6201"]');
+    await memberRow.locator('[data-menu-toggle]').click();
+    await memberRow.locator('[data-action="edit"]').click();
+
+    const dialog = page.locator('#memberDialog');
+    const phone = page.locator('#phone');
+    const save = page.locator('#saveButton');
+    await expect(dialog).toBeVisible();
+    await expect(phone).not.toHaveAttribute('required', '');
+    await expect(save).toBeEnabled();
+    await expect(page.locator('#memberEditScopeSection')).toBeVisible();
+    await expect(page.locator('#memberEditBranchValue')).toHaveValue('فرع المعادي');
+    await expect(page.locator('#memberEditSectionValue')).toHaveValue('قسم السيدات');
+
+    await page.locator('#notes').fill('تعديل بيانات غير متعلق بالهاتف');
+    const updateRequest = page.waitForRequest((request) => request.url().endsWith('/api/members/6201') && request.method() === 'PUT');
+    await save.click();
+    const request = await updateRequest;
+    const submitted = JSON.parse(request.postData() || '{}');
+    expect(submitted.notes).toBe('تعديل بيانات غير متعلق بالهاتف');
+    expect(submitted).not.toHaveProperty('phone');
+    expect(submitted).not.toHaveProperty('phoneNational');
 });
 
 test('browser rejects a foreign international paste while keeping the Egyptian local contract', async ({ page }) => {

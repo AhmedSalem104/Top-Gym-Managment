@@ -74,10 +74,10 @@ test('the browser always submits initial membership fields for new members', () 
     assert.match(branchContextSource, /window\.topGymBranchContext = Object\.freeze/u);
 });
 
-test('member phone is optional only on create and stays required on edit', () => {
+test('member phone is optional on create and edit while invalid provided numbers remain guarded', () => {
     assert.match(pageSource, /id="phone" type="tel"(?![^>]*\brequired\b)[^>]*data-phone-input/u);
     assert.match(browserSource, /\$\('phone'\)\.required = false/u);
-    assert.match(browserSource, /\$\('phone'\)\.required = true/u);
+    assert.doesNotMatch(browserSource, /\$\('phone'\)\.required = true/u);
     assert.match(browserSource, /const phonePayload = phoneValue \? window\.LogicFitPhoneInputs\?\.getSubmissionPayload\?\.\(phoneInput\) : \{\};/u);
     assert.match(source, /required: partial/u);
 });

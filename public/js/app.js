@@ -1176,7 +1176,7 @@
             const loading = root.querySelector('#membersList .loading');
             if (loading) loading.textContent = membersText('loading');
             const phoneLabel = document.querySelector('#phone')?.closest('.member-phone-field')?.querySelector('label');
-            if (phoneLabel) phoneLabel.textContent = membersText(state.editing ? 'form.phoneRequired' : 'form.phone');
+            if (phoneLabel) phoneLabel.textContent = membersText('form.phone');
         }
         window.addEventListener('topgym:localechange', () => {
             applyMembersTranslations();
@@ -1367,10 +1367,57 @@
         function syncMemberSubscriptionFields() {
             const editing = Boolean($('memberId')?.value);
             const fields = $('memberSubscriptionFields');
+            const branchField = $('memberCreateBranchField');
+            const sectionField = $('memberCreateSectionField');
             // New members always receive their initial membership. Keep the
             // section visible for creation, and hide it only when editing an
             // older profile that has no membership record yet.
             if (fields) fields.hidden = editing && !state.editing?.membership;
+            if (branchField) branchField.hidden = editing;
+            if (sectionField) sectionField.hidden = editing;
+        }
+
+        function setMemberEditScopeValues(member, details = null, unavailable = false) {
+            const section = $('memberEditScopeSection');
+            if (!section) return;
+            const editing = Boolean(member);
+            section.hidden = !editing;
+            if (!editing) return;
+            const branchOutput = $('memberEditBranchValue');
+            const sectionOutput = $('memberEditSectionValue');
+            const loadingOrUnavailable = membersText(unavailable ? 'form.scopeUnavailable' : 'form.scopeLoading');
+            if (!details) {
+                branchOutput.value = loadingOrUnavailable;
+                sectionOutput.value = loadingOrUnavailable;
+                return;
+            }
+            const expectedMembershipId = Number(member.membership?.id || details.currentMembership?.id || 0);
+            const membership = (details.memberships || []).find((item) => Number(item.id) === expectedMembershipId)
+                || details.currentMembership
+                || null;
+            const scope = membership?.scope || {};
+            const branches = Array.isArray(scope.branches) ? scope.branches : [];
+            const sections = Array.isArray(scope.sections) ? scope.sections : [];
+            const branchNames = scope.mode === 'all_branches'
+                ? membersText('form.scopeAllBranches')
+                : branches.map((item) => String(item?.name || '').trim()).filter(Boolean).join('، ');
+            const sectionNames = sections.map((item) => String(item?.name || '').trim()).filter(Boolean).join('، ');
+            branchOutput.value = branchNames || membersText(membership ? 'form.scopeNotAssigned' : 'form.scopeNoMembership');
+            sectionOutput.value = sectionNames || membersText(membership ? 'form.scopeNotAssigned' : 'form.scopeNoMembership');
+        }
+
+        async function loadMemberEditScope(member) {
+            const requestId = Number(state.memberEditScopeRequestId || 0) + 1;
+            state.memberEditScopeRequestId = requestId;
+            setMemberEditScopeValues(member);
+            try {
+                const details = await api(`/api/members/${encodeURIComponent(member.id)}/details`);
+                if (requestId !== state.memberEditScopeRequestId || String($('memberId')?.value || '') !== String(member.id)) return;
+                setMemberEditScopeValues(member, details);
+            } catch (_) {
+                if (requestId !== state.memberEditScopeRequestId || String($('memberId')?.value || '') !== String(member.id)) return;
+                setMemberEditScopeValues(member, null, true);
+            }
         }
 
         async function syncMemberScopeOptions({ preserve = true } = {}) {
@@ -1421,6 +1468,7 @@
             const today = todayIso();
             const defaultType = activeTypeEntries()[0]?.[0] || 'monthly';
             $('memberId').value = '';
+            state.memberEditScopeRequestId = Number(state.memberEditScopeRequestId || 0) + 1;
             $('fullName').value = '';
             $('phone').required = false;
             const phoneLabel = $('phone').closest('.member-phone-field')?.querySelector('label');
@@ -1431,6 +1479,7 @@
             $('notes').value = '';
             $('memberBranchId').value = '';
             $('memberSectionId').value = '';
+            setMemberEditScopeValues(null);
             $('membershipType').value = defaultType;
             $('membershipPlan').value = 'gym_only';
             $('startDate').value = today;
@@ -1480,11 +1529,12 @@
                 // topbar action never opens a 0x0 dialog.
                 if (dialog?.closest('.workspace')) document.body.appendChild(dialog);
                 openDialogSafely(dialog);
+                if (member) void loadMemberEditScope(member);
             } catch (error) {
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').required = true; const phoneLabel = $('phone').closest('.member-phone-field')?.querySelector('label'); if (phoneLabel) phoneLabel.textContent = membersText('form.phoneRequired'); window.LogicFitPhoneInputs?.setValue?.($('phone'), member.phoneNational || member.phone || '', member.phoneCountry || ''); $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('resetButton').textContent = 'تفريغ'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), false); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').required = false; const phoneLabel = $('phone').closest('.member-phone-field')?.querySelector('label'); if (phoneLabel) phoneLabel.textContent = membersText('form.phone'); window.LogicFitPhoneInputs?.setValue?.($('phone'), member.phoneNational || member.phone || '', member.phoneCountry || ''); $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('resetButton').textContent = 'تفريغ'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), false); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
 
         function canOpenFreezeDialog(member) {
             const subscription = member?.membership;
