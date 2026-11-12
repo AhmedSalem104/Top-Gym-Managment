@@ -259,6 +259,10 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, mem
     const result = await pool.request().query(`
         SELECT
             CASE WHEN OBJECT_ID(N'dbo.members', N'U') IS NULL THEN 1 ELSE 0 END AS membersTable,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id=OBJECT_ID(N'dbo.members') AND name=N'phone' AND is_nullable=1
+            ) THEN 0 ELSE 1 END AS phoneNullable,
             CASE WHEN COL_LENGTH(N'dbo.members', N'phone_normalized') IS NULL THEN 1 ELSE 0 END AS phoneNormalized,
             CASE WHEN COL_LENGTH(N'dbo.members', N'membership_code_hash') IS NULL THEN 1 ELSE 0 END AS membershipCodeHash,
             CASE WHEN COL_LENGTH(N'dbo.members', N'membership_code_ciphertext') IS NULL THEN 1 ELSE 0 END AS membershipCodeCiphertext,
@@ -273,6 +277,7 @@ async function assertMemberMutationSchemaReady({ membershipRequired = false, mem
     const row = result.recordset?.[0] || {};
     const required = [
         ['membersTable', 'dbo.members'],
+        ['phoneNullable', 'dbo.members.phone nullable'],
         ['phoneNormalized', 'dbo.members.phone_normalized']
     ];
 
@@ -651,17 +656,18 @@ function normalizePayload(body = {}, { partial = false } = {}) {
     const phoneProvided = has(body, 'phone') || has(body, 'phoneNational');
     if (!partial || phoneProvided) {
         const phoneInput = body.phoneNational ?? body.phone;
-        output.phoneInput = requiredString(phoneInput, 'رقم الهاتف', 30);
-        const parsedPhone = parsePhone(output.phoneInput, {
+        const parsedPhone = parsePhone(phoneInput, {
             country: EGYPT_COUNTRY,
+            required: partial,
             requireCountryForLocal: false,
             allowFixedLine: false,
             fieldName: 'Phone number'
         });
-        output.phoneNormalized = parsedPhone.e164;
-        output.phone = parsedPhone.e164;
-        output.phoneCountry = parsedPhone.countryIso2;
-        output.phoneNational = parsedPhone.nationalNumber;
+        output.phoneInput = optionalString(phoneInput, 30);
+        output.phoneNormalized = parsedPhone?.e164 || null;
+        output.phone = parsedPhone?.e164 || null;
+        output.phoneCountry = parsedPhone?.countryIso2 || null;
+        output.phoneNational = parsedPhone?.nationalNumber || null;
     }
     if (!partial || has(body, 'email')) {
         output.email = optionalString(body.email, 254);

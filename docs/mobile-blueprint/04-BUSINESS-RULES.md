@@ -59,6 +59,7 @@ This document records current behavior as rules, not UI labels. Sources are list
 
 - Current UI input is Egyptian local mobile format; backend canonical storage/search is E.164 through `src/services/phone-service.js` and the generated/browser formatter.
 - Formatting is presentation-only. Duplicate detection and lookup normalize before comparison.
+- Gym staff may create a member without a phone number. When supplied, the number must pass the existing Egypt-first mobile validation and duplicate checks; absent phone data is stored as `NULL`, never replaced with a synthetic number. Member profile editing continues to require a valid phone when the phone field is submitted.
 - Do not add country selection or infer country from GPS/IP in mobile without a new reviewed contract; current source has an optional server-side IP signal but the current UI contract is Egypt-first.
 
 ## Uploads, WhatsApp, notifications

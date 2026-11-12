@@ -124,7 +124,7 @@ async function installLocalMemberApi(page) {
             });
             const rows = database.members.filter((member) => !search
                 || member.fullName.includes(search)
-                || member.phone.includes(search)
+                || String(member.phone || '').includes(search)
                 || member.phoneNormalized === canonical);
             return jsonResponse(route, {
                 members: rows.map((member) => ({ ...member, membership })),
@@ -135,13 +135,12 @@ async function installLocalMemberApi(page) {
         if (pathname === '/api/members' && request.method() === 'POST') {
             database.createRequests.push(body);
             const canonical = normalizePhoneForSearch(body.phoneNational, { country: body.phoneCountry, required: false });
-            const duplicate = database.members.find((member) => member.phoneNormalized === canonical);
-            if (!canonical) return jsonResponse(route, { error: 'PHONE_INVALID', code: 'PHONE_INVALID' }, 400);
+            const duplicate = canonical && database.members.find((member) => member.phoneNormalized === canonical);
             if (duplicate) return jsonResponse(route, { error: 'DUPLICATE_MEMBER_PHONE', code: 'DUPLICATE_MEMBER_PHONE', field: 'phone', memberName: duplicate.fullName }, 409);
             const member = {
                 id: database.nextId++,
                 fullName: String(body.fullName || ''),
-                phone: canonical,
+                phone: canonical || null,
                 phoneNormalized: canonical,
                 phoneCountry: body.phoneCountry,
                 phoneNational: '1015819700',
@@ -213,6 +212,7 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
         window.addEventListener('topgym:member-created', (event) => event.stopImmediatePropagation(), true);
     });
     const database = await installLocalMemberApi(page);
+    await page.route('**/?members-popup-contract*', (route) => route.fulfill({ path: 'public/index.html' }));
     await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
 
     const variants = ['01015819700', '1015819700', '+201015819700', '00201015819700'];
@@ -222,6 +222,7 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
     const variant = variants[0];
     await page.locator('#addMemberButton').click();
     await expect(dialog).toBeVisible();
+    await expect(phone).not.toHaveAttribute('required', '');
     await page.locator('#fullName').fill('QA Canonical Member');
     await enterPhoneVariant(phone, variant);
     await phone.blur();
@@ -296,6 +297,7 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
     await memberRow.locator('[data-menu-toggle]').click();
     await memberRow.locator('[data-action="edit"]').click();
     await expect(dialog).toBeVisible();
+    await expect(phone).toHaveAttribute('required', '');
     await phone.fill('01015819700');
     await phone.blur();
     const updateRequestPromise = page.waitForRequest((request) => request.url().endsWith(`/api/members/${memberId}`) && request.method() === 'PUT');
@@ -311,6 +313,38 @@ test('browser completes the canonical member phone flow end to end', async ({ pa
 
     expect(database.searchRequests.slice(-variants.length)).toEqual(variants);
     expect(database.members[0].id).toBe(memberId);
+});
+
+test('new member can be saved without a phone number; invalid provided numbers remain blocked', async ({ page }) => {
+    test.skip(test.info().project.name !== 'desktop', 'The member creation contract runs in the desktop browser project.');
+    const database = await installLocalMemberApi(page);
+    await page.route('**/?members-popup-contract*', (route) => route.fulfill({ path: 'public/index.html' }));
+    await page.goto('/?members-popup-contract#members', { waitUntil: 'networkidle' });
+    await page.locator('#addMemberButton').click();
+
+    const dialog = page.locator('#memberDialog');
+    const phone = page.locator('#phone');
+    await expect(dialog).toBeVisible();
+    await expect(phone).not.toHaveAttribute('required', '');
+    await page.locator('#fullName').fill('QA Member Without Phone');
+    await page.locator('#sendWhatsAppAfterSave').uncheck();
+
+    const requestPromise = page.waitForRequest((request) => request.url().endsWith('/api/members') && request.method() === 'POST');
+    await page.locator('#saveButton').click();
+    const request = await requestPromise;
+    const submitted = JSON.parse(request.postData() || '{}');
+    expect(submitted).toMatchObject({ fullName: 'QA Member Without Phone' });
+    expect(submitted).not.toHaveProperty('phone');
+    expect(submitted).not.toHaveProperty('phoneNational');
+    expect(database.members).toHaveLength(1);
+    expect(database.members[0].phone).toBeNull();
+
+    await page.locator('#addMemberButton').click();
+    await page.locator('#fullName').fill('QA Member Invalid Phone');
+    await phone.fill('010123');
+    await page.locator('#sendWhatsAppAfterSave').uncheck();
+    await expect(page.locator('#saveButton')).toBeDisabled();
+    expect(database.createRequests).toHaveLength(1);
 });
 
 test('browser rejects a foreign international paste while keeping the Egyptian local contract', async ({ page }) => {

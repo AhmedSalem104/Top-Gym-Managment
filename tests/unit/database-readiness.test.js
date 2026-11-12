@@ -59,7 +59,8 @@ test('database readiness audit finds the canonical migration set safe at source 
         '038-notification-read-cascade-fix.sql',
         '039-durable-email-outbox.sql',
         '040-mobile-refresh-sessions.sql',
-        '041-password-recovery-tokens.sql'
+        '041-password-recovery-tokens.sql',
+        '042-optional-member-phone.sql'
     ]);
     assert.deepEqual(report.migrationFindings, []);
     assert.equal(report.schemaReview.status, 'REQUIRES STAGING VERIFICATION');

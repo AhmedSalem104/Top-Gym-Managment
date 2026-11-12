@@ -1175,6 +1175,8 @@
             if (clearButton) clearButton.textContent = membersText('filter.clear');
             const loading = root.querySelector('#membersList .loading');
             if (loading) loading.textContent = membersText('loading');
+            const phoneLabel = document.querySelector('#phone')?.closest('.member-phone-field')?.querySelector('label');
+            if (phoneLabel) phoneLabel.textContent = membersText(state.editing ? 'form.phoneRequired' : 'form.phone');
         }
         window.addEventListener('topgym:localechange', () => {
             applyMembersTranslations();
@@ -1420,6 +1422,9 @@
             const defaultType = activeTypeEntries()[0]?.[0] || 'monthly';
             $('memberId').value = '';
             $('fullName').value = '';
+            $('phone').required = false;
+            const phoneLabel = $('phone').closest('.member-phone-field')?.querySelector('label');
+            if (phoneLabel) phoneLabel.textContent = membersText('form.phone');
             window.LogicFitPhoneInputs?.setValue?.($('phone'), '');
             $('email').value = '';
             $('registrationDate').value = today;
@@ -1479,7 +1484,7 @@
                 await notify(error.message, 'error');
             }
         }
-        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; window.LogicFitPhoneInputs?.setValue?.($('phone'), member.phoneNational || member.phone || '', member.phoneCountry || ''); $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('resetButton').textContent = 'تفريغ'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), false); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
+        function editMember(member) { const sub = member.membership || {}; $('memberId').value = member.id; $('fullName').value = member.fullName || ''; $('phone').required = true; const phoneLabel = $('phone').closest('.member-phone-field')?.querySelector('label'); if (phoneLabel) phoneLabel.textContent = membersText('form.phoneRequired'); window.LogicFitPhoneInputs?.setValue?.($('phone'), member.phoneNational || member.phone || '', member.phoneCountry || ''); $('email').value = member.email || ''; $('registrationDate').value = member.registrationDate || todayIso(); $('notes').value = member.notes || ''; $('membershipType').value = resolvedTypeCode(sub.type || 'monthly'); $('membershipPlan').value = sub.plan || 'gym_only'; $('startDate').value = sub.startDate || todayIso(); $('endDate').value = sub.endDate || calculatedEndDate($('startDate').value, $('membershipType').value); $('membershipNotes').value = sub.notes || ''; $('discountAmount').value = String(sub.discountAmount || 0); $('amountPaid').value = String(sub.amountPaid || 0); $('paymentMethod').value = sub.paymentMethod || 'cash'; $('sendWhatsAppAfterSave').checked = false; $('sendWhatsAppAfterSave').closest('.whatsapp-after-save')?.classList.add('hidden'); state.editing = member; state.endDateManual = true; $('formTitle').textContent = 'تعديل بيانات العضو'; $('saveButton').textContent = 'حفظ التعديلات'; $('resetButton').textContent = 'تفريغ'; setDialogControlVisibility($('cancelEditButton'), true); setDialogControlVisibility($('resetButton'), false); syncMemberSubscriptionFields(); syncMemberPermissionFields(); updateFormPricing(); }
 
         function canOpenFreezeDialog(member) {
             const subscription = member?.membership;
@@ -2100,9 +2105,10 @@
                 return;
             }
             const phoneInput = $('phone');
+            const phoneValue = String(phoneInput?.value || '').trim();
             const phoneValidation = window.LogicFitPhoneInputs?.validateInput?.(phoneInput, { show: true });
-            const phonePayload = window.LogicFitPhoneInputs?.getSubmissionPayload?.(phoneInput);
-            if (!phoneValidation?.valid || !phonePayload) {
+            const phonePayload = phoneValue ? window.LogicFitPhoneInputs?.getSubmissionPayload?.(phoneInput) : {};
+            if (!phoneValidation?.valid || (phoneValue && !phonePayload)) {
                 await notify(phoneValidation?.message || 'قواعد الهاتف غير جاهزة بعد. حاول مرة أخرى.', 'error');
                 phoneInput?.focus();
                 return;

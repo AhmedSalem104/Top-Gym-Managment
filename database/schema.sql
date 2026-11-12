@@ -3,7 +3,7 @@ BEGIN
     CREATE TABLE dbo.members (
         id INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_members PRIMARY KEY,
         full_name NVARCHAR(120) NOT NULL,
-        phone NVARCHAR(30) NOT NULL,
+        phone NVARCHAR(30) NULL,
         phone_normalized NVARCHAR(30) NULL,
         email NVARCHAR(254) NULL,
         registration_date DATE NOT NULL,

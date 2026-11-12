@@ -35,7 +35,7 @@ Native mobile restore calls `GET /api/mobile/auth/session` with the bearer acces
 
 ## Gym critical flows
 
-- Member: search/list → detail → membership/payment/action; each mutation is permission, entitlement, scope, and service validated.
+- Member: create with a name and optional phone → initial membership → list/detail → membership/payment/action; a supplied phone is validated, while absence remains null and does not block creation. Each mutation is permission, entitlement, scope, and service validated.
 - Attendance: select branch/section → today/report → check-in/out; server owns current state and auto-checkout semantics.
 - Attendance QR: authorized staff may obtain the stable tenant/member-bound opaque token (`GET /api/attendance/qr/:id`), scan it, resolve it under the current tenant (`POST /api/attendance/resolve-qr`), show minimal member and today's state, then submit the unchanged QR token to the existing check-in/out endpoint. The server revalidates eligibility and branch/section. Legacy readable/numeric formats remain compatibility-only; digital cards never issue them.
 - Tenant-branded member card: after successful member creation, successful membership renewal, or from member details, authorized staff obtain the attendance token (never membership-code reveal), compose a card from current published tenant branding and current member/membership data, then preview/download or use native file sharing. WhatsApp fallback downloads the image and opens a prepared tenant-branded message; staff attaches and sends manually. Share failure never changes member/renewal success, and opening WhatsApp does not mean sent. Missing optional membership data is omitted; the QR only identifies a tenant-scoped member and never grants attendance authorization.

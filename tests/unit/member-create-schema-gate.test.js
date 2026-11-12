@@ -15,6 +15,8 @@ test('production member creation uses a read-only schema gate instead of request
     assert.match(source, /async function assertMemberMutationSchemaReady/);
     assert.match(source, /OBJECT_ID\(N'dbo\.members', N'U'\)/);
     assert.match(source, /MEMBER_SCHEMA_NOT_READY/);
+    assert.match(source, /AS phoneNullable/u);
+    assert.match(source, /\['phoneNullable', 'dbo\.members\.phone nullable'\]/u);
     assert.match(source, /membershipRequired: membershipRequested/);
     assert.match(source, /paymentRequired: membershipRequested && amountPaid > 0/);
     assert.match(source, /if \(membershipRequested\) \{/);
@@ -70,6 +72,14 @@ test('the browser always submits initial membership fields for new members', () 
     assert.match(pageSource, /id="memberBranchId"/u);
     assert.match(pageSource, /id="memberSectionId"/u);
     assert.match(branchContextSource, /window\.topGymBranchContext = Object\.freeze/u);
+});
+
+test('member phone is optional only on create and stays required on edit', () => {
+    assert.match(pageSource, /id="phone" type="tel"(?![^>]*\brequired\b)[^>]*data-phone-input/u);
+    assert.match(browserSource, /\$\('phone'\)\.required = false/u);
+    assert.match(browserSource, /\$\('phone'\)\.required = true/u);
+    assert.match(browserSource, /const phonePayload = phoneValue \? window\.LogicFitPhoneInputs\?\.getSubmissionPayload\?\.\(phoneInput\) : \{\};/u);
+    assert.match(source, /required: partial/u);
 });
 
 test('member creation cannot commit a profile without its initial membership', () => {

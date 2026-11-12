@@ -133,6 +133,18 @@
       "rlsImpact": false,
       "dataBackfill": false,
       "rollback": "forward-fix-or-database-recovery"
+    },
+    "042-optional-member-phone.sql": {
+      "version": "042",
+      "checksum": "11d99af8813a3082c8dc1407257956fcf60e47001a1e03ca1b56c8bb09d5b706",
+      "transactional": true,
+      "backwardCompatible": true,
+      "destructive": false,
+      "requiresBackup": true,
+      "requiresMaintenanceMode": false,
+      "rlsImpact": false,
+      "dataBackfill": false,
+      "rollback": "forward-fix-or-database-recovery"
     }
   }
 }
