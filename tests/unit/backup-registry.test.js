@@ -155,6 +155,8 @@ test('legacy production tables are classified without requiring the modern tenan
     assert.equal(classifyPlatformTable('JobExecutionLogs').classification, 'TRANSIENT_EXCLUDED');
     assert.equal(classifyPlatformTable('gym_auth_sessions').classification, 'SECRET_EXCLUDED');
     assert.equal(classifyPlatformTable('gym_mobile_refresh_sessions').classification, 'SECRET_EXCLUDED');
+    assert.equal(classifyPlatformTable('gym_password_recovery_tokens').classification, 'SECRET_EXCLUDED');
+    assert.equal(classifyPlatformTable('gym_password_recovery_tokens').scope, 'excluded');
     assert.equal(classifyPlatformTable('unknown_legacy_table', { hasTenantId: true }).classification, 'UNKNOWN');
 });
 
