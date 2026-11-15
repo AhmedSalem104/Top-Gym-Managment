@@ -67,6 +67,8 @@ The full method/path declarations are in the listed route modules; the following
 | Bootstrap | `dashboard.routes.js`, `branch-service.js`, `saas-service.js` | staff tenant | current user, tenant, entitlements, branch context, dashboard seed | READY_WITH_CLIENT_ADAPTATION |
 | Gym members/memberships | `members.routes.js`, `member-service.js`, `member-subscription-service.js` | tenant + branch/section where applicable + permission | list/detail/create/update/freeze/renew/refund/membership/payment/code | READY_WITH_CLIENT_ADAPTATION |
 
+`POST /api/auth/users` remains Owner-only and tenant-scoped. For a Gym tenant, an optional additive `branchIds: number[]` request field selects one or more active branches for the new Assistant. When omitted by a legacy client, the server assigns the active main branch, or the first active branch if no main branch is configured. An explicit empty list, inactive/foreign branch, or Gym with no active branch is rejected; account, tenant membership, default permissions, initial branch-access rows, and audit record are committed together. The existing `{ user }` response is unchanged. `branches.read` only controls branch data visibility and does not grant an Assistant any branch scope. Independent Trainer tenants do not use Gym branch assignment and must omit `branchIds`.
+
 `POST /api/members` accepts an omitted or blank `phone`/`phoneNational` for a new member; the persisted `phone` and `phone_normalized` are `null` in that case. A supplied phone remains subject to the existing Egypt-first mobile validation and duplicate checks. On `PUT /api/members/:id`, omitting phone preserves the existing value; a supplied phone must remain valid. A missing phone is contact-data absence, not a temporary or fabricated number.
 | Attendance | `attendance.routes.js`, `attendance-service.js`, `attendance-qr-token-service.js` | Gym tenant + branch/section | today/report/member/issue-opaque-QR/resolve-QR/check-in/out | READY_WITH_CLIENT_ADAPTATION |
 | Day passes | `day-pass.routes.js`, `day-pass-service.js` | Gym tenant + Owner/Assistant permission | list/summary/pricing/create/update/void | READY_WITH_CLIENT_ADAPTATION |
@@ -132,6 +134,10 @@ The following table is the machine-extracted method/path index used for the comp
 | GET | `/api/auth/users/:id/permissions` | `src/routes/auth.routes.js` |
 | PUT | `/api/auth/users/:id/permissions` | `src/routes/auth.routes.js` |
 | POST | `/api/auth/users/:id/permissions/reset` | `src/routes/auth.routes.js` |
+
+### Owner-created Assistant branch scope
+
+`POST /api/auth/users` remains Owner-only and tenant-scoped. For a Gym tenant, an optional additive `branchIds: number[]` request field selects one or more active branches for the new Assistant. When omitted by a legacy client, the server assigns the active main branch, or the first active branch if no main branch is configured. An explicit empty list, inactive/foreign branch, or Gym with no active branch is rejected; account, tenant membership, default permissions, initial branch-access rows, and audit record are committed together. The existing `{ user }` response is unchanged. `branches.read` only controls branch data visibility and does not grant an Assistant any branch scope. Independent Trainer tenants do not use Gym branch assignment and must omit `branchIds`.
 | GET | `/api/backup/daily` | `src/routes/backup.routes.js` |
 | GET | `/api/backup/download` | `src/routes/backup.routes.js` |
 | GET | `/api/backup/status` | `src/routes/backup.routes.js` |

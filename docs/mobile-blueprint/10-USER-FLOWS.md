@@ -35,6 +35,8 @@ Native mobile restore calls `GET /api/mobile/auth/session` with the bearer acces
 
 ## Gym critical flows
 
+- **Owner creates a Gym Assistant:** open account management → enter name/email/password → load active tenant branches → select at least one (the active default branch is preselected) → submit `POST /api/auth/users` with optional `branchIds`. The server validates selected IDs in the current tenant and commits account, tenant membership, safe permission defaults, initial branch-access rows, and audit record atomically. Legacy clients omitting `branchIds` are assigned the active main branch or first active branch; no active branch means creation fails without a partial account. After creation, the Assistant's allowed branch bootstrap is derived from persisted rows. Editing an existing account does not alter its branch scope.
+
 - Member: create with a name and optional phone → initial membership → list/detail → membership/payment/action; a supplied phone is validated, while absence remains null and does not block creation. Each mutation is permission, entitlement, scope, and service validated.
 - Attendance: select branch/section → today/report → check-in/out; server owns current state and auto-checkout semantics.
 - Attendance QR: authorized staff may obtain the stable tenant/member-bound opaque token (`GET /api/attendance/qr/:id`), scan it, resolve it under the current tenant (`POST /api/attendance/resolve-qr`), show minimal member and today's state, then submit the unchanged QR token to the existing check-in/out endpoint. The server revalidates eligibility and branch/section. Legacy readable/numeric formats remain compatibility-only; digital cards never issue them.

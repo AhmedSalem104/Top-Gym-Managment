@@ -17,6 +17,7 @@ const userRepository = require('../repositories/user.repository');
 const sessionRepository = require('../repositories/session.repository');
 const { currentTenantId, getTenantContext, runTenantContext } = require('../tenancy/tenant-context');
 const { resolveTenantType } = require('../tenancy/tenant-types');
+const { resolveAssistantBranchIds } = require('../branches/assistant-branch-scope');
 
 const SESSION_COOKIE_NAME = 'topgym_session';
 const DEFAULT_SESSION_DAYS = 7;
@@ -673,7 +674,7 @@ async function listUsers({ readOnly = false } = {}) {
     return Promise.all(result.recordset.map((row) => safeUserWithPermissions(row, { readOnly })));
 }
 
-async function createAssistant(body = {}) {
+async function createAssistant(body = {}, request = null) {
     await ensureAuthReady();
     const tenantId = currentTenantId({ required: true });
     const name = validateName(body.name || body.fullName);
@@ -684,10 +685,48 @@ async function createAssistant(body = {}) {
         let createdUser = null;
         await withTransaction(async (transaction) => {
             await saasService.assertResourceLimitInTransaction(transaction, tenantId, 'users');
+            const tenantScope = await transaction.request()
+                .input('tenantId', sql.Int, tenantId)
+                .query('SELECT tenant_type FROM dbo.gym_tenants WHERE id=@tenantId;');
+            const tenantType = resolveTenantType(tenantScope.recordset?.[0]?.tenant_type);
+            let assistantBranchIds = [];
+            if (tenantType === 'gym') {
+                const activeBranchResult = await transaction.request()
+                    .input('tenantId', sql.Int, tenantId)
+                    .query(`SELECT id,is_main_branch AS isMain FROM dbo.gym_branches WITH (UPDLOCK,HOLDLOCK)
+                            WHERE tenant_id=@tenantId AND status='active' ORDER BY is_main_branch DESC,name,id;`);
+                assistantBranchIds = resolveAssistantBranchIds(body.branchIds, activeBranchResult.recordset || []);
+            }
+            if (tenantType !== 'gym' && body.branchIds !== undefined) {
+                throw authError('Branch access is not used for this tenant type.', 400, 'BRANCH_SCOPE_NOT_APPLICABLE');
+            }
             const result = await userRepository.createAssistant({ fullName: name, email, passwordHash }, transaction);
             createdUser = result.recordset[0];
             await tenantService.assignUserToTenant(createdUser.id, tenantId, 'Assistant', { executor: transaction });
             await permissionService.seedAssistantPermissions(createdUser.id, undefined, { executor: transaction });
+            for (const branchId of assistantBranchIds) {
+                await transaction.request()
+                    .input('tenantId', sql.Int, tenantId)
+                    .input('branchId', sql.Int, branchId)
+                    .input('userId', sql.Int, Number(createdUser.id))
+                    .input('actorUserId', sql.Int, request?.auth?.id == null ? null : Number(request.auth.id))
+                    .query(`INSERT INTO dbo.gym_branch_user_access(tenant_id,branch_id,user_id,created_by_user_id)
+                            VALUES (@tenantId,@branchId,@userId,@actorUserId);`);
+            }
+            if (assistantBranchIds.length) {
+                await saasService.recordAudit({
+                    tenantId,
+                    actorUserId: request?.auth?.id ?? null,
+                    action: 'assistant_branch_access_assigned',
+                    entityType: 'user',
+                    entityId: Number(createdUser.id),
+                    details: 'Initial branch scope assigned during assistant creation.',
+                    after: { branchIds: assistantBranchIds },
+                    ipAddress: request?.ip || request?.socket?.remoteAddress || null,
+                    userAgent: request?.get?.('user-agent') || null,
+                    executor: transaction
+                });
+            }
         });
         return safeUserWithPermissions(createdUser);
     } catch (error) {

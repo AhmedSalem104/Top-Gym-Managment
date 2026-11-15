@@ -26,6 +26,12 @@ const CATALOG_GAPS = {
     'permissionsScreen.authUsers.dialog.password': { ar: 'كلمة المرور', en: 'Password' },
     'permissionsScreen.authUsers.dialog.passwordHintAdd': { ar: 'يجب أن تكون 8 أحرف على الأقل. لا يتم عرضها أو إرسالها مرة أخرى بعد الحفظ.', en: 'Use at least 8 characters. The password is not shown or sent again after saving.' },
     'permissionsScreen.authUsers.dialog.passwordHintEdit': { ar: 'اترك الحقل فارغًا للحفاظ على كلمة المرور الحالية، أو أدخل كلمة مرور جديدة لإعادة التعيين.', en: 'Leave this blank to keep the current password, or enter a new password to reset it.' },
+    'permissionsScreen.authUsers.dialog.branches': { ar: 'الفروع المسموح بها *', en: 'Allowed branches *' },
+    'permissionsScreen.authUsers.dialog.branchesHint': { ar: 'اختر فرعًا نشطًا واحدًا على الأقل ليتمكن المساعد من العمل عليه.', en: 'Select at least one active branch where this assistant can work.' },
+    'permissionsScreen.authUsers.dialog.branchesLoading': { ar: 'جارٍ تحميل الفروع النشطة…', en: 'Loading active branches…' },
+    'permissionsScreen.authUsers.dialog.branchesUnavailable': { ar: 'تعذر تحميل الفروع. أغلق النافذة وحاول مرة أخرى.', en: 'Could not load branches. Close the dialog and try again.' },
+    'permissionsScreen.authUsers.dialog.noBranches': { ar: 'لا يوجد فرع نشط متاح. فعّل فرعًا قبل إنشاء مساعد.', en: 'No active branch is available. Activate a branch before creating an assistant.' },
+    'permissionsScreen.authUsers.dialog.branchRequired': { ar: 'اختر فرعًا نشطًا واحدًا على الأقل.', en: 'Select at least one active branch.' },
     'permissionsScreen.authUsers.dialog.close': { ar: 'إغلاق', en: 'Close' },
     'permissionsScreen.authUsers.dialog.cancel': { ar: 'إلغاء', en: 'Cancel' },
     'permissionsScreen.authUsers.dialog.save': { ar: 'حفظ الحساب', en: 'Save account' }
@@ -39,13 +45,14 @@ function fulfill(route, payload, status = 200) {
     return route.fulfill({ status, contentType: 'application/json; charset=utf-8', body: JSON.stringify(payload) });
 }
 
-async function installFixture(page) {
+async function installFixture(page, { allowAssistantCreate = false } = {}) {
     const reads = [];
     const writes = [];
+    const assistantCreates = [];
     const businessPlan = planCatalog.PLAN_CONFIGURATIONS.find((entry) => entry.code === 'business');
-    const corePath = path.join(process.cwd(), 'public', 'js', 'core', 'i18n.js');
-    const core = fs.readFileSync(corePath, 'utf8');
-    const missingInRepository = Object.keys(CATALOG_GAPS).filter((key) => !core.includes(`'${key}':`));
+    const catalogPath = path.join(process.cwd(), 'public', 'js', 'core', 'i18n-catalog.js');
+    const catalog = fs.readFileSync(catalogPath, 'utf8');
+    const missingInRepository = Object.keys(CATALOG_GAPS).filter((key) => !catalog.includes(`'${key}':`));
 
     await page.route('**/*', async (route) => {
         const url = new URL(route.request().url());
@@ -57,6 +64,10 @@ async function installFixture(page) {
         const pathname = new URL(request.url()).pathname;
         if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method().toUpperCase())) {
             writes.push({ method: request.method(), pathname });
+            if (allowAssistantCreate && request.method() === 'POST' && pathname === '/api/auth/users') {
+                assistantCreates.push(request.postDataJSON());
+                return fulfill(route, { user: { id: 88213, name: 'New QA Assistant', role: 'Assistant', status: 'Active' } }, 201);
+            }
             return fulfill(route, { error: 'Read-only Assistant panel fixture.' }, 405);
         }
         reads.push(pathname);
@@ -75,6 +86,18 @@ async function installFixture(page) {
             }
         });
         if (pathname === '/api/bootstrap') return fulfill(route, { branches: [], sections: [] });
+        if (pathname === '/api/branches/bootstrap') return fulfill(route, {
+            branches: [
+                { id: 94001, name: 'فرع الاختبار الرئيسي', status: 'active', isMain: true },
+                { id: 94002, name: 'فرع الاختبار الثاني', status: 'active', isMain: false }
+            ],
+            activeBranches: [
+                { id: 94001, name: 'فرع الاختبار الرئيسي', status: 'active', isMain: true },
+                { id: 94002, name: 'فرع الاختبار الثاني', status: 'active', isMain: false }
+            ],
+            defaultBranch: { id: 94001, name: 'فرع الاختبار الرئيسي', status: 'active', isMain: true },
+            sections: [], canUseAllBranches: true
+        });
         if (pathname === '/api/dashboard') return fulfill(route, { stats: {}, alerts: [] });
         if (pathname === '/api/auth/permissions/catalog') return fulfill(route, { permissions: PERMISSIONS });
         if (pathname === '/api/auth/users') return fulfill(route, {
@@ -87,7 +110,7 @@ async function installFixture(page) {
         if (pathname === '/api/auth/users/88211/permissions') return fulfill(route, { permissions: PERMISSIONS, lastModified: null });
         return fulfill(route, {});
     });
-    return { reads, writes, missingInRepository };
+    return { reads, writes, assistantCreates, missingInRepository };
 }
 
 test.describe('Assistant account panel central i18n — read-only intercepted fixture', () => {
@@ -147,6 +170,9 @@ test.describe('Assistant account panel central i18n — read-only intercepted fi
                     await page.locator('#authAddAssistantButton').click();
                     const userDialog = page.locator('#authUserDialog');
                     await expect(userDialog).toBeVisible();
+                    await expect(userDialog.locator('.auth-user-branch-option')).toHaveCount(2);
+                    await expect(page.locator('#authUserBranchScopeTitle')).toHaveText(CATALOG_GAPS['permissionsScreen.authUsers.dialog.branches'][locale]);
+                    await expect(page.locator('#authUserBranchScopeHint')).toHaveText(CATALOG_GAPS['permissionsScreen.authUsers.dialog.branchesHint'][locale]);
                     await expect(userDialog).toHaveAttribute('dir', locale === 'en' ? 'ltr' : 'rtl');
                     await expect(page.locator('#authUserName')).toBeFocused();
                     const dialogBounds = await userDialog.evaluate((dialog) => {
@@ -209,6 +235,7 @@ test.describe('Assistant account panel central i18n — read-only intercepted fi
                     const alternateLocale = locale === 'en' ? 'ar' : 'en';
                     await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), alternateLocale);
                     await expect(page.locator('#authUserDialogTitle')).toHaveText(alternateLocale === 'en' ? 'Add assistant' : 'إضافة مساعد');
+                    await expect(page.locator('#authUserBranchScopeTitle')).toHaveText(CATALOG_GAPS['permissionsScreen.authUsers.dialog.branches'][alternateLocale]);
                     await page.evaluate((value) => window.TopGymI18n.set(value, { persist: false }), locale);
                     const escapeAddDialog = width === 320 && locale === 'en' && theme === 'dark';
                     if (escapeAddDialog) await page.keyboard.press('Escape');
@@ -317,4 +344,43 @@ test.describe('Assistant account panel central i18n — read-only intercepted fi
             canonicalCentralCatalogVerified: runtime.missingInRepository.length === 0
         }, null, 2));
     });
+});
+
+test('new Gym assistant creation requires and submits the selected active branch scope', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The test uses the desktop app shell and intercepted APIs.');
+    const runtime = await installFixture(page, { allowAssistantCreate: true });
+    await page.addInitScript(() => localStorage.setItem('logic-fit-ui-locale', 'ar'));
+    await page.goto('/index.html#permissions', { waitUntil: 'domcontentloaded' });
+    const permissionsTab = page.locator('[data-page-tab="permissions"]');
+    await expect(permissionsTab).toBeVisible();
+    if (await permissionsTab.getAttribute('aria-selected') !== 'true') await permissionsTab.click();
+    await expect(page.locator('#authUsersPanel')).toBeVisible();
+    await page.locator('#authAddAssistantButton').click();
+
+    const dialog = page.locator('#authUserDialog');
+    await expect(dialog).toBeVisible();
+    const branchOptions = page.locator('#authUserBranchOptions input[type="checkbox"]');
+    await expect(branchOptions).toHaveCount(2);
+    await expect(branchOptions.nth(0)).toBeChecked();
+    await expect(branchOptions.nth(1)).not.toBeChecked();
+    const branchBootstrapReads = runtime.reads.filter((pathname) => pathname === '/api/branches/bootstrap').length;
+    await page.locator('#authUserDialogCancel').click();
+    await page.locator('#authAddAssistantButton').click();
+    await expect(page.locator('#authUserBranchOptions input[type="checkbox"]')).toHaveCount(2);
+    expect(runtime.reads.filter((pathname) => pathname === '/api/branches/bootstrap')).toHaveLength(branchBootstrapReads);
+    const refreshedBranchOptions = page.locator('#authUserBranchOptions input[type="checkbox"]');
+    await refreshedBranchOptions.nth(0).uncheck();
+    await expect(page.locator('#authUserSave')).toBeDisabled();
+    expect(runtime.assistantCreates).toHaveLength(0);
+    await refreshedBranchOptions.nth(0).check();
+    await refreshedBranchOptions.nth(1).check();
+    await page.locator('#authUserName').fill('New QA Assistant');
+    await page.locator('#authUserEmail').fill('new-assistant@example.test');
+    await page.locator('#authUserPassword').fill('SafeTestPassword24');
+    await page.locator('#authUserSave').click();
+
+    await expect(dialog).toBeHidden();
+    expect(runtime.assistantCreates).toHaveLength(1);
+    expect(runtime.assistantCreates[0].branchIds).toEqual([94001, 94002]);
+    expect(runtime.writes).toEqual([{ method: 'POST', pathname: '/api/auth/users' }]);
 });

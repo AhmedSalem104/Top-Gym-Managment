@@ -288,7 +288,57 @@
   line-height: 1.6;
 }
 
+#authUserDialog .auth-user-branch-scope {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+#authUserDialog .auth-user-branch-scope legend {
+  margin-block-end: var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+}
+
+#authUserDialog .auth-user-branch-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}
+
+#authUserDialog .auth-user-branch-option {
+  display: flex;
+  min-width: 0;
+  min-height: var(--ui-touch-target);
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  padding-inline: var(--space-3);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+#authUserDialog .auth-user-branch-option input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--color-primary);
+}
+
+#authUserDialog .auth-user-branch-option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#authUserDialog .auth-user-branch-scope[hidden] { display: none; }
+
 @media (max-width: 600px) {
   #authUserDialog .auth-form-grid { grid-template-columns: 1fr; }
   #authUserDialog .auth-form-grid > .full { grid-column: 1; }
+  #authUserDialog .auth-user-branch-options { grid-template-columns: 1fr; }
 }

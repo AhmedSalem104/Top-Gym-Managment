@@ -6,6 +6,12 @@
                 <div class="auth-field"><label for="authUserName">الاسم *</label><input id="authUserName" maxlength="120" required></div>
                 <div class="auth-field"><label for="authUserEmail">البريد الإلكتروني *</label><input id="authUserEmail" type="email" maxlength="254" inputmode="email" required></div>
                 <div class="auth-field full"><label for="authUserPassword">كلمة المرور <span id="authUserPasswordRequired">*</span></label><input id="authUserPassword" type="password" maxlength="128" autocomplete="new-password"><p class="auth-helper" id="authUserPasswordHint">يجب أن تكون 8 أحرف على الأقل. لا يتم عرضها أو إرسالها مرة أخرى بعد الحفظ.</p></div>
+                <fieldset class="auth-field full auth-user-branch-scope" id="authUserBranchScope" hidden>
+                    <legend id="authUserBranchScopeTitle">الفروع المسموح بها *</legend>
+                    <p class="auth-helper" id="authUserBranchScopeHint">اختر فرعًا نشطًا واحدًا على الأقل ليتمكن المساعد من العمل عليه.</p>
+                    <div class="auth-user-branch-options" id="authUserBranchOptions" aria-describedby="authUserBranchScopeHint" aria-live="polite"></div>
+                    <p class="auth-helper" id="authUserBranchScopeStatus" role="status"></p>
+                </fieldset>
             </div>
             <div class="dialog-actions"><button class="btn btn-light" id="authUserDialogCancel" type="button">إلغاء</button><button class="btn btn-primary" id="authUserSave" type="submit">حفظ الحساب</button></div>
         </form>

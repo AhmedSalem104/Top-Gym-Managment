@@ -93,7 +93,7 @@ function createAuthController({ authService, permissionService, allowLoginAttemp
         },
 
         createAssistant: async (request, response) => {
-            response.status(201).json({ user: await authService.createAssistant(request.body || {}) });
+            response.status(201).json({ user: await authService.createAssistant(request.body || {}, request) });
         },
 
         updateUser: async (request, response) => {

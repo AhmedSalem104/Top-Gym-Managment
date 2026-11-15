@@ -26,6 +26,8 @@ The permission catalog contains 93 codes in `src/permissions/permissions.js`. Do
 
 The exact catalog is executable source. Mobile must not copy a hardcoded role matrix; it should consume server-derived permission/effective capability payloads and use local maps only for presentation.
 
+For Gym Assistants, branch assignment is a separate data-scope relation, not a permission grant: `branches.read` does not imply access to any branch. Owner-only `POST /api/auth/users` now persists the selected initial branch scope in the same transaction as the account and permission defaults. Existing active branch rows remain the server authority for `/api/branches/bootstrap` and branch-scoped operations.
+
 ## Plan limits
 
 Current catalog plans in `src/services/saas-plan-catalog.js`:
