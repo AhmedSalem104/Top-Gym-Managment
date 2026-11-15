@@ -24,6 +24,7 @@ This document records current behavior as rules, not UI labels. Sources are list
 - Branch, membership, attendance, commerce, finance and user-access records carry tenant/branch scope where defined.
 - Sections belong to a branch. Membership section access and attendance section IDs must remain tenant/branch consistent (migration 029, `branch-service.js`).
 - A newly created Gym Assistant must receive at least one active branch-access row before account creation commits. Owner web creation submits `branchIds`; legacy calls that omit the optional list receive the active main branch, or the first active branch. The server validates tenant ownership and active status inside the account-creation transaction. Branch visibility permission alone does not create branch scope. Independent Trainer tenants have no Gym branch scope.
+- Removing an Assistant through the tenant-scoped team action disables only that tenant membership and removes that tenant's branch-access rows; account and historical references remain. Other active tenant memberships are unaffected. When no active tenant membership remains, the account is disabled and web plus mobile refresh sessions are revoked in the same transaction.
 - A selected branch must not cause a member row to display an unrelated or fabricated membership; branch switch refreshes authoritative data.
 
 ## Members and memberships

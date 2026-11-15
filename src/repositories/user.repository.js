@@ -1,6 +1,7 @@
 'use strict';
 
 const { getPool, sql } = require('../database/pool');
+const { withTransaction } = require('../database/transaction');
 
 async function findOwner() {
     const pool = await getPool();
@@ -115,11 +116,63 @@ async function updateStatus({ id, status, tenantId = null }) {
 }
 
 async function deleteAssistant(id, tenantId = null) {
-    const pool = await getPool();
-    return pool.request()
-        .input('id', sql.Int, id)
-        .input('tenantId', sql.Int, tenantId == null ? null : Number(tenantId))
-        .query("DELETE FROM dbo.gym_users OUTPUT DELETED.id WHERE id=@id AND role='Assistant' AND (@tenantId IS NULL OR EXISTS (SELECT 1 FROM dbo.gym_user_tenants ut WHERE ut.user_id=id AND ut.tenant_id=@tenantId AND ut.status='active')); ");
+    if (tenantId == null) throw new TypeError('A tenant id is required to remove an assistant.');
+    return withTransaction(async (transaction) => {
+        const membership = await transaction.request()
+            .input('id', sql.Int, id)
+            .input('tenantId', sql.Int, Number(tenantId))
+            .query(`SELECT TOP (1) u.id, u.role, ut.is_primary
+                    FROM dbo.gym_users AS u WITH (UPDLOCK, HOLDLOCK)
+                    INNER JOIN dbo.gym_user_tenants AS ut WITH (UPDLOCK, HOLDLOCK)
+                        ON ut.user_id=u.id
+                    WHERE u.id=@id AND u.role='Assistant'
+                      AND ut.tenant_id=@tenantId AND ut.status='active';`);
+        if (!membership.recordset?.length) return { recordset: [] };
+
+        await transaction.request()
+            .input('id', sql.Int, id)
+            .input('tenantId', sql.Int, Number(tenantId))
+            .query(`DELETE FROM dbo.gym_branch_user_access
+                    WHERE user_id=@id AND tenant_id=@tenantId;
+
+                    UPDATE dbo.gym_user_tenants
+                    SET status='disabled', is_primary=0, updated_at=SYSUTCDATETIME()
+                    WHERE user_id=@id AND tenant_id=@tenantId AND status='active';
+
+                    IF EXISTS (SELECT 1 FROM dbo.gym_user_tenants WHERE user_id=@id AND status='active')
+                    BEGIN
+                        UPDATE dbo.gym_user_tenants
+                        SET is_primary=1, updated_at=SYSUTCDATETIME()
+                        WHERE user_id=@id
+                          AND tenant_id=(
+                              SELECT TOP (1) tenant_id
+                              FROM dbo.gym_user_tenants
+                              WHERE user_id=@id AND status='active' AND is_primary=0
+                              ORDER BY tenant_id
+                          )
+                          AND NOT EXISTS (
+                              SELECT 1 FROM dbo.gym_user_tenants
+                              WHERE user_id=@id AND status='active' AND is_primary=1
+                          );
+                    END
+                    ELSE
+                    BEGIN
+                        UPDATE dbo.gym_users
+                        SET status='Disabled', updated_at=SYSUTCDATETIME()
+                        WHERE id=@id AND status<>'Disabled';
+
+                        UPDATE dbo.gym_auth_sessions
+                        SET revoked_at=SYSUTCDATETIME()
+                        WHERE user_id=@id AND revoked_at IS NULL;
+
+                        UPDATE dbo.gym_mobile_refresh_sessions
+                        SET revoked_at=SYSUTCDATETIME()
+                        WHERE user_id=@id AND revoked_at IS NULL;
+                    END;
+
+                    SELECT @id AS id;`);
+        return { recordset: [{ id: Number(id) }] };
+    });
 }
 
 module.exports = {

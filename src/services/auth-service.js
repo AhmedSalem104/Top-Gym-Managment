@@ -784,9 +784,16 @@ async function deleteAssistant(id) {
     const user = current.recordset[0];
     if (!user) throw authError('الحساب غير موجود.', 404, 'USER_NOT_FOUND');
     if (user.role !== 'Assistant') throw authError('لا يمكن حذف حساب المالك.', 403, 'OWNER_ACCOUNT_PROTECTED');
-    await sessionRepository.revokeForUser(userId);
-    const result = await userRepository.deleteAssistant(userId, tenantId);
-    if (!result.recordset?.length) throw authError('تعذر حذف حساب المساعد.', 409, 'ASSISTANT_DELETE_FAILED');
+    let result;
+    try {
+        result = await userRepository.deleteAssistant(userId, tenantId);
+    } catch (error) {
+        if (error.number === 547) {
+            throw authError('تعذر إزالة المساعد لوجود سجلات مرتبطة لا يمكن حذفها بأمان. لم يتم تغيير الحساب؛ راجع الدعم الفني.', 409, 'ASSISTANT_REMOVAL_CONFLICT');
+        }
+        throw error;
+    }
+    if (!result.recordset?.length) throw authError('تعذر إزالة حساب المساعد من هذا الجيم. حدّث القائمة وحاول مرة أخرى.', 409, 'ASSISTANT_DELETE_FAILED');
     return { id: userId };
 }
 

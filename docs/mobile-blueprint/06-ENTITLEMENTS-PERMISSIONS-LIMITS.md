@@ -28,6 +28,8 @@ The exact catalog is executable source. Mobile must not copy a hardcoded role ma
 
 For Gym Assistants, branch assignment is a separate data-scope relation, not a permission grant: `branches.read` does not imply access to any branch. Owner-only `POST /api/auth/users` now persists the selected initial branch scope in the same transaction as the account and permission defaults. Existing active branch rows remain the server authority for `/api/branches/bootstrap` and branch-scoped operations.
 
+Owner-only `DELETE /api/auth/users/:id` removes the Assistant from the authenticated tenant, not from other tenants: it disables that tenant membership and deletes its branch-access grants while retaining permission/history records. If the account has no remaining active tenant memberships, the account is disabled and web/mobile sessions are revoked atomically; otherwise access in the other active tenant remains unchanged.
+
 ## Plan limits
 
 Current catalog plans in `src/services/saas-plan-catalog.js`:
